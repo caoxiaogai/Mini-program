@@ -1,0 +1,216 @@
+@use '@/styles/variables.scss' as *;
+
+.analysisPage {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+}
+
+.filterBar {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-md $page-padding;
+  background-color: $color-bg-card;
+  border-bottom: 1rpx solid $color-divider;
+}
+
+.filterItem {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 12rpx 20rpx;
+  background-color: $color-bg-page;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+}
+
+.filterArrow {
+  font-size: 18rpx;
+  color: $color-text-tertiary;
+}
+
+.customDate {
+  display: flex;
+  align-items: center;
+  padding: $spacing-sm $page-padding;
+  background-color: $color-bg-card;
+  gap: $spacing-sm;
+}
+
+.datePicker {
+  flex: 1;
+  padding: 12rpx 20rpx;
+  background-color: $color-bg-page;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  text-align: center;
+}
+
+.dateSep {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.tabs {
+  display: flex;
+  background-color: $color-bg-card;
+  padding: 0 $page-padding;
+  border-bottom: 1rpx solid $color-divider;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  padding: $spacing-md 0;
+  position: relative;
+}
+
+.tabActive {
+  color: $color-primary;
+  font-weight: $font-weight-semibold;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48rpx;
+    height: 4rpx;
+    background-color: $color-primary;
+    border-radius: 2rpx;
+  }
+}
+
+.intentTabs {
+  display: flex;
+  padding: $spacing-sm $page-padding;
+  background-color: $color-bg-card;
+  gap: $spacing-md;
+}
+
+.intentTab {
+  padding: 10rpx 24rpx;
+  border-radius: 24rpx;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  background-color: $color-bg-page;
+}
+
+.intentTabActive {
+  color: $color-text-white;
+  background-color: $color-primary;
+}
+
+.dashboardSection {
+  padding: $spacing-md $page-padding;
+}
+
+.dashboardGrid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.dashboardItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 33.33%;
+  box-sizing: border-box;
+  padding: $spacing-md 0;
+  border-bottom: 1rpx solid $color-divider;
+}
+
+.dashboardValue {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.dashboardLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: 4rpx;
+}
+
+.list {
+  padding: $spacing-md $page-padding;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  background-color: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+.itemCover {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: $radius-sm;
+  margin-right: $spacing-md;
+  flex-shrink: 0;
+}
+
+.itemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  @include text-ellipsis;
+}
+
+.itemSubtitle {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: 4rpx;
+  @include text-ellipsis;
+}
+
+.itemStats {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-xs;
+}
+
+.itemStat {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.itemAvatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $radius-round;
+  margin-right: $spacing-md;
+  flex-shrink: 0;
+}
+
+.itemArrow {
+  font-size: 36rpx;
+  color: $color-text-disabled;
+  margin-left: $spacing-sm;
+}
+
+.emptyTip {
+  text-align: center;
+  padding: 120rpx 0;
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}

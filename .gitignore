@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.taro-cache/
+.swc/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+Thumbs.db

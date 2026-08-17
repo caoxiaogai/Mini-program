@@ -1,0 +1,194 @@
+@use '@/styles/variables.scss' as *;
+
+.detailPage {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: 140rpx;
+}
+
+.coverWrap {
+  width: 100%;
+  height: 400rpx;
+  background-color: $color-bg-hover;
+}
+
+.cover {
+  width: 100%;
+  height: 100%;
+}
+
+.coverSwiper {
+  width: 100%;
+  height: 100%;
+}
+
+.coverSwiperItem {
+  width: 100%;
+  height: 100%;
+}
+
+.coverPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholderText {
+  font-size: 64rpx;
+  font-weight: 600;
+  color: $color-text-tertiary;
+}
+
+.openFileTip {
+  margin-top: $spacing-sm;
+  font-size: 28rpx;
+  color: $color-primary;
+}
+
+.infoCard {
+  background-color: $color-bg-card;
+  margin: $spacing-md $page-padding 0;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.title {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.content {
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+  line-height: $line-height-loose;
+}
+
+.metaRow {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1rpx solid $color-divider;
+}
+
+.metaItem {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.section {
+  background-color: $color-bg-card;
+  margin: $spacing-md $page-padding 0;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.aiCopy {
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+  line-height: $line-height-loose;
+  background-color: $color-stat-bg;
+  border-radius: $radius-sm;
+  padding: $spacing-md;
+}
+
+.shareInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: $color-stat-bg;
+  border-radius: $radius-sm;
+  padding: $spacing-md;
+}
+
+.shareUrl {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  flex: 1;
+  @include text-ellipsis;
+}
+
+.copyBtn {
+  @include button-reset;
+  background: $color-primary;
+  color: $color-text-white;
+  font-size: $font-size-sm;
+  height: $button-height-sm;
+  padding: 0 $spacing-lg;
+  border-radius: $radius-button;
+  margin-left: $spacing-md;
+  flex-shrink: 0;
+}
+
+.bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-md $page-padding;
+  background-color: $color-bg-card;
+  box-shadow: $shadow-float;
+  padding-bottom: calc($spacing-md + env(safe-area-inset-bottom));
+}
+
+.btnPrimary {
+  @include button-reset;
+  flex: 1;
+  background: $color-gradient-primary;
+  color: $color-text-white;
+  font-size: $font-size-md;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+
+  &:active {
+    opacity: 0.9;
+  }
+}
+
+.btnSecondary {
+  @include button-reset;
+  flex: 1;
+  background-color: $color-bg-hover;
+  color: $color-text-primary;
+  font-size: $font-size-md;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+  border: 2rpx solid $color-border;
+
+  &:active {
+    opacity: 0.9;
+  }
+}
+
+.btnShare {
+  flex: 1;
+  background-color: $color-bg-hover;
+  color: $color-text-primary;
+  font-size: $font-size-md;
+  height: $button-height-lg;
+  line-height: $button-height-lg;
+  border-radius: $radius-button;
+  border: 2rpx solid $color-border;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+
+  &::after {
+    border: none;
+  }
+}
