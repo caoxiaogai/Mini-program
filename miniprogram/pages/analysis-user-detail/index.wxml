@@ -1,0 +1,52 @@
+<view class="user-detail-page">
+  <view class="user-detail-page__header">
+    <navigation-bar title="分析" back="{{true}}" color="#000000" background="#ffffff" />
+  </view>
+  <view wx:if="{{detail}}" class="user-detail-page__content">
+    <view class="user-detail__profile-card">
+      <view class="user-detail__profile-main">
+        <image class="user-detail__avatar" src="{{detail.profile.avatarUrl}}" mode="aspectFill" />
+        <view class="user-detail__profile-body">
+          <view class="user-detail__identity-row">
+            <view class="user-detail__identity">
+              <text class="user-detail__name">{{detail.profile.name}}</text>
+              <text class="user-detail__tag user-detail__tag--{{detail.profile.level}}">#{{detail.profile.levelLabel}}</text>
+            </view>
+            <view class="user-detail__copy" bindtap="onCopyUsername">复制用户名</view>
+          </view>
+        </view>
+      </view>
+      <view class="user-detail__metrics">
+        <view class="user-detail__metric"><text>阅读数</text><text>{{detail.profile.readCount}}</text></view>
+        <view class="user-detail__metric"><text>完播</text><text>{{detail.profile.completionCount}}</text></view>
+        <view class="user-detail__metric"><text>转发</text><text>{{detail.profile.shareCount}}</text></view>
+        <view class="user-detail__metric"><text>观看时长</text><text>{{detail.profile.viewDuration}}</text></view>
+      </view>
+    </view>
+    <view class="user-detail__records-card">
+      <text class="user-detail__title">阅读记录</text>
+      <view class="user-detail__record-tabs">
+        <view class="user-detail__record-selection user-detail__record-selection--{{activeRecordTab}}"></view>
+        <view wx:for="{{userDetailRecordTabs}}" wx:key="id" class="user-detail__record-tab {{item.id === activeRecordTab ? 'user-detail__record-tab--active' : ''}}" bindtap="onRecordTabTap" data-id="{{item.id}}">{{item.label}}</view>
+      </view>
+      <view class="user-detail__records">
+        <view wx:for="{{visibleUserRecords}}" wx:key="id" class="user-detail__record">
+          <image class="user-detail__record-thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+          <view class="user-detail__record-body">
+            <view class="user-detail__record-head">
+              <text class="user-detail__record-title">{{item.title}}</text>
+              <view class="user-detail__record-meta"><text>{{item.date}}</text><text class="user-detail__meta-divider"></text><text>{{item.type}}</text></view>
+            </view>
+            <view class="user-detail__record-stats">
+              <view><text>进度</text><text>{{item.progress}}</text></view>
+              <view><text>观看时长</text><text>{{item.viewDuration}}</text></view>
+              <view><text>完播</text><text>{{item.completionCount}}</text></view>
+              <view><text>转发</text><text>{{item.shareCount}}</text></view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{copyNoticeVisible}}" class="user-detail__copy-feedback">复制成功</view>
+</view>

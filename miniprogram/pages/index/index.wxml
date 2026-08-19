@@ -1,0 +1,44 @@
+<view class="home-page">
+  <navigation-bar back="{{false}}" color="#000000" background="transparent">
+    <text slot="left" class="home-page__title">阿宝AI</text>
+  </navigation-bar>
+
+  <view wx:if="{{homeData}}" class="home-page__main">
+    <view class="home-assistant">
+      <view class="home-assistant__image-frame">
+        <image class="home-assistant__image" src="/assets/home/ai-assistant.png" mode="aspectFit" />
+      </view>
+      <text class="home-assistant__greeting">{{homeData.greeting}}</text>
+    </view>
+
+    <view class="home-summary">
+      <view class="home-summary__card home-summary__card--visitors" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
+        <view class="home-summary__copy">
+          <text class="home-summary__primary">今日有 <text class="home-summary__number">{{homeData.newVisitors.total}}</text> 个新增用户</text>
+          <text class="home-summary__secondary">其中有 <text class="home-summary__secondary-strong">{{homeData.newVisitors.highIntentCount}}</text> 位高意向用户</text>
+        </view>
+        <view class="home-summary__avatars">
+          <image
+            wx:for="{{homeData.newVisitors.visitors}}"
+            wx:key="id"
+            class="home-summary__avatar {{index === 0 ? 'home-summary__avatar--first' : ''}}"
+            src="{{item.avatarUrl}}"
+            mode="aspectFill"
+          />
+        </view>
+      </view>
+
+      <view class="home-summary__card home-summary__card--compact" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
+        <text class="home-summary__primary">今日累计阅读数 <text class="home-summary__number">{{homeData.reading.total}}</text> 次</text>
+        <text class="home-summary__secondary">查看详细</text>
+      </view>
+
+      <view class="home-summary__card home-summary__card--compact" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
+        <text class="home-summary__primary">今日累计转发次数 <text class="home-summary__number">{{homeData.sharing.total}}</text> 次</text>
+        <text class="home-summary__secondary home-summary__secondary--ellipsis">“{{homeData.sharing.highlightedContentTitle}}”被转发了 {{homeData.sharing.highlightedContentShareCount}} 次</text>
+      </view>
+    </view>
+  </view>
+
+  <bottom-tab-bar items="{{tabItems}}" bind:tabtap="onTabTap" />
+</view>

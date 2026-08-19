@@ -1,0 +1,19 @@
+<view class="bottom-tab-bar">
+  <view class="bottom-tab-bar__inner">
+    <view
+      wx:for="{{items}}"
+      wx:key="id"
+      class="bottom-tab-bar__item"
+      data-id="{{item.id}}"
+      bindtap="onTabTap"
+      hover-class="bottom-tab-bar__item--pressed"
+      hover-stay-time="80"
+    >
+      <view class="bottom-tab-bar__icon-wrap">
+        <image class="bottom-tab-bar__icon" src="{{item.iconPath}}" mode="aspectFit" />
+        <view wx:if="{{item.badgeCount}}" class="bottom-tab-bar__badge">{{item.badgeCount}}</view>
+      </view>
+      <text class="bottom-tab-bar__label">{{item.label}}</text>
+    </view>
+  </view>
+</view>

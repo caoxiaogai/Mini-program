@@ -1,0 +1,39 @@
+page { min-height: 100vh; background: #eef3fb; }
+.detail-page { position: relative; min-height: 100vh; overflow: hidden; background: #eef3fb; color: #000; }
+.detail-page__texture { position: absolute; top: 0; left: 0; width: 780rpx; height: 230rpx; }
+.detail-page__header { position: sticky; top: 0; z-index: 2; background: transparent; }
+.detail-page__content { position: relative; z-index: 1; padding: 30rpx 40rpx 40rpx; box-sizing: border-box; }
+.detail-card { display: flex; height: 338rpx; flex-direction: column; align-items: center; justify-content: center; padding: 30rpx; border: 2rpx solid #fff; border-radius: 32rpx; background: linear-gradient(180deg, #fff 0%, #f0f5fa 100%); box-shadow: 0 2rpx 10rpx rgba(0,0,0,.03); box-sizing: border-box; }
+.detail-card__inner { display: flex; width: 100%; flex-direction: column; gap: 40rpx; }
+.detail-card__head { display: flex; align-items: center; width: 100%; gap: 20rpx; }
+.detail-card__thumbnail { width: 120rpx; height: 160rpx; flex-shrink: 0; border-radius: 16rpx; }
+.detail-card__identity { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 32rpx; }
+.detail-card__title { min-height: 92rpx; overflow: hidden; color: #000; font-size: 30rpx; font-weight: 500; line-height: 46rpx; text-overflow: ellipsis; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.detail-card__date { color: #999; font-size: 28rpx; line-height: normal; white-space: nowrap; }
+.detail-card__metrics { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.detail-card__metric { display: flex; flex-direction: column; align-items: center; gap: 8rpx; color: #000; white-space: nowrap; }
+.detail-card__metric-label { color: #8a8e94; font-size: 24rpx; line-height: normal; }
+.detail-card__metric-value { color: #000; font-size: 32rpx; font-weight: 500; line-height: normal; }
+.detail-intent { display: flex; flex-direction: column; gap: 20rpx; margin-top: 32rpx; }
+.detail-intent__title { color: #000; font-size: 32rpx; font-weight: 600; line-height: normal; }
+.detail-intent__panel { display: flex; height: 944rpx; flex-direction: column; gap: 40rpx; padding: 30rpx 30rpx 56rpx; border: 2rpx solid #fff; border-radius: 32rpx; background: linear-gradient(180deg, #fff 0%, #f0f5fa 100%); box-shadow: 0 4rpx 3rpx rgba(0,0,0,.05); box-sizing: border-box; }
+.detail-intent__tabs { position: relative; display: flex; align-items: center; width: 100%; height: 64rpx; padding: 4rpx; overflow: hidden; border-radius: 16rpx; background: #d3d8e0; box-sizing: border-box; }
+.detail-intent__selection { position: absolute; top: 4rpx; left: 4rpx; width: calc((100% - 8rpx) / 4); height: 56rpx; border-radius: 12rpx; background: #fff; transition: transform 180ms ease-out; }
+.detail-intent__tab { position: relative; z-index: 1; display: flex; height: 56rpx; flex: 1; align-items: center; justify-content: center; border-radius: 12rpx; color: #8a8e94; font-size: 26rpx; line-height: normal; text-align: center; }
+.detail-intent__tab--active { color: #000; }
+.detail-users { display: flex; flex-direction: column; gap: 30rpx; }
+.detail-user { display: flex; align-items: flex-start; width: 100%; gap: 22rpx; }
+.detail-user__avatar { width: 88rpx; height: 88rpx; flex-shrink: 0; border-radius: 50%; }
+.detail-user__body { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 30rpx; }
+.detail-user__summary { display: flex; flex-direction: column; gap: 0; }
+.detail-user__identity { display: flex; align-items: center; gap: 24rpx; height: 44rpx; }
+.detail-user__name { color: #000; font-size: 32rpx; line-height: 44rpx; white-space: nowrap; }
+.detail-user__tag { display: flex; height: 40rpx; align-items: center; justify-content: center; padding: 0 20rpx; border-radius: 96rpx; font-size: 22rpx; line-height: normal; white-space: nowrap; }
+.detail-user__tag--high { color: #0da8b6; background: #c2e7eb; }
+.detail-user__tag--medium { color: #ffa602; background: #f5ead5; }
+.detail-user__tag--low { color: #707e80; background: #ededed; }
+.detail-user__stats { display: flex; align-items: center; gap: 40rpx; height: 44rpx; color: #333; font-size: 24rpx; line-height: 44rpx; white-space: nowrap; }
+.detail-user__stat { display: flex; align-items: center; gap: 8rpx; }
+.detail-user__stat text:first-child { color: #8a8e94; }
+.detail-user__divider { width: 2rpx; height: 20rpx; background: #b0b0b0; }
+.detail-user__line { width: 100%; height: 2rpx; background: #f0f0f0; }
