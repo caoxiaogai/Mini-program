@@ -1,12 +1,11 @@
 import { getAnalysisOverview } from '../../services/analysis'
 import type { AnalysisAudienceUser, AnalysisIntentLevel, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
 
-type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
+type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
 
 interface AnalysisPeriodOption {
   id: AnalysisPeriodId
-  label?: string
-  iconPath?: string
+  label: string
 }
 
 const analysisPeriods: AnalysisPeriodOption[] = [
@@ -14,7 +13,6 @@ const analysisPeriods: AnalysisPeriodOption[] = [
   { id: 'week', label: '周' },
   { id: 'month', label: '月' },
   { id: 'total', label: '总' },
-  { id: 'custom', iconPath: '/assets/analysis/frame-23.svg' },
 ]
 
 type AnalysisTabId = 'work' | 'user' | 'total'

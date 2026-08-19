@@ -315,7 +315,7 @@ test('analysis page keeps its top navigation area white', () => {
   assert.match(styles, /\.analysis-page__header\s*\{[\s\S]*?position: sticky;[\s\S]*?top: 0;/)
 })
 
-test('analysis filters match the Figma control sizing and use supplied icons', () => {
+test('analysis filters keep only day, week, month, and total periods', () => {
   const markup = read('miniprogram/pages/analysis/index.wxml')
   const styles = read('miniprogram/pages/analysis/index.less')
   const logic = read('miniprogram/pages/analysis/index.ts')
@@ -324,11 +324,12 @@ test('analysis filters match the Figma control sizing and use supplied icons', (
   assert.match(markup, /bindtap="onPeriodTap"/)
   assert.match(markup, /data-id="\{\{item\.id\}\}"/)
   assert.match(markup, /analysis-periods__selection/)
-  assert.match(logic, /\/assets\/analysis\/frame-23\.svg/)
+  assert.doesNotMatch(logic, /frame-23\.svg/)
   assert.match(markup, /\/assets\/analysis\/polygon-2\.svg/)
-  assert.equal(existsSync(new URL('../miniprogram/assets/analysis/frame-23.svg', import.meta.url)), true)
   assert.equal(existsSync(new URL('../miniprogram/assets/analysis/polygon-2.svg', import.meta.url)), true)
+  assert.equal(existsSync(new URL('../miniprogram/assets/analysis/frame-23.svg', import.meta.url)), false)
   assert.match(logic, /analysisPeriods/)
+  assert.doesNotMatch(logic, /custom/)
   assert.match(logic, /activePeriod/)
   assert.match(logic, /onPeriodTap\(event: WechatMiniprogram\.TouchEvent\)/)
   assert.match(styles, /\.analysis-periods[\s\S]*?height: 64rpx;[\s\S]*?border-radius: 12rpx;[\s\S]*?background: #d3d8e0;/)

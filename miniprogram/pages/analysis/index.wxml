@@ -11,10 +11,7 @@
       <view class="analysis-filters">
         <view class="analysis-periods">
           <view class="analysis-periods__selection" style="transform: translateX({{activePeriodOffset}}rpx);"></view>
-          <view wx:for="{{analysisPeriods}}" wx:key="id" class="analysis-period {{item.id === activePeriod ? 'analysis-period--active' : ''}} {{item.iconPath ? 'analysis-period--icon' : ''}}" bindtap="onPeriodTap" data-id="{{item.id}}" data-index="{{index}}">
-            <text wx:if="{{item.label}}">{{item.label}}</text>
-            <image wx:if="{{item.iconPath}}" class="analysis-period__icon" src="{{item.iconPath}}" mode="aspectFit" />
-          </view>
+          <view wx:for="{{analysisPeriods}}" wx:key="id" class="analysis-period {{item.id === activePeriod ? 'analysis-period--active' : ''}}" bindtap="onPeriodTap" data-id="{{item.id}}" data-index="{{index}}"><text>{{item.label}}</text></view>
         </view>
         <view class="analysis-sort"><view class="analysis-sort__inner"><text>完播数</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
       </view>

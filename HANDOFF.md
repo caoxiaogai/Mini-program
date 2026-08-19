@@ -422,6 +422,12 @@ miniprogram/
 - 列表视图通过现有记录的阅读进度、观看时长和转发数生成对应筛选结果，页面继续消费 typed ViewModel。
 - 验证：`node --test tests/home-page.test.mjs`（30 tests passed）；页面与组件依赖检查通过。
 
+### 2026-08-19：移除分析页自定义时间筛选
+
+- 分析页时间筛选由“日 / 周 / 月 / 总 / 自定义”调整为仅保留“日 / 周 / 月 / 总”。
+- 删除自定义日历图标 `assets/analysis/frame-23.svg` 及对应的类型、模板和样式引用，时间滑块仍按四个选项工作。
+- 验证：`node --test tests/home-page.test.mjs`（30 tests passed）；页面配置解析通过；未发现 `frame-23.svg` 残留引用。
+
 ### 2026-08-19：补充产品范围与 Agent 规则
 
 - 状态：done。
