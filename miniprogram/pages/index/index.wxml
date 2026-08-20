@@ -1,6 +1,6 @@
 <view class="home-page">
   <navigation-bar back="{{false}}" color="#000000" background="transparent">
-    <text slot="left" class="home-page__title">阿宝AI</text>
+    <text slot="left" class="home-page__title">阿乐</text>
   </navigation-bar>
 
   <view wx:if="{{homeData}}" class="home-page__main">

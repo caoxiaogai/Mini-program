@@ -1,10 +1,13 @@
-import { getMaterialDraft } from '../../../services/materials'
-import type { PublishImageViewModel } from '../../../types/materials'
+import { getMaterialDraft, publishMaterial, saveMaterialDraft } from '../../../services/materials'
+import type { MaterialSubmitInput, PublishImageViewModel } from '../../../types/materials'
 
 const MAX_IMAGE_COUNT = 9
 const initialImages: PublishImageViewModel[] = []
 
 Page({
+  draftMaterialId: null as string | null,
+  draftImagePaths: [] as string[],
+  submitting: false,
   data: {
     images: initialImages,
     canAddImage: initialImages.length < MAX_IMAGE_COUNT,
@@ -18,12 +21,23 @@ Page({
     getMaterialDraft(materialId).then((draft) => {
       if (!draft) return
 
+      this.draftMaterialId = draft.id
+      this.draftImagePaths = draft.images.map((image) => image.path)
+
       this.setData({
         images: draft.images,
         canAddImage: draft.images.length < MAX_IMAGE_COUNT,
         copy: draft.copy,
       })
     })
+  },
+  buildSubmitInput(): MaterialSubmitInput {
+    return {
+      draftId: this.draftMaterialId,
+      originalImagePaths: this.draftImagePaths,
+      images: this.data.images,
+      copy: this.data.copy,
+    }
   },
   onAddImageTap() {
     const count = MAX_IMAGE_COUNT - this.data.images.length
@@ -52,10 +66,34 @@ Page({
     this.setData({ copy: event.detail.value })
   },
   onDraftTap() {
-    wx.showToast({ title: '草稿功能待接入', icon: 'none' })
+    if (this.submitting) return
+    this.submitting = true
+
+    saveMaterialDraft(this.buildSubmitInput())
+      .then((materialId) => {
+        this.draftMaterialId = materialId
+        this.draftImagePaths = this.data.images.map((image) => image.path)
+        wx.showToast({ title: '已保存草稿', icon: 'success' })
+      })
+      .catch(() => undefined)
+      .then(() => {
+        this.submitting = false
+      })
   },
   onPublishTap() {
-    wx.showToast({ title: '发表功能待接入', icon: 'none' })
+    if (this.submitting) return
+    this.submitting = true
+
+    publishMaterial(this.buildSubmitInput())
+      .then((materialId) => {
+        this.draftMaterialId = materialId
+        this.draftImagePaths = this.data.images.map((image) => image.path)
+        this.onPublishSuccess()
+      })
+      .catch(() => undefined)
+      .then(() => {
+        this.submitting = false
+      })
   },
   onPublishSuccess() {
     this.setData({ showPublishSuccessModal: true })

@@ -35,13 +35,30 @@ const createHomeOverview = ({ newVisitorsTotal = 5, readingTotal = 2983, sharing
 
 test('home data layer exposes one typed service seam', () => {
   const types = read('miniprogram/types/home.ts')
-  const mock = read('miniprogram/mocks/home.ts')
   const service = read('miniprogram/services/home.ts')
 
   assert.match(types, /export interface HomeOverviewViewModel/)
-  assert.match(mock, /export const homeOverviewMock/)
   assert.match(service, /export function getHomeOverview\(\): Promise<HomeOverviewViewModel>/)
-  assert.match(service, /TODO\(API\): 接入首页摘要真实接口/)
+  assert.match(service, /\/analysis\/dashboard/)
+  assert.doesNotMatch(service, /TODO\(API\)/)
+  assert.doesNotMatch(service, /mocks\//)
+})
+
+test('data access goes through the unified request layer', () => {
+  const requestLayer = read('miniprogram/services/request.ts')
+
+  assert.match(requestLayer, /wx\.request\(/)
+  assert.match(requestLayer, /'X-User-Id'/)
+  assert.match(requestLayer, /\/wechat\/login/)
+  assert.match(requestLayer, /export function request</)
+  assert.match(requestLayer, /export function ensureLogin/)
+
+  const serviceFiles = ['home', 'analysis', 'materials', 'notifications', 'ranking']
+  for (const name of serviceFiles) {
+    const service = read(`miniprogram/services/${name}.ts`)
+    assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
+    assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
+  }
 })
 
 test('home greeting follows the device local time across four periods', async () => {
@@ -221,7 +238,7 @@ test('home page declares the Figma primary regions', () => {
   assert.match(page, /class="home-assistant"/)
   assert.match(page, /class="home-summary"/)
   assert.match(page, /bottom-tab-bar/)
-  assert.match(page, /阿宝AI/)
+  assert.match(page, /阿乐/)
   assert.match(page, /class="home-assistant__greeting">\{\{greeting\}\}/)
   assert.doesNotMatch(page, /homeData\.greeting/)
 })
@@ -256,27 +273,23 @@ test('notification button aligns to the home content baseline', () => {
 
 test('notification data layer exposes one typed service seam', () => {
   const types = read('miniprogram/types/notifications.ts')
-  const mock = read('miniprogram/mocks/notifications.ts')
   const service = read('miniprogram/services/notifications.ts')
 
   assert.match(types, /export interface NotificationsViewModel/)
-  assert.match(mock, /export const notificationsMock/)
   assert.match(service, /export function getNotifications\(\): Promise<NotificationsViewModel>/)
-  assert.match(service, /TODO\(API\): 接入通知列表真实接口/)
+  assert.match(service, /\/analysis\/intent\/list/)
+  assert.doesNotMatch(service, /TODO\(API\)/)
 })
 
 test('notification page matches the Figma screen structure', () => {
   const markup = read('miniprogram/pages/notifications/notifications.wxml')
   const styles = read('miniprogram/pages/notifications/notifications.less')
-  const mock = read('miniprogram/mocks/notifications.ts')
 
   assert.match(markup, /<navigation-bar back="\{\{true\}\}"/)
   assert.match(markup, /通知/)
   assert.match(markup, /notification-filter/)
   assert.match(markup, /notification-group/)
   assert.match(markup, /notification-card/)
-  assert.match(mock, /notifications\/avatar-/)
-  assert.match(mock, /notifications\/thumb-/)
   assert.match(markup, /hover-class="notification-card--pressed"/)
   assert.doesNotMatch(markup, /nav-action\.svg/)
   assert.match(styles, /background: linear-gradient\(/)
@@ -375,7 +388,6 @@ test('notification cards navigate to the existing user detail page', () => {
   const markup = read('miniprogram/pages/notifications/notifications.wxml')
   const logic = read('miniprogram/pages/notifications/notifications.ts')
   const types = read('miniprogram/types/notifications.ts')
-  const mock = read('miniprogram/mocks/notifications.ts')
 
   assert.match(markup, /class="notification-card"[\s\S]*?bindtap="onNotificationCardTap"/)
   assert.match(markup, /data-id="\{\{notification\.userId\}\}"/)
@@ -384,7 +396,6 @@ test('notification cards navigate to the existing user detail page', () => {
   assert.match(logic, /\/pages\/analysis-user-detail\/index\?id=\$\{userId\}/)
   assert.match(logic, /onContactActionTap\(\)/)
   assert.match(types, /userId: string/)
-  assert.match(mock, /userId: 'user-01'/)
 })
 
 test('home notification tab navigates to the second page', () => {
@@ -426,7 +437,6 @@ test('material detail page exposes a typed service seam and the Figma share layo
   assert.ok(app.pages.includes('pages/material-detail/index'))
   assert.match(types, /export interface MaterialDetailViewModel/)
   assert.match(service, /export function getMaterialDetail\(materialId: string\): Promise<MaterialDetailViewModel \| null>/)
-  assert.match(service, /TODO\(API\): 接入素材详情真实接口/)
   assert.match(logic, /getMaterialDetail\(materialId\)/)
   assert.match(page, /navigation-bar[^>]*title="作品"/)
   assert.match(page, /swiper/)
@@ -468,7 +478,6 @@ test('ranking page exposes typed data and three metric sort tabs', () => {
   const logic = read('miniprogram/pages/ranking/index.ts')
   const service = read('miniprogram/services/ranking.ts')
   const types = read('miniprogram/types/ranking.ts')
-  const mock = read('miniprogram/mocks/ranking.ts')
 
   assert.match(markup, /navigation-bar[^>]*title="排行榜"/)
   assert.match(markup, /ranking-hero/)
@@ -480,7 +489,6 @@ test('ranking page exposes typed data and three metric sort tabs', () => {
   assert.match(logic, /sortRankingEntries/)
   assert.match(types, /export type RankingMetric/)
   assert.match(types, /export type RankingEntry/)
-  assert.match(mock, /rankingMock/)
   assert.match(service, /getRankingOverview\(\): Promise<RankingViewModel>/)
   assert.match(service, /TODO\(API\): 接入排行榜真实接口/)
 })
@@ -578,8 +586,8 @@ test('analysis page exposes typed mock data and the Figma card structure', () =>
   const service = read('miniprogram/services/analysis.ts')
 
   assert.ok(app.pages.includes('pages/analysis/index'))
-  assert.match(service, /getAnalysisOverview\(\): Promise<AnalysisViewModel>/)
-  assert.match(service, /TODO\(API\): 接入分析页真实接口/)
+  assert.match(service, /getAnalysisOverview\(period: AnalysisTimeRange = 'day'\): Promise<AnalysisViewModel>/)
+  assert.doesNotMatch(service, /TODO\(API\)/)
   assert.match(markup, /analysis-tabs/)
   assert.match(markup, /analysis-summary__card/)
   assert.match(markup, /analysis-card__thumbnail/)
@@ -719,7 +727,6 @@ test('analysis user detail matches the Figma profile and reading records', () =>
   const styles = read('miniprogram/pages/analysis-user-detail/index.less')
   const logic = read('miniprogram/pages/analysis-user-detail/index.ts')
   const types = read('miniprogram/types/analysis.ts')
-  const mock = read('miniprogram/mocks/analysis.ts')
 
   assert.match(markup, /navigation-bar[^>]*title="分析"/)
   assert.match(markup, /user-detail__profile-card/)
@@ -731,9 +738,6 @@ test('analysis user detail matches the Figma profile and reading records', () =>
   assert.match(markup, /观看时长/)
   assert.match(logic, /getAnalysisUserDetail/)
   assert.match(types, /export type AnalysisUserDetailViewModel/)
-  assert.match(mock, /analysisUserDetailMock/)
-  assert.equal(existsSync(new URL('../miniprogram/assets/analysis/user-detail-avatar.jpg', import.meta.url)), true)
-  assert.equal(existsSync(new URL('../miniprogram/assets/analysis/user-detail-record-01.jpg', import.meta.url)), true)
   assert.match(styles, /\.user-detail-page\s*\{[\s\S]*?background: #e8edf5;/)
   assert.match(styles, /\.user-detail__profile-card, \.user-detail__records-card[\s\S]*?border-radius: 32rpx;/)
   assert.match(styles, /\.user-detail__profile-card\s*\{[\s\S]*?min-height: 268rpx;/)
@@ -876,7 +880,6 @@ test('total analysis matches the Figma overview cards and reading chart', () => 
   const logic = read('miniprogram/pages/analysis/index.ts')
   const styles = read('miniprogram/pages/analysis/index.less')
   const types = read('miniprogram/types/analysis.ts')
-  const mock = read('miniprogram/mocks/analysis.ts')
 
   assert.match(markup, /activeAnalysisTab === 'total'/)
   assert.match(markup, /analysis-total-panel/)
@@ -891,8 +894,6 @@ test('total analysis matches the Figma overview cards and reading chart', () => 
   assert.match(logic, /activeAnalysisReadRange/)
   assert.match(logic, /onAnalysisRangeTap\(event: WechatMiniprogram\.TouchEvent\)/)
   assert.match(types, /export type AnalysisChartPoint/)
-  assert.match(mock, /analysisTotalDataMock/)
-  assert.equal((mock.match(/id: 'month-/g) ?? []).length, 30)
   assert.match(styles, /\.analysis-total-panel\s*\{[\s\S]*?gap: 30rpx;/)
   assert.match(styles, /\.analysis-total__overview-grid\s*\{[\s\S]*?display: grid;[\s\S]*?grid-template-columns: repeat\(3, 1fr\);/)
   assert.match(styles, /\.analysis-total__chart-bar\s*\{[\s\S]*?width: 40rpx;[\s\S]*?background: linear-gradient\(/)
@@ -902,16 +903,14 @@ test('user analysis matches Figma summary, filters, and user list assets', () =>
   const markup = read('miniprogram/pages/analysis/index.wxml')
   const styles = read('miniprogram/pages/analysis/index.less')
   const types = read('miniprogram/types/analysis.ts')
-  const mock = read('miniprogram/mocks/analysis.ts')
+  const service = read('miniprogram/services/analysis.ts')
 
   assert.match(markup, /analysis-user__intent-tabs/)
   assert.match(markup, /visibleAnalysisUsers/)
   assert.match(markup, /analysisData.userSummary/)
-  assert.match(mock, /总用户/)
+  assert.match(service, /总用户/)
   assert.match(markup, /观看作品/)
   assert.match(types, /export type AnalysisAudienceUser/)
-  assert.match(mock, /analysisAudienceUsersMock/)
-  assert.equal(existsSync(new URL('../miniprogram/assets/analysis/user-avatar-01.jpg', import.meta.url)), true)
   assert.match(styles, /\.analysis-user-panel\s*\{[\s\S]*?margin-top: 40rpx;/)
   assert.match(styles, /\.analysis-user__summary-card[\s\S]*?height: 140rpx;[\s\S]*?flex: 1;/)
   assert.match(styles, /\.analysis-user__list-panel[\s\S]*?height: auto;[\s\S]*?padding: 30rpx 30rpx 56rpx;/)
@@ -952,19 +951,19 @@ test('home summary cards navigate to their matching analysis tabs', () => {
 
 test('materials data layer exposes one typed service seam', () => {
   const types = read('miniprogram/types/materials.ts')
-  const mock = read('miniprogram/mocks/materials.ts')
   const service = read('miniprogram/services/materials.ts')
 
   assert.match(types, /export interface MaterialsViewModel/)
-  assert.match(mock, /export const materialsMock/)
   assert.match(service, /export function getMaterials\(\): Promise<MaterialsViewModel>/)
-  assert.match(service, /TODO\(API\): 接入素材列表真实接口/)
+  assert.match(service, /\/material\/mine/)
+  assert.match(service, /export function publishMaterial/)
+  assert.match(service, /export function saveMaterialDraft/)
+  assert.doesNotMatch(service, /TODO\(API\)/)
 })
 
 test('materials page matches the Figma screen structure and uses local assets', () => {
   const markup = read('miniprogram/pages/materials/index.wxml')
   const styles = read('miniprogram/pages/materials/index.less')
-  const mock = read('miniprogram/mocks/materials.ts')
   const publishIcon = read('miniprogram/assets/materials/material-plus.svg')
 
   assert.match(markup, /<navigation-bar back="\{\{true\}\}" title="素材"/)
@@ -976,8 +975,6 @@ test('materials page matches the Figma screen structure and uses local assets', 
   assert.match(publishIcon, /<svg width="14" height="12"/)
   assert.match(markup, /bindtap="onFilterTap"/)
   assert.match(markup, /hover-class="materials-card--pressed"/)
-  assert.match(mock, /assets\/materials\/material-03\.jpg/)
-  assert.equal(existsSync(new URL('../miniprogram/assets/materials/material-03.jpg', import.meta.url)), true)
   assert.equal(existsSync(new URL('../miniprogram/assets/materials/material-play.svg', import.meta.url)), true)
   assert.match(styles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
   assert.match(styles, /height: 460rpx;/)
@@ -985,11 +982,9 @@ test('materials page matches the Figma screen structure and uses local assets', 
 
 test('materials list only shows the supplied play icon for video cards', async () => {
   const markup = read('miniprogram/pages/materials/index.wxml')
-  const mock = read('miniprogram/mocks/materials.ts')
   const icon = read('miniprogram/assets/materials/material-play.svg')
 
   assert.match(markup, /wx:if="\{\{item\.kind === 'video'\}\}"[\s\S]*?class="materials-card__play"/)
-  assert.doesNotMatch(mock, /showPlay/)
   assert.match(icon, /<circle cx="9" cy="9" r="9" fill="black" fill-opacity="0\.5"\/>/)
 })
 
@@ -998,16 +993,24 @@ test('draft material cards open the publish editor with draft data', () => {
   const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
   const service = read('miniprogram/services/materials.ts')
   const types = read('miniprogram/types/materials.ts')
-  const mock = read('miniprogram/mocks/materials.ts')
 
   assert.match(materialsLogic, /const material = this\.data\.visibleMaterials\.find\(/)
   assert.match(materialsLogic, /material\?\.isDraft/)
   assert.match(materialsLogic, /\/pages\/materials\/publish\/index\?id=\$\{materialId\}/)
   assert.match(types, /export interface MaterialDraftEditViewModel/)
-  assert.match(mock, /export const materialDraftsMock/)
   assert.match(service, /export function getMaterialDraft\(materialId: string\): Promise<MaterialDraftEditViewModel \| null>/)
   assert.match(publishLogic, /getMaterialDraft\(materialId\)/)
   assert.match(publishLogic, /onLoad\(options: Record<string, string \| undefined>\)/)
+})
+
+test('publish actions submit through the materials service', () => {
+  const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
+
+  assert.match(publishLogic, /saveMaterialDraft\(this\.buildSubmitInput\(\)\)/)
+  assert.match(publishLogic, /publishMaterial\(this\.buildSubmitInput\(\)\)/)
+  assert.match(publishLogic, /this\.onPublishSuccess\(\)/)
+  assert.doesNotMatch(publishLogic, /草稿功能待接入/)
+  assert.doesNotMatch(publishLogic, /发表功能待接入/)
 })
 
 test('materials page shares ranking header layers and scroll fade', async () => {

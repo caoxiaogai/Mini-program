@@ -33,7 +33,9 @@
     "minifyWXML": true,
     "lessSetting": {
       "commonUseFilePath": "app.less"
-    }
+    },
+    "swc": false,
+    "disableSWC": true
   },
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},
@@ -48,5 +50,5 @@
     "ignore": [],
     "include": []
   },
-  "appid": "wx55893c82bb6c9b05"
+  "appid": "wxd516cface3568eff"
 }

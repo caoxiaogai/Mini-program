@@ -79,16 +79,27 @@ Page({
   onLoad(options: Record<string, string | undefined>) {
     const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
 
-    getAnalysisOverview().then((analysisData) => this.setData({
-      analysisData,
+    this.setData({
       activeAnalysisTab: analysisTabs[analysisTabIndex].id,
       activeAnalysisTabIndex: analysisTabIndex,
       analysisTabOffset: analysisTabIndex * 100,
-      visibleAnalysisUsers: analysisData.audienceUsers,
-      hasAnalysisCards: analysisData.cards.length > 0,
-      hasAnalysisUsers: analysisData.audienceUsers.length > 0,
-      visibleAnalysisReadTrend: analysisData.totalData.readTrends.week,
-    }))
+    })
+
+    this.loadAnalysis(this.data.activePeriod)
+  },
+  loadAnalysis(period: AnalysisPeriodId) {
+    getAnalysisOverview(period).then((analysisData) => {
+      const activeIntent = analysisIntentTabs[this.data.analysisIntentIndex]?.id ?? 'all'
+      const visibleAnalysisUsers = getVisibleAnalysisUsers(analysisData.audienceUsers, activeIntent)
+
+      this.setData({
+        analysisData,
+        visibleAnalysisUsers,
+        hasAnalysisCards: analysisData.cards.length > 0,
+        hasAnalysisUsers: visibleAnalysisUsers.length > 0,
+        visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange],
+      })
+    })
   },
   onAnalysisTabTap(event: WechatMiniprogram.TouchEvent) {
     this.setAnalysisTab(Number(event.currentTarget.dataset.index))
@@ -164,6 +175,8 @@ Page({
       activePeriod: periodId,
       activePeriodOffset: periodIndex * 68,
     })
+
+    this.loadAnalysis(periodId)
   },
   onCardTap(event: WechatMiniprogram.TouchEvent) {
     const cardId = event.currentTarget.dataset.id as string

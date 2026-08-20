@@ -201,6 +201,7 @@ miniprogram/
 | 实现素材页面与发布入口视觉 | done | Figma `173:12468` 素材双列卡片、筛选交互、本地资源、首页素材 tab 跳转与顶部滚动透明度已实现 |
 | 实现素材发布页面 | done | Figma `208:13581` 发布页、最多 9 张图片、无限制文案输入、草稿/发表占位交互及成功弹窗已实现 |
 | 实现素材详情分享页 | done | Figma `229:14271` 作品详情页、素材卡片按 id 跳转、轮播图片、描述文案、底部分享按钮与 typed service/mock 已实现 |
+| 接入后端真实接口 | done | 统一 `services/request.ts` 请求层 + 微信登录；首页/分析/通知/素材全部改为后端数据，mock 已删除；排行榜因后端无接口保留空态占位 |
 | 首页像素级与真机适配验收 | in_progress | 开发者工具已打开；当前环境无法截取 GUI 画面，需人工核对 Figma |
 | 其他页面视觉与真机适配验收 | pending | 后续页面实现后执行 |
 
@@ -227,6 +228,22 @@ miniprogram/
 - 不在文档中记录密钥、AppSecret、用户隐私数据或生产接口凭证。
 
 ## 最近变更
+
+### 2026-08-20：接入 aisales 后端真实接口，删除全部 mock 数据
+
+- 后端：`D:\IdeaProjects\aisales`（Spring Boot，`http://localhost:8080/api`）。统一响应 `Result{code,message,data}`，成功码 200；登录为 `POST /wechat/login?code=`（wx.login code 换 `userId`），后续请求携带 `X-User-Id` / `X-Openid` 请求头（后端演示级认证，无 JWT）。
+- 新增 `services/request.ts` 统一请求层：基址集中配置、15s 超时、登录态复用与失败重试、`Result` 解包、加载中提示（引用计数）、错误归一化为稳定用户文案（网络异常 / 请求失败），并提供 `uploadFile` 与固定并发任务队列。真机预览需将 `API_BASE_URL` 改为电脑局域网 IP，开发者工具需勾选「不校验合法域名」。
+- 新增 `types/api.ts`（后端 VO/Entity 响应类型，Long ID 为字符串）和 `utils/format.ts`（千分位、后端日期时间解析与展示格式、custom 时间范围参数）。
+- 各 service 映射（页面与 ViewModel 均未改动）：
+  - 首页：`/analysis/dashboard` + `/analysis/customer/list` + `/analysis/content/list`（today）组合；通知角标取今日意向客户数（后端无未读通知概念）。
+  - 分析页：dashboard / content list / customer list / intent list 并行；「观看作品数」由各内容详情受众列表聚合（后端列表无该字段）；阅读趋势图由按日 dashboard 聚合（后端无趋势接口，30 天数据带 60s 缓存）；周期筛选「日/周/月」映射 today/week/month，「总」受后端 custom 上限限制取最近 62 天（标记待确认）；点击周期后按所选范围重新加载。
+  - 分析详情 / 用户详情：`/analysis/content/detail`、`/analysis/customer/history` + `/material/mine` 补封面；观看历史无单条转发数，记录 `shareCount` 固定 0。
+  - 通知页：`/analysis/intent/list` 按日期分组映射为通知卡片（每客户一条，转发/阅读按 `hasForwarded` 区分）。
+  - 素材：`/material/mine` 列表（`publishStatus=0` 为草稿，TABLE 类型暂归入 PDF 筛选）、`/material/{id}` 详情/草稿（多图 `fileUrl` 为 JSON 数组）；发表 = 上传图片 `/material/upload-file` → `POST /material` → `POST /material/{id}/share`；存草稿同前两步；编辑草稿仅改文案时走 `PUT /material/{id}`，改图片时新建素材（后端无更新图片与删除素材接口，旧草稿会保留）。
+  - 排行榜：后端无对应接口，service 返回空榜单并保留 `TODO(API)` 占位，页面展示既有空状态。
+- `app.ts` 启动时执行真实登录；首页底部导航角标初始值由写死的 2 改为 0，由接口数据驱动。删除 `miniprogram/mocks/` 全部文件与目录。
+- 已知数据口径限制（映射自后端现有字段，如需精确值待后端扩展）：客户级转发数仅有 0/1 标记；首页「新增用户」实际为今日观看客户数（去重）。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（75 tests passed，已同步移除 mock 相关断言并新增请求层回归）；`npx tsc --noEmit` 中本次新增/修改文件无错误（仅存留 3 处原有页面的 `PageScrollOption` 类型名与 typings 自带库的历史告警）；后端连通性实测 `GET /api/analysis/dashboard` 返回 `code:200`。UI 文件（WXML/Less/JSON）零改动。
 
 ### 2026-08-20：区分素材类型图标并支持草稿编辑
 
@@ -641,6 +658,9 @@ miniprogram/
 - 设计稿基准设备尺寸和适配目标。
 - 是否需要展示加载、空数据、错误等完整状态。
 - 页面间哪些交互仅做视觉效果，哪些需要可点击跳转。
-- 后端是否已有 API 文档或字段定义。
 - 访问者身份识别、授权提示、匿名访问和数据留存的后端与合规方案。
 - 高、中、低意向规则发生重叠时的优先级和最终统计口径。
+- 排行榜后端接口（当前 aisales 未提供销售排行榜数据，页面暂为空态）。
+- 分析页「总」时间范围口径：后端 custom 查询上限 62 天，暂按最近 62 天，需后端确认是否提供全量范围。
+- 后端待补能力：按日阅读趋势接口（当前由前端按日聚合 dashboard）、素材图片更新与素材删除接口（编辑草稿改图会产生新素材）、客户级转发次数（当前仅 0/1 标记）、未读通知/红点口径。
+- 生产环境接口基址与合法域名配置（当前为本地 `http://localhost:8080/api`）。
