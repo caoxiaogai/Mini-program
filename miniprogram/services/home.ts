@@ -1,7 +1,47 @@
-import { homeOverviewMock } from '../mocks/home'
+import type { ApiContentListItem, ApiCustomerListItem, ApiDashboard } from '../types/api'
 import type { HomeOverviewViewModel } from '../types/home'
+import { request, resolveMediaUrl } from './request'
 
-// TODO(API): 接入首页摘要真实接口
+const HOME_VISITOR_PREVIEW_LIMIT = 5
+
+/**
+ * 首页摘要。后端无单独首页接口，由分析域「今日」数据组合：
+ * - 新增用户：今日观看客户数（去重），高意向数取今日高意向客户数
+ * - 阅读 / 转发：今日阅读、转发总次数，转发榜首内容作为高亮文案
+ * - 通知角标：今日产生意向行为的客户数（后端暂无未读通知概念）
+ */
 export function getHomeOverview(): Promise<HomeOverviewViewModel> {
-  return Promise.resolve(homeOverviewMock)
+  return Promise.all([
+    request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: { timeRange: 'today' } }),
+    request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: { timeRange: 'today' } }),
+    request<ApiContentListItem[]>({
+      method: 'GET',
+      path: '/analysis/content/list',
+      query: { timeRange: 'today', orderBy: 'forward_count' },
+    }),
+  ]).then(([dashboard, customers, contents]) => {
+    const topForwarded = contents.find((item) => (item.forwardCount ?? 0) > 0)
+    const intentCustomerCount =
+      (dashboard.highIntentCount ?? 0) + (dashboard.mediumIntentCount ?? 0) + (dashboard.lowIntentCount ?? 0)
+
+    return {
+      newVisitors: {
+        total: dashboard.totalViewerCount ?? 0,
+        highIntentCount: dashboard.highIntentCount ?? 0,
+        visitors: customers.slice(0, HOME_VISITOR_PREVIEW_LIMIT).map((customer) => ({
+          id: String(customer.customerId),
+          avatarUrl: resolveMediaUrl(customer.avatar),
+        })),
+      },
+      reading: {
+        total: dashboard.totalViewCount ?? 0,
+      },
+      sharing: {
+        total: dashboard.totalForwardCount ?? 0,
+        highlightedContentTitle: topForwarded?.title ?? '',
+        highlightedContentShareCount: topForwarded?.forwardCount ?? 0,
+      },
+      unreadNotificationCount: intentCustomerCount,
+    }
+  })
 }

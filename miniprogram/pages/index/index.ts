@@ -4,7 +4,7 @@ import { getHomeGreeting } from '../../utils/greeting'
 import { buildHomeSummaryViewModel } from '../../utils/home'
 
 const tabItems = [
-  { id: 'notifications', label: '通知', iconPath: '/assets/home/tab-notification.svg', badgeCount: 2 },
+  { id: 'notifications', label: '通知', iconPath: '/assets/home/tab-notification.svg', badgeCount: 0 },
   { id: 'analysis', label: '分析', iconPath: '/assets/home/tab-analysis.svg' },
   { id: 'materials', label: '素材', iconPath: '/assets/home/tab-material.svg' },
   { id: 'ranking', label: '排名', iconPath: '/assets/home/tab-ranking.svg' },

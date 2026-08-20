@@ -36,3 +36,12 @@ export interface MaterialDraftEditViewModel {
   images: PublishImageViewModel[]
   copy: string
 }
+
+export interface MaterialSubmitInput {
+  /** 正在编辑的既有草稿素材 ID；新建时为 null */
+  draftId: string | null
+  /** 进入编辑时草稿的原始图片路径，用于判断图片是否被改动 */
+  originalImagePaths: string[]
+  images: PublishImageViewModel[]
+  copy: string
+}

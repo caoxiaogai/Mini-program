@@ -1,4 +1,6 @@
 // app.ts
+import { ensureLogin } from './services/request'
+
 App<IAppOption>({
   globalData: {},
   onLaunch() {
@@ -7,12 +9,7 @@ App<IAppOption>({
     logs.unshift(Date.now())
     wx.setStorageSync('logs', logs)
 
-    // 登录
-    wx.login({
-      success: res => {
-        console.log(res.code)
-        // 发送 res.code 到后台换取 openId, sessionKey, unionId
-      },
-    })
+    // 登录：wx.login code 换取 userId，登录态由统一请求层携带；失败时页面请求会自动重试登录
+    ensureLogin().catch(() => undefined)
   },
 })
