@@ -48,6 +48,8 @@ test('data access goes through the unified request layer', () => {
   const requestLayer = read('miniprogram/services/request.ts')
 
   assert.match(requestLayer, /wx\.request\(/)
+  assert.match(requestLayer, /DEV_LAN_ORIGIN/)
+  assert.match(requestLayer, /platform === 'devtools'/)
   assert.match(requestLayer, /'X-User-Id'/)
   assert.match(requestLayer, /\/wechat\/login/)
   assert.match(requestLayer, /export function request</)

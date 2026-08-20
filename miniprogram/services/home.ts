@@ -1,6 +1,6 @@
 import type { ApiContentListItem, ApiCustomerListItem, ApiDashboard } from '../types/api'
 import type { HomeOverviewViewModel } from '../types/home'
-import { request } from './request'
+import { request, resolveMediaUrl } from './request'
 
 const HOME_VISITOR_PREVIEW_LIMIT = 5
 
@@ -30,7 +30,7 @@ export function getHomeOverview(): Promise<HomeOverviewViewModel> {
         highIntentCount: dashboard.highIntentCount ?? 0,
         visitors: customers.slice(0, HOME_VISITOR_PREVIEW_LIMIT).map((customer) => ({
           id: String(customer.customerId),
-          avatarUrl: customer.avatar ?? '',
+          avatarUrl: resolveMediaUrl(customer.avatar),
         })),
       },
       reading: {

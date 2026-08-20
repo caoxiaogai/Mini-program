@@ -9,7 +9,7 @@ import type {
   PublishImageViewModel,
 } from '../types/materials'
 import { formatDateKey } from '../utils/format'
-import { request, runRequestQueue, uploadFile } from './request'
+import { request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
 
 const materialsFilters: MaterialsFilterViewModel[] = [
   { id: 'all', label: '全部' },
@@ -38,18 +38,18 @@ function parseImageUrls(fileUrl: string | null): string[] {
     try {
       const parsed = JSON.parse(fileUrl) as unknown
       if (Array.isArray(parsed)) {
-        return parsed.filter((item): item is string => typeof item === 'string')
+        return parsed.filter((item): item is string => typeof item === 'string').map(resolveMediaUrl)
       }
     } catch (error) {
       // 非 JSON 数组时按单文件 URL 处理
     }
   }
 
-  return [fileUrl]
+  return [fileUrl].map(resolveMediaUrl)
 }
 
 function resolveThumbnail(material: ApiMaterial): string {
-  if (material.coverUrl) return material.coverUrl
+  if (material.coverUrl) return resolveMediaUrl(material.coverUrl)
   return material.fileType === 'IMAGE' ? parseImageUrls(material.fileUrl)[0] ?? '' : ''
 }
 

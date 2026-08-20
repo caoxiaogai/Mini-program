@@ -15,7 +15,7 @@
     "useApiHook": true,
     "checkInvalidKey": true,
     "useStaticServer": false,
-    "useLanDebug": false,
+    "useLanDebug": true,
     "ignoreDevUnusedFiles": true
   },
   "condition": {}

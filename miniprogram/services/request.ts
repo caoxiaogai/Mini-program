@@ -2,15 +2,45 @@
 // 页面不直接使用本文件；所有数据访问经由 services/ 下的业务 service。
 
 import type { ApiLoginData, ApiResponse } from '../types/api'
+import { DEV_LAN_ORIGIN } from '../config/dev'
 
-// 后端 aisales 项目本地开发基址（端口 8080，context-path /api）。
-// 微信开发者工具需勾选「不校验合法域名」；真机预览时替换为电脑局域网 IP。
-const API_BASE_URL = 'http://localhost:8080/api'
+const DEVTOOLS_API_BASE_URL = 'http://localhost:8080/api'
+
+/** 开发者工具模拟器用 localhost；真机/预览用手机可访问的局域网 IP */
+function resolveApiBaseUrl(): string {
+  try {
+    if (wx.getSystemInfoSync().platform === 'devtools') {
+      return DEVTOOLS_API_BASE_URL
+    }
+  } catch {
+    // 非小程序环境（如单元测试）回退局域网地址
+  }
+  return `${DEV_LAN_ORIGIN}/api`
+}
+
+const API_BASE_URL = resolveApiBaseUrl()
 const REQUEST_TIMEOUT_MS = 15000
 const UPLOAD_TIMEOUT_MS = 60000
 
 const STORAGE_KEY_USER_ID = 'auth.userId'
 const STORAGE_KEY_OPENID = 'auth.openid'
+
+/** 当前 API 基址的 origin（不含 /api），例如 http://localhost:8080 */
+export function getApiOrigin(): string {
+  const schemeEnd = API_BASE_URL.indexOf('://')
+  const pathStart = API_BASE_URL.indexOf('/', schemeEnd + 3)
+  return pathStart === -1 ? API_BASE_URL : API_BASE_URL.slice(0, pathStart)
+}
+
+/**
+ * 将后端返回的文件 URL 主机对齐到当前 API 基址。
+ * 后端 minio.public-base-url 可能固定为局域网 IP；开发者工具代理 LAN 图片时会 502，模拟器下会 rewrite 为 localhost。
+ */
+export function resolveMediaUrl(url: string | null | undefined): string {
+  if (!url) return ''
+  if (!/^https?:\/\//.test(url)) return url
+  return url.replace(/^https?:\/\/[^/]+/, getApiOrigin())
+}
 
 /** 归一化后的接口错误；code 为后端业务码，网络层失败时为 -1 */
 export class ApiError extends Error {

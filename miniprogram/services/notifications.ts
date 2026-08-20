@@ -6,7 +6,7 @@ import type {
   NotificationsViewModel,
 } from '../types/notifications'
 import { buildCustomRangeQuery, formatDateKey, formatMonthDay, formatPaddedMonthDay } from '../utils/format'
-import { request } from './request'
+import { request, resolveMediaUrl } from './request'
 
 /** 后端查询时间范围上限（custom 最长 62 天） */
 const NOTIFICATION_RANGE_DAYS = 62
@@ -41,7 +41,9 @@ export function getNotifications(): Promise<NotificationsViewModel> {
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: { ...rangeQuery } }),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
   ]).then(([intentCustomers, materials]) => {
-    const coverByMaterial = new Map(materials.map((material) => [String(material.id), material.coverUrl ?? '']))
+    const coverByMaterial = new Map(
+      materials.map((material) => [String(material.id), resolveMediaUrl(material.coverUrl)]),
+    )
     const cardsByDate = new Map<string, NotificationCardViewModel[]>()
 
     intentCustomers.forEach((item) => {
@@ -60,7 +62,7 @@ export function getNotifications(): Promise<NotificationsViewModel> {
         actionLabel: isForward ? '“转发”了你的作品' : '“阅读”了你的作品',
         actionDate: formatMonthDay(item.lastViewTime),
         actionIconPath: isForward ? '/assets/notifications/action-forward.svg' : '/assets/notifications/action-reading.svg',
-        avatarUrl: item.avatar ?? '',
+        avatarUrl: resolveMediaUrl(item.avatar),
         thumbnailUrl: item.materialId ? coverByMaterial.get(String(item.materialId)) ?? '' : '',
         recommendation: recommendations[intent],
       }

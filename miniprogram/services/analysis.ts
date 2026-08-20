@@ -24,7 +24,7 @@ import {
   formatMonthDay,
   formatSeconds,
 } from '../utils/format'
-import { request, runRequestQueue } from './request'
+import { request, resolveMediaUrl, runRequestQueue } from './request'
 
 /** 分析页时间筛选：日/周/月对应后端 today/week/month；「总」受后端 custom 上限约束取最近 62 天（待后端确认全量口径） */
 export type AnalysisTimeRange = 'day' | 'week' | 'month' | 'total'
@@ -77,7 +77,7 @@ function resolveIntentLevel(
 function mapContentCard(item: ApiContentListItem): AnalysisCard {
   return {
     id: String(item.materialId),
-    thumbnailUrl: item.coverUrl ?? '',
+    thumbnailUrl: resolveMediaUrl(item.coverUrl),
     title: item.title ?? '',
     date: formatDateKey(item.createTime),
     metrics: [
@@ -211,7 +211,7 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
 
           return {
             id: customerId,
-            avatarUrl: customer.avatar ?? '',
+            avatarUrl: resolveMediaUrl(customer.avatar),
             name: customer.nickname ?? '微信用户',
             level,
             levelLabel: intentLevelLabels[level],
@@ -260,7 +260,7 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
     return {
       card: {
         id: String(detail.materialId),
-        thumbnailUrl: material?.coverUrl ?? '',
+        thumbnailUrl: resolveMediaUrl(material?.coverUrl),
         title: detail.title ?? '',
         date: formatDateKey(material?.createTime),
         metrics: [
@@ -277,7 +277,7 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
 
         return {
           id: customerId,
-          avatarUrl: audience.avatar ?? '',
+          avatarUrl: resolveMediaUrl(audience.avatar),
           name: audience.nickname ?? '微信用户',
           level,
           levelLabel: intentLevelLabels[level],
@@ -310,7 +310,9 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
     if (!customer && !intent) return null
 
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
-    const coverByMaterial = new Map(materials.map((material) => [String(material.id), material.coverUrl ?? '']))
+    const coverByMaterial = new Map(
+      materials.map((material) => [String(material.id), resolveMediaUrl(material.coverUrl)]),
+    )
     const level = resolveIntentLevel(
       intentByCustomer,
       userId,
@@ -321,7 +323,7 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
     return {
       profile: {
         id: userId,
-        avatarUrl: customer?.avatar ?? intent?.avatar ?? '',
+        avatarUrl: resolveMediaUrl(customer?.avatar ?? intent?.avatar),
         name: customer?.nickname ?? intent?.nickname ?? '微信用户',
         level,
         levelLabel: intentLevelLabels[level],
