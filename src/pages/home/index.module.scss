@@ -2,144 +2,120 @@
 
 .homePage {
   min-height: 100vh;
-  background: $color-gradient-header;
-}
-
-.header {
-  background: $color-gradient-primary;
-  padding: $spacing-xl $page-padding;
-  padding-top: 48rpx;
-}
-
-.greeting {
-  font-size: $font-size-xxl;
-  font-weight: $font-weight-semibold;
-  color: $color-text-white;
-  margin-bottom: $spacing-xs;
-}
-
-.subGreeting {
-  font-size: $font-size-sm;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.statsGrid {
-  display: flex;
-  gap: $spacing-sm;
-  margin: -40rpx $page-padding 0;
-  position: relative;
-  z-index: 1;
-}
-
-.statsCard {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  background-color: $color-bg-card;
-  border-radius: $radius-md;
-  padding: $spacing-md $spacing-sm;
-  flex: 1;
-  box-shadow: $shadow-card;
+  background: linear-gradient(191deg, #edf4fb 18.84%, #e1ebf7 99.4%);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-.statsValue {
-  font-size: $font-size-xl;
-  font-weight: $font-weight-semibold;
-  color: $color-text-primary;
-}
-
-.statsLabel {
-  font-size: $font-size-xs;
-  color: $color-text-tertiary;
-  margin-top: 4rpx;
-}
-
-.section {
-  margin: $spacing-lg $page-padding 0;
-}
-
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: $spacing-md;
-}
-
-.sectionTitle {
-  font-size: $font-size-lg;
-  font-weight: $font-weight-semibold;
-  color: $color-text-primary;
-}
-
-.sectionMore {
-  font-size: $font-size-sm;
-  color: $color-text-tertiary;
-}
-
-.quickActions {
-  display: flex;
-  gap: $spacing-md;
-  flex-wrap: wrap;
-}
-
-.actionCard {
+.contentArea {
+  margin-top: auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  background-color: $color-bg-card;
-  border-radius: $radius-md;
-  padding: $spacing-md;
-  width: 160rpx;
-  box-shadow: $shadow-card;
-  transition: all $transition-base;
-
-  &:active {
-    opacity: 0.9;
-    transform: scale(0.98);
-  }
+  padding: 0 38rpx 76rpx;
 }
 
-.actionIcon {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: $radius-md;
+.hero {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 25rpx;
+  margin-bottom: 55rpx;
+}
+
+.avatarWrap {
+  width: 153rpx;
+  height: 137rpx;
+}
+
+.avatar {
+  width: 153rpx;
+  height: 137rpx;
+  display: block;
+}
+
+.greetingText {
+  font-size: 38rpx;
+  font-weight: 400;
+  color: #000000;
+  line-height: 1.4;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 19rpx;
+}
+
+.card {
+  background: #f5fafe;
+  border: 2rpx solid #ffffff;
+  border-radius: 23rpx;
+  min-height: 122rpx;
+  padding: 10rpx 19rpx;
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: row;
   align-items: center;
+  box-sizing: border-box;
+}
+
+.cardWide {
+  gap: 46rpx;
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
-  font-size: 36rpx;
-  margin-bottom: $spacing-xs;
+  flex-shrink: 0;
 }
 
-.actionIconBlue {
-  background-color: #e8f3ff;
-}
-
-.actionIconGreen {
-  background-color: #e8ffea;
-}
-
-.actionIconOrange {
-  background-color: #fff3e8;
-}
-
-.actionIconPurple {
-  background-color: #f3e8ff;
-}
-
-.actionText {
-  font-size: $font-size-sm;
-  color: $color-text-secondary;
-}
-
-.materialList {
+.cardTitleRow {
   display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  white-space: nowrap;
 }
 
-.emptyTip {
-  text-align: center;
-  padding: $spacing-xl 0;
-  font-size: $font-size-sm;
-  color: $color-text-tertiary;
+.cardTitle {
+  font-size: 31rpx;
+  font-weight: 500;
+  color: #000000;
+  line-height: 42rpx;
+}
+
+.cardNumber {
+  font-size: 31rpx;
+  font-weight: 500;
+  color: #00a5b4;
+  line-height: 42rpx;
+}
+
+.cardAction {
+  font-size: 27rpx;
+  color: #8a8e94;
+  line-height: 42rpx;
+  white-space: nowrap;
+}
+
+.avatarStack {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.stackAvatar {
+  width: 53rpx;
+  height: 53rpx;
+  border-radius: 50%;
+  margin-left: -23rpx;
+
+  &:first-child {
+    margin-left: 0;
+  }
 }

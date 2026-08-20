@@ -1,129 +1,139 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, Image } from '@tarojs/components';
+import './page.scss';
 import styles from './index.module.scss';
-import StatCard from '../../components/StatCard';
-import MaterialCard from '../../components/MaterialCard';
 import { request } from '../../services/api';
 import { useUserStore } from '../../store/user';
-import type { DashboardVO, Material } from '../../types';
+import LoginModal from '../../components/LoginModal';
+import BottomNav from '../../components/BottomNav';
+import { useHideNativeTabBar } from '../../hooks/useHideNativeTabBar';
+import { goAnalysis } from '../../utils/nav';
+import type { DashboardVO } from '../../types';
+
+const FALLBACK_AVATARS = [
+  require('../../assets/home/avatar-1.png'),
+  require('../../assets/home/avatar-2.png'),
+  require('../../assets/home/avatar-3.png'),
+  require('../../assets/home/avatar-4.png'),
+  require('../../assets/home/avatar-5.png'),
+];
 
 const HomePage: React.FC = () => {
   const { isLoggedIn } = useUserStore();
   const [dashboard, setDashboard] = useState<DashboardVO | null>(null);
-  const [materials, setMaterials] = useState<Material[]>([]);
+
+  useHideNativeTabBar();
 
   useEffect(() => {
     if (isLoggedIn) {
-      loadDashboard();
-      loadMaterials();
+      loadData();
     } else {
       setDashboard(null);
-      setMaterials([]);
     }
   }, [isLoggedIn]);
 
-  const loadDashboard = async () => {
+  const loadData = async () => {
     try {
-      const data = await request<DashboardVO>('/analysis/dashboard');
-      setDashboard(data);
+      const dashboardData = await request<DashboardVO>('/analysis/dashboard', { data: { timeRange: 'today' } });
+      setDashboard(dashboardData);
     } catch (e) {
-      console.error('[Home] loadDashboard failed:', e);
+      console.error('[Home] loadData failed:', e);
     }
   };
 
-  const loadMaterials = async () => {
-    try {
-      const data = await request<Material[]>('/material/mine');
-      setMaterials(data || []);
-    } catch (e) {
-      console.error('[Home] loadMaterials failed:', e);
-    }
-  };
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return '上午好';
+    if (hour < 18) return '下午好';
+    return '晚上好';
+  }, []);
 
-  const handleAction = (path: string) => {
-    Taro.navigateTo({ url: path });
-  };
+  const newUserCount = dashboard?.newCustomerCount ?? 0;
+  const highIntentNewCount = dashboard?.highIntentNewCount ?? 0;
+  const viewCount = dashboard?.totalViewCount ?? 0;
+  const forwardCount = dashboard?.totalForwardCount ?? 0;
+  const topForwardTitle = dashboard?.topForwardMaterialTitle;
+  const topForwardCount = dashboard?.topForwardMaterialCount ?? 0;
 
-  const handleMaterialClick = (material: Material) => {
-    Taro.navigateTo({ url: `/pages/materialDetail/index?id=${material.id}` });
-  };
+  const avatarUrls = useMemo(() => {
+    const fromApi = (dashboard?.recentCustomers ?? [])
+      .map((item) => item.avatar)
+      .filter(Boolean);
+    if (fromApi.length > 0) return fromApi.slice(0, 5);
+    return FALLBACK_AVATARS;
+  }, [dashboard?.recentCustomers]);
+
+  const forwardSubtitle = topForwardTitle && topForwardCount > 0
+    ? `“${topForwardTitle.length > 8 ? `${topForwardTitle.slice(0, 8)}...` : topForwardTitle}”被转发了 ${topForwardCount} 次`
+    : '了解更多';
 
   return (
     <View className={styles.homePage}>
-      <View className={styles.header}>
-        <Text className={styles.greeting}>你好，销售精英</Text>
-        <Text className={styles.subGreeting}>AI赋能，让销售更高效</Text>
+      <LoginModal />
+      <View className={styles.contentArea}>
+        <View className={styles.hero}>
+          <View className={styles.avatarWrap}>
+            <Image
+              className={styles.avatar}
+              src={require('../../assets/robot-avatar.png')}
+              mode="aspectFit"
+            />
+          </View>
+          <Text className={styles.greetingText}>{greeting}，有什么可以帮助你的吗</Text>
+        </View>
+
+        <View className={styles.cards}>
+          <View className={`${styles.card} ${styles.cardWide}`} onClick={goAnalysis}>
+            <View className={styles.cardText}>
+              <View className={styles.cardTitleRow}>
+                <Text className={styles.cardTitle}>今日有 </Text>
+                <Text className={styles.cardNumber}>{newUserCount}</Text>
+                <Text className={styles.cardTitle}> 个新增用户</Text>
+              </View>
+              <Text className={styles.cardAction}>
+                其中有 {highIntentNewCount} 位高意向用户
+              </Text>
+            </View>
+            {avatarUrls.length > 0 ? (
+              <View className={styles.avatarStack}>
+                {avatarUrls.map((src, index) => (
+                  <Image
+                    key={index}
+                    className={styles.stackAvatar}
+                    src={src}
+                    mode="aspectFill"
+                    style={{ zIndex: avatarUrls.length - index }}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
+
+          <View className={`${styles.card} ${styles.cardRead}`} onClick={goAnalysis}>
+            <View className={styles.cardText}>
+              <View className={styles.cardTitleRow}>
+                <Text className={styles.cardTitle}>今日累计阅读数 </Text>
+                <Text className={styles.cardNumber}>{viewCount}</Text>
+                <Text className={styles.cardTitle}> 次</Text>
+              </View>
+              <Text className={styles.cardAction}>查看详细</Text>
+            </View>
+          </View>
+
+          <View className={`${styles.card} ${styles.cardForward}`} onClick={goAnalysis}>
+            <View className={styles.cardText}>
+              <View className={styles.cardTitleRow}>
+                <Text className={styles.cardTitle}>今日累计转发次数 </Text>
+                <Text className={styles.cardNumber}>{forwardCount}</Text>
+                <Text className={styles.cardTitle}> 次</Text>
+              </View>
+              <Text className={styles.cardAction}>{forwardSubtitle}</Text>
+            </View>
+          </View>
+        </View>
       </View>
 
-      <View className={styles.statsGrid}>
-        <View className={styles.statsCard}>
-          <Text className={styles.statsValue}>{dashboard?.totalPublishCount || 0}</Text>
-          <Text className={styles.statsLabel}>已发布</Text>
-        </View>
-        <View className={styles.statsCard}>
-          <Text className={styles.statsValue}>{dashboard?.totalViewCount || 0}</Text>
-          <Text className={styles.statsLabel}>总浏览</Text>
-        </View>
-        <View className={styles.statsCard}>
-          <Text className={styles.statsValue}>{dashboard?.totalForwardCount || 0}</Text>
-          <Text className={styles.statsLabel}>转发数</Text>
-        </View>
-      </View>
-
-      <View className={styles.section}>
-        <View className={styles.sectionHeader}>
-          <Text className={styles.sectionTitle}>快捷操作</Text>
-        </View>
-        <View className={styles.quickActions}>
-          <View className={styles.actionCard} onClick={() => handleAction('/pages/aiGenerate/index')}>
-            <View className={`${styles.actionIcon} ${styles.actionIconBlue}`}>
-              <Text>AI</Text>
-            </View>
-            <Text className={styles.actionText}>AI文案</Text>
-          </View>
-          <View className={styles.actionCard} onClick={() => Taro.switchTab({ url: '/pages/material/index' })}>
-            <View className={`${styles.actionIcon} ${styles.actionIconGreen}`}>
-              <Text>+</Text>
-            </View>
-            <Text className={styles.actionText}>上传素材</Text>
-          </View>
-          <View className={styles.actionCard} onClick={() => Taro.switchTab({ url: '/pages/analysis/index' })}>
-            <View className={`${styles.actionIcon} ${styles.actionIconOrange}`}>
-              <Text>📊</Text>
-            </View>
-            <Text className={styles.actionText}>数据分析</Text>
-          </View>
-          <View className={styles.actionCard} onClick={() => Taro.switchTab({ url: '/pages/mine/index' })}>
-            <View className={`${styles.actionIcon} ${styles.actionIconPurple}`}>
-              <Text>👤</Text>
-            </View>
-            <Text className={styles.actionText}>个人中心</Text>
-          </View>
-        </View>
-      </View>
-
-      <View className={styles.section}>
-        <View className={styles.sectionHeader}>
-          <Text className={styles.sectionTitle}>最近素材</Text>
-          <Text className={styles.sectionMore} onClick={() => Taro.switchTab({ url: '/pages/material/index' })}>查看全部</Text>
-        </View>
-        {!isLoggedIn ? (
-          <View className={styles.emptyTip}>
-            <Text>请先登录</Text>
-          </View>
-        ) : materials.length > 0 ? (
-          <View className={styles.materialList}>
-            {materials.slice(0, 3).map((item) => (
-              <MaterialCard key={item.id} material={item} onClick={handleMaterialClick} />
-            ))}
-          </View>
-        ) : (
-          <View className={styles.emptyTip}>
-            <Text>暂无素材，快去上传吧</Text>
-          </View>
-        )}
-      </View>
+      <BottomNav />
     </View>
   );
 };

@@ -1,179 +1,236 @@
 @use '@/styles/variables.scss' as *;
 
-.materialPage {
-  min-height: 100vh;
-  background-color: $color-bg-page;
-  padding-bottom: 120rpx;
+.page {
+  height: 100vh;
+  background: #eef3fb;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.header {
+.filterBar {
+  flex-shrink: 0;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: $spacing-lg $page-padding;
-  background-color: $color-bg-card;
+  padding: 19rpx 38rpx 23rpx;
+  background: #eef3fb;
+  box-sizing: border-box;
 }
 
-.title {
-  font-size: $font-size-xl;
-  font-weight: $font-weight-semibold;
-  color: $color-text-primary;
-}
-
-.uploadBtn {
-  @include button-reset;
-  background: $color-gradient-primary;
-  color: $color-text-white;
-  font-size: $font-size-sm;
-  height: $button-height-sm;
-  padding: 0 $spacing-lg;
-  border-radius: $radius-button;
-
-  &:active {
-    opacity: 0.9;
-  }
-}
-
-.headerBtns {
+.filterTab {
+  height: 61rpx;
+  padding: 0 31rpx;
+  border-radius: 10rpx;
+  border: 2rpx solid #f7f7f7;
+  background: linear-gradient(180deg, #f0f5fa 0%, #f7f5f5 100%);
+  box-shadow: 0 0 38rpx rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
-.tabs {
+.filterTabActive {
+  border-color: #dceef2;
+  background: linear-gradient(180deg, #e4f9fc 0%, #fefeff 100%);
+}
+
+.filterText {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #8a8e94;
+  line-height: 1;
+}
+
+.filterTextActive {
+  color: #0ec8d9;
+}
+
+.listScroll {
+  flex: 1;
+  height: 0;
+  box-sizing: border-box;
+}
+
+.grid {
   display: flex;
-  background-color: $color-bg-card;
-  padding: 0 $page-padding $spacing-md;
-  gap: $spacing-md;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 19rpx;
+  padding: 0 38rpx;
+  box-sizing: border-box;
 }
 
-.tab {
-  font-size: $font-size-md;
-  color: $color-text-tertiary;
-  padding: $spacing-xs 0;
+.card {
+  width: calc((100% - 19rpx) / 2);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.coverWrap {
   position: relative;
+  width: 100%;
+  height: 440rpx;
+  border-radius: 15rpx 15rpx 0 0;
+  overflow: hidden;
+  background: #e6eaf0;
 }
 
-.tabActive {
-  color: $color-primary;
-  font-weight: $font-weight-semibold;
+.cover {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.coverPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e6eaf0;
+}
+
+.coverPlaceholderText {
+  font-size: 24rpx;
+  color: #8a8e94;
+}
+
+.draftTag {
+  position: absolute;
+  left: 19rpx;
+  top: 19rpx;
+  height: 38rpx;
+  padding: 0 19rpx;
+  border-radius: 111rpx;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.draftTagText {
+  font-size: 21rpx;
+  color: #000000;
+  line-height: 1;
+}
+
+.playIcon {
+  position: absolute;
+  right: 19rpx;
+  top: 19rpx;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  z-index: 2;
 
   &::after {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 48rpx;
-    height: 4rpx;
-    background-color: $color-primary;
-    border-radius: 2rpx;
+    left: 13rpx;
+    top: 10rpx;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 7rpx 0 7rpx 12rpx;
+    border-color: transparent transparent transparent #8a8e94;
   }
 }
 
-.materialList {
+.cardBody {
+  width: 100%;
+  padding: 15rpx 19rpx;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f5fa 100%);
+  border: 2rpx solid #ffffff;
+  border-top: none;
+  border-radius: 0 0 23rpx 23rpx;
+  box-shadow: 0 4rpx 6rpx rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
-  padding: $spacing-md $page-padding 0;
+  gap: 19rpx;
 }
 
-.emptyTip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 120rpx 0;
-  gap: $spacing-md;
+.cardTitle {
+  font-size: 27rpx;
+  color: #000000;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
-.emptyText {
-  font-size: $font-size-md;
-  color: $color-text-tertiary;
+.cardDate {
+  font-size: 27rpx;
+  color: #8a8e94;
+  line-height: 1.2;
 }
 
-.emptyBtn {
-  @include button-reset;
-  background: $color-gradient-primary;
-  color: $color-text-white;
-  font-size: $font-size-md;
-  height: $button-height-md;
-  padding: 0 $spacing-xl;
-  border-radius: $radius-button;
+.listBottomSpacer {
+  height: 180rpx;
 }
 
-.loading {
-  text-align: center;
-  padding: $spacing-lg 0;
-  font-size: $font-size-sm;
-  color: $color-text-tertiary;
-}
-
-/* 文案编辑弹窗 */
-.modalMask {
+.publishBar {
   position: fixed;
-  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  height: 153rpx;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: linear-gradient(
+    180deg,
+    rgba(225, 235, 247, 0) 0%,
+    rgba(213, 224, 236, 0.8) 47%,
+    #c8d3df 100%
+  );
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.publishBtn {
+  margin-top: 0;
+  height: 76rpx;
+  padding: 0 46rpx;
+  border-radius: 101rpx;
+  background: #0ec8d9;
+  box-shadow: 0 4rpx 19rpx rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  pointer-events: auto;
+}
+
+.publishBtnText {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.publishPlus {
+  font-size: 36rpx;
+  font-weight: 500;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.emptyTip {
+  padding: 120rpx 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-}
-
-.modalContent {
-  width: 600rpx;
-  background-color: $color-bg-card;
-  border-radius: $radius-lg;
-  padding: $spacing-xl;
-}
-
-.modalTitle {
-  display: block;
-  text-align: center;
-  font-size: 34rpx;
-  font-weight: 600;
-  color: $color-text-primary;
-  margin-bottom: $spacing-lg;
-}
-
-.copyTextarea {
-  width: 100%;
-  min-height: 200rpx;
-  border: 2rpx solid $color-divider;
-  border-radius: $radius-sm;
-  padding: $spacing-md;
-  font-size: $font-size-md;
-  box-sizing: border-box;
-  background-color: $color-bg-page;
-}
-
-.modalBtns {
-  display: flex;
-  gap: $spacing-md;
-  margin-top: $spacing-lg;
-}
-
-.modalSkipBtn {
-  flex: 1;
-  height: 88rpx;
-  line-height: 88rpx;
-  text-align: center;
-  border: 2rpx solid $color-divider;
-  border-radius: $radius-button;
-  font-size: $font-size-md;
-  color: $color-text-secondary;
-}
-
-.modalSaveBtn {
-  flex: 1;
-  height: 88rpx;
-  line-height: 88rpx;
-  text-align: center;
-  background: $color-gradient-primary;
-  color: #fff;
-  border-radius: $radius-button;
-  font-size: $font-size-md;
-  font-weight: 500;
+  font-size: 28rpx;
+  color: #8a8e94;
 }

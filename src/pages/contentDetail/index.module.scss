@@ -2,125 +2,181 @@
 
 .detailPage {
   min-height: 100vh;
-  background-color: $color-bg-page;
+  background-color: #F5FAFE;
+  padding: $spacing-md $page-padding;
 }
 
-.statsCard {
+// ========== 作品头部信息卡 ==========
+.headerCard {
   display: flex;
   background-color: $color-bg-card;
-  margin: $spacing-md $page-padding 0;
-  border-radius: $radius-md;
-  padding: $spacing-lg $spacing-md;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
   box-shadow: $shadow-card;
 }
 
-.statItem {
+.cover {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: $radius-sm;
+  flex-shrink: 0;
+  background-color: $color-bg-hover;
+}
+
+.headerInfo {
   flex: 1;
+  min-width: 0;
+  margin-left: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.headerTop {
+  flex: 1;
+}
+
+.title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  line-height: $line-height-tight;
+  @include text-ellipsis-multi(2);
+}
+
+.metricsRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: $spacing-sm;
+}
+
+.metricItem {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.statValue {
-  font-size: $font-size-xl;
-  font-weight: $font-weight-semibold;
-  color: $color-text-primary;
-}
-
-.statLabel {
-  font-size: $font-size-xs;
-  color: $color-text-tertiary;
-  margin-top: 4rpx;
-}
-
-.section {
-  margin: $spacing-md $page-padding 0;
-}
-
-.sectionTitle {
+.metricValue {
   font-size: $font-size-lg;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
-  margin-bottom: $spacing-md;
+  line-height: $line-height-tight;
 }
 
-.audienceList {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
+.metricLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: 2rpx;
+}
+
+// ========== 受众列表 ==========
+.section {
+  margin-top: $spacing-md;
+}
+
+.sectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+  padding-left: 4rpx;
+}
+
+.audienceCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  overflow: hidden;
 }
 
 .audienceItem {
   display: flex;
   align-items: center;
-  background-color: $color-bg-card;
-  border-radius: $radius-md;
   padding: $spacing-md;
-  box-shadow: $shadow-card;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
 .avatar {
   width: 80rpx;
   height: 80rpx;
   border-radius: $radius-round;
-  margin-right: $spacing-md;
   flex-shrink: 0;
+  background-color: $color-bg-hover;
 }
 
 .audienceInfo {
   flex: 1;
   min-width: 0;
+  margin-left: $spacing-sm;
+  display: flex;
+  align-items: center;
 }
 
-.audienceName {
+.nickname {
   font-size: $font-size-md;
   font-weight: $font-weight-medium;
   color: $color-text-primary;
   @include text-ellipsis;
+  max-width: 200rpx;
+  flex-shrink: 1;
+}
+
+.intentTag {
+  margin-left: $spacing-sm;
+  padding: 2rpx 12rpx;
+  border-radius: $radius-xl;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+
+.intentHigh {
+  background-color: $color-intent-high-bg;
+  color: $color-intent-high;
+}
+
+.intentMedium {
+  background-color: $color-intent-medium-bg;
+  color: $color-intent-medium;
+}
+
+.intentLow {
+  background-color: $color-intent-low-bg;
+  color: $color-intent-low;
 }
 
 .audienceStats {
   display: flex;
-  gap: $spacing-md;
-  margin-top: 4rpx;
-}
-
-.audienceStat {
-  font-size: $font-size-xs;
-  color: $color-text-tertiary;
-}
-
-.completedTag {
-  font-size: $font-size-xs;
-  padding: 4rpx $spacing-sm;
-  border-radius: $radius-xs;
-  background-color: #e8ffea;
-  color: $color-success;
+  gap: $spacing-lg;
   flex-shrink: 0;
-}
-
-.incompleteTag {
-  font-size: $font-size-xs;
-  padding: 4rpx $spacing-sm;
-  border-radius: $radius-xs;
-  background-color: $color-bg-hover;
-  color: $color-text-tertiary;
-  flex-shrink: 0;
-}
-
-.audienceRight {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
   margin-left: $spacing-sm;
-  flex-shrink: 0;
 }
 
-.arrow {
-  font-size: 36rpx;
-  color: $color-text-disabled;
+.statCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
+.statNum {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  line-height: $line-height-tight;
+}
+
+.statLabel {
+  font-size: 20rpx;
+  color: $color-text-tertiary;
+  margin-top: 2rpx;
+}
+
+// ========== 空状态 ==========
 .emptyTip {
   text-align: center;
   padding: 120rpx 0;

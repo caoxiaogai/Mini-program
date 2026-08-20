@@ -1,0 +1,217 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+}
+
+// ============================================
+// 分类筛选栏
+// ============================================
+.filterBar {
+  padding: $spacing-md $page-padding 0;
+}
+
+.filterScroll {
+  white-space: nowrap;
+}
+
+.filterGroup {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.filterTab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 56rpx;
+  padding: 0 $spacing-lg;
+  border-radius: $radius-button;
+  background-color: $color-bg-card;
+  flex-shrink: 0;
+}
+
+.filterTabActive {
+  background-color: $color-intent-high-bg;
+}
+
+.filterText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}
+
+.filterTextActive {
+  font-size: $font-size-md;
+  color: $color-intent-high;
+  font-weight: $font-weight-medium;
+}
+
+// ============================================
+// 日期分组
+// ============================================
+.dateGroup {
+  padding: $spacing-lg $page-padding $spacing-sm;
+}
+
+.dateLabel {
+  font-size: $font-size-md;
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+}
+
+// ============================================
+// 通知卡片列表
+// ============================================
+.cardList {
+  padding: 0 $page-padding;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.card {
+  background-color: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+// 卡片主体：头像 + 内容 + 缩略图
+.cardBody {
+  display: flex;
+  align-items: flex-start;
+}
+
+// 头像
+.avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $radius-round;
+  flex-shrink: 0;
+}
+
+// 中间内容区
+.cardContent {
+  flex: 1;
+  margin-left: $spacing-sm;
+  margin-right: $spacing-sm;
+  min-width: 0;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.nickname {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  @include text-ellipsis;
+  flex-shrink: 1;
+}
+
+// 意向标签胶囊
+.intentTag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36rpx;
+  padding: 0 $spacing-sm;
+  border-radius: $radius-button;
+  flex-shrink: 0;
+}
+
+.intentTag_high {
+  background-color: $color-intent-high-bg;
+}
+
+.intentTag_medium {
+  background-color: $color-intent-medium-bg;
+}
+
+.intentTag_low {
+  background-color: $color-intent-low-bg;
+}
+
+.intentTagText {
+  font-size: $font-size-xs;
+  color: $color-text-primary;
+}
+
+.intentTag_high .intentTagText {
+  color: $color-intent-high;
+}
+
+.intentTag_medium .intentTagText {
+  color: $color-intent-medium;
+}
+
+.intentTag_low .intentTagText {
+  color: $color-intent-low;
+}
+
+// 行为描述行
+.actionRow {
+  display: flex;
+  align-items: center;
+  margin-top: 6rpx;
+}
+
+.actionText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  flex: 1;
+  @include text-ellipsis;
+}
+
+.actionDate {
+  font-size: $font-size-xs;
+  color: $color-text-disabled;
+  flex-shrink: 0;
+  margin-left: $spacing-xs;
+}
+
+// 右侧缩略图
+.thumbnail {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: $radius-sm;
+  flex-shrink: 0;
+}
+
+// 卡片底部
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1rpx solid $color-divider;
+}
+
+.hintText {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  flex: 1;
+  @include text-ellipsis;
+}
+
+.contactBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 52rpx;
+  padding: 0 $spacing-md;
+  border-radius: $radius-button;
+  background-color: $color-text-secondary;
+  flex-shrink: 0;
+  margin-left: $spacing-sm;
+}
+
+.contactBtnText {
+  font-size: $font-size-sm;
+  color: $color-text-white;
+}

@@ -1,8 +1,8 @@
 import Taro from '@tarojs/taro';
 import type { ApiResult, Material } from '../types';
+import { BASE_URL } from '../config/api';
 
-// export const BASE_URL = 'http://59.110.21.49:8080/api';
-export const BASE_URL = 'http://192.168.31.225:8080/api';
+export { BASE_URL, resolveApiBaseUrl, LAN_API_BASE, LOCAL_API_BASE } from '../config/api';
 
 // H5 环境使用 mock 数据
 const isH5 = process.env.TARO_ENV === 'h5';
@@ -32,21 +32,62 @@ export async function request<T = any>(
   }
 
   const userId = Taro.getStorageSync('userId');
-  const res = await Taro.request({
-    url: `${BASE_URL}${url}`,
-    method,
-    data,
-    header: {
-      'Content-Type': 'application/json',
-      ...(userId ? { 'X-User-Id': String(userId) } : {}),
-      ...header
-    }
-  });
+  let res: Taro.request.SuccessCallbackResult<any>;
+  try {
+    res = await Taro.request({
+      url: `${BASE_URL}${url}`,
+      method,
+      data,
+      header: {
+        'Content-Type': 'application/json',
+        ...(userId ? { 'X-User-Id': String(userId) } : {}),
+        ...header
+      }
+    });
+  } catch (e: any) {
+    const errMsg = e?.errMsg || e?.message || String(e);
+    console.error(`[API] ${url} network error:`, errMsg);
+    throw new Error(
+      errMsg.includes('domain')
+        ? '请求域名未加入合法域名，开发环境请关闭「校验合法域名」'
+        : `网络请求失败：${errMsg}`
+    );
+  }
+
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    console.error(`[API] ${url} HTTP ${res.statusCode}:`, res.data);
+    throw new Error(`服务器异常 (HTTP ${res.statusCode})`);
+  }
 
   const result = res.data as ApiResult<T>;
+  if (!result || typeof result !== 'object' || typeof result.code !== 'number') {
+    console.error(`[API] ${url} invalid response:`, res.data);
+    throw new Error('服务器响应格式异常，请确认后端已启动且 BASE_URL 正确');
+  }
+
   if (result.code !== 200) {
-    console.error(`[API] ${url} failed:`, result.message);
-    throw new Error(result.message || '请求失败');
+    console.error(`[API] ${url} failed:`, result);
+    throw new Error(result.message || `请求失败 (${result.code})`);
+  }
+  return result.data;
+}
+
+export async function uploadFileOnly(filePath: string): Promise<string> {
+  if (isH5) {
+    return 'https://picsum.photos/id/1/300/300';
+  }
+  const userId = Taro.getStorageSync('userId');
+  const res = await Taro.uploadFile({
+    url: `${BASE_URL}/material/upload-file`,
+    filePath,
+    name: 'file',
+    header: {
+      ...(userId ? { 'X-User-Id': String(userId) } : {}),
+    },
+  });
+  const result = JSON.parse(res.data) as ApiResult<string>;
+  if (result.code !== 200) {
+    throw new Error(result.message || '上传失败');
   }
   return result.data;
 }

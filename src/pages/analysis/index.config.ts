@@ -1,3 +1,3 @@
 export default definePageConfig({
-  navigationBarTitleText: '数据分析'
+  navigationBarTitleText: '分析'
 })

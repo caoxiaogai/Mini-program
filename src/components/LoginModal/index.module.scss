@@ -1,0 +1,60 @@
+@use '@/styles/variables.scss' as *;
+
+.mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 64rpx;
+}
+
+.modal {
+  width: 100%;
+  max-width: 622rpx;
+  background: #ffffff;
+  border-radius: 32rpx;
+  padding: 64rpx 48rpx 56rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: $shadow-popup;
+}
+
+.logo {
+  width: 160rpx;
+  height: 144rpx;
+  margin-bottom: 32rpx;
+}
+
+.title {
+  font-size: 40rpx;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  line-height: 1.4;
+  margin-bottom: 16rpx;
+}
+
+.desc {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+  line-height: 1.5;
+  text-align: center;
+  margin-bottom: 48rpx;
+}
+
+.loginBtn {
+  @include button-reset;
+  width: 100%;
+  height: $button-height-lg;
+  background: $color-gradient-primary;
+  color: $color-text-white;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-medium;
+  border-radius: $radius-button;
+}

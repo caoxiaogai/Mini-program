@@ -5,44 +5,46 @@ import classnames from 'classnames';
 import styles from './index.module.scss';
 import { request } from '../../services/api';
 import { useUserStore } from '../../store/user';
-import type { DashboardVO, ContentListVO, CustomerListVO, IntentCustomerVO } from '../../types';
+import type { DashboardVO, ContentListVO, CustomerListVO } from '../../types';
 
-type TabType = 'content' | 'customer' | 'dashboard' | 'intent';
+type SubTabType = 'content' | 'user' | 'total';
 
 const TIME_RANGES = [
-  { label: '当日', value: 'today' },
-  { label: '当周', value: 'week' },
-  { label: '当月', value: 'month' },
-  { label: '自定义', value: 'custom' },
-];
-
-const SORT_OPTIONS = [
-  { label: '按查看数', value: 'view_count' },
-  { label: '按转发数', value: 'forward_count' },
-  { label: '按完播数', value: 'complete_count' },
+  { label: '日', value: 'day' },
+  { label: '周', value: 'week' },
+  { label: '月', value: 'month' },
+  { label: '总', value: 'all' },
 ];
 
 const INTENT_TABS = [
+  { label: '全部', value: 'all' },
   { label: '高意向', value: 'high' },
   { label: '中意向', value: 'medium' },
   { label: '低意向', value: 'low' },
 ];
 
+// 柱状图模拟数据
+const CHART_WEEK_DATA = [
+  { label: '一', value: 650 },
+  { label: '二', value: 650 },
+  { label: '三', value: 1300 },
+  { label: '四', value: 750 },
+  { label: '五', value: 450 },
+  { label: '六', value: 850 },
+  { label: '日', value: 700 },
+];
+
 const AnalysisPage: React.FC = () => {
   const { isLoggedIn } = useUserStore();
-  const [activeTab, setActiveTab] = useState<TabType>('content');
+  const [activeSubTab, setActiveSubTab] = useState<SubTabType>('content');
   const [timeRange, setTimeRange] = useState('week');
-  const [sortBy, setSortBy] = useState('view_count');
-  const [intentLevel, setIntentLevel] = useState('high');
-  const [showCustomDate, setShowCustomDate] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [intentLevel, setIntentLevel] = useState('all');
+  const [chartMode, setChartMode] = useState<'week' | 'month'>('week');
 
   // 数据
   const [dashboard, setDashboard] = useState<DashboardVO | null>(null);
   const [contentList, setContentList] = useState<ContentListVO[]>([]);
   const [customerList, setCustomerList] = useState<CustomerListVO[]>([]);
-  const [intentList, setIntentList] = useState<IntentCustomerVO[]>([]);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -51,36 +53,27 @@ const AnalysisPage: React.FC = () => {
       setDashboard(null);
       setContentList([]);
       setCustomerList([]);
-      setIntentList([]);
     }
-  }, [isLoggedIn, timeRange, startDate, endDate]);
+  }, [isLoggedIn, timeRange]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    if (activeTab === 'content') loadContentList();
-    else if (activeTab === 'customer') loadCustomerList();
-    else if (activeTab === 'dashboard') loadDashboard();
-    else if (activeTab === 'intent') loadIntentList();
-  }, [activeTab, sortBy, intentLevel, timeRange, startDate, endDate]);
+    if (activeSubTab === 'content') loadContentList();
+    else if (activeSubTab === 'user') loadCustomerList();
+    else if (activeSubTab === 'total') loadDashboard();
+  }, [activeSubTab, intentLevel, timeRange]);
 
   const buildQuery = () => {
-    const params: any = { timeRange, orderBy: sortBy };
-    if (timeRange === 'custom') {
-      params.startDate = startDate;
-      params.endDate = endDate;
+    const params: any = { timeRange };
+    if (activeSubTab === 'user' && intentLevel !== 'all') {
+      params.intentLevel = intentLevel;
     }
-    if (activeTab === 'intent') params.intentLevel = intentLevel;
     return params;
   };
 
   const loadDashboard = async () => {
     try {
-      const params: any = { timeRange };
-      if (timeRange === 'custom') {
-        params.startDate = startDate;
-        params.endDate = endDate;
-      }
-      const data = await request<DashboardVO>('/analysis/dashboard', { data: params });
+      const data = await request<DashboardVO>('/analysis/dashboard', { data: { timeRange } });
       setDashboard(data);
     } catch (e) {
       console.error('[Analysis] loadDashboard failed:', e);
@@ -105,15 +98,6 @@ const AnalysisPage: React.FC = () => {
     }
   };
 
-  const loadIntentList = async () => {
-    try {
-      const data = await request<IntentCustomerVO[]>('/analysis/intent/list', { data: buildQuery() });
-      setIntentList(data || []);
-    } catch (e) {
-      console.error('[Analysis] loadIntentList failed:', e);
-    }
-  };
-
   const handleContentClick = (item: ContentListVO) => {
     Taro.navigateTo({ url: `/pages/contentDetail/index?materialId=${item.materialId}` });
   };
@@ -123,214 +107,270 @@ const AnalysisPage: React.FC = () => {
   };
 
   const handleTimeRangeChange = (e: any) => {
-    const val = TIME_RANGES[e.detail.value].value;
-    setTimeRange(val);
-    setShowCustomDate(val === 'custom');
+    setTimeRange(TIME_RANGES[e.detail.value].value);
   };
 
-  const handleSortChange = (e: any) => {
-    setSortBy(SORT_OPTIONS[e.detail.value].value);
+  // 意向标签样式
+  const getIntentStyle = (level: string) => {
+    switch (level) {
+      case 'high': return { bg: '#E8FAFC', color: '#0EC8D9', text: '高意向' };
+      case 'medium': return { bg: '#FFF3E0', color: '#FF8C00', text: '中意向' };
+      default: return { bg: '#F5F5F5', color: '#999999', text: '低意向' };
+    }
   };
 
-  const handleDateChange = (field: 'start' | 'end', e: any) => {
-    const val = e.detail.value;
-    if (field === 'start') setStartDate(val + ' 00:00:00');
-    else setEndDate(val + ' 23:59:59');
+  // 格式化数字
+  const formatNum = (n: number | undefined): string => {
+    if (n == null) return '0';
+    if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+    return n.toLocaleString();
   };
-
-  // 获取当前日期（用于Picker的end属性）
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
   if (!isLoggedIn) {
     return (
       <View className={styles.analysisPage}>
-        <View className={styles.emptyTip}>
-          <Text>请先登录</Text>
-        </View>
+        <View className={styles.emptyTip}><Text>请先登录</Text></View>
       </View>
     );
   }
 
   return (
     <View className={styles.analysisPage}>
-      {/* 顶部筛选栏 */}
-      <View className={styles.filterBar}>
-        <Picker mode='selector' range={TIME_RANGES} rangeKey='label' onChange={handleTimeRangeChange}>
-          <View className={styles.filterItem}>
-            <Text>{TIME_RANGES.find(t => t.value === timeRange)?.label || '当周'}</Text>
-            <Text className={styles.filterArrow}>▼</Text>
-          </View>
-        </Picker>
-        <Picker mode='selector' range={SORT_OPTIONS} rangeKey='label' onChange={handleSortChange}>
-          <View className={styles.filterItem}>
-            <Text>{SORT_OPTIONS.find(s => s.value === sortBy)?.label || '按查看数'}</Text>
-            <Text className={styles.filterArrow}>▼</Text>
-          </View>
-        </Picker>
-      </View>
-
-      {/* 自定义日期选择 */}
-      {showCustomDate && (
-        <View className={styles.customDate}>
-          <Picker mode='date' end={todayStr} onChange={(e) => handleDateChange('start', e)}>
-            <View className={styles.datePicker}>
-              <Text>{startDate ? startDate.substring(0, 10) : '开始日期'}</Text>
-            </View>
-          </Picker>
-          <Text className={styles.dateSep}>至</Text>
-          <Picker mode='date' end={todayStr} onChange={(e) => handleDateChange('end', e)}>
-            <View className={styles.datePicker}>
-              <Text>{endDate ? endDate.substring(0, 10) : '结束日期'}</Text>
-            </View>
-          </Picker>
-        </View>
-      )}
-
-      {/* 四个Tab */}
-      <View className={styles.tabs}>
-        {(['content', 'customer', 'dashboard', 'intent'] as TabType[]).map(tab => (
+      {/* 子Tab切换 */}
+      <View className={styles.subTabs}>
+        {([
+          { key: 'content', label: '内容分析' },
+          { key: 'user', label: '用户分析' },
+          { key: 'total', label: '总数据' },
+        ] as const).map(tab => (
           <Text
-            key={tab}
-            className={classnames(styles.tab, activeTab === tab && styles.tabActive)}
-            onClick={() => setActiveTab(tab)}
+            key={tab.key}
+            className={classnames(styles.subTab, activeSubTab === tab.key && styles.subTabActive)}
+            onClick={() => setActiveSubTab(tab.key)}
           >
-            {{ content: '内容分析', customer: '微信用户分析', dashboard: '总数据', intent: '意向分类' }[tab]}
+            {tab.label}
           </Text>
         ))}
       </View>
 
-      {/* 意向分类子Tab */}
-      {activeTab === 'intent' && (
-        <View className={styles.intentTabs}>
-          {INTENT_TABS.map(item => (
-            <Text
-              key={item.value}
-              className={classnames(styles.intentTab, intentLevel === item.value && styles.intentTabActive)}
-              onClick={() => setIntentLevel(item.value)}
-            >
-              {item.label}
-            </Text>
-          ))}
-        </View>
-      )}
-
-      {/* 总数据看板 */}
-      {activeTab === 'dashboard' && dashboard && (
-        <View className={styles.dashboardSection}>
-          <View className={styles.dashboardGrid}>
-            <View className={styles.dashboardItem}>
-              <Text className={styles.dashboardValue}>{dashboard.totalPublishCount}</Text>
-              <Text className={styles.dashboardLabel}>总发布个数</Text>
+      {/* 筛选栏 */}
+      {activeSubTab === 'content' && (
+        <View className={styles.filterBar}>
+          <Picker mode='selector' range={TIME_RANGES} rangeKey='label' onChange={handleTimeRangeChange}>
+            <View className={styles.filterItem}>
+              <Text>{TIME_RANGES.find(t => t.value === timeRange)?.label || '周'}</Text>
+              <View className={styles.filterArrow} />
             </View>
-            <View className={styles.dashboardItem}>
-              <Text className={styles.dashboardValue}>{dashboard.totalViewCount}</Text>
-              <Text className={styles.dashboardLabel}>总阅读数</Text>
-            </View>
-            <View className={styles.dashboardItem}>
-              <Text className={styles.dashboardValue}>{dashboard.totalForwardCount}</Text>
-              <Text className={styles.dashboardLabel}>总转发数</Text>
-            </View>
-            <View className={styles.dashboardItem}>
-              <Text className={styles.dashboardValue}>{dashboard.totalCompleteCount}</Text>
-              <Text className={styles.dashboardLabel}>完播数</Text>
-            </View>
-            <View className={styles.dashboardItem}>
-              <Text className={styles.dashboardValue}>{dashboard.completeRate}%</Text>
-              <Text className={styles.dashboardLabel}>总完播率</Text>
-            </View>
-            <View className={styles.dashboardItem}>
-              <Text className={styles.dashboardValue}>{dashboard.repeatViewCount}</Text>
-              <Text className={styles.dashboardLabel}>两次以上播放</Text>
-            </View>
-            <View className={styles.dashboardItem}>
-              <Text className={styles.dashboardValue}>{dashboard.totalViewerCount}</Text>
-              <Text className={styles.dashboardLabel}>观看人数</Text>
-            </View>
-            <View className={styles.dashboardItem}>
-              <Text className={styles.dashboardValue}>{dashboard.highIntentCount}</Text>
-              <Text className={styles.dashboardLabel}>高意向</Text>
-            </View>
-            <View className={styles.dashboardItem}>
-              <Text className={styles.dashboardValue}>{dashboard.mediumIntentCount}</Text>
-              <Text className={styles.dashboardLabel}>中意向</Text>
-            </View>
-            <View className={styles.dashboardItem}>
-              <Text className={styles.dashboardValue}>{dashboard.lowIntentCount}</Text>
-              <Text className={styles.dashboardLabel}>低意向</Text>
-            </View>
+          </Picker>
+          <View className={styles.filterItem}>
+            <Text>完播数</Text>
+            <View className={styles.filterArrow} />
           </View>
         </View>
       )}
 
-      {/* 内容分析列表 */}
-      {activeTab === 'content' && (
-        <ScrollView scrollY className={styles.list}>
+      {/* ===== 内容分析 Tab ===== */}
+      {activeSubTab === 'content' && (
+        <ScrollView scrollY className={styles.scrollContent}>
+          {/* 概览数据 */}
+          <View className={styles.overviewRow}>
+            <View className={styles.overviewItem}>
+              <Text className={styles.overviewLabel}>总发布</Text>
+              <Text className={styles.overviewValue}>{dashboard?.totalPublishCount || 0}</Text>
+            </View>
+            <View className={styles.overviewItem}>
+              <Text className={styles.overviewLabel}>总阅读次数</Text>
+              <Text className={styles.overviewValue}>{formatNum(dashboard?.totalViewCount)}</Text>
+            </View>
+            <View className={styles.overviewItem}>
+              <Text className={styles.overviewLabel}>总转发</Text>
+              <Text className={styles.overviewValue}>{formatNum(dashboard?.totalForwardCount)}</Text>
+            </View>
+          </View>
+
+          {/* 内容列表 */}
           {contentList.length > 0 ? contentList.map(item => (
-            <View key={item.materialId} className={styles.listItem} onClick={() => handleContentClick(item)}>
-              <Image className={styles.itemCover} src={item.coverUrl} mode="aspectFill" />
-              <View className={styles.itemInfo}>
-                <Text className={styles.itemTitle}>{item.content || item.title}</Text>
-                <View className={styles.itemStats}>
-                  <Text className={styles.itemStat}>浏览 {item.viewCount}</Text>
-                  <Text className={styles.itemStat}>完播 {item.completeCount}</Text>
-                  <Text className={styles.itemStat}>转发 {item.forwardCount}</Text>
+            <View key={item.materialId} className={styles.contentCard} onClick={() => handleContentClick(item)}>
+              <Image className={styles.contentCover} src={item.coverUrl} mode="aspectFill" />
+              <View className={styles.contentInfo}>
+                <Text className={styles.contentTitle}>{item.content || item.title}</Text>
+                <Text className={styles.contentDate}>{item.createTime?.substring(0, 10)}</Text>
+                <View className={styles.contentStats}>
+                  <Text className={styles.contentStat}>转发 {item.forwardCount}</Text>
+                  <Text className={styles.contentStat}>播完 {item.completeCount}</Text>
+                  <Text className={styles.contentStat}>浏览 {item.viewCount}</Text>
+                  <Text className={styles.contentStat}>观看人数 {item.viewerCount}</Text>
                 </View>
               </View>
-              <Text className={styles.itemArrow}>›</Text>
+              <View className={styles.contentArrow}>
+                <View className={styles.arrowIcon} />
+              </View>
             </View>
           )) : (
-            <View className={styles.emptyTip}>
-              <Text>暂无数据</Text>
-            </View>
+            <View className={styles.emptyTip}><Text>暂无数据</Text></View>
           )}
         </ScrollView>
       )}
 
-      {/* 微信用户分析列表 */}
-      {activeTab === 'customer' && (
-        <ScrollView scrollY className={styles.list}>
-          {customerList.length > 0 ? customerList.map(item => (
-            <View key={item.customerId} className={styles.listItem} onClick={() => handleCustomerClick(item.customerId)}>
-              <Image className={styles.itemAvatar} src={item.avatar} mode="aspectFill" />
-              <View className={styles.itemInfo}>
-                <Text className={styles.itemTitle}>{item.nickname}</Text>
-                <View className={styles.itemStats}>
-                  <Text className={styles.itemStat}>观看 {item.viewCount}次</Text>
-                  <Text className={styles.itemStat}>完播 {item.completeCount}次</Text>
+      {/* ===== 用户分析 Tab ===== */}
+      {activeSubTab === 'user' && (
+        <ScrollView scrollY className={styles.scrollContent}>
+          {/* 意向筛选 */}
+          <View className={styles.intentFilter}>
+            {INTENT_TABS.map(item => (
+              <Text
+                key={item.value}
+                className={classnames(styles.intentBtn, intentLevel === item.value && styles.intentBtnActive)}
+                onClick={() => setIntentLevel(item.value)}
+              >
+                {item.label}
+              </Text>
+            ))}
+          </View>
+
+          {/* 概览数据 */}
+          <View className={styles.overviewRow}>
+            <View className={styles.overviewItem}>
+              <Text className={styles.overviewLabel}>总用户</Text>
+              <Text className={styles.overviewValue}>{formatNum(dashboard?.totalViewerCount)}</Text>
+            </View>
+            <View className={styles.overviewItem}>
+              <Text className={styles.overviewLabel}>完播人数</Text>
+              <Text className={styles.overviewValue}>{dashboard?.totalCompleteCount || 0}</Text>
+            </View>
+            <View className={styles.overviewItem}>
+              <Text className={styles.overviewLabel}>转发人数</Text>
+              <Text className={styles.overviewValue}>{formatNum(dashboard?.totalForwardCount)}</Text>
+            </View>
+          </View>
+
+          {/* 用户列表 */}
+          {customerList.length > 0 ? customerList.map(item => {
+            const intentStyle = getIntentStyle(
+              (item as any).intentLevel || (item.completeCount > 0 ? 'high' : item.viewCount >= 2 ? 'medium' : 'low')
+            );
+            return (
+              <View key={item.customerId} className={styles.userCard} onClick={() => handleCustomerClick(item.customerId)}>
+                <View className={styles.userLeft}>
+                  <View className={styles.userAvatarWrap}>
+                    {item.avatar ? (
+                      <Image className={styles.userAvatar} src={item.avatar} mode="aspectFill" />
+                    ) : (
+                      <View className={styles.userAvatarPlaceholder}>
+                        <Text>{(item.nickname || '?')[0]}</Text>
+                      </View>
+                    )}
+                    <View className={styles.userDot} />
+                  </View>
+                  <View className={styles.userInfo}>
+                    <View className={styles.userNameRow}>
+                      <Text className={styles.userName}>{item.nickname}</Text>
+                      <Text className={styles.userIntentTag} style={{ backgroundColor: intentStyle.bg, color: intentStyle.color }}>
+                        #{intentStyle.text}
+                      </Text>
+                    </View>
+                    <View className={styles.userStats}>
+                      <Text className={styles.userStat}>阅读 {item.viewCount}</Text>
+                      <Text className={styles.userStat}>观看作品 {item.completeCount}</Text>
+                      <Text className={styles.userStat}>转发 {item.completeCount}</Text>
+                    </View>
+                  </View>
                 </View>
               </View>
-              <Text className={styles.itemArrow}>›</Text>
-            </View>
-          )) : (
-            <View className={styles.emptyTip}>
-              <Text>暂无数据</Text>
-            </View>
+            );
+          }) : (
+            <View className={styles.emptyTip}><Text>暂无数据</Text></View>
           )}
         </ScrollView>
       )}
 
-      {/* 意向分类列表 */}
-      {activeTab === 'intent' && (
-        <ScrollView scrollY className={styles.list}>
-          {intentList.length > 0 ? intentList.map(item => (
-            <View key={item.customerId} className={styles.listItem} onClick={() => handleCustomerClick(item.customerId)}>
-              <Image className={styles.itemAvatar} src={item.avatar} mode="aspectFill" />
-              <View className={styles.itemInfo}>
-                <Text className={styles.itemTitle}>{item.nickname}</Text>
-                <View className={styles.itemStats}>
-                  <Text className={styles.itemStat}>观看 {item.viewCount}次</Text>
-                  <Text className={styles.itemStat}>{item.completed ? '已完播' : '未完播'}</Text>
-                  <Text className={styles.itemStat}>{item.hasForwarded ? '已转发' : ''}</Text>
-                </View>
+      {/* ===== 总数据 Tab ===== */}
+      {activeSubTab === 'total' && (
+        <ScrollView scrollY className={styles.scrollContent}>
+          {/* 作品数据总览 - 9宫格 */}
+          <View className={styles.totalSection}>
+            <Text className={styles.totalSectionTitle}>作品数据总览</Text>
+            <View className={styles.totalGrid}>
+              <View className={styles.totalGridItem}>
+                <Text className={styles.totalGridLabel}>总发布</Text>
+                <Text className={styles.totalGridValue}>{dashboard?.totalPublishCount || 0}</Text>
               </View>
-              <Text className={styles.itemArrow}>›</Text>
+              <View className={styles.totalGridItem}>
+                <Text className={styles.totalGridLabel}>总阅读次数</Text>
+                <Text className={styles.totalGridValue}>{formatNum(dashboard?.totalViewCount)}</Text>
+              </View>
+              <View className={styles.totalGridItem}>
+                <Text className={styles.totalGridLabel}>总转发</Text>
+                <Text className={styles.totalGridValue}>{formatNum(dashboard?.totalForwardCount)}</Text>
+              </View>
+              <View className={styles.totalGridItem}>
+                <Text className={styles.totalGridLabel}>总阅读人数</Text>
+                <Text className={styles.totalGridValue}>{formatNum(dashboard?.totalViewerCount)}</Text>
+              </View>
+              <View className={styles.totalGridItem}>
+                <Text className={styles.totalGridLabel}>总完播</Text>
+                <Text className={styles.totalGridValue}>{dashboard?.totalCompleteCount || 0}</Text>
+              </View>
+              <View className={styles.totalGridItem}>
+                <Text className={styles.totalGridLabel}>总完播率</Text>
+                <Text className={styles.totalGridValue}>{dashboard?.completeRate || 0}%</Text>
+              </View>
+              <View className={styles.totalGridItem}>
+                <Text className={styles.totalGridLabel}>高意向</Text>
+                <Text className={styles.totalGridValue}>{dashboard?.highIntentCount || 0}</Text>
+              </View>
+              <View className={styles.totalGridItem}>
+                <Text className={styles.totalGridLabel}>中意向</Text>
+                <Text className={styles.totalGridValue}>{dashboard?.mediumIntentCount || 0}</Text>
+              </View>
+              <View className={styles.totalGridItem}>
+                <Text className={styles.totalGridLabel}>低意向</Text>
+                <Text className={styles.totalGridValue}>{dashboard?.lowIntentCount || 0}</Text>
+              </View>
             </View>
-          )) : (
-            <View className={styles.emptyTip}>
-              <Text>暂无数据</Text>
+          </View>
+
+          {/* 阅读数据 - 柱状图 */}
+          <View className={styles.totalSection}>
+            <View className={styles.totalSectionHeader}>
+              <Text className={styles.totalSectionTitle}>阅读数据</Text>
+              <View className={styles.chartSwitch}>
+                <Text
+                  className={classnames(styles.chartSwitchBtn, chartMode === 'week' && styles.chartSwitchBtnActive)}
+                  onClick={() => setChartMode('week')}
+                >
+                  本周
+                </Text>
+                <Text
+                  className={classnames(styles.chartSwitchBtn, chartMode === 'month' && styles.chartSwitchBtnActive)}
+                  onClick={() => setChartMode('month')}
+                >
+                  本月
+                </Text>
+              </View>
             </View>
-          )}
+            <View className={styles.barChart}>
+              {/* Y轴刻度 */}
+              <View className={styles.barYAxis}>
+                <Text>1500</Text>
+                <Text>1000</Text>
+                <Text>500</Text>
+                <Text>0</Text>
+              </View>
+              {/* 柱状图 */}
+              <View className={styles.barArea}>
+                {CHART_WEEK_DATA.map((item, idx) => (
+                  <View key={idx} className={styles.barCol}>
+                    <View
+                      className={styles.bar}
+                      style={{ height: `${(item.value / 1500) * 100}%` }}
+                    />
+                    <Text className={styles.barLabel}>{item.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
         </ScrollView>
       )}
     </View>

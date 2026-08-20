@@ -1,24 +1,26 @@
 export default defineAppConfig({
   pages: [
     'pages/home/index',
-    'pages/material/index',
     'pages/analysis/index',
     'pages/mine/index',
+    'pages/material/index',
     'pages/materialDetail/index',
+    'pages/materialPublish/index',
     'pages/aiGenerate/index',
     'pages/contentDetail/index',
     'pages/customerDetail/index',
-    'pages/docViewer/index'
+    'pages/docViewer/index',
+    'pages/notification/index'
   ],
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#ffffff',
-    navigationBarTitleText: 'AI销售助手',
+    navigationBarTitleText: '阿宝AI',
     navigationBarTextStyle: 'black'
   },
   tabBar: {
-    color: '#86909c',
-    selectedColor: '#165dff',
+    color: '#999999',
+    selectedColor: '#0EC8D9',
     backgroundColor: '#ffffff',
     borderStyle: 'white',
     list: [
@@ -29,12 +31,6 @@ export default defineAppConfig({
         selectedIconPath: 'assets/tabbar/home-selected.png'
       },
       {
-        pagePath: 'pages/material/index',
-        text: '素材',
-        iconPath: 'assets/tabbar/material.png',
-        selectedIconPath: 'assets/tabbar/material-selected.png'
-      },
-      {
         pagePath: 'pages/analysis/index',
         text: '分析',
         iconPath: 'assets/tabbar/analysis.png',
@@ -42,7 +38,7 @@ export default defineAppConfig({
       },
       {
         pagePath: 'pages/mine/index',
-        text: '我的',
+        text: '排名',
         iconPath: 'assets/tabbar/mine.png',
         selectedIconPath: 'assets/tabbar/mine-selected.png'
       }

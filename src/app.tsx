@@ -1,16 +1,20 @@
 import React, { useEffect } from 'react';
 import { useDidShow, useDidHide } from '@tarojs/taro';
-// 全局样式
+import { restoreSession } from './services/auth';
+import { useUserStore } from './store/user';
 import './app.scss';
 
 function App(props) {
-  // 可以使用所有的 React Hooks
-  useEffect(() => {});
+  useEffect(() => {
+    const session = restoreSession();
+    if (session) {
+      useUserStore.getState().setUserInfo(session.userInfo);
+    }
+    useUserStore.getState().setAuthReady(true);
+  }, []);
 
-  // 对应 onShow
   useDidShow(() => {});
 
-  // 对应 onHide
   useDidHide(() => {});
 
   return props.children;

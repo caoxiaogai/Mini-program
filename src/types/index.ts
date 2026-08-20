@@ -65,6 +65,11 @@ export interface DashboardVO {
   highIntentCount: number;
   mediumIntentCount: number;
   lowIntentCount: number;
+  newCustomerCount?: number;
+  highIntentNewCount?: number;
+  topForwardMaterialTitle?: string;
+  topForwardMaterialCount?: number;
+  recentCustomers?: Array<{ customerId: number; nickname: string; avatar: string }>;
 }
 
 // 内容列表

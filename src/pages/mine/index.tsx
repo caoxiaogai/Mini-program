@@ -4,6 +4,7 @@ import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import { useUserStore } from '../../store/user';
 import { request, BASE_URL } from '../../services/api';
+import { goMaterial } from '../../utils/nav';
 
 const PLACEHOLDER_AVATAR = 'https://picsum.photos/id/64/200/200';
 
@@ -125,7 +126,7 @@ const MinePage: React.FC = () => {
       </View>
 
       <View className={styles.menuList}>
-        <View className={styles.menuItem} onClick={() => Taro.switchTab({ url: '/pages/material/index' })}>
+        <View className={styles.menuItem} onClick={goMaterial}>
           <Text className={styles.menuText}>我的素材</Text>
           <Text className={styles.menuArrow}>›</Text>
         </View>

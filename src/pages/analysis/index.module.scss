@@ -3,73 +3,29 @@
 .analysisPage {
   min-height: 100vh;
   background-color: $color-bg-page;
+  padding-bottom: 120rpx;
 }
 
-.filterBar {
-  display: flex;
-  gap: $spacing-md;
-  padding: $spacing-md $page-padding;
-  background-color: $color-bg-card;
-  border-bottom: 1rpx solid $color-divider;
-}
-
-.filterItem {
-  display: flex;
-  align-items: center;
-  gap: 4rpx;
-  padding: 12rpx 20rpx;
-  background-color: $color-bg-page;
-  border-radius: $radius-sm;
-  font-size: $font-size-sm;
-  color: $color-text-primary;
-}
-
-.filterArrow {
-  font-size: 18rpx;
-  color: $color-text-tertiary;
-}
-
-.customDate {
-  display: flex;
-  align-items: center;
-  padding: $spacing-sm $page-padding;
-  background-color: $color-bg-card;
-  gap: $spacing-sm;
-}
-
-.datePicker {
-  flex: 1;
-  padding: 12rpx 20rpx;
-  background-color: $color-bg-page;
-  border-radius: $radius-sm;
-  font-size: $font-size-sm;
-  color: $color-text-primary;
-  text-align: center;
-}
-
-.dateSep {
-  font-size: $font-size-sm;
-  color: $color-text-tertiary;
-}
-
-.tabs {
+// 子Tab切换
+.subTabs {
   display: flex;
   background-color: $color-bg-card;
   padding: 0 $page-padding;
   border-bottom: 1rpx solid $color-divider;
 }
 
-.tab {
+.subTab {
   flex: 1;
   text-align: center;
-  font-size: $font-size-sm;
+  font-size: $font-size-md;
   color: $color-text-tertiary;
   padding: $spacing-md 0;
   position: relative;
+  font-weight: $font-weight-medium;
 }
 
-.tabActive {
-  color: $color-primary;
+.subTabActive {
+  color: $color-text-primary;
   font-weight: $font-weight-semibold;
 
   &::after {
@@ -80,74 +36,83 @@
     transform: translateX(-50%);
     width: 48rpx;
     height: 4rpx;
-    background-color: $color-primary;
+    background-color: $color-text-primary;
     border-radius: 2rpx;
   }
 }
 
-.intentTabs {
+// 筛选栏
+.filterBar {
   display: flex;
+  gap: $spacing-sm;
   padding: $spacing-sm $page-padding;
   background-color: $color-bg-card;
-  gap: $spacing-md;
 }
 
-.intentTab {
+.filterItem {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
   padding: 10rpx 24rpx;
-  border-radius: 24rpx;
-  font-size: $font-size-xs;
-  color: $color-text-tertiary;
   background-color: $color-bg-page;
+  border: 1rpx solid $color-border;
+  border-radius: 24rpx;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
 }
 
-.intentTabActive {
-  color: $color-text-white;
-  background-color: $color-primary;
+.filterArrow {
+  width: 0;
+  height: 0;
+  border-left: 8rpx solid transparent;
+  border-right: 8rpx solid transparent;
+  border-top: 10rpx solid $color-text-tertiary;
 }
 
-.dashboardSection {
+// 滚动区域
+.scrollContent {
+  height: calc(100vh - 100rpx);
   padding: $spacing-md $page-padding;
 }
 
-.dashboardGrid {
+// 概览行
+.overviewRow {
   display: flex;
-  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
 }
 
-.dashboardItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 33.33%;
-  box-sizing: border-box;
-  padding: $spacing-md 0;
-  border-bottom: 1rpx solid $color-divider;
+.overviewItem {
+  flex: 1;
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-sm;
+  text-align: center;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
-.dashboardValue {
+.overviewLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  display: block;
+  margin-bottom: 6rpx;
+}
+
+.overviewValue {
   font-size: $font-size-xl;
-  font-weight: $font-weight-semibold;
+  font-weight: $font-weight-bold;
   color: $color-text-primary;
 }
 
-.dashboardLabel {
-  font-size: $font-size-xs;
-  color: $color-text-tertiary;
-  margin-top: 4rpx;
-}
-
-.list {
-  padding: $spacing-md $page-padding;
-}
-
-.listItem {
+// 内容卡片
+.contentCard {
   display: flex;
-  align-items: center;
-  background-color: $color-bg-card;
+  align-items: flex-start;
+  background: $color-bg-card;
   border-radius: $radius-md;
   padding: $spacing-md;
   margin-bottom: $spacing-md;
-  box-shadow: $shadow-card;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   transition: all $transition-base;
 
   &:active {
@@ -156,58 +121,298 @@
   }
 }
 
-.itemCover {
-  width: 96rpx;
-  height: 96rpx;
+.contentCover {
+  width: 120rpx;
+  height: 120rpx;
   border-radius: $radius-sm;
   margin-right: $spacing-md;
   flex-shrink: 0;
+  background-color: $color-divider;
 }
 
-.itemInfo {
+.contentInfo {
   flex: 1;
   min-width: 0;
 }
 
-.itemTitle {
+.contentTitle {
   font-size: $font-size-md;
   font-weight: $font-weight-medium;
   color: $color-text-primary;
   @include text-ellipsis;
 }
 
-.itemSubtitle {
+.contentDate {
   font-size: $font-size-xs;
   color: $color-text-tertiary;
   margin-top: 4rpx;
-  @include text-ellipsis;
 }
 
-.itemStats {
+.contentStats {
   display: flex;
-  gap: $spacing-md;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
   margin-top: $spacing-xs;
 }
 
-.itemStat {
+.contentStat {
   font-size: $font-size-xs;
-  color: $color-text-tertiary;
+  color: $color-text-secondary;
 }
 
-.itemAvatar {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: $radius-round;
+.contentArrow {
+  display: flex;
+  align-items: center;
+  padding-left: $spacing-sm;
+}
+
+.arrowIcon {
+  width: 0;
+  height: 0;
+  border-left: 12rpx solid $color-text-disabled;
+  border-top: 10rpx solid transparent;
+  border-bottom: 10rpx solid transparent;
+}
+
+// 意向筛选
+.intentFilter {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.intentBtn {
+  padding: 10rpx 28rpx;
+  border-radius: 24rpx;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  background: $color-bg-card;
+  border: 1rpx solid $color-border;
+}
+
+.intentBtnActive {
+  color: $color-intent-high;
+  background: $color-intent-high-bg;
+  border-color: $color-intent-high;
+}
+
+// 用户卡片
+.userCard {
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+.userLeft {
+  display: flex;
+  align-items: center;
+}
+
+.userAvatarWrap {
+  position: relative;
   margin-right: $spacing-md;
   flex-shrink: 0;
 }
 
-.itemArrow {
-  font-size: 36rpx;
-  color: $color-text-disabled;
-  margin-left: $spacing-sm;
+.userAvatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $radius-round;
+  background-color: $color-divider;
 }
 
+.userAvatarPlaceholder {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $radius-round;
+  background-color: $color-border;
+  @include flex-center;
+  font-size: $font-size-lg;
+  color: $color-text-tertiary;
+}
+
+.userDot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: $radius-round;
+  background-color: #FF4D4F;
+  border: 2rpx solid $color-bg-card;
+}
+
+.userInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.userNameRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: 6rpx;
+}
+
+.userName {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.userIntentTag {
+  font-size: $font-size-xs;
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.userStats {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.userStat {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+// 总数据区域
+.totalSection {
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.totalSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.totalSectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+// 9宫格
+.totalGrid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.totalGridItem {
+  width: 33.33%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-md 0;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:nth-child(3n) {
+    border-right: none;
+  }
+
+  &:nth-last-child(-n+3) {
+    border-bottom: none;
+  }
+}
+
+.totalGridLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-bottom: 6rpx;
+}
+
+.totalGridValue {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+}
+
+// 图表切换
+.chartSwitch {
+  display: flex;
+  background: $color-divider;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.chartSwitchBtn {
+  padding: 8rpx 24rpx;
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  border-radius: 8rpx;
+}
+
+.chartSwitchBtnActive {
+  background: $color-text-primary;
+  color: $color-text-white;
+}
+
+// 柱状图
+.barChart {
+  display: flex;
+  height: 320rpx;
+  padding-top: $spacing-sm;
+}
+
+.barYAxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: $spacing-sm;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  height: 280rpx;
+}
+
+.barArea {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 12rpx;
+  height: 280rpx;
+  border-bottom: 1rpx solid $color-divider;
+  padding-bottom: 4rpx;
+}
+
+.barCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bar {
+  width: 100%;
+  max-width: 48rpx;
+  background: $color-primary;
+  border-radius: 6rpx 6rpx 0 0;
+  min-height: 4rpx;
+  transition: height 0.3s ease;
+}
+
+.barLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: 8rpx;
+}
+
+// 空状态
 .emptyTip {
   text-align: center;
   padding: 120rpx 0;

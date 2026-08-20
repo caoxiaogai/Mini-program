@@ -27,6 +27,7 @@ export function getFileUrls(fileUrl: string): string[] {
     } catch {
       return [fileUrl];
     }
+
   }
   return [fileUrl];
 }

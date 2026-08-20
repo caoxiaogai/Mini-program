@@ -1,21 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Textarea } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, ScrollView } from '@tarojs/components';
+import Taro, { useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import styles from './index.module.scss';
-import MaterialCard from '../../components/MaterialCard';
 import { request, uploadFile, uploadImages } from '../../services/api';
 import { useUserStore } from '../../store/user';
 import type { Material } from '../../types';
+import LoginModal from '../../components/LoginModal';
+import MediaImage from '../../components/MediaImage';
+import { getFileUrls } from '../../utils/format';
+import { resolveMediaUrl } from '../../utils/media';
+import { savePublishDraft } from '../../utils/publishDraft';
+
+const FILTERS = [
+  { key: 'all', label: '全部' },
+  { key: 'IMAGE', label: '图片' },
+  { key: 'VIDEO', label: '视频' },
+  { key: 'PDF', label: 'PDF' },
+  { key: 'EXCEL', label: '表格' },
+] as const;
+
+function formatDate(value?: string) {
+  if (!value) return '';
+  return value.slice(0, 10);
+}
+
+function getDisplayTitle(material: Material) {
+  const content = (material.content || '').trim();
+  if (content) return content.length > 28 ? `${content.slice(0, 28)}...` : content;
+  return material.title || '未命名素材';
+}
+
+function getCover(material: Material) {
+  if (material.coverUrl) return resolveMediaUrl(material.coverUrl);
+  if (material.fileType === 'IMAGE') {
+    const urls = getFileUrls(material.fileUrl);
+    return urls[0] ? resolveMediaUrl(urls[0]) : '';
+  }
+  return '';
+}
 
 const MaterialPage: React.FC = () => {
   const { isLoggedIn } = useUserStore();
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState<string>('all');
   const [loading, setLoading] = useState(false);
-  const [showCopyModal, setShowCopyModal] = useState(false);
-  const [editMaterialId, setEditMaterialId] = useState<number>(0);
-  const [editCopy, setEditCopy] = useState('');
+
+  useDidShow(() => {
+    if (isLoggedIn) loadMaterials();
+  });
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -37,19 +70,42 @@ const MaterialPage: React.FC = () => {
     }
   };
 
+  const filtered = useMemo(() => {
+    if (activeTab === 'all') return materials;
+    if (activeTab === 'EXCEL') {
+      return materials.filter((m) => ['EXCEL', 'XLS', 'XLSX', 'CSV', 'TABLE'].includes(m.fileType));
+    }
+    if (activeTab === 'PDF') {
+      return materials.filter((m) => ['PDF', 'DOC', 'DOCX'].includes(m.fileType));
+    }
+    return materials.filter((m) => m.fileType === activeTab);
+  }, [materials, activeTab]);
+
+  const goPublishPage = (material: Material) => {
+    const imageUrls =
+      material.fileType === 'IMAGE'
+        ? getFileUrls(material.fileUrl).map(resolveMediaUrl).filter(Boolean)
+        : material.coverUrl
+          ? [resolveMediaUrl(material.coverUrl)]
+          : [];
+    savePublishDraft({
+      materialId: String(material.id),
+      fileType: material.fileType,
+      imageUrls,
+      content: material.content || '',
+    });
+    Taro.navigateTo({ url: `/pages/materialPublish/index?materialId=${material.id}` });
+  };
+
   const handleUpload = async () => {
     try {
       const { tapIndex } = await Taro.showActionSheet({
-        itemList: ['上传图片', '上传视频', '上传文件(PDF/表格)']
+        itemList: ['上传图片', '上传视频', '上传文件(PDF/表格)'],
       });
-      if (tapIndex === 0) {
-        await handleUploadImages();
-      } else if (tapIndex === 1) {
-        await handleUploadVideo();
-      } else {
-        await handleUploadFile();
-      }
-    } catch (e) {
+      if (tapIndex === 0) await handleUploadImages();
+      else if (tapIndex === 1) await handleUploadVideo();
+      else await handleUploadFile();
+    } catch {
       // 用户取消
     }
   };
@@ -59,24 +115,21 @@ const MaterialPage: React.FC = () => {
       const res = await Taro.chooseImage({
         count: 9,
         sizeType: ['original', 'compressed'],
-        sourceType: ['album', 'camera']
+        sourceType: ['album', 'camera'],
       });
-      if (res.tempFilePaths && res.tempFilePaths.length > 0) {
-        Taro.showLoading({ title: `上传中 0/${res.tempFilePaths.length}...` });
-        const material = await uploadImages(res.tempFilePaths);
-        Taro.hideLoading();
-        if (material && material.id) {
-          setEditMaterialId(material.id);
-          setEditCopy('');
-          setShowCopyModal(true);
-        } else {
-          Taro.showToast({ title: '上传成功', icon: 'success' });
-          loadMaterials();
-        }
+      if (!res.tempFilePaths?.length) return;
+      Taro.showLoading({ title: `上传中 0/${res.tempFilePaths.length}...` });
+      const material = await uploadImages(res.tempFilePaths);
+      Taro.hideLoading();
+      if (material?.id) goPublishPage(material);
+      else {
+        Taro.showToast({ title: '上传成功', icon: 'success' });
+        loadMaterials();
       }
     } catch (e) {
       Taro.hideLoading();
       console.error('[Material] uploadImages failed:', e);
+      Taro.showToast({ title: '上传失败', icon: 'none' });
     }
   };
 
@@ -85,21 +138,16 @@ const MaterialPage: React.FC = () => {
       const res = await Taro.chooseMedia({
         count: 1,
         mediaType: ['video'],
-        sourceType: ['album', 'camera']
+        sourceType: ['album', 'camera'],
       });
-      if (res.tempFiles && res.tempFiles.length > 0) {
-        Taro.showLoading({ title: '上传中...' });
-        const result = await uploadFile(res.tempFiles[0].tempFilePath);
-        Taro.hideLoading();
-        const material = (result as any) as Material;
-        if (material && material.id) {
-          setEditMaterialId(material.id);
-          setEditCopy('');
-          setShowCopyModal(true);
-        } else {
-          Taro.showToast({ title: '上传成功', icon: 'success' });
-          loadMaterials();
-        }
+      if (!res.tempFiles?.length) return;
+      Taro.showLoading({ title: '上传中...' });
+      const material = (await uploadFile(res.tempFiles[0].tempFilePath)) as Material;
+      Taro.hideLoading();
+      if (material?.id) goPublishPage(material);
+      else {
+        Taro.showToast({ title: '上传成功', icon: 'success' });
+        loadMaterials();
       }
     } catch (e) {
       Taro.hideLoading();
@@ -109,134 +157,118 @@ const MaterialPage: React.FC = () => {
 
   const handleUploadFile = async () => {
     try {
-      const res = await Taro.chooseMessageFile({
-        count: 1,
-        type: 'file'
-      });
-      if (res.tempFiles && res.tempFiles.length > 0) {
-        Taro.showLoading({ title: '上传中...' });
-        const result = await uploadFile(res.tempFiles[0].path);
-        Taro.hideLoading();
-        const material = (result as any) as Material;
-        if (material && material.id) {
-          setEditMaterialId(material.id);
-          setEditCopy('');
-          setShowCopyModal(true);
-        } else {
-          Taro.showToast({ title: '上传成功', icon: 'success' });
-          loadMaterials();
-        }
+      const res = await Taro.chooseMessageFile({ count: 1, type: 'file' });
+      if (!res.tempFiles?.length) return;
+      Taro.showLoading({ title: '上传中...' });
+      const material = (await uploadFile(res.tempFiles[0].path)) as Material;
+      Taro.hideLoading();
+      if (material?.id) goPublishPage(material);
+      else {
+        Taro.showToast({ title: '上传成功', icon: 'success' });
+        loadMaterials();
       }
     } catch (e) {
       Taro.hideLoading();
-      console.error('[Material] upload failed:', e);
+      console.error('[Material] uploadFile failed:', e);
     }
   };
 
-  const handleSaveCopy = async () => {
-    if (!editCopy.trim()) {
-      Taro.showToast({ title: '请输入文案', icon: 'none' });
+  const handleCardClick = (material: Material) => {
+    if (material.publishStatus === 0) {
+      goPublishPage(material);
       return;
     }
-    try {
-      Taro.showLoading({ title: '保存中...' });
-      await request(`/material/${editMaterialId}`, {
-        method: 'PUT',
-        data: { content: editCopy }
-      });
-      Taro.hideLoading();
-      setShowCopyModal(false);
-      Taro.showToast({ title: '文案已保存', icon: 'success' });
-      loadMaterials();
-    } catch (e) {
-      Taro.hideLoading();
-      console.error('[Material] saveCopy failed:', e);
-    }
-  };
-
-  const handleSkipCopy = () => {
-    setShowCopyModal(false);
-    Taro.showToast({ title: '上传成功', icon: 'success' });
-    loadMaterials();
-  };
-
-  const handleMaterialClick = (material: Material) => {
     Taro.navigateTo({ url: `/pages/materialDetail/index?id=${material.id}` });
   };
 
-  const filteredMaterials = activeTab === 'all'
-    ? materials
-    : materials.filter(m => m.fileType === activeTab);
-
-  const tabs = [
-    { key: 'all', label: '全部' },
-    { key: 'VIDEO', label: '视频' },
-    { key: 'PDF', label: 'PDF' },
-    { key: 'IMAGE', label: '图片' },
-    { key: 'TABLE', label: '表格' }
-  ];
-
-  return (
-    <View className={styles.materialPage}>
-      <View className={styles.header}>
-        <Text className={styles.title}>素材管理</Text>
-        <View className={styles.headerBtns}>
-          <Text className={styles.uploadBtn} onClick={handleUpload}>上传素材</Text>
+  if (!isLoggedIn) {
+    return (
+      <View className={styles.page}>
+        <LoginModal />
+        <View className={styles.emptyTip}>
+          <Text>请先登录</Text>
         </View>
       </View>
+    );
+  }
 
-      <View className={styles.tabs}>
-        {tabs.map(tab => (
-          <Text
+  return (
+    <View className={styles.page}>
+      <LoginModal />
+
+      <View className={styles.filterBar}>
+        {FILTERS.map((tab) => (
+          <View
             key={tab.key}
-            className={classnames(styles.tab, activeTab === tab.key && styles.tabActive)}
+            className={classnames(styles.filterTab, activeTab === tab.key && styles.filterTabActive)}
             onClick={() => setActiveTab(tab.key)}
           >
-            {tab.label}
-          </Text>
+            <Text
+              className={classnames(
+                styles.filterText,
+                activeTab === tab.key && styles.filterTextActive
+              )}
+            >
+              {tab.label}
+            </Text>
+          </View>
         ))}
       </View>
 
-      {!isLoggedIn ? (
-        <View className={styles.emptyTip}>
-          <Text className={styles.emptyText}>请先登录</Text>
-        </View>
-      ) : loading ? (
-        <View className={styles.loading}>
-          <Text>加载中...</Text>
-        </View>
-      ) : filteredMaterials.length > 0 ? (
-        <View className={styles.materialList}>
-          {filteredMaterials.map(item => (
-            <MaterialCard key={item.id} material={item} onClick={handleMaterialClick} />
-          ))}
-        </View>
-      ) : (
-        <View className={styles.emptyTip}>
-          <Text className={styles.emptyText}>暂无素材</Text>
-          <Text className={styles.emptyBtn} onClick={handleUpload}>上传第一个素材</Text>
-        </View>
-      )}
-
-      {showCopyModal && (
-        <View className={styles.modalMask} key="copy-modal">
-          <View className={styles.modalContent} key="copy-modal-content">
-            <Text className={styles.modalTitle}>编辑文案</Text>
-            <Textarea
-              className={styles.copyTextarea}
-              value={editCopy}
-              onInput={(e) => setEditCopy(e.detail.value)}
-              placeholder="请输入文案内容，方便后续查找和使用"
-              maxlength={500}
-              autoHeight
-            />
-            <View className={styles.modalBtns}>
-              <Text className={styles.modalSkipBtn} onClick={handleSkipCopy}>跳过</Text>
-              <Text className={styles.modalSaveBtn} onClick={handleSaveCopy}>保存</Text>
-            </View>
+      <ScrollView scrollY className={styles.listScroll} enhanced showScrollbar={false}>
+        {loading && materials.length === 0 ? (
+          <View className={styles.emptyTip}>
+            <Text>加载中...</Text>
           </View>
+        ) : filtered.length === 0 ? (
+          <View className={styles.emptyTip}>
+            <Text>暂无素材</Text>
+          </View>
+        ) : (
+          <View className={styles.grid}>
+            {filtered.map((item) => {
+              const cover = getCover(item);
+              const isVideo = item.fileType === 'VIDEO';
+              const isDraft = item.publishStatus === 0;
+              return (
+                <View
+                  key={item.id}
+                  className={styles.card}
+                  onClick={() => handleCardClick(item)}
+                >
+                  <View className={styles.coverWrap}>
+                    {cover ? (
+                      <MediaImage className={styles.cover} src={cover} mode="aspectFill" />
+                    ) : (
+                      <View className={styles.coverPlaceholder}>
+                        <Text className={styles.coverPlaceholderText}>{item.fileType || 'FILE'}</Text>
+                      </View>
+                    )}
+                    {isDraft ? (
+                      <View className={styles.draftTag}>
+                        <Text className={styles.draftTagText}>草稿</Text>
+                      </View>
+                    ) : null}
+                    {isVideo ? <View className={styles.playIcon} /> : null}
+                  </View>
+                  <View className={styles.cardBody}>
+                    <Text className={styles.cardTitle}>{getDisplayTitle(item)}</Text>
+                    <Text className={styles.cardDate}>{formatDate(item.createTime)}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+        <View className={styles.listBottomSpacer} />
+      </ScrollView>
+
+      <View className={styles.publishBar}>
+        <View className={styles.publishBtn} onClick={handleUpload}>
+          <Text className={styles.publishBtnText}>发布作品</Text>
+          <Text className={styles.publishPlus}>+</Text>
         </View>
-      )}
+      </View>
     </View>
   );
 };

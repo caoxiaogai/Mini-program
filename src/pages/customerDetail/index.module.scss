@@ -1,116 +1,226 @@
 @use '@/styles/variables.scss' as *;
 
-.detailPage {
+.page {
   min-height: 100vh;
   background-color: $color-bg-page;
 }
 
-.summaryCard {
-  display: flex;
+.scrollView {
+  height: 100vh;
+  padding: $spacing-md $page-padding;
+  box-sizing: border-box;
+}
+
+// 用户信息卡
+.userCard {
   background-color: $color-bg-card;
-  margin: $spacing-md $page-padding 0;
-  border-radius: $radius-md;
-  padding: $spacing-lg $spacing-md;
+  border-radius: $radius-lg;
+  padding: 32rpx;
   box-shadow: $shadow-card;
 }
 
-.summaryItem {
+.userHeader {
+  display: flex;
+  align-items: center;
+}
+
+.avatarWrap {
+  width: 80rpx;
+  height: 80rpx;
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $radius-round;
+}
+
+.avatarPlaceholder {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $radius-round;
+  background-color: $color-intent-high-bg;
+  @include flex-center;
+}
+
+.avatarPlaceholderText {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-intent-high;
+}
+
+.userInfo {
+  flex: 1;
+  margin-left: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.nickname {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  @include text-ellipsis;
+}
+
+.intentTag {
+  align-self: flex-start;
+  background-color: $color-intent-high-bg;
+  border-radius: $radius-xs;
+  padding: 4rpx 16rpx;
+  margin-top: 8rpx;
+}
+
+.intentTagText {
+  font-size: $font-size-xs;
+  color: $color-intent-high;
+  font-weight: $font-weight-medium;
+}
+
+.copyBtn {
+  flex-shrink: 0;
+  background-color: $color-primary;
+  border-radius: $radius-button;
+  padding: 12rpx 24rpx;
+  margin-left: $spacing-sm;
+}
+
+.copyBtnText {
+  font-size: $font-size-sm;
+  color: $color-text-white;
+  font-weight: $font-weight-medium;
+}
+
+// 统计行
+.statsRow {
+  display: flex;
+  margin-top: 32rpx;
+}
+
+.statItem {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.summaryValue {
+.statValue {
   font-size: $font-size-xl;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
 }
 
-.summaryLabel {
+.statLabel {
   font-size: $font-size-xs;
   color: $color-text-tertiary;
   margin-top: 4rpx;
 }
 
+// 阅读记录区域
 .section {
-  margin: $spacing-md $page-padding 0;
+  margin-top: $spacing-md;
 }
 
 .sectionTitle {
   font-size: $font-size-lg;
-  font-weight: $font-weight-semibold;
+  font-weight: $font-weight-bold;
   color: $color-text-primary;
   margin-bottom: $spacing-md;
+  display: block;
 }
 
-.historyList {
+.recordList {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
 }
 
-.historyItem {
+// 阅读记录卡片
+.recordCard {
   background-color: $color-bg-card;
   border-radius: $radius-md;
   padding: $spacing-md;
+  display: flex;
   box-shadow: $shadow-card;
 }
 
-.historyHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.recordCover {
+  width: 120rpx;
+  height: 120rpx;
+  flex-shrink: 0;
+  border-radius: $radius-sm;
+  overflow: hidden;
 }
 
-.historyTitle {
+.coverPlaceholder {
+  width: 120rpx;
+  height: 120rpx;
+  background-color: #E8F4FD;
+  border-radius: $radius-sm;
+  @include flex-center;
+}
+
+.coverPlayIcon {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 16rpx 0 16rpx 28rpx;
+  border-color: transparent transparent transparent rgba(14, 200, 217, 0.6);
+}
+
+.recordBody {
+  flex: 1;
+  margin-left: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.recordTitle {
   font-size: $font-size-md;
   font-weight: $font-weight-medium;
   color: $color-text-primary;
-  flex: 1;
   @include text-ellipsis;
 }
 
-.completedTag {
-  font-size: $font-size-xs;
-  padding: 4rpx $spacing-sm;
-  border-radius: $radius-xs;
-  background-color: #e8ffea;
-  color: $color-success;
-  flex-shrink: 0;
-  margin-left: $spacing-sm;
+.recordMeta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: 8rpx;
 }
 
-.incompleteTag {
+.recordDate {
   font-size: $font-size-xs;
-  padding: 4rpx $spacing-sm;
-  border-radius: $radius-xs;
-  background-color: $color-bg-hover;
   color: $color-text-tertiary;
-  flex-shrink: 0;
-  margin-left: $spacing-sm;
 }
 
-.historyStats {
+.typeTag {
+  background-color: #F0F0F0;
+  border-radius: $radius-xs;
+  padding: 2rpx 12rpx;
+}
+
+.typeTagText {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.recordStats {
   display: flex;
   gap: $spacing-md;
-  margin-top: $spacing-xs;
+  margin-top: 8rpx;
 }
 
-.historyStat {
+.recordStat {
   font-size: $font-size-xs;
   color: $color-text-tertiary;
 }
 
-.historyTime {
-  margin-top: $spacing-xs;
-}
-
-.timeText {
-  font-size: $font-size-xs;
-  color: $color-text-disabled;
-}
-
+// 空状态
 .emptyTip {
   text-align: center;
   padding: 120rpx 0;

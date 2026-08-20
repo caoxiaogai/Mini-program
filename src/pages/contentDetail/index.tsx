@@ -1,12 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView } from '@tarojs/components';
+import { View, Text, Image } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
-import classnames from 'classnames';
 import styles from './index.module.scss';
 import { request } from '../../services/api';
 import { useUserStore } from '../../store/user';
-import { formatDuration } from '../../utils/format';
-import type { ContentDetailVO } from '../../types';
+import type { ContentDetailVO, AudienceVO } from '../../types';
+
+type IntentLevel = 'high' | 'medium' | 'low';
+
+const getIntentLevel = (audience: AudienceVO): IntentLevel => {
+  if (audience.completed === 1) return 'high';
+  if (audience.viewCount >= 2) return 'medium';
+  return 'low';
+};
+
+const getIntentLabel = (level: IntentLevel): string => {
+  switch (level) {
+    case 'high': return '高意向';
+    case 'medium': return '中意向';
+    case 'low': return '低意向';
+  }
+};
+
+const formatNumber = (n: number): string => {
+  if (n >= 10000) {
+    const v = (n / 10000).toFixed(1);
+    return v.replace(/\.0$/, '') + '万';
+  }
+  if (n >= 1000) {
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+  return String(n);
+};
 
 const ContentDetailPage: React.FC = () => {
   const router = useRouter();
@@ -61,52 +86,87 @@ const ContentDetailPage: React.FC = () => {
 
   return (
     <View className={styles.detailPage}>
-      {/* 统计卡片 */}
-      <View className={styles.statsCard}>
-        <View className={styles.statItem}>
-          <Text className={styles.statValue}>{detail.viewCount}</Text>
-          <Text className={styles.statLabel}>浏览次数</Text>
-        </View>
-        <View className={styles.statItem}>
-          <Text className={styles.statValue}>{detail.viewerCount}</Text>
-          <Text className={styles.statLabel}>浏览人数</Text>
-        </View>
-        <View className={styles.statItem}>
-          <Text className={styles.statValue}>{detail.completeCount}</Text>
-          <Text className={styles.statLabel}>完播数</Text>
-        </View>
-        <View className={styles.statItem}>
-          <Text className={styles.statValue}>{detail.forwardCount}</Text>
-          <Text className={styles.statLabel}>转发数</Text>
+      {/* 作品头部信息卡 */}
+      <View className={styles.headerCard}>
+        <Image
+          className={styles.cover}
+          src={detail.content}
+          mode="aspectFill"
+        />
+        <View className={styles.headerInfo}>
+          <View className={styles.headerTop}>
+            <Text className={styles.title}>{detail.title}</Text>
+          </View>
+          <View className={styles.metricsRow}>
+            <View className={styles.metricItem}>
+              <Text className={styles.metricValue}>{formatNumber(detail.forwardCount)}</Text>
+              <Text className={styles.metricLabel}>转发</Text>
+            </View>
+            <View className={styles.metricItem}>
+              <Text className={styles.metricValue}>{formatNumber(detail.completeCount)}</Text>
+              <Text className={styles.metricLabel}>完播</Text>
+            </View>
+            <View className={styles.metricItem}>
+              <Text className={styles.metricValue}>{formatNumber(detail.viewCount)}</Text>
+              <Text className={styles.metricLabel}>浏览</Text>
+            </View>
+            <View className={styles.metricItem}>
+              <Text className={styles.metricValue}>{formatNumber(detail.viewerCount)}</Text>
+              <Text className={styles.metricLabel}>观看人数</Text>
+            </View>
+          </View>
         </View>
       </View>
 
+      {/* 受众用户列表 */}
       <View className={styles.section}>
         <Text className={styles.sectionTitle}>受众列表</Text>
         {detail.audienceList && detail.audienceList.length > 0 ? (
-          <View className={styles.audienceList}>
-            {detail.audienceList.map(item => (
-              <View
-                key={item.customerId}
-                className={styles.audienceItem}
-                onClick={() => handleCustomerClick(item.customerId)}
-              >
-                <Image className={styles.avatar} src={item.avatar} mode="aspectFill" />
-                <View className={styles.audienceInfo}>
-                  <Text className={styles.audienceName}>{item.nickname}</Text>
+          <View className={styles.audienceCard}>
+            {detail.audienceList.map(item => {
+              const intentLevel = getIntentLevel(item);
+              const intentLabel = getIntentLabel(intentLevel);
+              const intentClass =
+                intentLevel === 'high'
+                  ? styles.intentHigh
+                  : intentLevel === 'medium'
+                    ? styles.intentMedium
+                    : styles.intentLow;
+
+              return (
+                <View
+                  key={item.customerId}
+                  className={styles.audienceItem}
+                  onClick={() => handleCustomerClick(item.customerId)}
+                >
+                  <Image
+                    className={styles.avatar}
+                    src={item.avatar}
+                    mode="aspectFill"
+                  />
+                  <View className={styles.audienceInfo}>
+                    <Text className={styles.nickname}>{item.nickname}</Text>
+                    <View className={`${styles.intentTag} ${intentClass}`}>
+                      <Text>{intentLabel}</Text>
+                    </View>
+                  </View>
                   <View className={styles.audienceStats}>
-                    <Text className={styles.audienceStat}>观看 {item.viewCount}次</Text>
-                    <Text className={styles.audienceStat}>时长 {formatDuration(item.duration)}</Text>
+                    <View className={styles.statCol}>
+                      <Text className={styles.statNum}>{item.viewCount}</Text>
+                      <Text className={styles.statLabel}>阅读</Text>
+                    </View>
+                    <View className={styles.statCol}>
+                      <Text className={styles.statNum}>{item.completed}</Text>
+                      <Text className={styles.statLabel}>完播</Text>
+                    </View>
+                    <View className={styles.statCol}>
+                      <Text className={styles.statNum}>0</Text>
+                      <Text className={styles.statLabel}>转发</Text>
+                    </View>
                   </View>
                 </View>
-                <View className={styles.audienceRight}>
-                  <Text className={classnames(item.completed ? styles.completedTag : styles.incompleteTag)}>
-                    {item.completed ? '已完播' : '未完播'}
-                  </Text>
-                  <Text className={styles.arrow}>›</Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         ) : (
           <View className={styles.emptyTip}>
