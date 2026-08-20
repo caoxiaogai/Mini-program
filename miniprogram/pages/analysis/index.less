@@ -14,6 +14,19 @@ page { min-height: 100vh; background: #e8edf5; }
 .analysis-sort { display: flex; align-items: stretch; height: 64rpx; padding: @segmented-filter-vertical-inset; border-radius: 12rpx; background: #d3d8e0; box-sizing: border-box; }
 .analysis-sort__inner { display: flex; align-items: center; justify-content: center; gap: 8rpx; height: auto; padding: 0 20rpx; border-radius: 8rpx; background: #ffffff; color: #000000; font-size: 26rpx; line-height: 36rpx; white-space: nowrap; box-sizing: border-box; }
 .analysis-sort__arrow { width: 14rpx; height: 8rpx; flex: none; }
+.analysis-sort-sheet { position: fixed; inset: 0; z-index: 1100; display: flex; align-items: flex-end; }
+.analysis-sort-sheet__mask { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.8); animation: analysis-sort-mask-in 300ms ease-out both; }
+.analysis-sort-sheet__panel { position: relative; z-index: 1; display: flex; width: 100%; flex-direction: column; border-radius: 40rpx 40rpx 0 0; background: #ffffff; overflow: hidden; padding-bottom: env(safe-area-inset-bottom); animation: analysis-sort-panel-in 300ms ease-out both; }
+.analysis-sort-sheet__option { display: flex; height: 100rpx; align-items: center; justify-content: center; border-bottom: 2rpx solid #f4f5f5; color: #000000; font-size: 30rpx; line-height: normal; box-sizing: border-box; }
+.analysis-sort-sheet__option:last-child { border-bottom: 0; }
+@keyframes analysis-sort-mask-in {
+  from { background: rgba(0, 0, 0, 0); }
+  to { background: rgba(0, 0, 0, 0.8); }
+}
+@keyframes analysis-sort-panel-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
 .analysis-summary { display: flex; gap: 20rpx; margin-top: 40rpx; }
 .analysis-summary__card { display: flex; min-width: 0; height: 132rpx; flex: 1; flex-direction: column; align-items: flex-start; justify-content: center; gap: 16rpx; padding: 20rpx; border: 2rpx solid #fff; border-radius: 16rpx; background: linear-gradient(180deg, #fff 0%, #f0f5fa 100%); box-shadow: 0 4rpx 3rpx rgba(0,0,0,.05); box-sizing: border-box; }
 .analysis-summary__label { color: #666; font-size: 26rpx; line-height: normal; white-space: nowrap; }

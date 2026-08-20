@@ -3,8 +3,15 @@ import type { AnalysisAudienceUser, AnalysisIntentLevel, AnalysisReadRange, Anal
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
 
+type AnalysisSortId = 'completion' | 'share' | 'view'
+
 interface AnalysisPeriodOption {
   id: AnalysisPeriodId
+  label: string
+}
+
+interface AnalysisSortOption {
+  id: AnalysisSortId
   label: string
 }
 
@@ -13,6 +20,12 @@ const analysisPeriods: AnalysisPeriodOption[] = [
   { id: 'week', label: '周' },
   { id: 'month', label: '月' },
   { id: 'total', label: '总' },
+]
+
+const analysisSortOptions: AnalysisSortOption[] = [
+  { id: 'completion', label: '完播数' },
+  { id: 'share', label: '转发数' },
+  { id: 'view', label: '浏览量' },
 ]
 
 type AnalysisTabId = 'work' | 'user' | 'total'
@@ -64,6 +77,10 @@ Page({
     analysisPeriods,
     activePeriod: 'day' as AnalysisPeriodId,
     activePeriodOffset: 0,
+    analysisSortOptions,
+    activeAnalysisSort: 'view' as AnalysisSortId,
+    activeAnalysisSortLabel: '浏览量',
+    analysisSortSheetVisible: false,
     analysisIntentTabs,
     activeAnalysisIntent: 'all' as AnalysisIntentFilter,
     analysisIntentIndex: 0,
@@ -164,6 +181,24 @@ Page({
       activePeriod: periodId,
       activePeriodOffset: periodIndex * 68,
     })
+  },
+  onAnalysisSortTap() {
+    this.setData({ analysisSortSheetVisible: !this.data.analysisSortSheetVisible })
+  },
+  onAnalysisSortOptionTap(event: WechatMiniprogram.TouchEvent) {
+    const sortId = event.currentTarget.dataset.id as AnalysisSortId
+    const sortOption = analysisSortOptions.find((option) => option.id === sortId)
+
+    if (!sortOption) return
+
+    this.setData({
+      activeAnalysisSort: sortOption.id,
+      activeAnalysisSortLabel: sortOption.label,
+      analysisSortSheetVisible: false,
+    })
+  },
+  onAnalysisSortMaskTap() {
+    this.setData({ analysisSortSheetVisible: false })
   },
   onCardTap(event: WechatMiniprogram.TouchEvent) {
     const cardId = event.currentTarget.dataset.id as string
