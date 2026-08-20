@@ -1,0 +1,54 @@
+import { getRankingOverview, sortRankingEntries } from '../../services/ranking'
+import type { RankingEntryViewModel, RankingMetric, RankingTab, RankingViewModel } from '../../types/ranking'
+import { calculateRankingHeaderOpacity } from '../../utils/ranking'
+
+const rankingTabs: RankingTab[] = [
+  { id: 'views', label: '浏览量' },
+  { id: 'shares', label: '转发量' },
+  { id: 'completions', label: '完播量' },
+]
+
+Page({
+  data: {
+    rankingData: null as RankingViewModel | null,
+    rankingTabs,
+    activeRankingMetric: 'views' as RankingMetric,
+    rankingTabOffset: 0,
+    visibleRankingEntries: [] as RankingEntryViewModel[],
+    hasRankingEntries: false,
+    rankingHeaderOpacity: 0,
+  },
+  onLoad() {
+    getRankingOverview().then((rankingData) => {
+      const visibleRankingEntries = sortRankingEntries(rankingData.entries, this.data.activeRankingMetric)
+
+      this.setData({
+        rankingData,
+        visibleRankingEntries,
+        hasRankingEntries: visibleRankingEntries.length > 0,
+      })
+    })
+  },
+  onPageScroll(event: WechatMiniprogram.PageScrollOption) {
+    const rankingHeaderOpacity = calculateRankingHeaderOpacity(event.scrollTop)
+
+    if (rankingHeaderOpacity === this.data.rankingHeaderOpacity) return
+
+    this.setData({ rankingHeaderOpacity })
+  },
+  onRankingTabTap(event: WechatMiniprogram.TouchEvent) {
+    const metric = event.currentTarget.dataset.id as RankingMetric
+    const tabIndex = Number(event.currentTarget.dataset.index)
+
+    if (!rankingTabs.some((tab) => tab.id === metric) || !Number.isInteger(tabIndex)) return
+
+    const visibleRankingEntries = sortRankingEntries(this.data.rankingData?.entries ?? [], metric)
+
+    this.setData({
+      activeRankingMetric: metric,
+      rankingTabOffset: tabIndex * 100,
+      visibleRankingEntries,
+      hasRankingEntries: visibleRankingEntries.length > 0,
+    })
+  },
+})

@@ -18,7 +18,7 @@
       <view class="analysis-summary">
         <view wx:for="{{analysisData.summary}}" wx:key="label" class="analysis-summary__card"><text class="analysis-summary__label">{{item.label}}</text><text class="analysis-summary__value">{{item.value}}</text></view>
       </view>
-      <view class="analysis-list">
+      <view wx:if="{{hasAnalysisCards}}" class="analysis-list">
         <view wx:for="{{analysisData.cards}}" wx:key="id" class="analysis-card" hover-class="analysis-card--pressed" hover-stay-time="120" bindtap="onCardTap" data-id="{{item.id}}">
           <view class="analysis-card__head">
             <image class="analysis-card__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
@@ -27,6 +27,10 @@
           </view>
           <view class="analysis-card__metrics"><view wx:for="{{item.metrics}}" wx:key="label" class="analysis-card__metric"><text class="analysis-card__metric-label">{{item.label}}</text><text class="analysis-card__metric-value">{{item.value}}</text></view></view>
         </view>
+      </view>
+      <view wx:else class="analysis-empty-state">
+        <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+        <text>还没有作品，你可以发布一个</text>
       </view>
     </view>
   </view>
@@ -39,7 +43,7 @@
       <view class="analysis-user__summary">
         <view wx:for="{{analysisData.userSummary}}" wx:key="label" class="analysis-user__summary-card"><text class="analysis-user__summary-label">{{item.label}}</text><text class="analysis-user__summary-value">{{item.value}}</text></view>
       </view>
-      <view class="analysis-user__list-panel">
+      <view wx:if="{{hasAnalysisUsers}}" class="analysis-user__list-panel">
         <view class="analysis-user__list">
           <view wx:for="{{visibleAnalysisUsers}}" wx:key="id" class="analysis-user {{item.showMarker ? 'analysis-user--marked' : ''}}" bindtap="onAnalysisUserTap" data-id="{{item.id}}">
             <image class="analysis-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
@@ -52,6 +56,10 @@
             </view>
           </view>
         </view>
+      </view>
+      <view wx:else class="analysis-empty-state analysis-empty-state--user">
+        <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+        <text>还没用户，快去发布作品吧</text>
       </view>
     </view>
   </view>

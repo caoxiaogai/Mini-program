@@ -1,6 +1,10 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/materials/index",
+    "pages/material-detail/index",
+    "pages/materials/publish/index",
+    "pages/ranking/index",
     "pages/notifications/notifications",
     "pages/analysis/index",
     "pages/analysis-detail/index",

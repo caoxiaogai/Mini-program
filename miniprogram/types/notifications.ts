@@ -9,13 +9,9 @@ export interface NotificationFilterViewModel {
   label: string
 }
 
-export interface NotificationThumbnailViewModel {
-  id: string
-  url: string
-}
-
 export interface NotificationCardViewModel {
   id: string
+  userId: string
   visitorName: string
   intent: NotificationIntent
   intentLabel: string
@@ -24,7 +20,7 @@ export interface NotificationCardViewModel {
   actionDate: string
   actionIconPath: string
   avatarUrl: string
-  thumbnailItems: NotificationThumbnailViewModel[]
+  thumbnailUrl: string
   recommendation: string
 }
 

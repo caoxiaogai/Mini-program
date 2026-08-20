@@ -17,11 +17,13 @@ page { min-height: 100vh; background: #eef3fb; }
 .detail-intent { display: flex; flex-direction: column; gap: 20rpx; margin-top: 32rpx; }
 .detail-intent__title { color: #000; font-size: 32rpx; font-weight: 600; line-height: normal; }
 .detail-intent__panel { display: flex; height: 944rpx; flex-direction: column; gap: 40rpx; padding: 30rpx 30rpx 56rpx; border: 2rpx solid #fff; border-radius: 32rpx; background: linear-gradient(180deg, #fff 0%, #f0f5fa 100%); box-shadow: 0 4rpx 3rpx rgba(0,0,0,.05); box-sizing: border-box; }
-.detail-intent__tabs { position: relative; display: flex; align-items: center; width: 100%; height: 64rpx; padding: 4rpx; overflow: hidden; border-radius: 16rpx; background: #d3d8e0; box-sizing: border-box; }
-.detail-intent__selection { position: absolute; top: 4rpx; left: 4rpx; width: calc((100% - 8rpx) / 4); height: 56rpx; border-radius: 12rpx; background: #fff; transition: transform 180ms ease-out; }
+.detail-intent__tabs { position: relative; display: flex; align-items: center; width: 100%; height: 64rpx; padding: @segmented-filter-vertical-inset; overflow: hidden; border-radius: 16rpx; background: #d3d8e0; box-sizing: border-box; }
+.detail-intent__selection { position: absolute; top: @segmented-filter-vertical-inset; bottom: @segmented-filter-vertical-inset; left: 4rpx; width: calc((100% - 8rpx) / 4); height: auto; border-radius: 12rpx; background: #fff; transition: transform 180ms ease-out; }
 .detail-intent__tab { position: relative; z-index: 1; display: flex; height: 56rpx; flex: 1; align-items: center; justify-content: center; border-radius: 12rpx; color: #8a8e94; font-size: 26rpx; line-height: normal; text-align: center; }
 .detail-intent__tab--active { color: #000; }
 .detail-users { display: flex; flex-direction: column; gap: 30rpx; }
+.detail-intent__empty-state { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 10rpx; color: #8a8e94; font-size: 26rpx; line-height: normal; }
+.detail-intent__empty-state__icon { width: 78rpx; height: 78rpx; }
 .detail-user { display: flex; align-items: flex-start; width: 100%; gap: 22rpx; }
 .detail-user__avatar { width: 88rpx; height: 88rpx; flex-shrink: 0; border-radius: 50%; }
 .detail-user__body { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 30rpx; }

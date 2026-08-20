@@ -1,0 +1,56 @@
+<view class="materials-page">
+  <view class="materials-page__base"></view>
+  <image class="materials-page__status-glow" src="/assets/analysis/group-40.svg" mode="scaleToFill" />
+
+  <view class="materials-page__header" style="background: rgba(232, 237, 245, {{materialsHeaderOpacity}});">
+    <navigation-bar back="{{true}}" title="素材" color="#000000" background="transparent" />
+  </view>
+
+  <view wx:if="{{materials}}" class="materials-page__content">
+    <view class="materials-filter" role="tablist">
+      <view
+        wx:for="{{materials.filters}}"
+        wx:key="id"
+        class="materials-filter__item {{activeFilter === item.id ? 'materials-filter__item--active' : ''}}"
+        bindtap="onFilterTap"
+        data-id="{{item.id}}"
+        hover-class="materials-filter__item--pressed"
+        hover-stay-time="80"
+        role="tab"
+        aria-selected="{{activeFilter === item.id}}"
+      >
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+
+    <view class="materials-grid">
+      <view
+        wx:for="{{visibleMaterials}}"
+        wx:key="id"
+        class="materials-card"
+        bindtap="onMaterialCardTap"
+        data-id="{{item.id}}"
+        hover-class="materials-card--pressed"
+        hover-start-time="80"
+        hover-stay-time="120"
+      >
+        <view class="materials-card__preview">
+          <image class="materials-card__image" src="{{item.thumbnailUrl}}" mode="aspectFit" />
+          <view wx:if="{{item.isDraft}}" class="materials-card__draft">草稿</view>
+          <image wx:if="{{item.kind === 'video'}}" class="materials-card__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
+        </view>
+        <view class="materials-card__info">
+          <text class="materials-card__title">{{item.title}}</text>
+          <text class="materials-card__date">{{item.date}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="materials-publish-bar">
+    <view class="materials-publish-button" bindtap="onPublishTap" hover-class="materials-publish-button--pressed" hover-stay-time="80">
+      <text>发布素材</text>
+      <image src="/assets/materials/material-plus.svg" mode="aspectFit" />
+    </view>
+  </view>
+</view>

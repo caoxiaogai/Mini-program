@@ -70,14 +70,23 @@ Page({
     analysisIntentOffset: 0,
     analysisIntentSwipeStartX: 0,
     visibleAnalysisUsers: [] as AnalysisAudienceUser[],
+    hasAnalysisCards: false,
+    hasAnalysisUsers: false,
     analysisReadRanges,
     activeAnalysisReadRange: 'week' as AnalysisReadRange,
     visibleAnalysisReadTrend: [] as AnalysisViewModel['totalData']['readTrends']['week'],
   },
-  onLoad() {
+  onLoad(options: Record<string, string | undefined>) {
+    const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
+
     getAnalysisOverview().then((analysisData) => this.setData({
       analysisData,
+      activeAnalysisTab: analysisTabs[analysisTabIndex].id,
+      activeAnalysisTabIndex: analysisTabIndex,
+      analysisTabOffset: analysisTabIndex * 100,
       visibleAnalysisUsers: analysisData.audienceUsers,
+      hasAnalysisCards: analysisData.cards.length > 0,
+      hasAnalysisUsers: analysisData.audienceUsers.length > 0,
       visibleAnalysisReadTrend: analysisData.totalData.readTrends.week,
     }))
   },
@@ -124,11 +133,14 @@ Page({
 
     if (!selectedTab) return
 
+    const visibleUsers = getVisibleAnalysisUsers(users, selectedTab.id)
+
     this.setData({
       activeAnalysisIntent: selectedTab.id,
       analysisIntentIndex: index,
       analysisIntentOffset: index * 100,
-      visibleAnalysisUsers: getVisibleAnalysisUsers(users, selectedTab.id),
+      visibleAnalysisUsers: visibleUsers,
+      hasAnalysisUsers: visibleUsers.length > 0,
     })
   },
   onAnalysisRangeTap(event: WechatMiniprogram.TouchEvent) {
@@ -160,6 +172,9 @@ Page({
   },
   onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) {
     const userId = event.currentTarget.dataset.id as string
+    const updatedUsers = this.data.visibleAnalysisUsers.map((user) => user.id === userId ? { ...user, showMarker: false } : user)
+
+    this.setData({ visibleAnalysisUsers: updatedUsers })
 
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
   },

@@ -1,0 +1,220 @@
+@materials-background: #e8edf5;
+@materials-muted: #8a8e94;
+@materials-accent: #0ec8d9;
+
+page {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.materials-page {
+  position: relative;
+  min-height: 100vh;
+  background: #ffffff;
+  color: #000000;
+  isolation: isolate;
+}
+
+.materials-page__base {
+  position: absolute;
+  inset: 0;
+  z-index: 999;
+  background: @materials-background;
+  pointer-events: none;
+}
+
+.materials-page__status-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 230rpx;
+  pointer-events: none;
+}
+
+.materials-page__header {
+  position: sticky;
+  top: 0;
+  z-index: 1002;
+  background: transparent;
+}
+
+.materials-page__content {
+  position: relative;
+  z-index: 1001;
+  padding: 0 40rpx calc(160rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(232, 237, 245, 0) 0%, #e8edf5 13.976%, #e8edf5 100%);
+  box-sizing: border-box;
+}
+
+.materials-filter {
+  display: flex;
+  gap: 20rpx;
+  align-items: center;
+}
+
+.materials-filter__item {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 64rpx;
+  padding: 0 32rpx;
+  border: 2rpx solid #f7f7f7;
+  border-radius: 10rpx;
+  background: linear-gradient(180deg, #f0f5fa 0%, #f7f5f5 100%);
+  box-shadow: 0 0 20rpx rgba(0, 0, 0, 0.1);
+  color: @materials-muted;
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 36rpx;
+  box-sizing: border-box;
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.materials-filter__item--active {
+  border-color: #dceef2;
+  background: linear-gradient(180deg, #e4f9fc 0%, #feffff 100%);
+  color: @materials-accent;
+}
+
+.materials-filter__item--pressed,
+.materials-publish-button--pressed {
+  opacity: 0.66;
+  transform: scale(0.98);
+}
+
+.materials-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20rpx 18rpx;
+  margin-top: 40rpx;
+}
+
+.materials-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  transition: transform 120ms ease-out;
+}
+
+.materials-card--pressed {
+  transform: scale(0.99);
+}
+
+.materials-card__preview {
+  position: relative;
+  width: 100%;
+  height: 460rpx;
+  overflow: hidden;
+  border-radius: 16rpx 16rpx 0 0;
+  background: #DEE2E7;
+}
+
+.materials-card__image {
+  width: 100%;
+  height: 100%;
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.materials-card__draft {
+  position: absolute;
+  top: 20rpx;
+  left: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40rpx;
+  padding: 0 20rpx;
+  border-radius: 58rpx;
+  background: #ffffff;
+  color: #000000;
+  font-size: 22rpx;
+  line-height: normal;
+}
+
+.materials-card__play {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.materials-card__info {
+  display: flex;
+  min-height: 160rpx;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 16rpx 20rpx;
+  border: 2rpx solid #ffffff;
+  border-top: 0;
+  border-radius: 0 0 24rpx 24rpx;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f5fa 100%);
+  box-shadow: 0 4rpx 3rpx rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.materials-card__title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #000000;
+  font-size: 28rpx;
+  line-height: 36rpx;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.materials-card__date {
+  color: @materials-muted;
+  font-size: 28rpx;
+  line-height: 36rpx;
+  white-space: nowrap;
+}
+
+.materials-publish-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1003;
+  height: 160rpx;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: linear-gradient(180deg, rgba(225, 235, 247, 0) 0%, rgba(213, 224, 236, 0.8) 47.208%, #c8d3df 100%);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.materials-publish-button {
+  position: absolute;
+  bottom: 80rpx;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  height: 80rpx;
+  padding: 0 48rpx;
+  border-radius: 106rpx;
+  background: @materials-accent;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: normal;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.materials-publish-button image {
+  width: 28rpx;
+  height: 28rpx;
+}
+
+.materials-publish-button--pressed {
+  transform: translateX(-50%) scale(0.96);
+}

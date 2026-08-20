@@ -8,18 +8,18 @@
       <view class="home-assistant__image-frame">
         <image class="home-assistant__image" src="/assets/home/ai-assistant.png" mode="aspectFit" />
       </view>
-      <text class="home-assistant__greeting">{{homeData.greeting}}</text>
+      <text class="home-assistant__greeting">{{greeting}}</text>
     </view>
 
     <view class="home-summary">
-      <view class="home-summary__card home-summary__card--visitors" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
+      <view class="home-summary__card home-summary__card--visitors" bindtap="onSummaryCardTap" data-analysis-tab="user" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
         <view class="home-summary__copy">
-          <text class="home-summary__primary">今日有 <text class="home-summary__number">{{homeData.newVisitors.total}}</text> 个新增用户</text>
-          <text class="home-summary__secondary">其中有 <text class="home-summary__secondary-strong">{{homeData.newVisitors.highIntentCount}}</text> 位高意向用户</text>
+          <text class="home-summary__primary">{{homeSummary.newVisitors.primaryPrefix}}<text wx:if="{{homeSummary.newVisitors.primaryValue}}" class="home-summary__number">{{homeSummary.newVisitors.primaryValue}}</text>{{homeSummary.newVisitors.primarySuffix}}</text>
+          <text class="home-summary__secondary {{homeSummary.newVisitors.isEmpty ? 'home-summary__secondary--empty' : ''}}">{{homeSummary.newVisitors.secondaryPrefix}}<text wx:if="{{homeSummary.newVisitors.secondaryValue}}" class="home-summary__secondary-strong">{{homeSummary.newVisitors.secondaryValue}}</text>{{homeSummary.newVisitors.secondarySuffix}}</text>
         </view>
-        <view class="home-summary__avatars">
+        <view wx:if="{{homeSummary.newVisitors.showVisitors}}" class="home-summary__avatars">
           <image
-            wx:for="{{homeData.newVisitors.visitors}}"
+            wx:for="{{homeSummary.newVisitors.visitors}}"
             wx:key="id"
             class="home-summary__avatar {{index === 0 ? 'home-summary__avatar--first' : ''}}"
             src="{{item.avatarUrl}}"
@@ -28,14 +28,14 @@
         </view>
       </view>
 
-      <view class="home-summary__card home-summary__card--compact" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
-        <text class="home-summary__primary">今日累计阅读数 <text class="home-summary__number">{{homeData.reading.total}}</text> 次</text>
-        <text class="home-summary__secondary">查看详细</text>
+      <view class="home-summary__card home-summary__card--compact" bindtap="onSummaryCardTap" data-analysis-tab="work" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
+        <text class="home-summary__primary">{{homeSummary.reading.primaryPrefix}}<text wx:if="{{homeSummary.reading.primaryValue}}" class="home-summary__number">{{homeSummary.reading.primaryValue}}</text>{{homeSummary.reading.primarySuffix}}</text>
+        <text class="home-summary__secondary {{homeSummary.reading.isEmpty ? 'home-summary__secondary--empty' : ''}}">{{homeSummary.reading.secondaryPrefix}}<text wx:if="{{homeSummary.reading.secondaryValue}}" class="home-summary__secondary-strong">{{homeSummary.reading.secondaryValue}}</text>{{homeSummary.reading.secondarySuffix}}</text>
       </view>
 
-      <view class="home-summary__card home-summary__card--compact" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
-        <text class="home-summary__primary">今日累计转发次数 <text class="home-summary__number">{{homeData.sharing.total}}</text> 次</text>
-        <text class="home-summary__secondary home-summary__secondary--ellipsis">“{{homeData.sharing.highlightedContentTitle}}”被转发了 {{homeData.sharing.highlightedContentShareCount}} 次</text>
+      <view class="home-summary__card home-summary__card--compact" bindtap="onSummaryCardTap" data-analysis-tab="work" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
+        <text class="home-summary__primary">{{homeSummary.sharing.primaryPrefix}}<text wx:if="{{homeSummary.sharing.primaryValue}}" class="home-summary__number">{{homeSummary.sharing.primaryValue}}</text>{{homeSummary.sharing.primarySuffix}}</text>
+        <text class="home-summary__secondary {{homeSummary.sharing.isEmpty ? 'home-summary__secondary--empty' : 'home-summary__secondary--ellipsis'}}">{{homeSummary.sharing.secondaryPrefix}}<text wx:if="{{homeSummary.sharing.secondaryValue}}" class="home-summary__secondary-strong">{{homeSummary.sharing.secondaryValue}}</text>{{homeSummary.sharing.secondarySuffix}}</text>
       </view>
     </view>
   </view>

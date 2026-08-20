@@ -1,5 +1,7 @@
 import { getHomeOverview } from '../../services/home'
-import type { HomeOverviewViewModel } from '../../types/home'
+import type { HomeOverviewViewModel, HomeSummaryViewModel } from '../../types/home'
+import { getHomeGreeting } from '../../utils/greeting'
+import { buildHomeSummaryViewModel } from '../../utils/home'
 
 const tabItems = [
   { id: 'notifications', label: '通知', iconPath: '/assets/home/tab-notification.svg', badgeCount: 2 },
@@ -10,7 +12,9 @@ const tabItems = [
 
 Page({
   data: {
+    greeting: getHomeGreeting(),
     homeData: null as HomeOverviewViewModel | null,
+    homeSummary: null as HomeSummaryViewModel | null,
     tabItems,
   },
   onLoad() {
@@ -26,12 +30,37 @@ Page({
         }
       })
 
-      this.setData({ homeData, tabItems: tabItemsWithBadge })
+      this.setData({
+        homeData,
+        homeSummary: buildHomeSummaryViewModel(homeData),
+        tabItems: tabItemsWithBadge,
+      })
     })
+  },
+  onShow() {
+    this.setData({ greeting: getHomeGreeting() })
+  },
+  onSummaryCardTap(event: WechatMiniprogram.TouchEvent) {
+    const analysisTab = event.currentTarget.dataset.analysisTab as string
+    if (analysisTab !== 'user' && analysisTab !== 'work') {
+      return
+    }
+
+    wx.navigateTo({ url: `/pages/analysis/index?tab=${analysisTab}` })
   },
   onTabTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
     if (event.detail.id === 'analysis') {
       wx.navigateTo({ url: '/pages/analysis/index' })
+      return
+    }
+
+    if (event.detail.id === 'ranking') {
+      wx.navigateTo({ url: '/pages/ranking/index' })
+      return
+    }
+
+    if (event.detail.id === 'materials') {
+      wx.navigateTo({ url: '/pages/materials/index' })
       return
     }
 

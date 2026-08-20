@@ -1,0 +1,137 @@
+page {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.material-detail-page {
+  min-height: 100vh;
+  background: #ffffff;
+  color: #000000;
+}
+
+.material-detail-page__header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #ffffff;
+}
+
+.material-detail-page__content {
+  padding-bottom: 220rpx;
+  box-sizing: border-box;
+}
+
+.material-detail__swiper {
+  display: block;
+  width: 100%;
+  height: 1052rpx;
+  background: #DEE2E7;
+}
+
+.material-detail__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.material-detail__indicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  height: 20rpx;
+  margin-top: 16rpx;
+}
+
+.material-detail__indicator {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 40rpx;
+  background: #a6abb2;
+}
+
+.material-detail__indicator--active {
+  width: 16rpx;
+  background: #000000;
+}
+
+.material-detail__description {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 24rpx 40rpx 0;
+  box-sizing: border-box;
+}
+
+.material-detail__description-line {
+  color: #000000;
+  font-size: 28rpx;
+  line-height: 44rpx;
+  word-break: break-all;
+}
+
+.material-detail__share-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1001;
+  display: flex;
+  gap: 26rpx;
+  align-items: center;
+  height: 164rpx;
+  padding: 20rpx 40rpx calc(20rpx + env(safe-area-inset-bottom));
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.material-detail__share-button {
+  display: flex;
+  height: 96rpx;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 20rpx;
+  border-radius: 110rpx;
+  box-sizing: border-box;
+  font-size: 28rpx;
+  line-height: normal;
+  white-space: nowrap;
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.material-detail__share-button--friend {
+  border: 2rpx solid #f0f0f0;
+  background: #ffffff;
+}
+
+.material-detail__share-button--moments {
+  background: #0db6c5;
+  color: #ffffff;
+}
+
+.material-detail__share-button--pressed {
+  opacity: 0.72;
+  transform: scale(0.98);
+}
+
+.material-detail__share-icon {
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.material-detail__moments-icon {
+  display: flex;
+  width: 48rpx;
+  height: 48rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.material-detail__moments-icon image {
+  width: 36rpx;
+  height: 36rpx;
+}

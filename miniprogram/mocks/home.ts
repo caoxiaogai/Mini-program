@@ -1,7 +1,6 @@
 import type { HomeOverviewViewModel } from '../types/home'
 
 export const homeOverviewMock: HomeOverviewViewModel = {
-  greeting: '下午好，有什么可以帮助你的吗',
   newVisitors: {
     total: 5,
     highIntentCount: 2,

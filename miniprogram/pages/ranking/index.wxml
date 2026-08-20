@@ -1,0 +1,46 @@
+<view class="ranking-page">
+  <view class="ranking-page__base"></view>
+  <image class="ranking-page__status-glow" src="/assets/analysis/group-40.svg" mode="scaleToFill" />
+  <view class="ranking-page__header" style="background: rgba(232, 237, 245, {{rankingHeaderOpacity}});">
+    <navigation-bar title="排行榜" back="{{true}}" color="#000000" background="transparent" />
+  </view>
+
+    <view class="ranking-page__content">
+      <view class="ranking-hero">
+        <view class="ranking-hero__copy">
+          <image class="ranking-hero__title" src="/assets/ranking/ranking-title.png" mode="aspectFit" />
+          <text class="ranking-hero__subtitle">每一次浏览，都是实力的证明</text>
+        </view>
+        <image class="ranking-hero__trophy" src="/assets/ranking/ranking-trophy.png" mode="aspectFit" />
+      </view>
+
+      <view wx:if="{{rankingData}}" class="ranking-panel">
+        <view class="ranking-tabs">
+          <view class="ranking-tabs__selection" style="transform: translateX({{rankingTabOffset}}%);"></view>
+          <view
+            wx:for="{{rankingTabs}}"
+            wx:key="id"
+            class="ranking-tabs__item {{item.id === activeRankingMetric ? 'ranking-tabs__item--active' : ''}}"
+            bindtap="onRankingTabTap"
+            data-id="{{item.id}}"
+            data-index="{{index}}"
+          >{{item.label}}</view>
+        </view>
+
+        <view wx:if="{{hasRankingEntries}}" class="ranking-list">
+          <view wx:for="{{visibleRankingEntries}}" wx:key="id" class="ranking-entry">
+            <image class="ranking-entry__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
+            <view class="ranking-entry__copy">
+              <text class="ranking-entry__name">{{item.name}}</text>
+              <view class="ranking-entry__meta"><text>作品</text><text>{{item.workCount}}</text></view>
+            </view>
+            <text class="ranking-entry__value">{{item.rankValue}}</text>
+          </view>
+        </view>
+        <view wx:else class="ranking-empty-state">
+          <image class="ranking-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+          <text>暂无数据</text>
+        </view>
+      </view>
+    </view>
+</view>

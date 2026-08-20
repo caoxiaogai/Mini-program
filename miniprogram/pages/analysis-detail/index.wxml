@@ -28,7 +28,7 @@
           <view class="detail-intent__selection" style="transform: translateX({{intentTabOffset}}%);"></view>
           <view wx:for="{{intentTabs}}" wx:key="id" class="detail-intent__tab {{item.id === activeIntentLevel ? 'detail-intent__tab--active' : ''}}" bindtap="onIntentTabTap" data-index="{{index}}" data-id="{{item.id}}">{{item.label}}</view>
         </view>
-        <view class="detail-users">
+        <view wx:if="{{hasVisibleIntentUsers}}" class="detail-users">
           <view wx:for="{{visibleIntentUsers}}" wx:key="id" class="detail-user" bindtap="onDetailUserTap" data-id="{{item.id}}">
             <image class="detail-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
             <view class="detail-user__body">
@@ -48,6 +48,10 @@
               <view class="detail-user__line"></view>
             </view>
           </view>
+        </view>
+        <view wx:else class="detail-intent__empty-state">
+          <image class="detail-intent__empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+          <text>没有意向用户</text>
         </view>
       </view>
     </view>

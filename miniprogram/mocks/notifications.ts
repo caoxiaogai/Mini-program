@@ -14,6 +14,7 @@ export const notificationsMock: NotificationsViewModel = {
       items: [
         {
           id: 'notification-xiaogai-reading',
+          userId: 'user-01',
           visitorName: 'xiaogai',
           intent: 'high',
           intentLabel: '#高意向',
@@ -22,15 +23,12 @@ export const notificationsMock: NotificationsViewModel = {
           actionDate: '8月20日',
           actionIconPath: '/assets/notifications/action-reading.svg',
           avatarUrl: '/assets/notifications/avatar-xiaogai.png',
-          thumbnailItems: [
-            { id: 'xiaogai-thumb-1', url: '/assets/notifications/thumb-xiaogai-1.jpg' },
-            { id: 'xiaogai-thumb-2', url: '/assets/notifications/thumb-xiaogai-2.jpg' },
-            { id: 'xiaogai-thumb-3', url: '/assets/notifications/thumb-xiaogai-3.jpg' },
-          ],
+          thumbnailUrl: '/assets/notifications/thumb-xiaogai-1.jpg',
           recommendation: '意向程度较高，建议优先联系',
         },
         {
           id: 'notification-wang-xiaoer-forward',
+          userId: 'user-02',
           visitorName: '王小二',
           intent: 'medium',
           intentLabel: '#中意向',
@@ -39,11 +37,7 @@ export const notificationsMock: NotificationsViewModel = {
           actionDate: '8月20日',
           actionIconPath: '/assets/notifications/action-forward.svg',
           avatarUrl: '/assets/notifications/avatar-wang-xiaoer.png',
-          thumbnailItems: [
-            { id: 'wang-xiaoer-thumb-1', url: '/assets/notifications/thumb-wang-xiaoer-1.jpg' },
-            { id: 'wang-xiaoer-thumb-2', url: '/assets/notifications/thumb-wang-xiaoer-2.jpg' },
-            { id: 'wang-xiaoer-thumb-3', url: '/assets/notifications/thumb-wang-xiaoer-3.jpg' },
-          ],
+          thumbnailUrl: '/assets/notifications/thumb-wang-xiaoer-1.jpg',
           recommendation: '存在兴趣，建议主动跟进',
         },
       ],

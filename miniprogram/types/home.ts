@@ -19,8 +19,31 @@ export interface SharingSummary {
   highlightedContentShareCount: number
 }
 
+export type HomeSummaryCardState = 'data' | 'empty'
+
+export interface HomeSummaryCardViewModel {
+  state: HomeSummaryCardState
+  isEmpty: boolean
+  primaryPrefix: string
+  primaryValue: string
+  primarySuffix: string
+  secondaryPrefix: string
+  secondaryValue: string
+  secondarySuffix: string
+}
+
+export interface HomeSummaryVisitorsViewModel extends HomeSummaryCardViewModel {
+  showVisitors: boolean
+  visitors: VisitorPreview[]
+}
+
+export interface HomeSummaryViewModel {
+  newVisitors: HomeSummaryVisitorsViewModel
+  reading: HomeSummaryCardViewModel
+  sharing: HomeSummaryCardViewModel
+}
+
 export interface HomeOverviewViewModel {
-  greeting: string
   newVisitors: NewVisitorsSummary
   reading: ReadingSummary
   sharing: SharingSummary

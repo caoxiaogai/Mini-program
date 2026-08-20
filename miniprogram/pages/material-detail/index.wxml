@@ -1,0 +1,44 @@
+<view class="material-detail-page">
+  <view class="material-detail-page__header">
+    <navigation-bar title="作品" back="{{true}}" color="#000000" background="#ffffff" />
+  </view>
+
+  <view wx:if="{{detail}}" class="material-detail-page__content">
+    <swiper
+      class="material-detail__swiper"
+      current="{{activeImageIndex}}"
+      duration="180"
+      indicator-dots="{{false}}"
+      bindchange="onSwiperChange"
+    >
+      <swiper-item wx:for="{{detail.images}}" wx:key="*this">
+        <image class="material-detail__image" src="{{item}}" mode="aspectFit" />
+      </swiper-item>
+    </swiper>
+
+    <view class="material-detail__indicators" aria-label="图片页码">
+      <view
+        wx:for="{{detail.images}}"
+        wx:key="*this"
+        class="material-detail__indicator {{index === activeImageIndex ? 'material-detail__indicator--active' : ''}}"
+      ></view>
+    </view>
+
+    <view class="material-detail__description">
+      <text wx:for="{{detail.descriptionLines}}" wx:key="*this" class="material-detail__description-line">{{item}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{detail}}" class="material-detail__share-bar">
+    <view class="material-detail__share-button material-detail__share-button--friend" hover-class="material-detail__share-button--pressed" hover-stay-time="80" role="button">
+      <text>分享给好友</text>
+      <image class="material-detail__share-icon" src="/assets/materials/detail-share.svg" mode="aspectFit" />
+    </view>
+    <view class="material-detail__share-button material-detail__share-button--moments" hover-class="material-detail__share-button--pressed" hover-stay-time="80" role="button">
+      <text>分享到朋友圈</text>
+      <view class="material-detail__moments-icon">
+        <image src="/assets/materials/detail-moments.png" mode="aspectFit" />
+      </view>
+    </view>
+  </view>
+</view>

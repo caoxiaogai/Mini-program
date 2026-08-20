@@ -25,15 +25,21 @@ Page({
     intentTabOffset: 0,
     intentSwipeStartX: 0,
     visibleIntentUsers: [] as AnalysisIntentUser[],
+    hasVisibleIntentUsers: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     const cardId = options.id
     if (!cardId) return
 
-    getAnalysisDetail(cardId).then((detail) => this.setData({
-      detail,
-      visibleIntentUsers: detail ? detail.intentUsers : [],
-    }))
+    getAnalysisDetail(cardId).then((detail) => {
+      const visibleUsers = detail ? detail.intentUsers : []
+
+      this.setData({
+        detail,
+        visibleIntentUsers: visibleUsers,
+        hasVisibleIntentUsers: visibleUsers.length > 0,
+      })
+    })
   },
   onIntentTabTap(event: WechatMiniprogram.TouchEvent) {
     const tabIndex = Number(event.currentTarget.dataset.index)
@@ -60,11 +66,14 @@ Page({
     const detail = this.data.detail
     if (!tab || !detail) return
 
+    const visibleUsers = getVisibleIntentUsers(detail.intentUsers, tab.id)
+
     this.setData({
       activeIntentLevel: tab.id,
       activeIntentIndex: tabIndex,
       intentTabOffset: tabIndex * 100,
-      visibleIntentUsers: getVisibleIntentUsers(detail.intentUsers, tab.id),
+      visibleIntentUsers: visibleUsers,
+      hasVisibleIntentUsers: visibleUsers.length > 0,
     })
   },
   onDetailUserTap(event: WechatMiniprogram.TouchEvent) {

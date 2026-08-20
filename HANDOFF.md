@@ -197,6 +197,10 @@ miniprogram/
 | 实现页面视觉样式 | done | 首页三张摘要卡、AI 问候区和底部导航已实现 |
 | 建立 mock 与 API 占位层 | done | 新增 `HomeOverviewViewModel`、Mock 与首页 service |
 | 实现通知页面与首页通知跳转 | done | Figma `107:6253` 通知列表、通知 service/mock、本地资源与首页 tab 跳转已实现 |
+| 实现排行榜页面与排序交互 | done | Figma `311:15611` 排行榜页面、typed mock/service、本地资源与首页排名 tab 跳转已实现 |
+| 实现素材页面与发布入口视觉 | done | Figma `173:12468` 素材双列卡片、筛选交互、本地资源、首页素材 tab 跳转与顶部滚动透明度已实现 |
+| 实现素材发布页面 | done | Figma `208:13581` 发布页、最多 9 张图片、无限制文案输入、草稿/发表占位交互及成功弹窗已实现 |
+| 实现素材详情分享页 | done | Figma `229:14271` 作品详情页、素材卡片按 id 跳转、轮播图片、描述文案、底部分享按钮与 typed service/mock 已实现 |
 | 首页像素级与真机适配验收 | in_progress | 开发者工具已打开；当前环境无法截取 GUI 画面，需人工核对 Figma |
 | 其他页面视觉与真机适配验收 | pending | 后续页面实现后执行 |
 
@@ -223,6 +227,193 @@ miniprogram/
 - 不在文档中记录密钥、AppSecret、用户隐私数据或生产接口凭证。
 
 ## 最近变更
+
+### 2026-08-20：区分素材类型图标并支持草稿编辑
+
+- 素材列表仅对 `kind: video` 显示用户提供的 `Group 49.svg` 播放图标，图片和 PDF 不显示播放图标；图标保持距图片右上各 10px（`20rpx`）。
+- 带“草稿”标签的素材卡片改为跳转 `/pages/materials/publish/index?id=...`，发布页通过 `getMaterialDraft` 恢复 mock 图片与文案进入编辑态；普通素材继续进入详情页。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（73 tests passed）。
+
+### 2026-08-20：素材发布页默认图片与删除操作
+
+- 发布页图片列表默认为空，只显示“添加图片”入口；不再显示预设示例图片，原未使用的 `assets/materials/publish-preview.jpg` 已移除。
+- 已添加的每张图片右上角叠加删除按钮，使用用户提供的 `Frame 59.svg` 并本地保存为 `assets/materials/publish-delete.svg`；点击后仅移除对应图片，并同步恢复可添加状态。
+- 验证：发布页图片相关定向回归 2 tests passed；`index.ts` TypeScript 语法检查通过。
+
+### 2026-08-20：统一素材图片按宽度适配的展示逻辑
+
+- 素材列表和素材详情的图片从 `aspectFill` 改为 `aspectFit`，避免裁切；展示盒背景统一为 `#DEE2E7`，宽图在盒内上下留白。
+- 验证：素材/详情相关定向回归 5 tests passed，图片模式与背景检查通过。
+
+### 2026-08-20：按 Figma 节点 `229:13968` 增加发表成功弹窗
+
+- 在素材发布页增加默认隐藏的成功弹窗状态，按 Figma 还原“发布成功 🎉”、分享提示、分享给好友和分享到朋友圈两个操作。
+- 弹窗通过 TypeScript 的 `showPublishSuccessModal` 控制，支持点击遮罩关闭；分享按钮当前只保留待接入提示，不伪造微信分享或后端成功结果。
+- 复用现有素材详情页的 Figma 分享图标资源，不新增重复图片；弹窗卡片使用 `max-width` 适配较窄手机宽度。
+- `onPublishSuccess()` 作为真实发表接口成功回调的接入点；当前 `onPublishTap` 仍保持待后端接入提示。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（69 tests passed）；覆盖弹窗默认状态、文案、按钮事件和本地资源引用。
+
+### 2026-08-20：用户分析查看后清除红点
+
+- 点击“用户分析”列表中的用户时，先将当前用户的 `showMarker` 更新为 `false`，再跳转用户详情页。
+- 返回列表后已查看用户的红点消失，其他用户的红点和用户分析筛选交互保持不变。
+- 验证：`node --test --test-name-pattern='analysis user tap clears' tests/home-page.test.mjs`（1 test passed）。
+
+### 2026-08-20：移除素材详情底部分享栏分隔线
+
+- 按用户截图移除 `/pages/material-detail` 底部分享栏的 `border-top`，保留按钮边框、间距、底部安全区和按下反馈不变。
+- 验证：详情相关定向回归 4 tests passed。
+
+### 2026-08-20：按 Figma 节点 `229:14271` 实现素材详情分享页
+
+- 新增 `/pages/material-detail`，详情页通过 `getMaterialDetail(materialId)` 读取 typed mock，素材卡片点击后按稳定 `id` 跳转。
+- 按 Figma 还原“作品”导航、全宽图片轮播、页码指示器、说明文案和底部“分享给好友 / 分享到朋友圈”按钮；当前分享按钮仅提供视觉与按下反馈，不伪造真实分享结果。
+- Figma 资源导出并本地保存为 `assets/materials/detail-image-01.jpg`、`detail-share.svg`、`detail-moments.png`；主图压缩为本地 JPG 以保持预览包预算。
+- 验证：详情相关定向回归 3 tests passed；JSON 与去除微信 `wx:` 命名空间后的 WXML 结构检查通过；资源包预算检查通过。完整测试套件当前还有 1 个与本页无关的首页摘要卡跳转断言失败。当前环境没有可用的 `tsc` 命令，未能执行 TypeScript 编译检查；微信开发者工具真机/GUI 视觉核对仍需人工完成。
+
+### 2026-08-20：按 Figma 节点 `208:13581` 实现素材发布页面
+
+- 新增 `/pages/materials/publish/index`，复用原生导航栏，实现图片预览、添加图片、文案输入及底部“存草稿 / 发表”操作区。
+- 图片选择通过前端 TypeScript 限制总数最多 9 张；文案使用 `maxlength="-1"`，不设置字符上限；页面不直接请求接口或导入 Mock。
+- 首张预览图使用 Figma 导出的本地素材，并转换为同尺寸 JPEG 以满足当前预览包静态资源预算；草稿和发表保留 `TODO(API)` 接入占位，不伪造服务端成功结果。
+- 首页素材页“发布素材”按钮跳转至该页面。
+- 回归检查时恢复首页三张统计卡的原有分析跳转绑定：新增用户进入用户分析，阅读数和转发数进入作品分析；卡片空状态展示模型不变。
+- 分析页继续通过 `?tab=user|work` 接收首页卡片的目标视图并初始化选中态。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（66 tests passed）；页面 JSON 解析通过；相关 WXML 可由 XML 解析器读取。当前环境未安装 `tsc` / `lessc`，TypeScript 与 Less 编译仍需在微信开发者工具中确认。
+
+### 2026-08-20：首页数据卡片空状态
+
+- 新增首页展示模型转换函数 `buildHomeSummaryViewModel`，按新增用户、阅读数和转发数分别生成正常态或友好空状态文案；统计值为 0 或不可用时不显示“0个/0次”。
+- 空状态保留原三张卡片的位置、尺寸、背景、圆角、阴影和点击行为；辅助文案增加换行规则，首页页面继续通过现有 `services/home.ts` 获取数据。
+- 验证：`node --test tests/home-page.test.mjs`（60 tests passed），覆盖单项为 0、全部为 0、部分有数据和空状态文案换行。
+
+### 2026-08-20：首页替换排行榜按钮图标
+
+- 使用用户提供的 `Group 55.svg` 替换首页底部导航“排名”图标，继续由 `miniprogram/assets/home/tab-ranking.svg` 统一引用。
+- 保持“排名”文案、跳转逻辑、按钮尺寸和其他底部导航图标不变。
+- 验证：`node --test tests/home-page.test.mjs`（55 tests passed）。
+
+### 2026-08-20：首页问候语改为按设备本地时间动态计算
+
+- 首页问候语由前端 `getHomeGreeting` 根据设备本地小时生成，覆盖早上、中午、下午和晚上四个时段，不新增接口或后端字段。
+- 首页首次显示时初始化问候语，并在 `onShow` 从后台返回时重新计算；首页视觉样式和其他摘要数据保持不变。
+- 验证：`node --test tests/home-page.test.mjs`（54 tests passed）。
+
+### 2026-08-20：统一分段筛选器上下留白
+
+- 新增全局 Less 变量 `@segmented-filter-vertical-inset: 4rpx`，对应 750rpx 设计稿中的 2px 视觉留白。
+- 排行榜、分析页周期筛选/用户意向筛选、分析详情意向筛选和用户详情阅读记录筛选的白色选中块均同时锚定顶部与底部，消除固定 `56rpx` 高度导致的上下间距偏差。
+- 分析页的排序筛选改为由同一内边距决定高度，确保选中白底上下各保留 2px。
+- 验证：`node --test tests/home-page.test.mjs`（52 tests passed），新增全局筛选器 2px 上下留白回归用例。
+
+### 2026-08-20：按 Figma 节点 `173:12468` 实现素材页
+
+- 新增 `/pages/materials/index`，实现素材标题导航、全部/图片/视频/PDF 筛选、双列素材卡片和底部“发布素材”按钮。
+- 复用排行榜顶部层级与 `calculateRankingHeaderOpacity`：导航初始 `rgba(232, 237, 245, 0)`，滚动 25px 后变为完全不透明；背景竖线使用现有 `assets/analysis/group-40.svg`。
+- 新增 `types/materials.ts`、`mocks/materials.ts`、`services/materials.ts`，页面不直接依赖 mock；首页“素材” tab 跳转至素材页。
+- Figma 导出的素材图片与播放/加号图标保存到 `miniprogram/assets/materials/`，仅保留页面实际使用的压缩本地资源。
+- 用户确认按钮文案为“发布素材”；按钮加号替换为用户提供的 `Group 47.svg`（14×12px 白色加号），并原位保存为 `assets/materials/material-plus.svg`。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（60 tests passed）；当前环境未安装 `tsc`/`lessc`，微信开发者工具或等价编译检查需在本地工具中执行。
+
+### 2026-08-20：通知卡片跳转用户详情
+
+- 通知卡片通过 `userId` 跳转到既有 `/pages/analysis-user-detail/index?id=...`。
+- 联系用户视觉控件使用 `catchtap` 阻止冒泡，避免点击按钮同时触发卡片跳转。
+- 复用既有用户详情 service/mock，不新增页面。
+
+### 2026-08-20：通知筛选无结果空状态
+
+- 当意向筛选没有匹配通知时，保留筛选栏并显示统一的 `assets/analysis/empty-state-cloud.png` 云朵图标和文案“暂无意向用户”。
+- 使用 `hasVisibleGroups` 控制列表与空状态切换；“全部”及有匹配结果的筛选仍显示通知卡片。
+- 新增空状态回归测试，图标复用现有资源，不新增图片文件。
+
+### 2026-08-20：按 Figma 节点 `107:6744` 修正“联系用户”
+
+- 重新读取按钮节点，按节点数据恢复为窄灰按钮：64×24px、`#9D9D9D` 背景、白色 12px 常规字重、左右 8px 内边距、6px 圆角。
+- 联系按钮不再填充右侧剩余空间，建议文案恢复自然宽度。
+- 为避免微信开发者工具继续复用旧 WXSS 选择器，将原生 `button` 改为 `view`，使用新的 `notification-card__contact-action-v2` class 和内联 Figma 尺寸/颜色。
+
+### 2026-08-20：修正通知卡片与 Figma 节点的结构差异
+
+- 徽标改为头像容器内的右下角定位：`right: 0; bottom: 0`，尺寸 17px。
+- 删除通知卡片右侧三张缩略图叠放结构，ViewModel 收敛为单个 `thumbnailUrl`，右侧仅渲染一张 50×68px 图片。
+- 保持 Figma 节点定义的联系按钮：64×24px、`#9D9D9D` 背景、白色 12px 文字。
+- 新增结构回归测试，覆盖单图渲染和徽标右下对齐。
+
+### 2026-08-20：按 Figma `107:6723` 校准通知卡片规格
+
+- 重新读取目标节点并按 Figma 规格校准通知卡片：卡片内边距 12px、内容间距 16px、头像 40px、主缩略图 50×68px、名称 16px、行为文案 12px、日期 10px、底部文案 12px。
+- 意向标签水平内边距调整为 10px；“联系用户”恢复为 Figma 节点定义的 64px 宽、24px 高、`#9D9D9D` 背景和白色 12px 文字。
+- 更新对应回归测试，截图中的其他页面状态不作为该节点的组件规格。
+
+### 2026-08-20：按 Figma `349:18597` 校准通知筛选与切换
+
+- 顶部“全部 / 高意向 / 中意向 / 低意向”筛选项按 Figma 改为四项等宽、`20rpx` 间距、`64rpx` 高度和 `32rpx` 水平内边距。
+- 点击筛选项保留 Figma 选中态，并同步更新可见通知分组；无匹配数据的日期分组不再显示。
+- 新增筛选尺寸与可见分组回归测试；未新增页面路由，当前 Figma 节点对应的是通知页内筛选组件。
+
+### 2026-08-20：通知页复用排行榜顶部背景与滚动透明度
+
+- 将通知页从内部 `scroll-view` 改为页面级滚动，顶部导航使用 `position: sticky` 固定在最上层。
+- 按排行榜的层级关系设置：顶部导航 `z-index: 1002`、通知内容 `z-index: 1001`、背景竖线 `z-index: 1000`、`#E8EDF5` 底色 `z-index: 999`。
+- 通知页初始导航背景为 `rgba(232, 237, 245, 0)`，沿用排行榜前 25px 滚动距离渐变到 100% 不透明；滚动透明度由 `calculateRankingHeaderOpacity` 统一计算。
+- 新增页面层级、滚动容器和 0–25px 透明度回归测试。
+
+### 2026-08-20：按截图校准通知卡片联系按钮
+
+- 以用户提供的 Figma 截图为当前视觉基线，调整通知卡片底部布局：建议文案限制在左侧约 40% 宽度，联系按钮自适应填充右侧剩余空间。
+- “联系用户”按钮改为浅灰背景 `#F1F1F1`、绿色文字 `#00B866`，保留 24px 高度和 6px 圆角。
+- 新增截图样式回归测试，防止按钮恢复为固定窄灰色按钮。
+
+### 2026-08-20：修复通知页真机内容为空
+
+- 问题：开发者工具中通知页能显示，真机点击首页“通知”后页面为空。
+- 根因：通知页外层只有 `min-height: 100vh`，内部 `scroll-view` 使用 `flex: 1; height: 0`；真机 Skyline 布局下滚动容器可能没有获得可见高度，数据虽加载但内容不可见。
+- 处理：通知页 `page` 和根容器改为确定的 `height: 100vh`，滚动容器增加 `min-height: 0`，沿用项目日志页的 flex 滚动布局模式。
+- 验证：`node --test tests/home-page.test.mjs`（41 tests passed）；通知页确定视口高度回归测试通过。实体手机需重新编译后复测首页点击通知路径。
+
+### 2026-08-20：替换排行榜高清标题与奖杯资源
+
+- 使用用户提供的 `超级榜单统一字体 1.png` 和 `image 9.png` 原位替换 `assets/ranking/ranking-title.png` 与 `assets/ranking/ranking-trophy.png`。
+- 标题资源由 `192×50` 替换为 `576×150`，奖杯资源由 `98×117` 替换为 `294×351`；页面保持原有展示尺寸，获得 3 倍像素密度。
+- 验证：资源 SHA-256 与用户提供文件一致；`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern='ranking' tests/home-page.test.mjs`（8 tests passed）。
+
+### 2026-08-20：内容分析意向用户空状态
+
+- 在“内容分析”详情页的“意向用户”区域增加空数据状态：当前筛选结果为空时显示本地云朵图标和文案“没有意向用户”。
+- 空状态复用 `miniprogram/assets/analysis/empty-state-cloud.png`；有用户时继续显示原有列表，点击和左右滑动筛选交互不变。
+- 使用 `hasVisibleIntentUsers` 根据当前筛选后的用户列表控制 WXML 展示分支。
+- 验证：`node --test tests/home-page.test.mjs`（56 tests passed）。
+
+### 2026-08-20：分析页作品与用户空状态
+
+- 读取 Figma 节点 `343:17569`，为“分析-作品分析”无作品场景新增空状态，使用本地 Figma 云朵图标和文案“还没有作品，你可以发布一个”。
+- “分析-用户分析”复用同一图标；默认列表为空或意向筛选后无匹配用户时，显示文案“还没用户，快去发布作品吧”。
+- 新增 `miniprogram/assets/analysis/empty-state-cloud.png`，页面通过 `hasAnalysisCards` 和 `hasAnalysisUsers` 控制列表与空状态切换，不改变已有筛选和导航交互。
+- 验证：`node --test tests/home-page.test.mjs`（35 tests passed）。
+
+### 2026-08-20：首页排名图标替换
+
+- 使用用户提供的 `Group 35-1.svg` 替换首页底部导航“排名”图标，仍由 `miniprogram/pages/index/index.ts` 通过 `/assets/home/tab-ranking.svg` 引用。
+- 页面逻辑、导航交互和其他底部导航图标未修改。
+
+### 2026-08-20：排行榜页面 Figma 实现
+
+- 读取 Figma 节点 `311:15611`，新增排行榜页面，包含超级榜单标题、奖杯、排行榜列表和“浏览量 / 转发量 / 完播量”三个排序标签。
+- 首页底部导航“排名”跳转至 `/pages/ranking/index`；当前页面通过 `services/ranking.ts` 消费 typed mock 数据，点击标签后按对应指标降序排序。
+- Figma 导出的榜单标题、奖杯和 8 个头像已保存到 `miniprogram/assets/ranking/`，不依赖临时资源 URL。
+
+### 2026-08-20：固定排行榜顶部导航与背景
+
+- 将排行榜顶部条纹背景和公共导航栏组合为 `.ranking-page__header`，使用 `position: sticky; top: 0; z-index: 1002` 固定在滚动视口顶部。
+- 移除排行榜页面根节点的 `overflow: hidden`，避免祖先滚动容器限制 sticky 定位。
+- 条纹背景改为独立的 `position: fixed` 层级，并补充随页面内容增长的 `#E8EDF5` 最底层：顶部导航 `z-index: 1002`、排行榜内容 `z-index: 1001`、背景竖线 `z-index: 1000`、底色 `z-index: 999`。半透明白色竖线叠在蓝灰底色上保持可见，内容渐变再从上层逐渐遮住竖线。
+- 排行榜竖线背景改用用户提供的 `Group 40.svg`；该文件与已存在的 `assets/analysis/group-40.svg` SHA-256 一致，因此直接复用唯一的本地资源，未产生重复资源副本。
+- 顶部导航透明度由页面前 25px 的滚动距离连续计算：0px 为 0%、12.5px 为 50%、25px 及以后为 100%，颜色保持 `#E8EDF5`。
+- 按 Figma `343:18130` 将排行榜内容渐变直接绘制在内容容器上：起点为 `rgba(232, 237, 245, 0)`，过渡到 `#E8EDF5`，背景高度随内容容器自然增长；排行榜卡片使用白色到 `#F0F5FA` 的渐变，底部固定保留 80rpx（40px）留白。
+- 按 Figma `343:17464` 增加排行榜空数据状态：当当前排序结果为空时保留排序标签，显示分析页复用的云朵图标与“暂无数据”；图标为 78rpx，图文间距 10rpx，标签与空状态间距 120rpx。
+- 尝试用内部 `scroll-view` 关闭排行榜回弹后，真机出现与通知页相同的“开发者工具正常、页面空白”问题；已撤回该实验并恢复页面级滚动，保证 Skyline 真机可见。无回弹方案待找到不引入内部滚动容器的可靠实现后再评估。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern='ranking' tests/home-page.test.mjs`（7 tests passed）；覆盖排行榜层级、0–15px 滚动透明度、内容同高渐变和卡片底部留白。
 
 ### 2026-08-19：按 Figma `166:9097` 重做分析页筛选控件
 
