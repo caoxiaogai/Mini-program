@@ -54,46 +54,4 @@
     </view>
   </view>
 
-  <view
-    wx:if="{{showPublishSuccessModal}}"
-    class="publish-success-modal"
-    bindtap="onPublishSuccessClose"
-    aria-role="dialog"
-    aria-label="发布成功"
-  >
-    <view class="publish-success-modal__card" catchtap="onPublishSuccessCardTap">
-      <view class="publish-success-modal__content">
-        <view class="publish-success-modal__title-group">
-          <view class="publish-success-modal__title-row">
-            <text class="publish-success-modal__title">发布成功</text>
-            <text class="publish-success-modal__emoji">🎉</text>
-          </view>
-          <text class="publish-success-modal__subtitle">快去分享给微信好友把</text>
-        </view>
-
-        <view class="publish-success-modal__share-actions">
-          <view
-            class="publish-success-modal__share-button publish-success-modal__share-button--secondary"
-            bindtap="onShareFriendsTap"
-            hover-class="publish-success-modal__share-button--pressed"
-            hover-stay-time="80"
-          >
-            <text>分享给好友</text>
-            <image class="publish-success-modal__share-icon" src="/assets/materials/detail-share.svg" mode="aspectFit" />
-          </view>
-          <view
-            class="publish-success-modal__share-button publish-success-modal__share-button--primary"
-            bindtap="onShareMomentsTap"
-            hover-class="publish-success-modal__share-button--pressed"
-            hover-stay-time="80"
-          >
-            <text>分享到朋友圈</text>
-            <view class="publish-success-modal__moments-icon-wrap">
-              <image class="publish-success-modal__moments-icon" src="/assets/materials/detail-moments.png" mode="aspectFit" />
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
-  </view>
 </view>

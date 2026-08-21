@@ -51,7 +51,7 @@ export function buildHomeSummaryViewModel(homeOverview: HomeOverviewViewModel): 
     '',
     '',
     '今日暂无阅读',
-    '去素材库选择一份内容分享给客户',
+    '去分享素材给好友吧',
   )
   const sharing = createCardViewModel(
     homeOverview.sharing.total,
@@ -62,7 +62,7 @@ export function buildHomeSummaryViewModel(homeOverview: HomeOverviewViewModel): 
     '',
     '',
     '今日暂无转发',
-    '优质内容被客户转发后，这里会显示数据',
+    '内容被转发后，这里会展示数据',
   )
 
   const newVisitors: HomeSummaryVisitorsViewModel = {

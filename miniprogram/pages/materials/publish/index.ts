@@ -12,7 +12,6 @@ Page({
     images: initialImages,
     canAddImage: initialImages.length < MAX_IMAGE_COUNT,
     copy: '',
-    showPublishSuccessModal: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     const materialId = options.id
@@ -74,6 +73,7 @@ Page({
         this.draftMaterialId = materialId
         this.draftImagePaths = this.data.images.map((image) => image.path)
         wx.showToast({ title: '已保存草稿', icon: 'success' })
+        wx.redirectTo({ url: '/pages/materials/index' })
       })
       .catch(() => undefined)
       .then(() => {
@@ -88,26 +88,11 @@ Page({
       .then((materialId) => {
         this.draftMaterialId = materialId
         this.draftImagePaths = this.data.images.map((image) => image.path)
-        this.onPublishSuccess()
+        wx.redirectTo({ url: '/pages/materials/index?publishSuccess=1' })
       })
       .catch(() => undefined)
       .then(() => {
         this.submitting = false
       })
-  },
-  onPublishSuccess() {
-    this.setData({ showPublishSuccessModal: true })
-  },
-  onPublishSuccessClose() {
-    this.setData({ showPublishSuccessModal: false })
-  },
-  onPublishSuccessCardTap() {},
-  onShareFriendsTap() {
-    this.setData({ showPublishSuccessModal: false })
-    wx.showToast({ title: '分享功能待接入', icon: 'none' })
-  },
-  onShareMomentsTap() {
-    this.setData({ showPublishSuccessModal: false })
-    wx.showToast({ title: '分享功能待接入', icon: 'none' })
   },
 })

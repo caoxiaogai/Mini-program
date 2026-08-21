@@ -23,7 +23,7 @@
       </view>
     </view>
 
-    <view class="materials-grid">
+    <view wx:if="{{hasVisibleMaterials}}" class="materials-grid">
       <view
         wx:for="{{visibleMaterials}}"
         wx:key="id"
@@ -45,6 +45,10 @@
         </view>
       </view>
     </view>
+    <view wx:else class="materials-empty-state">
+      <image class="materials-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+      <text>还没有素材，发布一个吧</text>
+    </view>
   </view>
 
   <view class="materials-publish-bar">
@@ -53,4 +57,11 @@
       <image src="/assets/materials/material-plus.svg" mode="aspectFit" />
     </view>
   </view>
+
+  <publish-success-modal
+    visible="{{showPublishSuccessModal}}"
+    bind:close="onPublishSuccessClose"
+    bind:sharefriends="onShareFriendsTap"
+    bind:sharemoments="onShareMomentsTap"
+  />
 </view>

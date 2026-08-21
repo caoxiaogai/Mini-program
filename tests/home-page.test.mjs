@@ -49,9 +49,13 @@ test('data access goes through the unified request layer', () => {
 
   assert.match(requestLayer, /wx\.request\(/)
   assert.match(requestLayer, /DEV_LAN_ORIGIN/)
+  assert.match(requestLayer, /const DEVTOOLS_API_BASE_URL = `\$\{DEV_LAN_ORIGIN\}\/api`/)
+  assert.doesNotMatch(requestLayer, /http:\/\/localhost:8080\/api/)
   assert.match(requestLayer, /platform === 'devtools'/)
   assert.match(requestLayer, /'X-User-Id'/)
   assert.match(requestLayer, /\/wechat\/login/)
+  assert.match(requestLayer, /console\.error\('\[wx\.login\] failed', error\.errMsg\)/)
+  assert.match(requestLayer, /微信登录失败：\$\{error\.errMsg \|\| '未知原因'\}/)
   assert.match(requestLayer, /export function request</)
   assert.match(requestLayer, /export function ensureLogin/)
 
@@ -134,7 +138,7 @@ test('home summary shows all three friendly empty states when all metrics are ze
     primaryPrefix: '今日暂无阅读',
     primaryValue: '',
     primarySuffix: '',
-    secondaryPrefix: '去素材库选择一份内容分享给客户',
+    secondaryPrefix: '去分享素材给好友吧',
     secondaryValue: '',
     secondarySuffix: '',
   })
@@ -144,7 +148,7 @@ test('home summary shows all three friendly empty states when all metrics are ze
     primaryPrefix: '今日暂无转发',
     primaryValue: '',
     primarySuffix: '',
-    secondaryPrefix: '优质内容被客户转发后，这里会显示数据',
+    secondaryPrefix: '内容被转发后，这里会展示数据',
     secondaryValue: '',
     secondarySuffix: '',
   })
@@ -172,7 +176,7 @@ test('home summary keeps normal copy for non-zero metrics in a partial-data stat
     primaryPrefix: '今日暂无阅读',
     primaryValue: '',
     primarySuffix: '',
-    secondaryPrefix: '去素材库选择一份内容分享给客户',
+    secondaryPrefix: '去分享素材给好友吧',
     secondaryValue: '',
     secondarySuffix: '',
   })
@@ -188,15 +192,33 @@ test('home summary keeps normal copy for non-zero metrics in a partial-data stat
   })
 })
 
-test('home cards bind display fields and allow empty helper copy to wrap', () => {
+test('home cards bind display fields and keep empty helper copy on one line', () => {
   const markup = read('miniprogram/pages/index/index.wxml')
   const styles = read('miniprogram/pages/index/index.less')
 
   assert.match(markup, /homeSummary\.newVisitors\.primaryPrefix/)
-  assert.match(markup, /homeSummary\.reading\.secondaryPrefix/)
   assert.match(markup, /homeSummary\.sharing\.secondaryPrefix/)
+  assert.match(markup, /homeSummary\.reading\.secondaryPrefix/)
   assert.doesNotMatch(markup, /homeData\.(newVisitors|reading|sharing)\.(total|highlightedContent)/)
-  assert.match(styles, /\.home-summary__secondary--empty\s*\{[\s\S]*?white-space: normal;[\s\S]*?word-break: break-all;/)
+  assert.match(styles, /\.home-summary__secondary--empty\s*\{[\s\S]*?white-space: nowrap;[\s\S]*?overflow: visible;[\s\S]*?text-overflow: clip;/)
+})
+
+test('home summary places sharing before reading', () => {
+  const markup = read('miniprogram/pages/index/index.wxml')
+  const sharingIndex = markup.indexOf('homeSummary.sharing.primaryPrefix')
+  const readingIndex = markup.indexOf('homeSummary.reading.primaryPrefix')
+
+  assert.ok(sharingIndex >= 0)
+  assert.ok(readingIndex >= 0)
+  assert.ok(sharingIndex < readingIndex)
+})
+
+test('all home summary cards use content width with twelve-pixel horizontal padding', () => {
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(styles, /\.home-summary__card\s*\{[\s\S]*?width: fit-content;[\s\S]*?padding: 10rpx 24rpx;/)
+  assert.doesNotMatch(styles, /\.home-summary__card--visitors\s*\{[^}]*?width:/)
+  assert.doesNotMatch(styles, /\.home-summary__card--compact\s*\{[^}]*?width:/)
 })
 
 test('bottom navigation renders tab labels and optional unread badges', () => {
@@ -1015,6 +1037,21 @@ test('materials page matches the Figma screen structure and uses local assets', 
   assert.match(styles, /height: 460rpx;/)
 })
 
+test('materials page shows an empty state when the active filter has no materials', () => {
+  const markup = read('miniprogram/pages/materials/index.wxml')
+  const logic = read('miniprogram/pages/materials/index.ts')
+  const styles = read('miniprogram/pages/materials/index.less')
+
+  assert.match(markup, /wx:if="\{\{hasVisibleMaterials\}\}" class="materials-grid"/)
+  assert.match(markup, /wx:else class="materials-empty-state"/)
+  assert.match(markup, /src="\/assets\/analysis\/empty-state-cloud\.png"/)
+  assert.match(markup, /还没有素材，发布一个吧/)
+  assert.match(logic, /hasVisibleMaterials: false/)
+  assert.match(logic, /hasVisibleMaterials: visibleMaterials\.length > 0/)
+  assert.match(styles, /\.materials-empty-state\s*\{[\s\S]*?display: flex;[\s\S]*?align-items: center;[\s\S]*?margin-top: 120rpx;/)
+  assert.match(styles, /\.materials-empty-state__icon\s*\{[\s\S]*?width: 78rpx;[\s\S]*?height: 78rpx;/)
+})
+
 test('materials list only shows the supplied play icon for video cards', async () => {
   const markup = read('miniprogram/pages/materials/index.wxml')
   const icon = read('miniprogram/assets/materials/material-play.svg')
@@ -1043,9 +1080,16 @@ test('publish actions submit through the materials service', () => {
 
   assert.match(publishLogic, /saveMaterialDraft\(this\.buildSubmitInput\(\)\)/)
   assert.match(publishLogic, /publishMaterial\(this\.buildSubmitInput\(\)\)/)
-  assert.match(publishLogic, /this\.onPublishSuccess\(\)/)
+  assert.match(publishLogic, /\/pages\/materials\/index\?publishSuccess=1/)
+  assert.doesNotMatch(publishLogic, /showPublishSuccessModal/)
   assert.doesNotMatch(publishLogic, /草稿功能待接入/)
   assert.doesNotMatch(publishLogic, /发表功能待接入/)
+})
+
+test('saving a material draft returns to the materials home page after success', () => {
+  const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
+
+  assert.match(publishLogic, /saveMaterialDraft\(this\.buildSubmitInput\(\)\)[\s\S]*?\.then\(\(materialId\) => \{[\s\S]*?wx\.redirectTo\(\{ url: '\/pages\/materials\/index' \}\)/)
 })
 
 test('materials page shares ranking header layers and scroll fade', async () => {
@@ -1128,28 +1172,52 @@ test('publish page starts empty and lets a selected image be removed', () => {
   assert.equal(existsSync(new URL('../miniprogram/assets/materials/publish-delete.svg', import.meta.url)), true)
 })
 
-test('publish page exposes the Figma success modal state and share actions', () => {
-  const markup = read('miniprogram/pages/materials/publish/index.wxml')
-  const logic = read('miniprogram/pages/materials/publish/index.ts')
-  const styles = read('miniprogram/pages/materials/publish/index.less')
+test('materials home owns the publish success modal', () => {
+  const componentPath = 'miniprogram/components/publish-success-modal/index.wxml'
 
-  assert.match(markup, /wx:if="\{\{showPublishSuccessModal\}\}"/)
-  assert.match(markup, /发布成功/)
-  assert.match(markup, /快去分享给微信好友把/)
-  assert.match(markup, /分享给好友/)
-  assert.match(markup, /分享到朋友圈/)
-  assert.match(markup, /bindtap="onPublishSuccessClose"/)
-  assert.match(markup, /bindtap="onShareFriendsTap"/)
-  assert.match(markup, /bindtap="onShareMomentsTap"/)
-  assert.match(markup, /\/assets\/materials\/detail-share\.svg/)
-  assert.match(markup, /\/assets\/materials\/detail-moments\.png/)
+  assert.equal(existsSync(new URL(`../${componentPath}`, import.meta.url)), true)
+  if (!existsSync(new URL(`../${componentPath}`, import.meta.url))) return
+
+  const componentMarkup = read(componentPath)
+  const componentLogic = read('miniprogram/components/publish-success-modal/index.ts')
+  const materialsMarkup = read('miniprogram/pages/materials/index.wxml')
+  const materialsPageConfig = JSON.parse(read('miniprogram/pages/materials/index.json'))
+
+  assert.match(materialsMarkup, /<publish-success-modal[^>]*visible="\{\{showPublishSuccessModal\}\}"/)
+  assert.equal(materialsPageConfig.usingComponents['publish-success-modal'], '/components/publish-success-modal/index')
+  assert.match(componentMarkup, /发布成功/)
+  assert.match(componentMarkup, /快去分享给微信好友把/)
+  assert.match(componentMarkup, /分享给好友/)
+  assert.match(componentMarkup, /分享到朋友圈/)
+  assert.match(componentMarkup, /\/assets\/materials\/detail-share\.svg/)
+  assert.match(componentMarkup, /\/assets\/materials\/detail-moments\.png/)
+  assert.match(componentLogic, /triggerEvent\('close'\)/)
+  assert.match(componentLogic, /triggerEvent\('sharefriends'\)/)
+  assert.match(componentLogic, /triggerEvent\('sharemoments'\)/)
   assert.equal(existsSync(new URL('../miniprogram/assets/materials/detail-share.svg', import.meta.url)), true)
   assert.equal(existsSync(new URL('../miniprogram/assets/materials/detail-moments.png', import.meta.url)), true)
-  assert.match(logic, /showPublishSuccessModal: false/)
-  assert.match(logic, /onPublishSuccess\(\)/)
-  assert.match(logic, /this\.setData\(\{ showPublishSuccessModal: true \}\)/)
-  assert.match(styles, /\.publish-success-modal\s*\{[\s\S]*?position: fixed;/)
-  assert.match(styles, /\.publish-success-modal__card\s*\{[\s\S]*?width: 706rpx;/)
+})
+
+test('published materials return to the materials home page and immediately open the success modal', () => {
+  const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
+  const materialsLogic = read('miniprogram/pages/materials/index.ts')
+
+  assert.match(publishLogic, /publishMaterial\(this\.buildSubmitInput\(\)\)[\s\S]*?wx\.redirectTo\(\{ url: '\/pages\/materials\/index\?publishSuccess=1' \}\)/)
+  assert.match(materialsLogic, /showPublishSuccessModal: options\.publishSuccess === '1'/)
+})
+
+test('publish success modal fades in its black scrim and card over 300 milliseconds', () => {
+  const componentPath = 'miniprogram/components/publish-success-modal/index.less'
+
+  assert.equal(existsSync(new URL(`../${componentPath}`, import.meta.url)), true)
+  if (!existsSync(new URL(`../${componentPath}`, import.meta.url))) return
+
+  const styles = read(componentPath)
+
+  assert.match(styles, /@keyframes publish-success-overlay-enter\s*\{[\s\S]*?rgba\(0, 0, 0, 0\)[\s\S]*?rgba\(0, 0, 0, 0\.8\)/)
+  assert.match(styles, /\.publish-success-modal\s*\{[\s\S]*?background: rgba\(0, 0, 0, 0\.8\);[\s\S]*?animation: publish-success-overlay-enter 300ms ease-out both;/)
+  assert.match(styles, /@keyframes publish-success-card-enter\s*\{[\s\S]*?opacity: 0;[\s\S]*?opacity: 1;/)
+  assert.match(styles, /\.publish-success-modal__card\s*\{[\s\S]*?animation: publish-success-card-enter 300ms ease-out both;/)
 })
 
 test('global navigation stays pinned while page content scrolls', () => {

@@ -4,9 +4,9 @@
 import type { ApiLoginData, ApiResponse } from '../types/api'
 import { DEV_LAN_ORIGIN } from '../config/dev'
 
-const DEVTOOLS_API_BASE_URL = 'http://localhost:8080/api'
+const DEVTOOLS_API_BASE_URL = `${DEV_LAN_ORIGIN}/api`
 
-/** 开发者工具模拟器用 localhost；真机/预览用手机可访问的局域网 IP */
+/** 开发者工具和真机预览统一访问运行后端电脑的局域网地址 */
 function resolveApiBaseUrl(): string {
   try {
     if (wx.getSystemInfoSync().platform === 'devtools') {
@@ -25,7 +25,7 @@ const UPLOAD_TIMEOUT_MS = 60000
 const STORAGE_KEY_USER_ID = 'auth.userId'
 const STORAGE_KEY_OPENID = 'auth.openid'
 
-/** 当前 API 基址的 origin（不含 /api），例如 http://localhost:8080 */
+/** 当前 API 基址的 origin（不含 /api），例如 http://192.168.31.225:8080 */
 export function getApiOrigin(): string {
   const schemeEnd = API_BASE_URL.indexOf('://')
   const pathStart = API_BASE_URL.indexOf('/', schemeEnd + 3)
@@ -34,7 +34,7 @@ export function getApiOrigin(): string {
 
 /**
  * 将后端返回的文件 URL 主机对齐到当前 API 基址。
- * 后端 minio.public-base-url 可能固定为局域网 IP；开发者工具代理 LAN 图片时会 502，模拟器下会 rewrite 为 localhost。
+ * 后端 minio.public-base-url 可能固定为局域网 IP；这里将返回地址主机对齐到当前后端地址。
  */
 export function resolveMediaUrl(url: string | null | undefined): string {
   if (!url) return ''
@@ -162,7 +162,10 @@ function requestLogin(): Promise<ApiLoginData> {
           })
           .catch(reject)
       },
-      fail: () => reject(new ApiError(-1, '微信登录失败')),
+      fail: (error) => {
+        console.error('[wx.login] failed', error.errMsg)
+        reject(new ApiError(-1, `微信登录失败：${error.errMsg || '未知原因'}`))
+      },
     })
   })
 }

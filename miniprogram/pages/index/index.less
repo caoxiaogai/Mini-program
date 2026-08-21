@@ -75,7 +75,8 @@ page {
 .home-summary__card {
   display: flex;
   min-height: 128rpx;
-  padding: 10rpx 20rpx;
+  width: fit-content;
+  padding: 10rpx 24rpx;
   border: 2rpx solid @home-card-border;
   border-radius: 24rpx;
   background: @home-card-background;
@@ -91,13 +92,11 @@ page {
 .home-summary__card--visitors {
   align-items: center;
   justify-content: space-between;
-  width: 570rpx;
 }
 
 .home-summary__card--compact {
   flex-direction: column;
   justify-content: center;
-  width: 400rpx;
 }
 
 .home-summary__copy {
@@ -136,8 +135,9 @@ page {
 }
 
 .home-summary__secondary--empty {
-  white-space: normal;
-  word-break: break-all;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .home-summary__avatars {
