@@ -3,7 +3,7 @@
     <view class="auth-overlay__content">
       <view class="auth-overlay__title-group">
         <text class="auth-overlay__title">欢迎使用</text>
-        <text class="auth-overlay__subtitle">登录后可使用素材发布与客户分析功能</text>
+        <text class="auth-overlay__subtitle">{{loginSubtitle}}</text>
       </view>
       <button
         class="auth-overlay__primary-button"
@@ -20,7 +20,7 @@
     <view class="auth-overlay__content">
       <view class="auth-overlay__title-group">
         <text class="auth-overlay__title">完善资料</text>
-        <text class="auth-overlay__subtitle">首次登录，请设置头像和昵称</text>
+        <text class="auth-overlay__subtitle">{{profileSubtitle}}</text>
       </view>
 
       <view class="auth-overlay__profile">

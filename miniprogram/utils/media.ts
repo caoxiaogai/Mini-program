@@ -69,3 +69,50 @@ export function prepareMediaUrls(
   const tasks = urls.map((url) => () => prepareMediaUrl(url ?? ''))
   return runRequestQueue(tasks, concurrency)
 }
+
+function isShareableLocalPath(url: string): boolean {
+  if (isLocalMediaPath(url) || url.startsWith('wxfile://')) {
+    return true
+  }
+  // 微信本地临时文件路径（非局域网/远端资源）
+  if (/^https?:\/\/(tmp|usr)\//i.test(url)) {
+    return true
+  }
+  if (!/^https?:\/\//i.test(url) && url !== '') {
+    return true
+  }
+  return false
+}
+
+/** 分享图片到朋友圈前解析为本地临时路径；已缓存或已是 wxfile 则不再 downloadFile */
+export function resolveShareImagePath(url: string): Promise<string> {
+  const trimmed = url.trim()
+  if (!trimmed) {
+    return Promise.reject(new Error('empty image url'))
+  }
+
+  if (isShareableLocalPath(trimmed)) {
+    return Promise.resolve(trimmed)
+  }
+
+  const cached = mediaCache.get(trimmed)
+  if (cached && isShareableLocalPath(cached)) {
+    return Promise.resolve(cached)
+  }
+
+  return new Promise((resolve, reject) => {
+    wx.downloadFile({
+      url: trimmed,
+      timeout: 15000,
+      success: (res) => {
+        if (res.statusCode === 200 && res.tempFilePath) {
+          mediaCache.set(trimmed, res.tempFilePath)
+          resolve(res.tempFilePath)
+          return
+        }
+        reject(new Error(`download status ${res.statusCode}`))
+      },
+      fail: (error) => reject(error),
+    })
+  })
+}

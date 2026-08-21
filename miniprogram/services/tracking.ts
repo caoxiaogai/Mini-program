@@ -1,5 +1,6 @@
-import { STORAGE_KEY_OPENID } from '../constants/auth'
-import { request } from './request'
+import { ensureVisitorId } from '../constants/visitor'
+import { getAuthSession } from './auth'
+import { rawRequestWithAuth } from './request'
 
 export interface TrackingEventInput {
   trackingId?: string | null
@@ -12,21 +13,16 @@ export interface TrackingEventInput {
   avatar?: string
 }
 
-function readOpenId(): string {
-  const openid = wx.getStorageSync(STORAGE_KEY_OPENID) as string | ''
-  return typeof openid === 'string' && openid !== '' ? openid : 'anonymous'
-}
-
 export function createTrackingSessionId(): string {
   return `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
-/** POST /tracking/event 或 /tracking/forward */
+/** POST /tracking/event 或 /tracking/forward（无需销售登录，后端 /tracking/** 已放行） */
 export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
-  const visitorId = readOpenId()
   const path = input.actionType === 'forward' ? '/tracking/forward' : '/tracking/event'
+  const session = getAuthSession()
 
-  return request<void>({
+  return rawRequestWithAuth<void>({
     method: 'POST',
     path,
     data: {
@@ -35,11 +31,12 @@ export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
       actionType: input.actionType,
       progress: input.progress ?? 0,
       duration: input.duration ?? 0,
-      visitorId,
+      visitorId: ensureVisitorId(),
       sessionId: input.sessionId,
-      nickname: input.nickname ?? '',
-      avatar: input.avatar ?? '',
+      nickname: input.nickname ?? session?.nickname ?? '',
+      avatar: input.avatar ?? session?.avatar ?? '',
     },
+    skipAuth: true,
     silent: true,
   }).catch(() => undefined)
 }

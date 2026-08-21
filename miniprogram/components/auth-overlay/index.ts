@@ -19,6 +19,17 @@ function canSubmitProfileForm(nickname: string, avatarPath: string, avatarPrevie
 }
 
 Component({
+  properties: {
+    loginSubtitle: {
+      type: String,
+      value: '登录后可使用素材发布与客户分析功能',
+    },
+    profileSubtitle: {
+      type: String,
+      value: '首次登录，请设置头像和昵称',
+    },
+  },
+
   data: {
     showLogin: false,
     showProfile: false,
@@ -141,6 +152,13 @@ Component({
       this.setData(updates)
     },
 
+    notifyAuthReady() {
+      const gate = refreshAuthGate()
+      if (!gate.showLogin && !gate.showProfile) {
+        this.triggerEvent('authready')
+      }
+    },
+
     onPanelTap() {},
 
     onLoginTap() {
@@ -150,6 +168,7 @@ Component({
       loginWithWechat()
         .then(() => {
           this.applyGate(refreshAuthGate())
+          this.notifyAuthReady()
         })
         .catch(() => undefined)
         .finally(() => {
@@ -203,6 +222,7 @@ Component({
         completeProfileSetup({ nickname, avatarPath })
           .then(() => {
             this.applyGate(refreshAuthGate())
+            this.notifyAuthReady()
           })
           .catch((error: Error) => {
             wx.showToast({ title: error.message || '保存失败，请稍后重试', icon: 'none' })

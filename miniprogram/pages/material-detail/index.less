@@ -92,12 +92,18 @@ page {
   align-items: center;
   justify-content: center;
   gap: 20rpx;
+  padding: 0;
+  margin: 0;
   border-radius: 110rpx;
   box-sizing: border-box;
   font-size: 28rpx;
   line-height: normal;
   white-space: nowrap;
   transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.material-detail__share-button::after {
+  border: none;
 }
 
 .material-detail__share-button--friend {

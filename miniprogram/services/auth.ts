@@ -48,6 +48,12 @@ export function isLoggedIn(): boolean {
   return getAuthSession() !== null
 }
 
+/** 分享素材访客：已登录且头像昵称已完善 */
+export function isVisitorAuthReady(): boolean {
+  const session = getAuthSession()
+  return session !== null && !needsProfileSetup(session)
+}
+
 export function needsProfileSetup(session: Pick<ApiLoginData, 'nickname' | 'avatar'> | AuthSession | null): boolean {
   if (!session) return false
   const nickname = (session.nickname ?? '').trim()

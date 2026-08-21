@@ -5,7 +5,8 @@ import type { ApiLoginData, ApiResponse } from '../types/api'
 import { DEV_LAN_ORIGIN } from '../config/dev'
 import { STORAGE_KEY_OPENID, STORAGE_KEY_USER_ID } from '../constants/auth'
 
-const DEVTOOLS_API_BASE_URL = 'http://localhost:8080/api'
+// const DEVTOOLS_API_BASE_URL = 'http://localhost:8080/api'
+const DEVTOOLS_API_BASE_URL = 'https://www.yjxzhang.com/api'
 
 let cachedApiBaseUrl: string | null = null
 let loginWaiter: (() => Promise<ApiLoginData>) | null = null
@@ -145,11 +146,15 @@ function buildAuthHeader(): Record<string, string> {
 
 /** 供 auth 模块调用的底层请求（登录接口等） */
 export function rawRequestWithAuth<T>(options: RequestOptions): Promise<T> {
-  beginLoading()
+  if (!options.silent) {
+    beginLoading()
+  }
 
   return new Promise<T>((resolve, reject) => {
     const finish = (error: ApiError | null, value?: T): void => {
-      endLoading()
+      if (!options.silent) {
+        endLoading()
+      }
       if (!error) {
         resolve(value as T)
         return

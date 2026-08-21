@@ -84,7 +84,13 @@ export function getMaterials(): Promise<MaterialsViewModel> {
 }
 
 export function getMaterialDetail(materialId: string): Promise<MaterialDetailViewModel | null> {
-  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
+  return request<ApiMaterial>({
+    method: 'GET',
+    path: `/material/${materialId}`,
+    /** 分享打开时访客未登录，素材详情按 id 公开读取 */
+    skipAuth: true,
+    silent: true,
+  })
     .then(async (material) => {
       const rawImages =
         material.fileType === 'IMAGE'

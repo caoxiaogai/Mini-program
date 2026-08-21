@@ -1,5 +1,8 @@
 {
   "usingComponents": {
-    "navigation-bar": "/components/navigation-bar/navigation-bar"
-  }
+    "navigation-bar": "/components/navigation-bar/navigation-bar",
+    "auth-overlay": "/components/auth-overlay/index"
+  },
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true
 }
