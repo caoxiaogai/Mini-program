@@ -1,6 +1,7 @@
 {
   "usingComponents": {
     "navigation-bar": "/components/navigation-bar/navigation-bar",
-    "publish-success-modal": "/components/publish-success-modal/index"
+    "publish-success-modal": "/components/publish-success-modal/index",
+    "auth-overlay": "/components/auth-overlay/index"
   }
 }

@@ -82,4 +82,5 @@
         <text>暂无意向用户</text>
       </view>
   </view>
+  <auth-overlay />
 </view>

@@ -1,0 +1,58 @@
+<view wx:if="{{showLogin || showProfile}}" class="auth-overlay">
+  <view wx:if="{{showLogin}}" class="auth-overlay__panel" catchtap="onPanelTap">
+    <view class="auth-overlay__content">
+      <view class="auth-overlay__title-group">
+        <text class="auth-overlay__title">欢迎使用</text>
+        <text class="auth-overlay__subtitle">登录后可使用素材发布与客户分析功能</text>
+      </view>
+      <button
+        class="auth-overlay__primary-button"
+        loading="{{loginLoading}}"
+        disabled="{{loginLoading}}"
+        bindtap="onLoginTap"
+      >
+        微信授权登录
+      </button>
+    </view>
+  </view>
+
+  <view wx:elif="{{showProfile}}" class="auth-overlay__panel" catchtap="onPanelTap">
+    <view class="auth-overlay__content">
+      <view class="auth-overlay__title-group">
+        <text class="auth-overlay__title">完善资料</text>
+        <text class="auth-overlay__subtitle">首次登录，请设置头像和昵称</text>
+      </view>
+
+      <view class="auth-overlay__profile">
+        <button class="auth-overlay__avatar-button" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">
+          <image class="auth-overlay__avatar" src="{{avatarPreview}}" mode="aspectFill" />
+          <text class="auth-overlay__avatar-hint">点击设置头像</text>
+        </button>
+
+        <view class="auth-overlay__nickname-field">
+          <text class="auth-overlay__field-label">昵称</text>
+          <!-- type=nickname 勿绑定 value，否则「使用微信昵称」无法回显 -->
+          <input
+            wx:if="{{profileFormInitialized}}"
+            class="auth-overlay__nickname-input"
+            type="nickname"
+            placeholder="请输入昵称"
+            maxlength="20"
+            bindinput="onNicknameInput"
+            bindblur="onNicknameBlur"
+            bindnicknamereview="onNicknameReview"
+          />
+        </view>
+      </view>
+
+      <button
+        class="auth-overlay__primary-button"
+        loading="{{profileLoading}}"
+        disabled="{{profileLoading}}"
+        bindtap="onProfileSubmitTap"
+      >
+        保存并继续
+      </button>
+    </view>
+  </view>
+</view>

@@ -64,4 +64,5 @@
     bind:sharefriends="onShareFriendsTap"
     bind:sharemoments="onShareMomentsTap"
   />
+  <auth-overlay />
 </view>

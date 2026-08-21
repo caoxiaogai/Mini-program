@@ -41,4 +41,5 @@
   </view>
 
   <bottom-tab-bar items="{{tabItems}}" bind:tabtap="onTabTap" />
+  <auth-overlay />
 </view>

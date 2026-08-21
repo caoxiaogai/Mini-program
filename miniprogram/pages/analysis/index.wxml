@@ -94,4 +94,5 @@
       <view wx:for="{{analysisSortOptions}}" wx:key="id" class="analysis-sort-sheet__option" bindtap="onAnalysisSortOptionTap" data-id="{{item.id}}">{{item.label}}</view>
     </view>
   </view>
+  <auth-overlay />
 </view>

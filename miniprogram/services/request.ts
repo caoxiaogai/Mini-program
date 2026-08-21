@@ -3,13 +3,20 @@
 
 import type { ApiLoginData, ApiResponse } from '../types/api'
 import { DEV_LAN_ORIGIN } from '../config/dev'
+import { STORAGE_KEY_OPENID, STORAGE_KEY_USER_ID } from '../constants/auth'
 
 const DEVTOOLS_API_BASE_URL = 'http://localhost:8080/api'
 
 let cachedApiBaseUrl: string | null = null
+let loginWaiter: (() => Promise<ApiLoginData>) | null = null
+
+/** 由 auth 模块注册，避免 request ↔ auth 循环依赖 */
+export function registerLoginWaiter(waiter: () => Promise<ApiLoginData>): void {
+  loginWaiter = waiter
+}
 
 /** 开发者工具模拟器用 localhost；真机/预览用手机可访问的局域网 IP（延迟到首次请求再判定） */
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
   if (cachedApiBaseUrl) return cachedApiBaseUrl
 
   try {
@@ -24,11 +31,9 @@ function getApiBaseUrl(): string {
   cachedApiBaseUrl = `${DEV_LAN_ORIGIN}/api`
   return cachedApiBaseUrl
 }
+
 const REQUEST_TIMEOUT_MS = 15000
 const UPLOAD_TIMEOUT_MS = 60000
-
-const STORAGE_KEY_USER_ID = 'auth.userId'
-const STORAGE_KEY_OPENID = 'auth.openid'
 
 /** 当前 API 基址的 origin（不含 /api），例如 http://192.168.31.225:8080 */
 export function getApiOrigin(): string {
@@ -112,7 +117,6 @@ function endLoading(): void {
 }
 
 function showErrorToast(error: ApiError): void {
-  // 不透出原始后端错误，统一转换为稳定的用户文案
   const title = error.code === -1 ? '网络异常，请稍后重试' : '请求失败，请稍后重试'
   wx.showToast({ title, icon: 'none' })
 }
@@ -139,7 +143,8 @@ function buildAuthHeader(): Record<string, string> {
   return header
 }
 
-function rawRequest<T>(options: RequestOptions): Promise<T> {
+/** 供 auth 模块调用的底层请求（登录接口等） */
+export function rawRequestWithAuth<T>(options: RequestOptions): Promise<T> {
   beginLoading()
 
   return new Promise<T>((resolve, reject) => {
@@ -175,48 +180,35 @@ function rawRequest<T>(options: RequestOptions): Promise<T> {
   })
 }
 
-let loginPromise: Promise<ApiLoginData> | null = null
+function readStoredLoginData(): ApiLoginData | null {
+  const userId = wx.getStorageSync(STORAGE_KEY_USER_ID) as string | ''
+  if (!userId) return null
 
-function requestLogin(): Promise<ApiLoginData> {
-  return new Promise<ApiLoginData>((resolve, reject) => {
-    wx.login({
-      success: (loginResult) => {
-        rawRequest<ApiLoginData>({
-          method: 'POST',
-          path: '/wechat/login',
-          query: { code: loginResult.code },
-          skipAuth: true,
-        })
-          .then((data) => {
-            wx.setStorageSync(STORAGE_KEY_USER_ID, data.userId)
-            wx.setStorageSync(STORAGE_KEY_OPENID, data.openid)
-            resolve(data)
-          })
-          .catch(reject)
-      },
-      fail: (error) => {
-        console.error('[wx.login] failed', error.errMsg)
-        reject(new ApiError(-1, `微信登录失败：${error.errMsg || '未知原因'}`))
-      },
-    })
-  })
+  return {
+    userId,
+    openid: (wx.getStorageSync(STORAGE_KEY_OPENID) as string | '') || '',
+    nickname: null,
+    avatar: null,
+    phone: null,
+  }
 }
 
-/** 登录（code 换 userId），应用生命周期内复用同一登录态；失败后下次调用会重试 */
+/** 等待登录完成；未登录时由 auth 弹窗引导，不静默 wx.login */
 export function ensureLogin(): Promise<ApiLoginData> {
-  if (!loginPromise) {
-    loginPromise = requestLogin().catch((error: ApiError) => {
-      loginPromise = null
-      throw error
-    })
+  const stored = readStoredLoginData()
+  if (stored) return Promise.resolve(stored)
+
+  if (!loginWaiter) {
+    return Promise.reject(new ApiError(-1, '登录模块未初始化'))
   }
-  return loginPromise
+
+  return loginWaiter()
 }
 
 /** 统一请求入口：默认先确保登录，再携带登录态请求头发起请求 */
 export function request<T>(options: RequestOptions): Promise<T> {
-  if (options.skipAuth) return rawRequest<T>(options)
-  return ensureLogin().then(() => rawRequest<T>(options))
+  if (options.skipAuth) return rawRequestWithAuth<T>(options)
+  return ensureLogin().then(() => rawRequestWithAuth<T>(options))
 }
 
 /** 上传单个文件，返回后端存储 URL（对应 POST /material/upload-file 一类接口） */
@@ -250,7 +242,7 @@ export function uploadFile(path: string, filePath: string): Promise<string> {
                 return
               }
               finish(new ApiError(result.code, result.message))
-            } catch (error) {
+            } catch {
               finish(new ApiError(-1, '上传响应解析失败'))
             }
           },

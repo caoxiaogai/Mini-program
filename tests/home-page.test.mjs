@@ -55,11 +55,22 @@ test('data access goes through the unified request layer', () => {
   assert.match(requestLayer, /http:\/\/localhost:8080\/api/)
   assert.match(requestLayer, /platform === 'devtools'/)
   assert.match(requestLayer, /'X-User-Id'/)
-  assert.match(requestLayer, /\/wechat\/login/)
-  assert.match(requestLayer, /console\.error\('\[wx\.login\] failed', error\.errMsg\)/)
-  assert.match(requestLayer, /微信登录失败：\$\{error\.errMsg \|\| '未知原因'\}/)
+  assert.match(requestLayer, /registerLoginWaiter/)
   assert.match(requestLayer, /export function request</)
   assert.match(requestLayer, /export function ensureLogin/)
+
+  const authLayer = read('miniprogram/services/auth.ts')
+  assert.match(authLayer, /\/wechat\/login/)
+  assert.match(authLayer, /wx\.login\(/)
+  assert.match(authLayer, /loginWithWechat/)
+  assert.match(authLayer, /completeProfileSetup/)
+  assert.match(authLayer, /\/user\/profile/)
+  assert.match(authLayer, /\/user\/avatar/)
+
+  const authOverlay = read('miniprogram/components/auth-overlay/index.wxml')
+  assert.match(authOverlay, /微信授权登录/)
+  assert.match(authOverlay, /完善资料/)
+  assert.match(authOverlay, /chooseAvatar/)
 
   const serviceFiles = ['home', 'analysis', 'materials', 'notifications', 'ranking']
   for (const name of serviceFiles) {
