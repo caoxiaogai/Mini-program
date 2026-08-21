@@ -1,6 +1,7 @@
 import type { ApiContentListItem, ApiCustomerListItem, ApiDashboard } from '../types/api'
 import type { HomeOverviewViewModel } from '../types/home'
-import { request, resolveMediaUrl } from './request'
+import { prepareMediaUrls } from '../utils/media'
+import { request } from './request'
 
 const HOME_VISITOR_PREVIEW_LIMIT = 5
 
@@ -19,18 +20,20 @@ export function getHomeOverview(): Promise<HomeOverviewViewModel> {
       path: '/analysis/content/list',
       query: { timeRange: 'today', orderBy: 'forward_count' },
     }),
-  ]).then(([dashboard, customers, contents]) => {
+  ]).then(async ([dashboard, customers, contents]) => {
     const topForwarded = contents.find((item) => (item.forwardCount ?? 0) > 0)
     const intentCustomerCount =
       (dashboard.highIntentCount ?? 0) + (dashboard.mediumIntentCount ?? 0) + (dashboard.lowIntentCount ?? 0)
+    const visitorSlice = customers.slice(0, HOME_VISITOR_PREVIEW_LIMIT)
+    const avatarUrls = await prepareMediaUrls(visitorSlice.map((customer) => customer.avatar))
 
     return {
       newVisitors: {
         total: dashboard.totalViewerCount ?? 0,
         highIntentCount: dashboard.highIntentCount ?? 0,
-        visitors: customers.slice(0, HOME_VISITOR_PREVIEW_LIMIT).map((customer) => ({
+        visitors: visitorSlice.map((customer, index) => ({
           id: String(customer.customerId),
-          avatarUrl: resolveMediaUrl(customer.avatar),
+          avatarUrl: avatarUrls[index],
         })),
       },
       reading: {

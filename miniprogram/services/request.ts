@@ -6,19 +6,24 @@ import { DEV_LAN_ORIGIN } from '../config/dev'
 
 const DEVTOOLS_API_BASE_URL = 'http://localhost:8080/api'
 
-/** 开发者工具模拟器用 localhost；真机/预览用手机可访问的局域网 IP */
-function resolveApiBaseUrl(): string {
+let cachedApiBaseUrl: string | null = null
+
+/** 开发者工具模拟器用 localhost；真机/预览用手机可访问的局域网 IP（延迟到首次请求再判定） */
+function getApiBaseUrl(): string {
+  if (cachedApiBaseUrl) return cachedApiBaseUrl
+
   try {
     if (wx.getSystemInfoSync().platform === 'devtools') {
-      return DEVTOOLS_API_BASE_URL
+      cachedApiBaseUrl = DEVTOOLS_API_BASE_URL
+      return cachedApiBaseUrl
     }
   } catch {
     // 非小程序环境（如单元测试）回退局域网地址
   }
-  return `${DEV_LAN_ORIGIN}/api`
-}
 
-const API_BASE_URL = resolveApiBaseUrl()
+  cachedApiBaseUrl = `${DEV_LAN_ORIGIN}/api`
+  return cachedApiBaseUrl
+}
 const REQUEST_TIMEOUT_MS = 15000
 const UPLOAD_TIMEOUT_MS = 60000
 
@@ -27,19 +32,46 @@ const STORAGE_KEY_OPENID = 'auth.openid'
 
 /** 当前 API 基址的 origin（不含 /api），例如 http://localhost:8080 */
 export function getApiOrigin(): string {
-  const schemeEnd = API_BASE_URL.indexOf('://')
-  const pathStart = API_BASE_URL.indexOf('/', schemeEnd + 3)
-  return pathStart === -1 ? API_BASE_URL : API_BASE_URL.slice(0, pathStart)
+  const apiBaseUrl = getApiBaseUrl()
+  const schemeEnd = apiBaseUrl.indexOf('://')
+  const pathStart = apiBaseUrl.indexOf('/', schemeEnd + 3)
+  return pathStart === -1 ? apiBaseUrl : apiBaseUrl.slice(0, pathStart)
 }
 
 /**
- * 将后端返回的文件 URL 主机对齐到当前 API 基址。
- * 后端 minio.public-base-url 可能固定为局域网 IP；开发者工具代理 LAN 图片时会 502，模拟器下会 rewrite 为 localhost。
+ * 将后端返回的文件 URL 归一化为当前环境可访问的代理地址。
+ * - MinIO 直连（:9000/sales-materials/...）→ /api/files/sales-materials/...
+ * - 缺 /api/files 的 /sales-materials/... → 补全代理前缀
+ * - 已是代理 URL → 仅对齐主机（模拟器 localhost / 真机局域网 IP）
  */
 export function resolveMediaUrl(url: string | null | undefined): string {
   if (!url) return ''
-  if (!/^https?:\/\//.test(url)) return url
-  return url.replace(/^https?:\/\/[^/]+/, getApiOrigin())
+  const trimmed = url.trim()
+  if (!trimmed) return ''
+  if (!/^https?:\/\//.test(trimmed)) {
+    if (trimmed.startsWith('/api/files/')) {
+      return `${getApiOrigin()}${trimmed}`
+    }
+    return trimmed
+  }
+
+  const origin = getApiOrigin()
+
+  const minioDirect = trimmed.match(/^https?:\/\/[^/]+:9000\/sales-materials\/(.+)$/i)
+  if (minioDirect) {
+    return `${origin}/api/files/sales-materials/${minioDirect[1]}`
+  }
+
+  if (trimmed.includes('/api/files/')) {
+    return trimmed.replace(/^https?:\/\/[^/]+/, origin)
+  }
+
+  const bareBucket = trimmed.match(/^https?:\/\/[^/]+\/sales-materials\/(.+)$/i)
+  if (bareBucket) {
+    return `${origin}/api/files/sales-materials/${bareBucket[1]}`
+  }
+
+  return trimmed.replace(/^https?:\/\/[^/]+/, origin)
 }
 
 /** 归一化后的接口错误；code 为后端业务码，网络层失败时为 -1 */
@@ -87,13 +119,13 @@ function showErrorToast(error: ApiError): void {
 
 function buildUrl(path: string, query?: RequestOptions['query']): string {
   const entries = Object.entries(query ?? {}).filter(([, value]) => value !== undefined && value !== '')
-  if (entries.length === 0) return `${API_BASE_URL}${path}`
+  if (entries.length === 0) return `${getApiBaseUrl()}${path}`
 
   const queryString = entries
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
     .join('&')
 
-  return `${API_BASE_URL}${path}?${queryString}`
+  return `${getApiBaseUrl()}${path}?${queryString}`
 }
 
 function buildAuthHeader(): Record<string, string> {

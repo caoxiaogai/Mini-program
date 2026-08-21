@@ -24,6 +24,7 @@ import {
   formatMonthDay,
   formatSeconds,
 } from '../utils/format'
+import { prepareMediaUrls } from '../utils/media'
 import { request, resolveMediaUrl, runRequestQueue } from './request'
 
 /** 分析页时间筛选：日/周/月对应后端 today/week/month；「总」受后端 custom 上限约束取最近 62 天（待后端确认全量口径） */
@@ -186,57 +187,65 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: periodQuery }),
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: totalQuery }),
     getReadTrends(),
-  ]).then(([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) =>
-    fetchViewedWorksCounts(contents, periodQuery).then((viewedWorksCounts) => {
-      const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
-      const forwardedCustomerCount = intentCustomers.filter((item) => item.hasForwarded === 1).length
-      const completedCustomerCount = customers.filter((item) => (item.completeCount ?? 0) > 0).length
+  ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) => {
+    const viewedWorksCounts = await fetchViewedWorksCounts(contents, periodQuery)
+    const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
+    const forwardedCustomerCount = intentCustomers.filter((item) => item.hasForwarded === 1).length
+    const completedCustomerCount = customers.filter((item) => (item.completeCount ?? 0) > 0).length
 
-      return {
-        summary: [
-          { label: '总发布', value: formatCount(dashboard.totalPublishCount) },
-          { label: '总阅读次数', value: formatCount(dashboard.totalViewCount) },
-          { label: '总转发', value: formatCount(dashboard.totalForwardCount) },
-        ],
-        cards: contents.map(mapContentCard),
-        userSummary: [
-          { label: '总用户', value: formatCount(customers.length) },
-          { label: '完播人数', value: formatCount(completedCustomerCount) },
-          { label: '转发人数', value: formatCount(forwardedCustomerCount) },
-        ],
-        audienceUsers: customers.map((customer) => {
-          const customerId = String(customer.customerId)
-          const level = resolveIntentLevel(intentByCustomer, customerId, customer.viewCount ?? 0, customer.completeCount ?? 0)
-          const intent = intentByCustomer.get(customerId)
+    const cards = contents.map(mapContentCard)
+    const [cardThumbs, avatarUrls] = await Promise.all([
+      prepareMediaUrls(cards.map((card) => card.thumbnailUrl)),
+      prepareMediaUrls(customers.map((customer) => customer.avatar)),
+    ])
+    cards.forEach((card, index) => {
+      card.thumbnailUrl = cardThumbs[index] ?? ''
+    })
 
-          return {
-            id: customerId,
-            avatarUrl: resolveMediaUrl(customer.avatar),
-            name: customer.nickname ?? '微信用户',
-            level,
-            levelLabel: intentLevelLabels[level],
-            readCount: formatCount(customer.viewCount),
-            viewedWorksCount: formatCount(viewedWorksCounts.get(customerId)),
-            shareCount: intent?.hasForwarded === 1 ? '1' : '0',
-          }
-        }),
-        totalData: {
-          overview: [
-            { label: '总发布', value: formatCount(totalDashboard.totalPublishCount) },
-            { label: '总阅读次数', value: formatCount(totalDashboard.totalViewCount) },
-            { label: '总转发', value: formatCount(totalDashboard.totalForwardCount) },
-            { label: '总阅读人数', value: formatCount(totalDashboard.totalViewerCount) },
-            { label: '总完播', value: formatCount(totalDashboard.totalCompleteCount) },
-            { label: '总完播率', value: `${totalDashboard.completeRate ?? 0}%` },
-            { label: '高意向', value: formatCount(totalDashboard.highIntentCount) },
-            { label: '中意向', value: formatCount(totalDashboard.mediumIntentCount) },
-            { label: '低意向', value: formatCount(totalDashboard.lowIntentCount) },
-          ],
-          readTrends,
-        },
-      }
-    }),
-  )
+    return {
+      summary: [
+        { label: '总发布', value: formatCount(dashboard.totalPublishCount) },
+        { label: '总阅读次数', value: formatCount(dashboard.totalViewCount) },
+        { label: '总转发', value: formatCount(dashboard.totalForwardCount) },
+      ],
+      cards,
+      userSummary: [
+        { label: '总用户', value: formatCount(customers.length) },
+        { label: '完播人数', value: formatCount(completedCustomerCount) },
+        { label: '转发人数', value: formatCount(forwardedCustomerCount) },
+      ],
+      audienceUsers: customers.map((customer, index) => {
+        const customerId = String(customer.customerId)
+        const level = resolveIntentLevel(intentByCustomer, customerId, customer.viewCount ?? 0, customer.completeCount ?? 0)
+        const intent = intentByCustomer.get(customerId)
+
+        return {
+          id: customerId,
+          avatarUrl: avatarUrls[index] ?? '',
+          name: customer.nickname ?? '微信用户',
+          level,
+          levelLabel: intentLevelLabels[level],
+          readCount: formatCount(customer.viewCount),
+          viewedWorksCount: formatCount(viewedWorksCounts.get(customerId)),
+          shareCount: intent?.hasForwarded === 1 ? '1' : '0',
+        }
+      }),
+      totalData: {
+        overview: [
+          { label: '总发布', value: formatCount(totalDashboard.totalPublishCount) },
+          { label: '总阅读次数', value: formatCount(totalDashboard.totalViewCount) },
+          { label: '总转发', value: formatCount(totalDashboard.totalForwardCount) },
+          { label: '总阅读人数', value: formatCount(totalDashboard.totalViewerCount) },
+          { label: '总完播', value: formatCount(totalDashboard.totalCompleteCount) },
+          { label: '总完播率', value: `${totalDashboard.completeRate ?? 0}%` },
+          { label: '高意向', value: formatCount(totalDashboard.highIntentCount) },
+          { label: '中意向', value: formatCount(totalDashboard.mediumIntentCount) },
+          { label: '低意向', value: formatCount(totalDashboard.lowIntentCount) },
+        ],
+        readTrends,
+      },
+    }
+  })
 }
 
 export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewModel | null> {
@@ -252,15 +261,20 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: rangeQuery, silent: true }).catch(
       () => [] as ApiIntentCustomer[],
     ),
-  ]).then(([detail, material, intentCustomers]) => {
+  ]).then(async ([detail, material, intentCustomers]) => {
     if (!detail) return null
 
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
+    const audienceList = detail.audienceList ?? []
+    const [thumbnailUrl, avatarUrls] = await Promise.all([
+      prepareMediaUrls([resolveMediaUrl(material?.coverUrl)]).then((urls) => urls[0] ?? ''),
+      prepareMediaUrls(audienceList.map((audience) => audience.avatar)),
+    ])
 
     return {
       card: {
         id: String(detail.materialId),
-        thumbnailUrl: resolveMediaUrl(material?.coverUrl),
+        thumbnailUrl,
         title: detail.title ?? '',
         date: formatDateKey(material?.createTime),
         metrics: [
@@ -270,14 +284,14 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
           { label: '观看人数', value: formatCount(detail.viewerCount) },
         ],
       },
-      intentUsers: (detail.audienceList ?? []).map((audience) => {
+      intentUsers: audienceList.map((audience, index) => {
         const customerId = String(audience.customerId)
         const level = resolveIntentLevel(intentByCustomer, customerId, audience.viewCount ?? 0, audience.completed ?? 0)
         const intent = intentByCustomer.get(customerId)
 
         return {
           id: customerId,
-          avatarUrl: resolveMediaUrl(audience.avatar),
+          avatarUrl: avatarUrls[index] ?? '',
           name: audience.nickname ?? '微信用户',
           level,
           levelLabel: intentLevelLabels[level],
@@ -304,7 +318,7 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
       () => [] as ApiIntentCustomer[],
     ),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
-  ]).then(([customers, history, intentCustomers, materials]) => {
+  ]).then(async ([customers, history, intentCustomers, materials]) => {
     const customer = customers.find((item) => String(item.customerId) === userId) ?? null
     const intent = intentCustomers.find((item) => String(item.customerId) === userId) ?? null
     if (!customer && !intent) return null
@@ -319,11 +333,15 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
       customer?.viewCount ?? intent?.viewCount ?? 0,
       customer?.completeCount ?? intent?.completed ?? 0,
     )
+    const [avatarUrl, recordThumbs] = await Promise.all([
+      prepareMediaUrls([customer?.avatar ?? intent?.avatar]).then((urls) => urls[0] ?? ''),
+      prepareMediaUrls(history.map((record) => coverByMaterial.get(String(record.materialId)) ?? '')),
+    ])
 
     return {
       profile: {
         id: userId,
-        avatarUrl: resolveMediaUrl(customer?.avatar ?? intent?.avatar),
+        avatarUrl,
         name: customer?.nickname ?? intent?.nickname ?? '微信用户',
         level,
         levelLabel: intentLevelLabels[level],
@@ -335,7 +353,7 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
       // 后端观看历史暂不含单条转发数，shareCount 固定为 0（「转发」筛选相应为空）
       records: history.map((record, index) => ({
         id: `${record.materialId}-${index}`,
-        thumbnailUrl: coverByMaterial.get(String(record.materialId)) ?? '',
+        thumbnailUrl: recordThumbs[index] ?? '',
         title: record.title ?? '',
         date: formatMonthDay(record.viewTime),
         type: fileTypeLabels[record.fileType ?? ''] ?? '内容',

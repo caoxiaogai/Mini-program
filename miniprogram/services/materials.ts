@@ -9,6 +9,7 @@ import type {
   PublishImageViewModel,
 } from '../types/materials'
 import { formatDateKey } from '../utils/format'
+import { prepareMediaUrls } from '../utils/media'
 import { request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
 
 const materialsFilters: MaterialsFilterViewModel[] = [
@@ -54,26 +55,31 @@ function resolveThumbnail(material: ApiMaterial): string {
 }
 
 export function getMaterials(): Promise<MaterialsViewModel> {
-  return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }).then((materials) => ({
-    filters: materialsFilters,
-    items: materials.map((material) => ({
-      id: String(material.id),
-      title: material.title ?? '',
-      date: formatDateKey(material.createTime),
-      thumbnailUrl: resolveThumbnail(material),
-      kind: materialKinds[material.fileType] ?? 'pdf',
-      isDraft: material.publishStatus === 0,
-    })),
-  }))
+  return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }).then(async (materials) => {
+    const thumbnailUrls = await prepareMediaUrls(materials.map((material) => resolveThumbnail(material)))
+
+    return {
+      filters: materialsFilters,
+      items: materials.map((material, index) => ({
+        id: String(material.id),
+        title: material.title ?? '',
+        date: formatDateKey(material.createTime),
+        thumbnailUrl: thumbnailUrls[index] ?? '',
+        kind: materialKinds[material.fileType] ?? 'pdf',
+        isDraft: material.publishStatus === 0,
+      })),
+    }
+  })
 }
 
 export function getMaterialDetail(materialId: string): Promise<MaterialDetailViewModel | null> {
   return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
-    .then((material) => {
-      const images =
+    .then(async (material) => {
+      const rawImages =
         material.fileType === 'IMAGE'
           ? parseImageUrls(material.fileUrl)
-          : [material.coverUrl ?? ''].filter((url) => url !== '')
+          : [resolveMediaUrl(material.coverUrl)].filter((url) => url !== '')
+      const images = await prepareMediaUrls(rawImages)
 
       return {
         id: String(material.id),
@@ -87,11 +93,16 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
 
 export function getMaterialDraft(materialId: string): Promise<MaterialDraftEditViewModel | null> {
   return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
-    .then((material) => ({
-      id: String(material.id),
-      images: parseImageUrls(material.fileUrl).map((url) => ({ id: url, path: url })),
-      copy: material.content ?? '',
-    }))
+    .then(async (material) => {
+      const sourceUrls = parseImageUrls(material.fileUrl)
+      const paths = await prepareMediaUrls(sourceUrls)
+
+      return {
+        id: String(material.id),
+        images: sourceUrls.map((url, index) => ({ id: url, path: paths[index] ?? '' })),
+        copy: material.content ?? '',
+      }
+    })
     .catch(() => null)
 }
 
