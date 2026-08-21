@@ -61,7 +61,7 @@ function buildPeriodQuery(period: AnalysisTimeRange): Record<string, string> {
   return { ...buildCustomRangeQuery(MAX_QUERY_RANGE_DAYS) }
 }
 
-/** 意向等级：优先取后端意向列表结果，缺失时按后端同款规则本地推导 */
+/** 意向等级：优先取后端意向列表结果，缺失时按「完播=高意向」规则本地推导 */
 function resolveIntentLevel(
   intentByCustomer: Map<string, ApiIntentCustomer>,
   customerId: string,
@@ -70,8 +70,8 @@ function resolveIntentLevel(
 ): AnalysisIntentLevel {
   const intent = intentByCustomer.get(customerId)
   if (intent) return intent.intentLevel
-  if (viewCount >= 2) return 'high'
-  if (completed > 0) return 'medium'
+  if (completed > 0) return 'high'
+  if (viewCount > 0) return 'medium'
   return 'low'
 }
 

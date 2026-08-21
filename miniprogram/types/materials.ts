@@ -17,6 +17,8 @@ export interface MaterialCardViewModel {
 export interface MaterialDetailViewModel {
   id: string
   title: string
+  fileType: string
+  trackingId: string
   images: string[]
   descriptionLines: string[]
 }

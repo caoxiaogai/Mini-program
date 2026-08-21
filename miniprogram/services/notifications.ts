@@ -26,7 +26,7 @@ const intentLabels: Record<NotificationIntent, string> = {
 }
 
 const recommendations: Record<NotificationIntent, string> = {
-  high: '意向程度较高，建议优先联系',
+  high: '素材已完播，建议优先联系',
   medium: '存在兴趣，建议主动跟进',
   low: '意向程度较低，可保持观察',
 }
