@@ -832,6 +832,39 @@ test('analysis filters keep only day, week, month, and total periods', () => {
   assert.match(styles, /\.analysis-sort__arrow\s*\{[\s\S]*?width: 14rpx;[\s\S]*?height: 8rpx;/)
 })
 
+test('analysis work sort opens the Figma bottom sheet and defaults to views', () => {
+  const markup = read('miniprogram/pages/analysis/index.wxml')
+  const styles = read('miniprogram/pages/analysis/index.less')
+  const logic = read('miniprogram/pages/analysis/index.ts')
+
+  assert.match(markup, /bindtap="onAnalysisSortTap"/)
+  assert.match(markup, /\{\{activeAnalysisSortLabel\}\}/)
+  assert.match(markup, /wx:if="\{\{analysisSortSheetVisible\}\}"/)
+  assert.match(markup, /wx:for="\{\{analysisSortOptions\}\}"/)
+  assert.match(markup, /catchtap="onAnalysisSortMaskTap"/)
+  assert.match(markup, /bindtap="onAnalysisSortOptionTap"/)
+  assert.match(markup, /data-id="\{\{item\.id\}\}"/)
+  assert.match(logic, /activeAnalysisSortLabel: '浏览量'/)
+  assert.match(logic, /analysisSortSheetVisible: false/)
+  assert.match(logic, /analysisSortOptions/)
+  assert.match(logic, /onAnalysisSortTap\(\)/)
+  assert.match(logic, /onAnalysisSortOptionTap\(event: WechatMiniprogram\.TouchEvent\)/)
+  assert.match(logic, /onAnalysisSortMaskTap\(\)/)
+  assert.match(styles, /\.analysis-sort-sheet\s*\{[\s\S]*?position: fixed;[\s\S]*?z-index: 1100;[\s\S]*?align-items: flex-end;/)
+  assert.match(styles, /\.analysis-sort-sheet__mask\s*\{[\s\S]*?background: rgba\(0, 0, 0, 0\.8\);/)
+  assert.match(styles, /\.analysis-sort-sheet__panel\s*\{[\s\S]*?border-radius: 40rpx 40rpx 0 0;[\s\S]*?background: #ffffff;/)
+  assert.match(styles, /\.analysis-sort-sheet__option\s*\{[\s\S]*?height: 100rpx;[\s\S]*?border-bottom: 2rpx solid #f4f5f5;/)
+})
+
+test('analysis sort sheet enters from the bottom with a synchronized 300ms fade', () => {
+  const styles = read('miniprogram/pages/analysis/index.less')
+
+  assert.match(styles, /\.analysis-sort-sheet__mask\s*\{[\s\S]*?animation: analysis-sort-mask-in 300ms ease-out both;/)
+  assert.match(styles, /\.analysis-sort-sheet__panel\s*\{[\s\S]*?animation: analysis-sort-panel-in 300ms ease-out both;/)
+  assert.match(styles, /@keyframes analysis-sort-mask-in\s*\{[\s\S]*?from\s*\{[\s\S]*?background: rgba\(0, 0, 0, 0\);[\s\S]*?\}[\s\S]*?to\s*\{[\s\S]*?background: rgba\(0, 0, 0, 0\.8\);/)
+  assert.match(styles, /@keyframes analysis-sort-panel-in\s*\{[\s\S]*?from\s*\{[\s\S]*?transform: translateY\(100%\);[\s\S]*?\}[\s\S]*?to\s*\{[\s\S]*?transform: translateY\(0\);/)
+})
+
 test('segmented filters share an exact two-pixel vertical inset', () => {
   const appStyles = read('miniprogram/app.less')
   const selectorStyles = [

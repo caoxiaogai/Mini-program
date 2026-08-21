@@ -229,6 +229,14 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-20：分析作品排序筛选底部弹层
+
+- 读取 Figma 节点 `357:19494`，作品分析右侧排序控件默认文案改为“浏览量”。
+- 点击排序控件显示半透明黑色遮罩和底部白色圆角弹层，提供“完播数 / 转发数 / 浏览量”三个可选项；点击选项更新按钮文案并关闭，点击遮罩关闭。
+- 弹层和遮罩同时执行 300ms 入场动画：白色弹层从底部上移，遮罩透明度从 0 过渡到 80%。
+- 当前仅实现前端筛选状态与 Figma 交互展示，未改变统计数据来源和后端接口口径。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（75 tests passed）。
+
 ### 2026-08-20：接入 aisales 后端真实接口，删除全部 mock 数据
 
 - 后端：`D:\IdeaProjects\aisales`（Spring Boot，`http://localhost:8080/api`）。统一响应 `Result{code,message,data}`，成功码 200；登录为 `POST /wechat/login?code=`（wx.login code 换 `userId`），后续请求携带 `X-User-Id` / `X-Openid` 请求头（后端演示级认证，无 JWT）。

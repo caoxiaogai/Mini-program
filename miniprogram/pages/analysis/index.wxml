@@ -13,7 +13,7 @@
           <view class="analysis-periods__selection" style="transform: translateX({{activePeriodOffset}}rpx);"></view>
           <view wx:for="{{analysisPeriods}}" wx:key="id" class="analysis-period {{item.id === activePeriod ? 'analysis-period--active' : ''}}" bindtap="onPeriodTap" data-id="{{item.id}}" data-index="{{index}}"><text>{{item.label}}</text></view>
         </view>
-        <view class="analysis-sort"><view class="analysis-sort__inner"><text>完播数</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
+        <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
       </view>
       <view class="analysis-summary">
         <view wx:for="{{analysisData.summary}}" wx:key="label" class="analysis-summary__card"><text class="analysis-summary__label">{{item.label}}</text><text class="analysis-summary__value">{{item.value}}</text></view>
@@ -86,6 +86,12 @@
           </view>
         </view>
       </view>
+    </view>
+  </view>
+  <view wx:if="{{analysisSortSheetVisible}}" class="analysis-sort-sheet">
+    <view class="analysis-sort-sheet__mask" catchtap="onAnalysisSortMaskTap"></view>
+    <view class="analysis-sort-sheet__panel">
+      <view wx:for="{{analysisSortOptions}}" wx:key="id" class="analysis-sort-sheet__option" bindtap="onAnalysisSortOptionTap" data-id="{{item.id}}">{{item.label}}</view>
     </view>
   </view>
 </view>
