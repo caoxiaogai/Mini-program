@@ -51,11 +51,11 @@ export function prepareMediaUrl(url: string | null | undefined): Promise<string>
           return
         }
         console.warn('[media] downloadFile non-200', resolved, res.statusCode)
-        resolve('')
+        resolve(resolved)
       },
       fail: (error) => {
         console.warn('[media] downloadFile failed', resolved, error)
-        resolve('')
+        resolve(resolved)
       },
     })
   })

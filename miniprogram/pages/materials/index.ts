@@ -2,6 +2,8 @@ import { getMaterials } from '../../services/materials'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 
+const PUBLISH_SUCCESS_STORAGE_KEY = 'materials.publishSuccessPending'
+
 function getVisibleMaterials(items: MaterialCardViewModel[], filterId: MaterialsFilterId): MaterialCardViewModel[] {
   return filterId === 'all' ? items : items.filter((item) => item.kind === filterId)
 }
@@ -16,8 +18,20 @@ Page({
     showPublishSuccessModal: false,
   },
   onLoad(options: Record<string, string | undefined>) {
-    this.setData({ showPublishSuccessModal: options.publishSuccess === '1' })
+    if (options.publishSuccess === '1') {
+      this.setData({ showPublishSuccessModal: true })
+    }
+  },
+  onShow() {
+    const pendingPublishSuccess = wx.getStorageSync(PUBLISH_SUCCESS_STORAGE_KEY) as string | ''
+    if (pendingPublishSuccess === '1') {
+      wx.removeStorageSync(PUBLISH_SUCCESS_STORAGE_KEY)
+      this.setData({ showPublishSuccessModal: true })
+    }
 
+    this.loadMaterials()
+  },
+  loadMaterials() {
     getMaterials().then((materials) => {
       const visibleMaterials = getVisibleMaterials(materials.items, this.data.activeFilter)
 

@@ -54,6 +54,17 @@ function resolveThumbnail(material: ApiMaterial): string {
   return material.fileType === 'IMAGE' ? parseImageUrls(material.fileUrl)[0] ?? '' : ''
 }
 
+/** 用户发布/编辑时填写的文案；content 为空时回退 title（兼容旧数据） */
+function resolveMaterialCopy(material: ApiMaterial): string {
+  if (material.content != null && material.content !== '') return material.content
+  return material.title ?? ''
+}
+
+function splitMaterialCopy(copy: string): string[] {
+  if (!copy) return []
+  return copy.split(/\r?\n/)
+}
+
 export function getMaterials(): Promise<MaterialsViewModel> {
   return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }).then(async (materials) => {
     const thumbnailUrls = await prepareMediaUrls(materials.map((material) => resolveThumbnail(material)))
@@ -62,7 +73,7 @@ export function getMaterials(): Promise<MaterialsViewModel> {
       filters: materialsFilters,
       items: materials.map((material, index) => ({
         id: String(material.id),
-        title: material.title ?? '',
+        title: resolveMaterialCopy(material),
         date: formatDateKey(material.createTime),
         thumbnailUrl: thumbnailUrls[index] ?? '',
         kind: materialKinds[material.fileType] ?? 'pdf',
@@ -85,7 +96,7 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
         id: String(material.id),
         title: '作品',
         images,
-        descriptionLines: (material.content ?? '').split(/\r?\n/).filter((line) => line.trim() !== ''),
+        descriptionLines: splitMaterialCopy(resolveMaterialCopy(material)),
       }
     })
     .catch(() => null)
@@ -106,8 +117,15 @@ export function getMaterialDraft(materialId: string): Promise<MaterialDraftEditV
     .catch(() => null)
 }
 
-function isRemoteUrl(path: string): boolean {
-  return path.startsWith('http://') || path.startsWith('https://')
+function shouldUploadImagePath(path: string): boolean {
+  if (
+    path.startsWith('wxfile://')
+    || path.startsWith('http://tmp/')
+    || path.startsWith('https://tmp/')
+  ) {
+    return true
+  }
+  return !/^https?:\/\//i.test(path)
 }
 
 function buildMaterialTitle(copy: string): string {
@@ -121,7 +139,9 @@ function buildMaterialTitle(copy: string): string {
 
 function uploadLocalImages(images: PublishImageViewModel[]): Promise<string[]> {
   const tasks = images.map((image) => () =>
-    isRemoteUrl(image.path) ? Promise.resolve(image.path) : uploadFile('/material/upload-file', image.path),
+    shouldUploadImagePath(image.path)
+      ? uploadFile('/material/upload-file', image.path)
+      : Promise.resolve(image.path),
   )
   return runRequestQueue(tasks, UPLOAD_CONCURRENCY)
 }

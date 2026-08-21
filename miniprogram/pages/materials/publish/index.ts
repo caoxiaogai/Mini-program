@@ -88,6 +88,7 @@ Page({
       .then((materialId) => {
         this.draftMaterialId = materialId
         this.draftImagePaths = this.data.images.map((image) => image.path)
+        wx.setStorageSync('materials.publishSuccessPending', '1')
         wx.redirectTo({ url: '/pages/materials/index?publishSuccess=1' })
       })
       .catch(() => undefined)

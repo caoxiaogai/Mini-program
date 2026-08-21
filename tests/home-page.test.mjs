@@ -1017,6 +1017,8 @@ test('materials data layer exposes one typed service seam', () => {
   assert.match(service, /\/material\/mine/)
   assert.match(service, /export function publishMaterial/)
   assert.match(service, /export function saveMaterialDraft/)
+  assert.match(service, /http:\/\/tmp\//)
+  assert.match(service, /shouldUploadImagePath/)
   assert.doesNotMatch(service, /TODO\(API\)/)
 })
 
@@ -1083,6 +1085,7 @@ test('publish actions submit through the materials service', () => {
   assert.match(publishLogic, /saveMaterialDraft\(this\.buildSubmitInput\(\)\)/)
   assert.match(publishLogic, /publishMaterial\(this\.buildSubmitInput\(\)\)/)
   assert.match(publishLogic, /\/pages\/materials\/index\?publishSuccess=1/)
+  assert.match(publishLogic, /materials\.publishSuccessPending/)
   assert.doesNotMatch(publishLogic, /showPublishSuccessModal/)
   assert.doesNotMatch(publishLogic, /草稿功能待接入/)
   assert.doesNotMatch(publishLogic, /发表功能待接入/)
@@ -1204,8 +1207,10 @@ test('published materials return to the materials home page and immediately open
   const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
   const materialsLogic = read('miniprogram/pages/materials/index.ts')
 
-  assert.match(publishLogic, /publishMaterial\(this\.buildSubmitInput\(\)\)[\s\S]*?wx\.redirectTo\(\{ url: '\/pages\/materials\/index\?publishSuccess=1' \}\)/)
-  assert.match(materialsLogic, /showPublishSuccessModal: options\.publishSuccess === '1'/)
+  assert.match(publishLogic, /publishMaterial\(this\.buildSubmitInput\(\)\)[\s\S]*?wx\.setStorageSync\('materials\.publishSuccessPending', '1'\)[\s\S]*?wx\.redirectTo\(\{ url: '\/pages\/materials\/index\?publishSuccess=1' \}\)/)
+  assert.match(materialsLogic, /options\.publishSuccess === '1'/)
+  assert.match(materialsLogic, /onShow\(\)[\s\S]*?loadMaterials\(\)/)
+  assert.match(materialsLogic, /materials\.publishSuccessPending/)
 })
 
 test('publish success modal fades in its black scrim and card over 300 milliseconds', () => {
