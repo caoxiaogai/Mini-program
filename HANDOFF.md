@@ -229,6 +229,47 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-21：首页阅读/转发卡片顺序与空状态文案调整
+
+- 首页两张统计卡调整为“今日转发”在前、“今日阅读”在后，继续保留作品分析跳转。
+- 转发空状态改为“今日暂无转发 / 内容被转发后，这里会展示数据”；阅读空状态改为“今日暂无阅读 / 去分享素材给好友吧”。
+- 三张统计卡统一改为内容自适应宽度，左右各保留 12px 内边距；空状态辅助文案保持单行，允许内容超出卡片宽度完整显示，不换行、不省略。
+- 验证：相关首页回归测试 8 tests passed；全量测试 `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（83 tests passed）。
+
+### 2026-08-21：素材首页空状态
+
+- 当素材首页当前筛选没有任何素材时，隐藏素材网格，显示复用的云朵图标和文案“还没有素材，发布一个吧”；底部“发布素材”入口保持可用。
+- 加载素材与切换筛选均同步计算 `hasVisibleMaterials`，避免筛选结果为空时留下空白网格。
+- 验证：新增素材空状态回归用例；`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（81 tests passed）；素材首页 TypeScript 语法检查通过。
+
+### 2026-08-21：发表成功跳转素材首页并展示弹窗
+
+- 发表接口成功后，发布页使用 `wx.redirectTo` 跳转 `/pages/materials/index?publishSuccess=1`；素材首页读取参数后立即展示发布成功弹窗。
+- 发布成功弹窗提取为 `components/publish-success-modal`，由素材首页承载；后续页面复用时不再复制弹窗结构、分享按钮与动效样式。
+- 验证：新增发表跳转、首页弹窗和组件复用的回归用例；`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（80 tests passed）。
+
+### 2026-08-21：发布成功弹窗遮罩与淡入动效
+
+- 发布成功弹窗遮罩改为 `#000` 80% 不透明度，并在出现时由 0% 过渡至 80%。
+- 弹窗卡片与遮罩同步使用 300ms `ease-out` 淡入，卡片透明度由 0% 变为 100%。
+- 验证：新增发布成功弹窗遮罩与动效回归用例；`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（79 tests passed）。
+
+### 2026-08-21：保存草稿后返回素材首页
+
+- 发布页的草稿接口成功返回后，保留“已保存草稿”提示并使用 `wx.redirectTo` 自动进入 `/pages/materials/index`；草稿保存失败时继续停留在当前页。
+- 验证：新增草稿成功跳转回归用例；`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（78 tests passed）。当前终端未安装 `npx`，无法执行 `tsc`，已改用 TypeScript 语法检查。
+
+### 2026-08-20：保留微信登录原始失败原因
+
+- `services/request.ts` 的 `wx.login` 失败回调现在记录微信返回的 `errMsg`，并将原始原因带入 `ApiError`，避免只显示笼统的“微信登录失败”。
+- 已验证 `192.168.31.225:8080` 从前端电脑可达；当前截图中的失败发生在 `wx.login` 阶段，需确认开发者工具 AppID 与后端微信配置一致，并使用有权限的开发者账号。
+- 验证：完整测试套件 77 tests passed；当前环境未安装 `tsc`，未执行 TypeScript 编译检查。
+
+### 2026-08-20：开发环境后端请求切换为局域网地址
+
+- 真机预览统一通过 `miniprogram/config/dev.ts` 的 `DEV_LAN_ORIGIN`（如 `http://192.168.31.225:8080/api`）请求后端；开发者工具模拟器仍使用 `localhost:8080`，避免图片代理 502。
+- 验证：请求层定向测试通过，完整测试套件通过。
+
 ### 2026-08-20：分析作品排序筛选底部弹层
 
 - 读取 Figma 节点 `357:19494`，作品分析右侧排序控件默认文案改为“浏览量”。
@@ -671,4 +712,4 @@ miniprogram/
 - 排行榜后端接口（当前 aisales 未提供销售排行榜数据，页面暂为空态）。
 - 分析页「总」时间范围口径：后端 custom 查询上限 62 天，暂按最近 62 天，需后端确认是否提供全量范围。
 - 后端待补能力：按日阅读趋势接口（当前由前端按日聚合 dashboard）、素材图片更新与素材删除接口（编辑草稿改图会产生新素材）、客户级转发次数（当前仅 0/1 标记）、未读通知/红点口径。
-- 生产环境接口基址与合法域名配置（当前为本地 `http://localhost:8080/api`）。
+- 生产环境接口基址与合法域名配置待确认；当前开发环境使用 `http://192.168.31.225:8080/api`。

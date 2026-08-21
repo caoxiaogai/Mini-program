@@ -51,5 +51,6 @@
     "ignore": [],
     "include": []
   },
-  "appid": "wxd516cface3568eff"
+  "appid": "wxd516cface3568eff",
+  "isGameTourist": false
 }

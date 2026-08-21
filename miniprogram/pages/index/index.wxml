@@ -29,13 +29,13 @@
       </view>
 
       <view class="home-summary__card home-summary__card--compact" bindtap="onSummaryCardTap" data-analysis-tab="work" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
-        <text class="home-summary__primary">{{homeSummary.reading.primaryPrefix}}<text wx:if="{{homeSummary.reading.primaryValue}}" class="home-summary__number">{{homeSummary.reading.primaryValue}}</text>{{homeSummary.reading.primarySuffix}}</text>
-        <text class="home-summary__secondary {{homeSummary.reading.isEmpty ? 'home-summary__secondary--empty' : ''}}">{{homeSummary.reading.secondaryPrefix}}<text wx:if="{{homeSummary.reading.secondaryValue}}" class="home-summary__secondary-strong">{{homeSummary.reading.secondaryValue}}</text>{{homeSummary.reading.secondarySuffix}}</text>
+        <text class="home-summary__primary">{{homeSummary.sharing.primaryPrefix}}<text wx:if="{{homeSummary.sharing.primaryValue}}" class="home-summary__number">{{homeSummary.sharing.primaryValue}}</text>{{homeSummary.sharing.primarySuffix}}</text>
+        <text class="home-summary__secondary {{homeSummary.sharing.isEmpty ? 'home-summary__secondary--empty' : 'home-summary__secondary--ellipsis'}}">{{homeSummary.sharing.secondaryPrefix}}<text wx:if="{{homeSummary.sharing.secondaryValue}}" class="home-summary__secondary-strong">{{homeSummary.sharing.secondaryValue}}</text>{{homeSummary.sharing.secondarySuffix}}</text>
       </view>
 
       <view class="home-summary__card home-summary__card--compact" bindtap="onSummaryCardTap" data-analysis-tab="work" hover-class="home-summary__card--pressed" hover-start-time="80" hover-stay-time="120">
-        <text class="home-summary__primary">{{homeSummary.sharing.primaryPrefix}}<text wx:if="{{homeSummary.sharing.primaryValue}}" class="home-summary__number">{{homeSummary.sharing.primaryValue}}</text>{{homeSummary.sharing.primarySuffix}}</text>
-        <text class="home-summary__secondary {{homeSummary.sharing.isEmpty ? 'home-summary__secondary--empty' : 'home-summary__secondary--ellipsis'}}">{{homeSummary.sharing.secondaryPrefix}}<text wx:if="{{homeSummary.sharing.secondaryValue}}" class="home-summary__secondary-strong">{{homeSummary.sharing.secondaryValue}}</text>{{homeSummary.sharing.secondarySuffix}}</text>
+        <text class="home-summary__primary">{{homeSummary.reading.primaryPrefix}}<text wx:if="{{homeSummary.reading.primaryValue}}" class="home-summary__number">{{homeSummary.reading.primaryValue}}</text>{{homeSummary.reading.primarySuffix}}</text>
+        <text class="home-summary__secondary {{homeSummary.reading.isEmpty ? 'home-summary__secondary--empty' : ''}}">{{homeSummary.reading.secondaryPrefix}}<text wx:if="{{homeSummary.reading.secondaryValue}}" class="home-summary__secondary-strong">{{homeSummary.reading.secondaryValue}}</text>{{homeSummary.reading.secondarySuffix}}</text>
       </view>
     </view>
   </view>

@@ -11,13 +11,20 @@ Page({
     materials: null as MaterialsViewModel | null,
     activeFilter: 'all' as MaterialsFilterId,
     visibleMaterials: [] as MaterialCardViewModel[],
+    hasVisibleMaterials: false,
     materialsHeaderOpacity: 0,
+    showPublishSuccessModal: false,
   },
-  onLoad() {
+  onLoad(options: Record<string, string | undefined>) {
+    this.setData({ showPublishSuccessModal: options.publishSuccess === '1' })
+
     getMaterials().then((materials) => {
+      const visibleMaterials = getVisibleMaterials(materials.items, this.data.activeFilter)
+
       this.setData({
         materials,
-        visibleMaterials: getVisibleMaterials(materials.items, this.data.activeFilter),
+        visibleMaterials,
+        hasVisibleMaterials: visibleMaterials.length > 0,
       })
     })
   },
@@ -32,9 +39,12 @@ Page({
     const filterId = event.currentTarget.dataset.id as MaterialsFilterId
     if (!['all', 'image', 'video', 'pdf'].includes(filterId)) return
 
+    const visibleMaterials = getVisibleMaterials(this.data.materials?.items ?? [], filterId)
+
     this.setData({
       activeFilter: filterId,
-      visibleMaterials: getVisibleMaterials(this.data.materials?.items ?? [], filterId),
+      visibleMaterials,
+      hasVisibleMaterials: visibleMaterials.length > 0,
     })
   },
   onMaterialCardTap(event: WechatMiniprogram.TouchEvent) {
@@ -52,5 +62,16 @@ Page({
   },
   onPublishTap() {
     wx.navigateTo({ url: '/pages/materials/publish/index' })
+  },
+  onPublishSuccessClose() {
+    this.setData({ showPublishSuccessModal: false })
+  },
+  onShareFriendsTap() {
+    this.setData({ showPublishSuccessModal: false })
+    wx.showToast({ title: '分享功能待接入', icon: 'none' })
+  },
+  onShareMomentsTap() {
+    this.setData({ showPublishSuccessModal: false })
+    wx.showToast({ title: '分享功能待接入', icon: 'none' })
   },
 })

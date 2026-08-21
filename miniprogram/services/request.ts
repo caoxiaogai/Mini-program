@@ -30,7 +30,7 @@ const UPLOAD_TIMEOUT_MS = 60000
 const STORAGE_KEY_USER_ID = 'auth.userId'
 const STORAGE_KEY_OPENID = 'auth.openid'
 
-/** 当前 API 基址的 origin（不含 /api），例如 http://localhost:8080 */
+/** 当前 API 基址的 origin（不含 /api），例如 http://192.168.31.225:8080 */
 export function getApiOrigin(): string {
   const apiBaseUrl = getApiBaseUrl()
   const schemeEnd = apiBaseUrl.indexOf('://')
@@ -194,7 +194,10 @@ function requestLogin(): Promise<ApiLoginData> {
           })
           .catch(reject)
       },
-      fail: () => reject(new ApiError(-1, '微信登录失败')),
+      fail: (error) => {
+        console.error('[wx.login] failed', error.errMsg)
+        reject(new ApiError(-1, `微信登录失败：${error.errMsg || '未知原因'}`))
+      },
     })
   })
 }
