@@ -229,6 +229,12 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-21：底部导航适配安卓最小安全间距
+
+- 底部导航容器使用 `max(20px, env(safe-area-inset-bottom))`，普通安卓设备至少保留 20px，全面屏或手势导航设备自动采用更大的系统安全区。
+- 安全间距只作用于底部导航整体容器，保持按钮尺寸、排列、点击行为和底部背景不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（83 tests passed）；首页 TypeScript、相关 JSON 解析和底部导航 WXML 解析通过；当前环境未安装 `lessc`，无法执行 Less 编译。
+
 ### 2026-08-21：首页阅读/转发卡片顺序与空状态文案调整
 
 - 首页两张统计卡调整为“今日转发”在前、“今日阅读”在后，继续保留作品分析跳转。

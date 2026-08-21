@@ -290,9 +290,9 @@ test('project enables compile hot reload for live UI updates', () => {
   assert.equal(project.setting.compileHotReLoad, true)
 })
 
-test('notification button aligns to the home content baseline', () => {
+test('bottom navigation keeps a minimum inset and aligns to the home content baseline', () => {
   const styles = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.less')
-  assert.match(styles, /padding: 0 40rpx env\(safe-area-inset-bottom\)/)
+  assert.match(styles, /\.bottom-tab-bar\s*\{[\s\S]*?padding: 0 40rpx 20px;[\s\S]*?padding-bottom: max\(20px, env\(safe-area-inset-bottom\)\);/)
   assert.match(styles, /\.bottom-tab-bar__inner[\s\S]*?justify-content: space-between;/)
   assert.match(styles, /\.bottom-tab-bar__item[\s\S]*?flex: none;/)
 })
