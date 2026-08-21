@@ -2,7 +2,27 @@ import { getMaterialDraft, publishMaterial, saveMaterialDraft } from '../../../s
 import type { MaterialSubmitInput, PublishImageViewModel } from '../../../types/materials'
 
 const MAX_IMAGE_COUNT = 9
+const PUBLISH_SUCCESS_STORAGE_KEY = 'materials.publishSuccessPending'
+const MATERIALS_PAGE_ROUTE = 'pages/materials/index'
 const initialImages: PublishImageViewModel[] = []
+
+function returnToMaterialsList(options?: { publishSuccess?: boolean }): void {
+  if (options?.publishSuccess) {
+    wx.setStorageSync(PUBLISH_SUCCESS_STORAGE_KEY, '1')
+  }
+
+  const pages = getCurrentPages()
+  const materialsPageIndex = pages.findIndex((page) => page.route === MATERIALS_PAGE_ROUTE)
+  if (materialsPageIndex >= 0) {
+    const delta = pages.length - 1 - materialsPageIndex
+    if (delta > 0) {
+      wx.navigateBack({ delta })
+      return
+    }
+  }
+
+  wx.reLaunch({ url: '/pages/materials/index' })
+}
 
 Page({
   draftMaterialId: null as string | null,
@@ -73,7 +93,7 @@ Page({
         this.draftMaterialId = materialId
         this.draftImagePaths = this.data.images.map((image) => image.path)
         wx.showToast({ title: '已保存草稿', icon: 'success' })
-        wx.redirectTo({ url: '/pages/materials/index' })
+        returnToMaterialsList()
       })
       .catch(() => undefined)
       .then(() => {
@@ -88,8 +108,7 @@ Page({
       .then((materialId) => {
         this.draftMaterialId = materialId
         this.draftImagePaths = this.data.images.map((image) => image.path)
-        wx.setStorageSync('materials.publishSuccessPending', '1')
-        wx.redirectTo({ url: '/pages/materials/index?publishSuccess=1' })
+        returnToMaterialsList({ publishSuccess: true })
       })
       .catch(() => undefined)
       .then(() => {

@@ -1084,8 +1084,10 @@ test('publish actions submit through the materials service', () => {
 
   assert.match(publishLogic, /saveMaterialDraft\(this\.buildSubmitInput\(\)\)/)
   assert.match(publishLogic, /publishMaterial\(this\.buildSubmitInput\(\)\)/)
-  assert.match(publishLogic, /\/pages\/materials\/index\?publishSuccess=1/)
-  assert.match(publishLogic, /materials\.publishSuccessPending/)
+  assert.match(publishLogic, /returnToMaterialsList\(\{ publishSuccess: true \}\)/)
+  assert.match(publishLogic, /MATERIALS_PAGE_ROUTE = 'pages\/materials\/index'/)
+  assert.match(publishLogic, /wx\.navigateBack\(\{ delta \}\)/)
+  assert.doesNotMatch(publishLogic, /redirectTo\(\{ url: '\/pages\/materials\/index/)
   assert.doesNotMatch(publishLogic, /showPublishSuccessModal/)
   assert.doesNotMatch(publishLogic, /草稿功能待接入/)
   assert.doesNotMatch(publishLogic, /发表功能待接入/)
@@ -1094,7 +1096,7 @@ test('publish actions submit through the materials service', () => {
 test('saving a material draft returns to the materials home page after success', () => {
   const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
 
-  assert.match(publishLogic, /saveMaterialDraft\(this\.buildSubmitInput\(\)\)[\s\S]*?\.then\(\(materialId\) => \{[\s\S]*?wx\.redirectTo\(\{ url: '\/pages\/materials\/index' \}\)/)
+  assert.match(publishLogic, /saveMaterialDraft\(this\.buildSubmitInput\(\)\)[\s\S]*?returnToMaterialsList\(\)/)
 })
 
 test('materials page shares ranking header layers and scroll fade', async () => {
@@ -1207,7 +1209,7 @@ test('published materials return to the materials home page and immediately open
   const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
   const materialsLogic = read('miniprogram/pages/materials/index.ts')
 
-  assert.match(publishLogic, /publishMaterial\(this\.buildSubmitInput\(\)\)[\s\S]*?wx\.setStorageSync\('materials\.publishSuccessPending', '1'\)[\s\S]*?wx\.redirectTo\(\{ url: '\/pages\/materials\/index\?publishSuccess=1' \}\)/)
+  assert.match(publishLogic, /publishMaterial\(this\.buildSubmitInput\(\)\)[\s\S]*?returnToMaterialsList\(\{ publishSuccess: true \}\)/)
   assert.match(materialsLogic, /options\.publishSuccess === '1'/)
   assert.match(materialsLogic, /onShow\(\)[\s\S]*?loadMaterials\(\)/)
   assert.match(materialsLogic, /materials\.publishSuccessPending/)
