@@ -36,6 +36,12 @@
   </view>
   <view wx:if="{{analysisData && activeAnalysisTab === 'user'}}" class="analysis-page__content">
     <view class="analysis-user-panel">
+      <view class="analysis-filters analysis-filters--user">
+        <view class="analysis-periods">
+          <view class="analysis-periods__selection" style="transform: translateX({{activePeriodOffset}}rpx);"></view>
+          <view wx:for="{{analysisPeriods}}" wx:key="id" class="analysis-period {{item.id === activePeriod ? 'analysis-period--active' : ''}}" bindtap="onPeriodTap" data-id="{{item.id}}" data-index="{{index}}"><text>{{item.label}}</text></view>
+        </view>
+      </view>
       <view class="analysis-user__intent-tabs" bindtouchstart="onAnalysisIntentTouchStart" bindtouchend="onAnalysisIntentTouchEnd">
         <view class="analysis-user__intent-selection" style="transform: translateX({{analysisIntentOffset}}%);"></view>
         <view wx:for="{{analysisIntentTabs}}" wx:key="id" class="analysis-user__intent-tab {{item.id === activeAnalysisIntent ? 'analysis-user__intent-tab--active' : ''}}" bindtap="onAnalysisIntentTap" data-index="{{index}}">{{item.label}}</view>

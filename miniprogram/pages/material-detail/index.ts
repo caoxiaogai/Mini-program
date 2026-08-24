@@ -7,10 +7,15 @@ import {
   reportTrackingEvent,
 } from '../../services/tracking'
 import type { MaterialDetailViewModel } from '../../types/materials'
+import { openRemoteDocument } from '../../utils/document'
 
 const VIDEO_PROGRESS_INTERVAL_MS = 5000
 const VIDEO_SEEK_STEP_SEC = 10
 const VIDEO_SWIPE_THRESHOLD_PX = 48
+
+function isDocumentMaterial(detail: MaterialDetailViewModel): boolean {
+  return detail.fileType === 'PDF' || detail.fileType === 'TABLE'
+}
 
 function buildShareTitle(detail: MaterialDetailViewModel): string {
   const firstLine = detail.descriptionLines.find((line) => line.trim() !== '')
@@ -36,6 +41,7 @@ Page({
     isSharedVisit: false,
     authBlocked: false,
     isOwnerView: false,
+    pdfOpening: false,
   },
 
   trackingSessionId: '',
@@ -49,6 +55,8 @@ Page({
   videoDurationSec: 0,
   videoTouchStartX: 0,
   videoTouchStartY: 0,
+  pdfViewStartedAt: 0,
+  hasReportedPdfComplete: false,
   materialId: '',
   materialLoaded: false,
 
@@ -67,6 +75,8 @@ Page({
     this.videoDurationSec = 0
     this.videoTouchStartX = 0
     this.videoTouchStartY = 0
+    this.pdfViewStartedAt = 0
+    this.hasReportedPdfComplete = false
     this.materialLoaded = false
 
     if (!materialId) return
@@ -139,6 +149,7 @@ Page({
     this.clearVideoProgressTimer()
     this.reportImageViewProgress(true)
     this.reportVideoProgress(true)
+    this.reportPdfViewProgress(true)
     this.getVideoContext()?.pause()
   },
 
@@ -147,6 +158,7 @@ Page({
     this.clearVideoProgressTimer()
     this.reportImageViewProgress(true)
     this.reportVideoProgress(true)
+    this.reportPdfViewProgress(true)
     this.getVideoContext()?.pause()
     this.trackingSessionId = ''
     this.viewedImageIndices = []
@@ -155,8 +167,62 @@ Page({
     this.lastVideoProgress = 0
     this.videoCurrentTimeSec = 0
     this.videoDurationSec = 0
+    this.pdfViewStartedAt = 0
+    this.hasReportedPdfComplete = false
     this.materialId = ''
     this.materialLoaded = false
+  },
+
+  onPdfOpenTap() {
+    const detail = this.data.detail
+    if (!detail || !isDocumentMaterial(detail) || this.data.pdfOpening) return
+    if (!detail.pdfUrl) {
+      wx.showToast({ title: 'PDF 文件不存在', icon: 'none' })
+      return
+    }
+
+    if (this.pdfViewStartedAt <= 0) {
+      this.pdfViewStartedAt = Date.now()
+    }
+
+    this.reportPdfViewProgress(false)
+    this.setData({ pdfOpening: true })
+
+    openRemoteDocument(detail.pdfUrl, detail.fileType)
+      .then(() => {
+        this.hasReportedPdfComplete = true
+        this.reportPdfViewProgress(true)
+      })
+      .catch(() => {
+        wx.showToast({ title: '无法打开 PDF', icon: 'none' })
+      })
+      .finally(() => {
+        this.setData({ pdfOpening: false })
+      })
+  },
+
+  getPdfViewDurationSec(): number {
+    if (this.pdfViewStartedAt <= 0) return 0
+    return Math.max(0, Math.floor((Date.now() - this.pdfViewStartedAt) / 1000))
+  },
+
+  reportPdfViewProgress(isFinal = false) {
+    const detail = this.data.detail
+    if (!detail || !isDocumentMaterial(detail) || this.data.authBlocked || this.data.isOwnerView) return
+
+    const duration = this.getPdfViewDurationSec()
+    const progress = this.hasReportedPdfComplete ? 100 : 0
+
+    if (!isFinal && progress < 100 && duration < 1) return
+
+    reportTrackingEvent({
+      trackingId: detail.trackingId,
+      materialId: detail.id,
+      actionType: progress >= 100 ? 'end' : 'play',
+      progress,
+      duration,
+      sessionId: this.trackingSessionId,
+    })
   },
 
   onImageTap(event: WechatMiniprogram.TouchEvent) {

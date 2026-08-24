@@ -175,6 +175,21 @@ function fetchViewedWorksCounts(
   return runRequestQueue(tasks, REQUEST_CONCURRENCY).then(() => counts)
 }
 
+function mergeAudienceSources(
+  customers: ApiCustomerListItem[],
+  intentCustomers: ApiIntentCustomer[],
+): Array<{ customerId: string; customer?: ApiCustomerListItem; intent?: ApiIntentCustomer }> {
+  const customerById = new Map(customers.map((item) => [String(item.customerId), item]))
+  const intentById = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
+  const allIds = new Set<string>([...customerById.keys(), ...intentById.keys()])
+
+  return Array.from(allIds).map((customerId) => ({
+    customerId,
+    customer: customerById.get(customerId),
+    intent: intentById.get(customerId),
+  }))
+}
+
 export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<AnalysisViewModel> {
   const periodQuery = buildPeriodQuery(period)
   const totalQuery = buildPeriodQuery('total')
@@ -189,13 +204,18 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
   ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) => {
     const viewedWorksCounts = await fetchViewedWorksCounts(contents, periodQuery)
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
+    const audienceSources = mergeAudienceSources(customers, intentCustomers)
     const forwardedCustomerCount = intentCustomers.filter((item) => item.hasForwarded === 1).length
-    const completedCustomerCount = customers.filter((item) => (item.completeCount ?? 0) > 0).length
+    const completedCustomerCount = audienceSources.filter(
+      (source) => (source.customer?.completeCount ?? 0) > 0 || source.intent?.completed === 1,
+    ).length
 
     const cards = contents.map(mapContentCard)
     const [cardThumbs, avatarUrls] = await Promise.all([
       prepareMediaUrls(cards.map((card) => card.thumbnailUrl)),
-      prepareMediaUrls(customers.map((customer) => customer.avatar)),
+      prepareMediaUrls(
+        audienceSources.map((source) => source.customer?.avatar ?? source.intent?.avatar ?? ''),
+      ),
     ])
     cards.forEach((card, index) => {
       card.thumbnailUrl = cardThumbs[index] ?? ''
@@ -209,22 +229,21 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
       ],
       cards,
       userSummary: [
-        { label: '总用户', value: formatCount(customers.length) },
+        { label: '总用户', value: formatCount(audienceSources.length) },
         { label: '完播人数', value: formatCount(completedCustomerCount) },
         { label: '转发人数', value: formatCount(forwardedCustomerCount) },
       ],
-      audienceUsers: customers.map((customer, index) => {
-        const customerId = String(customer.customerId)
-        const level = resolveIntentLevel(intentByCustomer, customerId)
-        const intent = intentByCustomer.get(customerId)
+      audienceUsers: audienceSources.map((source, index) => {
+        const { customerId, customer, intent } = source
+        const level = resolveIntentLevel(intentByCustomer, customerId, intent?.intentLevel)
 
         return {
           id: customerId,
           avatarUrl: avatarUrls[index] ?? '',
-          name: customer.nickname ?? '微信用户',
+          name: customer?.nickname ?? intent?.nickname ?? '微信用户',
           level,
           levelLabel: intentLevelLabels[level],
-          readCount: formatCount(customer.viewCount),
+          readCount: formatCount(customer?.viewCount ?? intent?.viewCount),
           viewedWorksCount: formatCount(viewedWorksCounts.get(customerId)),
           shareCount: intent?.hasForwarded === 1 ? '1' : '0',
         }

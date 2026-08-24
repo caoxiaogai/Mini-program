@@ -22,6 +22,8 @@ const analysisPeriods: AnalysisPeriodOption[] = [
   { id: 'total', label: '总' },
 ]
 
+const DEFAULT_ANALYSIS_PERIOD: AnalysisPeriodId = 'week'
+
 const analysisSortOptions: AnalysisSortOption[] = [
   { id: 'completion', label: '完播数' },
   { id: 'share', label: '转发数' },
@@ -75,8 +77,8 @@ Page({
     analysisTabOffset: 0,
     analysisSwipeStartX: 0,
     analysisPeriods,
-    activePeriod: 'day' as AnalysisPeriodId,
-    activePeriodOffset: 0,
+    activePeriod: DEFAULT_ANALYSIS_PERIOD as AnalysisPeriodId,
+    activePeriodOffset: analysisPeriods.findIndex((item) => item.id === DEFAULT_ANALYSIS_PERIOD) * 68,
     analysisSortOptions,
     activeAnalysisSort: 'view' as AnalysisSortId,
     activeAnalysisSortLabel: '浏览量',
@@ -105,18 +107,22 @@ Page({
     this.loadAnalysis(this.data.activePeriod)
   },
   loadAnalysis(period: AnalysisPeriodId) {
-    getAnalysisOverview(period).then((analysisData) => {
-      const activeIntent = analysisIntentTabs[this.data.analysisIntentIndex]?.id ?? 'all'
-      const visibleAnalysisUsers = getVisibleAnalysisUsers(analysisData.audienceUsers, activeIntent)
+    getAnalysisOverview(period)
+      .then((analysisData) => {
+        const activeIntent = analysisIntentTabs[this.data.analysisIntentIndex]?.id ?? 'all'
+        const visibleAnalysisUsers = getVisibleAnalysisUsers(analysisData.audienceUsers, activeIntent)
 
-      this.setData({
-        analysisData,
-        visibleAnalysisUsers,
-        hasAnalysisCards: analysisData.cards.length > 0,
-        hasAnalysisUsers: visibleAnalysisUsers.length > 0,
-        visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange],
+        this.setData({
+          analysisData,
+          visibleAnalysisUsers,
+          hasAnalysisCards: analysisData.cards.length > 0,
+          hasAnalysisUsers: visibleAnalysisUsers.length > 0,
+          visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange],
+        })
       })
-    })
+      .catch(() => {
+        wx.showToast({ title: '分析数据加载失败', icon: 'none' })
+      })
   },
   onAnalysisTabTap(event: WechatMiniprogram.TouchEvent) {
     this.setAnalysisTab(Number(event.currentTarget.dataset.index))

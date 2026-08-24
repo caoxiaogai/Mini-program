@@ -100,11 +100,16 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
 
       let images: string[] = []
       let videoUrl = ''
+      let pdfUrl = ''
+      let pdfFileName = ''
 
       if (fileType === 'IMAGE') {
         images = await prepareMediaUrls(parseImageUrls(material.fileUrl))
       } else if (fileType === 'VIDEO') {
         videoUrl = resolveMediaUrl(material.fileUrl)
+      } else if (fileType === 'PDF' || fileType === 'TABLE') {
+        pdfUrl = resolveMediaUrl(material.fileUrl)
+        pdfFileName = material.title?.trim() || (fileType === 'TABLE' ? '表格文档' : 'PDF 文档')
       }
 
       return {
@@ -117,6 +122,8 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
         previewUrl: previewUrl ?? '',
         videoUrl,
         duration: material.duration ?? 0,
+        pdfUrl,
+        pdfFileName,
         descriptionLines: splitMaterialCopy(resolveMaterialCopy(material)),
       }
     })

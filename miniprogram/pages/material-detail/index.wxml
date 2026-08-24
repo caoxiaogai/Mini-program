@@ -32,6 +32,18 @@
       </view>
     </block>
 
+    <block wx:elif="{{detail.fileType === 'PDF' || detail.fileType === 'TABLE'}}">
+      <view class="material-detail__media material-detail__media--pdf" bindtap="onPdfOpenTap">
+        <view class="material-detail__pdf-card">
+          <view class="material-detail__pdf-badge">{{detail.fileType === 'TABLE' ? '表格' : 'PDF'}}</view>
+          <text class="material-detail__pdf-name">{{detail.pdfFileName}}</text>
+          <view class="material-detail__pdf-action">
+            <text>{{pdfOpening ? '加载中...' : '点击查看'}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
     <block wx:else>
       <swiper
         class="material-detail__swiper"
