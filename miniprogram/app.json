@@ -3,6 +3,7 @@
     "pages/index/index",
     "pages/materials/index",
     "pages/material-detail/index",
+    "pages/document-reader/index",
     "pages/materials/publish/index",
     "pages/ranking/index",
     "pages/notifications/notifications",

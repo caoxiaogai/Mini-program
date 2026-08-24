@@ -31,6 +31,14 @@ import { request, resolveMediaUrl, runRequestQueue } from './request'
 /** 分析页时间筛选：日/周/月对应后端 today/week/month；「总」受后端 custom 上限约束取最近 62 天（待后端确认全量口径） */
 export type AnalysisTimeRange = 'day' | 'week' | 'month' | 'total'
 
+export type AnalysisSortId = 'completion' | 'share' | 'view'
+
+const analysisSortMetricLabel: Record<AnalysisSortId, string> = {
+  completion: '播完',
+  share: '转发',
+  view: '浏览',
+}
+
 const MAX_QUERY_RANGE_DAYS = 62
 
 const READ_TREND_MAX_HEIGHT = 250
@@ -74,6 +82,86 @@ function resolveIntentLevel(
   return 'low'
 }
 
+function resolveMaterialTitle(material: ApiMaterial): string {
+  const copy = material.content ?? material.title ?? ''
+  const firstLine = copy
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line !== '')
+  return firstLine ?? material.title ?? '作品'
+}
+
+function resolveMaterialThumbnail(material: ApiMaterial): string {
+  if (material.coverUrl) return resolveMediaUrl(material.coverUrl)
+  if (material.fileType === 'IMAGE' && material.fileUrl) {
+    const fileUrl = material.fileUrl.trim()
+    if (fileUrl.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(fileUrl) as unknown
+        if (Array.isArray(parsed)) {
+          const first = parsed.find((item): item is string => typeof item === 'string')
+          if (first) return resolveMediaUrl(first)
+        }
+      } catch {
+        // 非 JSON 数组时按单文件 URL 处理
+      }
+    }
+    return resolveMediaUrl(fileUrl)
+  }
+  return ''
+}
+
+const zeroMetrics = (): AnalysisCard['metrics'] => [
+  { label: '转发', value: formatCount(0) },
+  { label: '播完', value: formatCount(0) },
+  { label: '浏览', value: formatCount(0) },
+  { label: '观看人数', value: formatCount(0) },
+]
+
+function mapMaterialToAnalysisCard(material: ApiMaterial, stats?: ApiContentListItem): AnalysisCard {
+  return {
+    id: String(material.id),
+    thumbnailUrl: resolveMaterialThumbnail(material),
+    title: resolveMaterialTitle(material),
+    date: formatDateKey(material.createTime),
+    metrics: stats ? mapContentCard(stats).metrics : zeroMetrics(),
+  }
+}
+
+/** 以素材库为准展示全部作品，再叠加当前周期内的统计数据 */
+function buildAnalysisCards(materials: ApiMaterial[], contents: ApiContentListItem[]): AnalysisCard[] {
+  const statsByMaterialId = new Map(contents.map((item) => [String(item.materialId), item]))
+  const materialById = new Map(materials.map((material) => [String(material.id), material]))
+
+  const orderedMaterials = [...materials].sort((left, right) => {
+    const leftTime = left.createTime ?? ''
+    const rightTime = right.createTime ?? ''
+    return rightTime.localeCompare(leftTime)
+  })
+
+  const cards: AnalysisCard[] = []
+  const seen = new Set<string>()
+
+  orderedMaterials.forEach((material) => {
+    const materialId = String(material.id)
+    seen.add(materialId)
+    cards.push(mapMaterialToAnalysisCard(material, statsByMaterialId.get(materialId)))
+  })
+
+  contents.forEach((item) => {
+    const materialId = String(item.materialId)
+    if (seen.has(materialId)) return
+    const material = materialById.get(materialId)
+    cards.push(material ? mapMaterialToAnalysisCard(material, item) : mapContentCard(item))
+  })
+
+  return cards
+}
+
+function countPublishedMaterials(materials: ApiMaterial[]): number {
+  return materials.filter((material) => material.publishStatus === 1).length
+}
+
 function mapContentCard(item: ApiContentListItem): AnalysisCard {
   return {
     id: String(item.materialId),
@@ -87,6 +175,23 @@ function mapContentCard(item: ApiContentListItem): AnalysisCard {
       { label: '观看人数', value: formatCount(item.viewerCount) },
     ],
   }
+}
+
+function parseAnalysisMetricValue(card: AnalysisCard, label: string): number {
+  const metric = card.metrics.find((item) => item.label === label)
+  if (!metric) return 0
+  return Number(metric.value.replace(/,/g, '')) || 0
+}
+
+/** 作品分析列表排序：同一指标降序，相同则按日期降序 */
+export function sortAnalysisCards(cards: AnalysisCard[], sortId: AnalysisSortId): AnalysisCard[] {
+  const metricLabel = analysisSortMetricLabel[sortId]
+
+  return [...cards].sort((left, right) => {
+    const metricDiff = parseAnalysisMetricValue(right, metricLabel) - parseAnalysisMetricValue(left, metricLabel)
+    if (metricDiff !== 0) return metricDiff
+    return right.date.localeCompare(left.date)
+  })
 }
 
 interface DailyViewCount {
@@ -197,12 +302,17 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
   return Promise.all([
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: periodQuery }),
     request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query: periodQuery }),
+    request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }),
     request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: periodQuery }),
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: periodQuery }),
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: totalQuery }),
     getReadTrends(),
-  ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) => {
-    const viewedWorksCounts = await fetchViewedWorksCounts(contents, periodQuery)
+  ]).then(async ([dashboard, contents, materials, customers, intentCustomers, totalDashboard, readTrends]) => {
+    const cards = buildAnalysisCards(materials, contents)
+    const viewedWorksCounts = await fetchViewedWorksCounts(
+      cards.map((card) => ({ materialId: card.id } as ApiContentListItem)),
+      periodQuery,
+    )
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
     const audienceSources = mergeAudienceSources(customers, intentCustomers)
     const forwardedCustomerCount = intentCustomers.filter((item) => item.hasForwarded === 1).length
@@ -210,7 +320,6 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
       (source) => (source.customer?.completeCount ?? 0) > 0 || source.intent?.completed === 1,
     ).length
 
-    const cards = contents.map(mapContentCard)
     const [cardThumbs, avatarUrls] = await Promise.all([
       prepareMediaUrls(cards.map((card) => card.thumbnailUrl)),
       prepareMediaUrls(

@@ -99,6 +99,8 @@ export interface RequestOptions {
   skipAuth?: boolean
   /** 静默模式：失败时不弹提示，用于可降级的聚合子请求 */
   silent?: boolean
+  /** 覆盖默认超时（毫秒），文档页数等慢请求使用 */
+  timeout?: number
 }
 
 let pendingRequestCount = 0
@@ -171,7 +173,7 @@ export function rawRequestWithAuth<T>(options: RequestOptions): Promise<T> {
         'content-type': 'application/json',
         ...(options.skipAuth ? {} : buildAuthHeader()),
       },
-      timeout: REQUEST_TIMEOUT_MS,
+      timeout: options.timeout ?? REQUEST_TIMEOUT_MS,
       success: (response) => {
         const result = response.data as ApiResponse<T> | undefined
         if (response.statusCode === 200 && result && result.code === 200) {

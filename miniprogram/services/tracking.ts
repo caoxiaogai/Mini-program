@@ -27,7 +27,7 @@ export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
     path,
     data: {
       trackingId: input.trackingId ?? undefined,
-      materialId: input.materialId ? Number(input.materialId) : undefined,
+      materialId: input.materialId ?? undefined,
       actionType: input.actionType,
       progress: input.progress ?? 0,
       duration: input.duration ?? 0,
@@ -38,7 +38,10 @@ export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
     },
     skipAuth: true,
     silent: true,
-  }).catch(() => undefined)
+  }).catch((error) => {
+    console.warn('[tracking] report failed', input.actionType, error)
+    return undefined
+  })
 }
 
 /** 视频播放进度 → 百分比（0–100） */

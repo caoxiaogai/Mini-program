@@ -19,7 +19,7 @@
         <view wx:for="{{analysisData.summary}}" wx:key="label" class="analysis-summary__card"><text class="analysis-summary__label">{{item.label}}</text><text class="analysis-summary__value">{{item.value}}</text></view>
       </view>
       <view wx:if="{{hasAnalysisCards}}" class="analysis-list">
-        <view wx:for="{{analysisData.cards}}" wx:key="id" class="analysis-card" hover-class="analysis-card--pressed" hover-stay-time="120" bindtap="onCardTap" data-id="{{item.id}}">
+        <view wx:for="{{visibleAnalysisCards}}" wx:key="id" class="analysis-card" hover-class="analysis-card--pressed" hover-stay-time="120" bindtap="onCardTap" data-id="{{item.id}}">
           <view class="analysis-card__head">
             <image class="analysis-card__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
             <view class="analysis-card__identity"><text class="analysis-card__title">{{item.title}}</text><text class="analysis-card__date">{{item.date}}</text></view>

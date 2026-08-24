@@ -229,6 +229,25 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-24：推送访问对象统一用素材文案
+
+- 微信模板 `thing9` 改为取 `content`（用户填写的文案）首行；为空才回退 `title`。
+- PDF/表格的 `title` 是文件名，此前会被当成访问对象。
+
+### 2026-08-24：PDF 改为小程序上下滑分页预览
+
+- 点击「点击查看」进入 `/pages/document-reader`，上下滑动浏览页图；看到的最大页 / 总页数作为阅读进度，翻到最后一页才记播完。
+- 页图走已有接口 `GET /material/{id}/page-count`、`GET /material/{id}/page/{n}/image`，按页懒加载（当前页后预加载 2 页）；真机先 `downloadFile` 为本地 png 再展示，避免局域网 HTTP 被 `<image>` 拦截。
+- 后端将页数、页图（及 Word 转换后的 PDF）缓存到 MinIO `doc-pages/{materialId}/`，避免每次重新渲染整份文档。
+- 已删除 `wx.openDocument` 工具；详情页不再把打开文档误记为完播。
+
+### 2026-08-24：PDF 改回微信原生预览，不再误记播完
+
+- 文档素材继续用 `wx.openDocument`，不再走 H5 `web-view`（首次渲染慢、需配置业务域名）。
+- 浏览量：仅在原生阅读器调起成功后上报一次 `play`（progress=0）；关闭阅读器只补时长，不发 `end`。
+- 播完数：原生预览不提供页码/滚动进度，无法判断是否看完，因此 PDF/表格不再因「打开」而记完播。
+- 已删除 `/pages/document-viewer`。后端浏览量与播完数仍分开累加，避免实时统计 +2 后被聚合校正。
+
 ### 2026-08-24：视频素材首帧预览与详情页播放
 
 - 发布页支持「添加视频」：`wx.chooseVideo` 首帧（`thumbTempFilePath`）上传为 `coverUrl`，列表/详情用封面展示。

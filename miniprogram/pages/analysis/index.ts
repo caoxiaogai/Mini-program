@@ -1,9 +1,7 @@
-import { getAnalysisOverview } from '../../services/analysis'
-import type { AnalysisAudienceUser, AnalysisIntentLevel, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
+import { getAnalysisOverview, sortAnalysisCards, type AnalysisSortId } from '../../services/analysis'
+import type { AnalysisAudienceUser, AnalysisIntentLevel, AnalysisReadRange, AnalysisViewModel, AnalysisCard } from '../../types/analysis'
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
-
-type AnalysisSortId = 'completion' | 'share' | 'view'
 
 interface AnalysisPeriodOption {
   id: AnalysisPeriodId
@@ -89,6 +87,7 @@ Page({
     analysisIntentOffset: 0,
     analysisIntentSwipeStartX: 0,
     visibleAnalysisUsers: [] as AnalysisAudienceUser[],
+    visibleAnalysisCards: [] as AnalysisCard[],
     hasAnalysisCards: false,
     hasAnalysisUsers: false,
     analysisReadRanges,
@@ -106,16 +105,21 @@ Page({
 
     this.loadAnalysis(this.data.activePeriod)
   },
+  applyAnalysisCardSort(cards: AnalysisCard[], sortId: AnalysisSortId = this.data.activeAnalysisSort) {
+    return sortAnalysisCards(cards, sortId)
+  },
   loadAnalysis(period: AnalysisPeriodId) {
     getAnalysisOverview(period)
       .then((analysisData) => {
         const activeIntent = analysisIntentTabs[this.data.analysisIntentIndex]?.id ?? 'all'
         const visibleAnalysisUsers = getVisibleAnalysisUsers(analysisData.audienceUsers, activeIntent)
+        const visibleAnalysisCards = this.applyAnalysisCardSort(analysisData.cards)
 
         this.setData({
           analysisData,
+          visibleAnalysisCards,
           visibleAnalysisUsers,
-          hasAnalysisCards: analysisData.cards.length > 0,
+          hasAnalysisCards: visibleAnalysisCards.length > 0,
           hasAnalysisUsers: visibleAnalysisUsers.length > 0,
           visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange],
         })
@@ -210,10 +214,12 @@ Page({
 
     if (!sortOption) return
 
+    const cards = this.data.analysisData?.cards ?? []
     this.setData({
       activeAnalysisSort: sortOption.id,
       activeAnalysisSortLabel: sortOption.label,
       analysisSortSheetVisible: false,
+      visibleAnalysisCards: this.applyAnalysisCardSort(cards, sortOption.id),
     })
   },
   onAnalysisSortMaskTap() {
