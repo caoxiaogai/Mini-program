@@ -5,8 +5,8 @@ import type { ApiLoginData, ApiResponse } from '../types/api'
 import { DEV_LAN_ORIGIN } from '../config/dev'
 import { STORAGE_KEY_OPENID, STORAGE_KEY_USER_ID } from '../constants/auth'
 
-// const DEVTOOLS_API_BASE_URL = 'http://localhost:8080/api'
-const DEVTOOLS_API_BASE_URL = 'https://www.yjxzhang.com/api'
+const DEVTOOLS_API_BASE_URL = 'http://localhost:8080/api'
+// const DEVTOOLS_API_BASE_URL = 'https://www.yjxzhang.com/api'
 
 let cachedApiBaseUrl: string | null = null
 let loginWaiter: (() => Promise<ApiLoginData>) | null = null

@@ -100,6 +100,7 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
 
       return {
         id: String(material.id),
+        ownerUserId: material.userId,
         title: '作品',
         fileType: material.fileType ?? 'IMAGE',
         trackingId: material.trackingId ?? '',

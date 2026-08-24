@@ -7,6 +7,32 @@
   </view>
 
   <view wx:if="{{notifications}}" class="notification-page__content">
+      <view class="notification-settings">
+        <view class="notification-settings__copy">
+          <text class="notification-settings__title">微信推送门槛</text>
+          <text class="notification-settings__hint">达到所选意向等级时，通过服务号推送提醒</text>
+        </view>
+        <view class="notification-settings__tabs" role="tablist" aria-label="微信推送门槛">
+          <view
+            class="notification-settings__selection"
+            style="transform: translateX({{notifyThresholdOffset}}%);"
+          ></view>
+          <view
+            wx:for="{{notifyThresholdTabs}}"
+            wx:key="id"
+            class="notification-settings__tab {{activeNotifyThreshold === item.id ? 'notification-settings__tab--active' : ''}} {{notifySettingsSaving ? 'notification-settings__tab--disabled' : ''}}"
+            data-index="{{index}}"
+            bindtap="onNotifyThresholdTap"
+            hover-class="{{notifySettingsSaving ? '' : 'notification-settings__tab--pressed'}}"
+            hover-stay-time="80"
+            role="tab"
+            aria-selected="{{activeNotifyThreshold === item.id}}"
+          >
+            <text>{{item.label}}</text>
+          </view>
+        </view>
+      </view>
+
       <view class="notification-filter" role="tablist">
         <view
           wx:for="{{notifications.filters}}"

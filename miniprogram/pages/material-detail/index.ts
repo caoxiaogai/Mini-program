@@ -1,4 +1,4 @@
-import { isVisitorAuthReady, refreshAuthGate } from '../../services/auth'
+import { isCurrentUser, isVisitorAuthReady, refreshAuthGate } from '../../services/auth'
 import { getMaterialDetail } from '../../services/materials'
 import {
   calcImageViewProgress,
@@ -25,11 +25,14 @@ Page({
     activeImageIndex: 0,
     isSharedVisit: false,
     authBlocked: false,
+    isOwnerView: false,
   },
 
   trackingSessionId: '',
   viewedImageIndices: [] as number[],
   hasReportedComplete: false,
+  imageViewStartedAt: 0,
+  imageViewTimer: 0,
   materialId: '',
   materialLoaded: false,
 
@@ -42,6 +45,7 @@ Page({
     this.trackingSessionId = createTrackingSessionId()
     this.viewedImageIndices = []
     this.hasReportedComplete = false
+    this.imageViewStartedAt = 0
     this.materialLoaded = false
 
     if (!materialId) return
@@ -92,10 +96,15 @@ Page({
     getMaterialDetail(this.materialId).then((detail) => {
       if (!detail) return
 
+      const isOwnerView = isCurrentUser(detail.ownerUserId)
+
       this.setData({
         detail,
         activeImageIndex: 0,
+        isOwnerView,
       })
+
+      if (isOwnerView) return
 
       if (detail.fileType === 'IMAGE' && detail.images.length > 0) {
         this.markImageViewed(0, detail)
@@ -103,17 +112,120 @@ Page({
     })
   },
 
+  onHide() {
+    this.clearImageViewTimer()
+    this.reportImageViewProgress(true)
+  },
+
   onUnload() {
+    this.clearImageViewTimer()
+    this.reportImageViewProgress(true)
     this.trackingSessionId = ''
     this.viewedImageIndices = []
     this.hasReportedComplete = false
+    this.imageViewStartedAt = 0
     this.materialId = ''
     this.materialLoaded = false
   },
 
+  getImageViewDurationSec(): number {
+    if (this.imageViewStartedAt <= 0) return 0
+    return Math.max(0, Math.floor((Date.now() - this.imageViewStartedAt) / 1000))
+  },
+
+  clearImageViewTimer() {
+    if (this.imageViewTimer) {
+      clearInterval(this.imageViewTimer)
+      this.imageViewTimer = 0
+    }
+  },
+
+  startSingleImageViewTimer() {
+    this.clearImageViewTimer()
+    this.imageViewTimer = setInterval(() => {
+      this.reportImageViewProgress(false)
+    }, 5000) as unknown as number
+  },
+
+  reportImageViewProgress(isFinal = false) {
+    const detail = this.data.detail
+    if (!detail || this.data.authBlocked || this.data.isOwnerView) return
+    if (detail.fileType !== 'IMAGE') return
+
+    const duration = this.getImageViewDurationSec()
+    const isSingleImage = detail.images.length <= 1
+    if (isSingleImage) {
+      if (!isFinal && duration < 1) return
+      reportTrackingEvent({
+        trackingId: detail.trackingId,
+        materialId: detail.id,
+        actionType: 'play',
+        progress: 100,
+        duration,
+        sessionId: this.trackingSessionId,
+      })
+      return
+    }
+
+    if (isFinal && this.hasReportedComplete) {
+      reportTrackingEvent({
+        trackingId: detail.trackingId,
+        materialId: detail.id,
+        actionType: 'end',
+        progress: 100,
+        duration,
+        sessionId: this.trackingSessionId,
+      })
+    }
+  },
+
+  markImageViewed(index: number, detail: MaterialDetailViewModel = this.data.detail!) {
+    if (!detail || this.data.authBlocked || this.data.isOwnerView) return
+    if (detail.fileType !== 'IMAGE' || detail.images.length === 0) return
+
+    if (this.imageViewStartedAt <= 0) {
+      this.imageViewStartedAt = Date.now()
+    }
+
+    const isSingleImage = detail.images.length <= 1
+    if (isSingleImage) {
+      const duration = this.getImageViewDurationSec()
+      reportTrackingEvent({
+        trackingId: detail.trackingId,
+        materialId: detail.id,
+        actionType: 'play',
+        progress: 100,
+        duration,
+        sessionId: this.trackingSessionId,
+      })
+      this.startSingleImageViewTimer()
+      return
+    }
+
+    if (!this.viewedImageIndices.includes(index)) {
+      this.viewedImageIndices.push(index)
+    }
+
+    const progress = calcImageViewProgress(this.viewedImageIndices.length, detail.images.length)
+    const isComplete = this.viewedImageIndices.length >= detail.images.length
+
+    reportTrackingEvent({
+      trackingId: detail.trackingId,
+      materialId: detail.id,
+      actionType: isComplete ? 'end' : 'play',
+      progress,
+      duration: this.getImageViewDurationSec(),
+      sessionId: this.trackingSessionId,
+    })
+
+    if (isComplete) {
+      this.hasReportedComplete = true
+    }
+  },
+
   reportForwardTracking() {
     const detail = this.data.detail
-    if (!detail || this.data.authBlocked) return
+    if (!detail || this.data.authBlocked || this.data.isOwnerView) return
 
     reportTrackingEvent({
       trackingId: detail.trackingId,
@@ -169,29 +281,6 @@ Page({
       content: '请点击右上角「...」，选择「分享到朋友圈」',
       showCancel: false,
     })
-  },
-
-  markImageViewed(index: number, detail: MaterialDetailViewModel = this.data.detail!) {
-    if (!detail || this.data.authBlocked) return
-    if (detail.fileType !== 'IMAGE' || detail.images.length === 0) return
-    if (!this.viewedImageIndices.includes(index)) {
-      this.viewedImageIndices.push(index)
-    }
-
-    const progress = calcImageViewProgress(this.viewedImageIndices.length, detail.images.length)
-    const isComplete = this.viewedImageIndices.length >= detail.images.length
-
-    reportTrackingEvent({
-      trackingId: detail.trackingId,
-      materialId: detail.id,
-      actionType: isComplete ? 'end' : 'play',
-      progress,
-      sessionId: this.trackingSessionId,
-    })
-
-    if (isComplete) {
-      this.hasReportedComplete = true
-    }
   },
 
   onSwiperChange(event: WechatMiniprogram.CustomEvent<{ current: number }>) {

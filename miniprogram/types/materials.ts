@@ -16,6 +16,7 @@ export interface MaterialCardViewModel {
 
 export interface MaterialDetailViewModel {
   id: string
+  ownerUserId: string
   title: string
   fileType: string
   trackingId: string

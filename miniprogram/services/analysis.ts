@@ -5,6 +5,7 @@ import type {
   ApiCustomerViewHistory,
   ApiDashboard,
   ApiIntentCustomer,
+  ApiIntentLevel,
   ApiMaterial,
 } from '../types/api'
 import type {
@@ -61,17 +62,15 @@ function buildPeriodQuery(period: AnalysisTimeRange): Record<string, string> {
   return { ...buildCustomRangeQuery(MAX_QUERY_RANGE_DAYS) }
 }
 
-/** 意向等级：优先取后端意向列表结果，缺失时按「完播=高意向」规则本地推导 */
+/** 意向等级：优先使用后端计算结果 */
 function resolveIntentLevel(
   intentByCustomer: Map<string, ApiIntentCustomer>,
   customerId: string,
-  viewCount: number,
-  completed: number,
+  audienceIntent?: ApiIntentLevel | null,
 ): AnalysisIntentLevel {
   const intent = intentByCustomer.get(customerId)
   if (intent) return intent.intentLevel
-  if (completed > 0) return 'high'
-  if (viewCount > 0) return 'medium'
+  if (audienceIntent) return audienceIntent
   return 'low'
 }
 
@@ -216,7 +215,7 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
       ],
       audienceUsers: customers.map((customer, index) => {
         const customerId = String(customer.customerId)
-        const level = resolveIntentLevel(intentByCustomer, customerId, customer.viewCount ?? 0, customer.completeCount ?? 0)
+        const level = resolveIntentLevel(intentByCustomer, customerId)
         const intent = intentByCustomer.get(customerId)
 
         return {
@@ -286,7 +285,7 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
       },
       intentUsers: audienceList.map((audience, index) => {
         const customerId = String(audience.customerId)
-        const level = resolveIntentLevel(intentByCustomer, customerId, audience.viewCount ?? 0, audience.completed ?? 0)
+        const level = resolveIntentLevel(intentByCustomer, customerId, audience.intentLevel)
         const intent = intentByCustomer.get(customerId)
 
         return {
@@ -327,12 +326,7 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
     const coverByMaterial = new Map(
       materials.map((material) => [String(material.id), resolveMediaUrl(material.coverUrl)]),
     )
-    const level = resolveIntentLevel(
-      intentByCustomer,
-      userId,
-      customer?.viewCount ?? intent?.viewCount ?? 0,
-      customer?.completeCount ?? intent?.completed ?? 0,
-    )
+    const level = resolveIntentLevel(intentByCustomer, userId, intent?.intentLevel)
     const [avatarUrl, recordThumbs] = await Promise.all([
       prepareMediaUrls([customer?.avatar ?? intent?.avatar]).then((urls) => urls[0] ?? ''),
       prepareMediaUrls(history.map((record) => coverByMaterial.get(String(record.materialId)) ?? '')),

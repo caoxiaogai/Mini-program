@@ -18,6 +18,27 @@ export interface ApiLoginData {
   phone: string | null
 }
 
+export type ApiNotifyIntentLevel = 'low' | 'medium' | 'high'
+
+/** GET/PUT /user/notify-settings 响应 */
+export interface ApiNotifySettings {
+  notifyIntentLevel: ApiNotifyIntentLevel
+}
+
+export type ApiNotifyIntentLevel = 'low' | 'medium' | 'high'
+
+/** GET/PUT /user/notify-settings */
+export interface ApiNotifySettings {
+  notifyIntentLevel: ApiNotifyIntentLevel
+}
+
+export type ApiNotifyIntentLevel = 'low' | 'medium' | 'high'
+
+/** GET/PUT /user/notify-settings */
+export interface ApiNotifySettings {
+  notifyIntentLevel: ApiNotifyIntentLevel
+}
+
 /** GET /analysis/dashboard 响应（DashboardVO） */
 export interface ApiDashboard {
   totalPublishCount: number | null
@@ -56,6 +77,7 @@ export interface ApiAudience {
   viewCount: number | null
   duration: number | null
   completed: number | null
+  intentLevel: ApiIntentLevel | null
   lastViewTime: string | null
 }
 

@@ -229,6 +229,18 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-24：修复同一访客重复推送
+
+- 移除「完播推送」独立通道（`triggerNotify`），微信模板消息统一走意向门槛 + `high_intent_notify` 去重。
+- 单图素材 `progress=100` 每次 play 更新都会误判完播，此前与意向推送叠加导致一次浏览收到多条消息。
+
+### 2026-08-24：微信推送意向门槛可配置
+
+- 后端 `sales_user.notify_intent_level`（默认 `high`）；`GET/PUT /user/notify-settings`。
+- 推送触发改为：客户意向等级 ≥ 用户设置的门槛时推送；每个（客户×素材）仍只推一次，改门槛不补推历史。
+- 通知页顶部增加「微信推送门槛」分段选择（低 / 中 / 高意向）。
+- 已有库需执行：`ALTER TABLE sales_user ADD COLUMN notify_intent_level VARCHAR(16) NOT NULL DEFAULT 'high' ...`（见 `aisales/sql/schema.sql`）。
+
 ### 2026-08-21：底部导航适配安卓最小安全间距
 
 - 底部导航容器使用 `max(20px, env(safe-area-inset-bottom))`，普通安卓设备至少保留 20px，全面屏或手势导航设备自动采用更大的系统安全区。

@@ -2,10 +2,21 @@ export type NotificationFilterId = 'all' | 'high' | 'medium' | 'low'
 
 export type NotificationIntent = Exclude<NotificationFilterId, 'all'>
 
+export type NotifyIntentLevel = NotificationIntent
+
+export type NotifyIntentLevel = NotificationIntent
+
+export type NotifyIntentLevel = NotificationIntent
+
 export type NotificationAction = 'reading' | 'forward'
 
 export interface NotificationFilterViewModel {
   id: NotificationFilterId
+  label: string
+}
+
+export interface NotifyThresholdTabViewModel {
+  id: NotifyIntentLevel
   label: string
 }
 
@@ -30,7 +41,13 @@ export interface NotificationGroupViewModel {
   items: NotificationCardViewModel[]
 }
 
+export interface NotifyThresholdOptionViewModel {
+  id: NotifyIntentLevel
+  label: string
+}
+
 export interface NotificationsViewModel {
   filters: NotificationFilterViewModel[]
   groups: NotificationGroupViewModel[]
+  notifyThresholdOptions: NotifyThresholdOptionViewModel[]
 }

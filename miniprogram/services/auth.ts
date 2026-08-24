@@ -54,6 +54,13 @@ export function isVisitorAuthReady(): boolean {
   return session !== null && !needsProfileSetup(session)
 }
 
+/** 当前登录用户是否为指定销售用户（用于排除发布者本人浏览统计） */
+export function isCurrentUser(userId: string | null | undefined): boolean {
+  if (!userId) return false
+  const session = getAuthSession()
+  return session?.userId === userId
+}
+
 export function needsProfileSetup(session: Pick<ApiLoginData, 'nickname' | 'avatar'> | AuthSession | null): boolean {
   if (!session) return false
   const nickname = (session.nickname ?? '').trim()

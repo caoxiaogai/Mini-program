@@ -4,6 +4,8 @@ import type {
   NotificationFilterViewModel,
   NotificationIntent,
   NotificationsViewModel,
+  NotifyIntentLevel,
+  NotifyThresholdOptionViewModel,
 } from '../types/notifications'
 import { buildCustomRangeQuery, formatDateKey, formatMonthDay, formatPaddedMonthDay } from '../utils/format'
 import { prepareMediaUrls } from '../utils/media'
@@ -26,10 +28,18 @@ const intentLabels: Record<NotificationIntent, string> = {
 }
 
 const recommendations: Record<NotificationIntent, string> = {
-  high: '素材已完播，建议优先联系',
+  high: '客户意向较高，建议优先联系',
   medium: '存在兴趣，建议主动跟进',
   low: '意向程度较低，可保持观察',
 }
+
+const notifyThresholdOptions: NotifyThresholdOptionViewModel[] = [
+  { id: 'low', label: '低意向' },
+  { id: 'medium', label: '中意向' },
+  { id: 'high', label: '高意向' },
+]
+
+export { notifyThresholdOptions }
 
 /**
  * 通知列表：后端无独立通知接口，由意向客户列表（每名客户一条）映射为通知卡片，
@@ -84,6 +94,7 @@ export function getNotifications(): Promise<NotificationsViewModel> {
 
     return {
       filters: notificationFilters,
+      notifyThresholdOptions,
       groups: sortedDates.map((dateKey) => ({
         id: dateKey,
         label: formatPaddedMonthDay(`${dateKey} 00:00:00`),
