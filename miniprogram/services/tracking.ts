@@ -41,6 +41,13 @@ export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
   }).catch(() => undefined)
 }
 
+/** 视频播放进度 → 百分比（0–100） */
+export function calcVideoViewProgress(currentTimeSec: number, durationSec: number): number {
+  if (durationSec <= 0) return 0
+  const progress = Math.round((currentTimeSec / durationSec) * 100)
+  return Math.min(100, Math.max(0, progress))
+}
+
 /** 图片素材：已浏览张数 / 总张数 → 进度百分比 */
 export function calcImageViewProgress(viewedCount: number, totalCount: number): number {
   if (totalCount <= 0) return 0

@@ -2,10 +2,15 @@ import { isCurrentUser, isVisitorAuthReady, refreshAuthGate } from '../../servic
 import { getMaterialDetail } from '../../services/materials'
 import {
   calcImageViewProgress,
+  calcVideoViewProgress,
   createTrackingSessionId,
   reportTrackingEvent,
 } from '../../services/tracking'
 import type { MaterialDetailViewModel } from '../../types/materials'
+
+const VIDEO_PROGRESS_INTERVAL_MS = 5000
+const VIDEO_SEEK_STEP_SEC = 10
+const VIDEO_SWIPE_THRESHOLD_PX = 48
 
 function buildShareTitle(detail: MaterialDetailViewModel): string {
   const firstLine = detail.descriptionLines.find((line) => line.trim() !== '')
@@ -17,6 +22,11 @@ function buildSharePath(detail: MaterialDetailViewModel): string {
     ? `id=${detail.id}&trackingId=${encodeURIComponent(detail.trackingId)}`
     : `id=${detail.id}`
   return `/pages/material-detail/index?${query}`
+}
+
+function resolveShareImage(detail: MaterialDetailViewModel): string {
+  if (detail.previewUrl) return detail.previewUrl
+  return detail.images[0] ?? ''
 }
 
 Page({
@@ -33,6 +43,12 @@ Page({
   hasReportedComplete: false,
   imageViewStartedAt: 0,
   imageViewTimer: 0,
+  videoProgressTimer: 0,
+  lastVideoProgress: 0,
+  videoCurrentTimeSec: 0,
+  videoDurationSec: 0,
+  videoTouchStartX: 0,
+  videoTouchStartY: 0,
   materialId: '',
   materialLoaded: false,
 
@@ -46,6 +62,11 @@ Page({
     this.viewedImageIndices = []
     this.hasReportedComplete = false
     this.imageViewStartedAt = 0
+    this.lastVideoProgress = 0
+    this.videoCurrentTimeSec = 0
+    this.videoDurationSec = 0
+    this.videoTouchStartX = 0
+    this.videoTouchStartY = 0
     this.materialLoaded = false
 
     if (!materialId) return
@@ -97,6 +118,7 @@ Page({
       if (!detail) return
 
       const isOwnerView = isCurrentUser(detail.ownerUserId)
+      this.videoDurationSec = detail.duration
 
       this.setData({
         detail,
@@ -114,18 +136,145 @@ Page({
 
   onHide() {
     this.clearImageViewTimer()
+    this.clearVideoProgressTimer()
     this.reportImageViewProgress(true)
+    this.reportVideoProgress(true)
+    this.getVideoContext()?.pause()
   },
 
   onUnload() {
     this.clearImageViewTimer()
+    this.clearVideoProgressTimer()
     this.reportImageViewProgress(true)
+    this.reportVideoProgress(true)
+    this.getVideoContext()?.pause()
     this.trackingSessionId = ''
     this.viewedImageIndices = []
     this.hasReportedComplete = false
     this.imageViewStartedAt = 0
+    this.lastVideoProgress = 0
+    this.videoCurrentTimeSec = 0
+    this.videoDurationSec = 0
     this.materialId = ''
     this.materialLoaded = false
+  },
+
+  onImageTap(event: WechatMiniprogram.TouchEvent) {
+    const detail = this.data.detail
+    if (!detail || detail.fileType !== 'IMAGE' || detail.images.length === 0) return
+
+    const index = Number(event.currentTarget.dataset.index)
+    const currentIndex = Number.isNaN(index) ? this.data.activeImageIndex : index
+    const currentUrl = detail.images[currentIndex] ?? detail.images[0]
+
+    wx.previewImage({
+      urls: detail.images,
+      current: currentUrl,
+    })
+  },
+
+  getVideoContext(): WechatMiniprogram.VideoContext | null {
+    if (!this.data.detail || this.data.detail.fileType !== 'VIDEO') return null
+    return wx.createVideoContext('materialVideo', this)
+  },
+
+  onVideoTouchStart(event: WechatMiniprogram.TouchEvent) {
+    const touch = event.touches[0]
+    if (!touch) return
+    this.videoTouchStartX = touch.clientX
+    this.videoTouchStartY = touch.clientY
+  },
+
+  onVideoTouchEnd(event: WechatMiniprogram.TouchEvent) {
+    const touch = event.changedTouches[0]
+    if (!touch) return
+
+    const deltaX = touch.clientX - this.videoTouchStartX
+    const deltaY = touch.clientY - this.videoTouchStartY
+
+    if (Math.abs(deltaX) < VIDEO_SWIPE_THRESHOLD_PX) return
+    if (Math.abs(deltaX) <= Math.abs(deltaY)) return
+
+    this.seekVideoBySwipe(deltaX > 0 ? VIDEO_SEEK_STEP_SEC : -VIDEO_SEEK_STEP_SEC)
+  },
+
+  seekVideoBySwipe(offsetSec: number) {
+    const duration = this.videoDurationSec
+    if (duration <= 0) return
+
+    const nextTime = Math.max(0, Math.min(duration, this.videoCurrentTimeSec + offsetSec))
+    this.getVideoContext()?.seek(nextTime)
+    this.videoCurrentTimeSec = nextTime
+    this.lastVideoProgress = calcVideoViewProgress(nextTime, duration)
+  },
+
+  onVideoPlay() {
+    const detail = this.data.detail
+    if (!detail || this.data.authBlocked || this.data.isOwnerView) return
+
+    this.reportVideoProgress(false)
+    this.startVideoProgressTimer()
+  },
+
+  onVideoPause() {
+    this.clearVideoProgressTimer()
+    this.reportVideoProgress(true)
+  },
+
+  onVideoTimeUpdate(event: WechatMiniprogram.VideoTimeUpdate) {
+    const currentTime = event.detail.currentTime
+    const duration = event.detail.duration || this.videoDurationSec
+    if (duration > 0) {
+      this.videoDurationSec = duration
+    }
+    this.videoCurrentTimeSec = currentTime
+    this.lastVideoProgress = calcVideoViewProgress(currentTime, duration || this.videoDurationSec)
+  },
+
+  onVideoEnded() {
+    const detail = this.data.detail
+    if (!detail || this.data.authBlocked || this.data.isOwnerView) return
+
+    this.clearVideoProgressTimer()
+    this.lastVideoProgress = 100
+    this.videoCurrentTimeSec = this.videoDurationSec
+    reportTrackingEvent({
+      trackingId: detail.trackingId,
+      materialId: detail.id,
+      actionType: 'end',
+      progress: 100,
+      duration: Math.floor(this.videoDurationSec),
+      sessionId: this.trackingSessionId,
+    })
+  },
+
+  clearVideoProgressTimer() {
+    if (this.videoProgressTimer) {
+      clearInterval(this.videoProgressTimer)
+      this.videoProgressTimer = 0
+    }
+  },
+
+  startVideoProgressTimer() {
+    this.clearVideoProgressTimer()
+    this.videoProgressTimer = setInterval(() => {
+      this.reportVideoProgress(false)
+    }, VIDEO_PROGRESS_INTERVAL_MS) as unknown as number
+  },
+
+  reportVideoProgress(isFinal = false) {
+    const detail = this.data.detail
+    if (!detail || detail.fileType !== 'VIDEO' || this.data.authBlocked || this.data.isOwnerView) return
+    if (!isFinal && this.lastVideoProgress < 1) return
+
+    reportTrackingEvent({
+      trackingId: detail.trackingId,
+      materialId: detail.id,
+      actionType: this.lastVideoProgress >= 100 ? 'end' : 'play',
+      progress: this.lastVideoProgress,
+      duration: Math.max(0, Math.floor(this.videoCurrentTimeSec)),
+      sessionId: this.trackingSessionId,
+    })
   },
 
   getImageViewDurationSec(): number {
@@ -249,7 +398,7 @@ Page({
     return {
       title: buildShareTitle(detail),
       path: buildSharePath(detail),
-      imageUrl: detail.images[0] ?? '',
+      imageUrl: resolveShareImage(detail),
     }
   },
 
@@ -266,7 +415,7 @@ Page({
     return {
       title: buildShareTitle(detail),
       query,
-      imageUrl: detail.images[this.data.activeImageIndex] ?? detail.images[0] ?? '',
+      imageUrl: resolveShareImage(detail),
     }
   },
 

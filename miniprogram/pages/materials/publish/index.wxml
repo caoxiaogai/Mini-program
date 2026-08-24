@@ -2,7 +2,37 @@
   <navigation-bar back="{{true}}" color="#000000" background="#ffffff" />
 
   <view class="publish-page__content">
-    <view class="publish-page__image-grid">
+    <view wx:if="{{video}}" class="publish-page__video-slot">
+      <image class="publish-page__video-cover" src="{{video.coverPath}}" mode="aspectFill" />
+      <image class="publish-page__video-play" src="/assets/materials/material-play.svg" mode="aspectFit" />
+      <view
+        class="publish-page__image-delete"
+        catchtap="onDeleteVideoTap"
+        hover-class="publish-page__image-delete--pressed"
+        hover-stay-time="80"
+        aria-role="button"
+        aria-label="删除视频"
+      >
+        <image class="publish-page__image-delete-icon" src="/assets/materials/publish-delete.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <view wx:elif="{{pdf}}" class="publish-page__pdf-slot">
+      <view class="publish-page__pdf-badge">PDF</view>
+      <text class="publish-page__pdf-name">{{pdf.fileName}}</text>
+      <view
+        class="publish-page__image-delete"
+        catchtap="onDeletePdfTap"
+        hover-class="publish-page__image-delete--pressed"
+        hover-stay-time="80"
+        aria-role="button"
+        aria-label="删除 PDF"
+      >
+        <image class="publish-page__image-delete-icon" src="/assets/materials/publish-delete.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <view wx:else class="publish-page__image-grid">
       <view
         wx:for="{{images}}"
         wx:key="id"
@@ -22,13 +52,13 @@
         </view>
       </view>
       <view
-        wx:if="{{canAddImage}}"
+        wx:if="{{canAddMedia}}"
         class="publish-page__image-slot publish-page__image-slot--add"
-        bindtap="onAddImageTap"
+        bindtap="onAddMediaTap"
         hover-class="publish-page__image-slot--pressed"
         hover-stay-time="80"
         aria-role="button"
-        aria-label="添加图片"
+        aria-label="添加素材"
       >
         <text class="publish-page__add-icon">+</text>
       </view>

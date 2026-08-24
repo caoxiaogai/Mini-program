@@ -7,6 +7,8 @@ import type {
   MaterialsViewModel,
   MaterialSubmitInput,
   PublishImageViewModel,
+  PublishPdfViewModel,
+  PublishVideoViewModel,
 } from '../types/materials'
 import { formatDateKey } from '../utils/format'
 import { prepareMediaUrls } from '../utils/media'
@@ -92,19 +94,29 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
     silent: true,
   })
     .then(async (material) => {
-      const rawImages =
-        material.fileType === 'IMAGE'
-          ? parseImageUrls(material.fileUrl)
-          : [resolveMediaUrl(material.coverUrl)].filter((url) => url !== '')
-      const images = await prepareMediaUrls(rawImages)
+      const fileType = material.fileType ?? 'IMAGE'
+      const coverSource = resolveThumbnail(material)
+      const [previewUrl] = await prepareMediaUrls([coverSource])
+
+      let images: string[] = []
+      let videoUrl = ''
+
+      if (fileType === 'IMAGE') {
+        images = await prepareMediaUrls(parseImageUrls(material.fileUrl))
+      } else if (fileType === 'VIDEO') {
+        videoUrl = resolveMediaUrl(material.fileUrl)
+      }
 
       return {
         id: String(material.id),
         ownerUserId: material.userId,
         title: '作品',
-        fileType: material.fileType ?? 'IMAGE',
+        fileType,
         trackingId: material.trackingId ?? '',
         images,
+        previewUrl: previewUrl ?? '',
+        videoUrl,
+        duration: material.duration ?? 0,
         descriptionLines: splitMaterialCopy(resolveMaterialCopy(material)),
       }
     })
@@ -114,19 +126,60 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
 export function getMaterialDraft(materialId: string): Promise<MaterialDraftEditViewModel | null> {
   return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
     .then(async (material) => {
+      const fileType = material.fileType ?? 'IMAGE'
+
+      if (fileType === 'VIDEO') {
+        const videoUrl = resolveMediaUrl(material.fileUrl)
+        const coverUrl = resolveMediaUrl(material.coverUrl)
+        const [videoPath, coverPath] = await prepareMediaUrls([videoUrl, coverUrl])
+
+        return {
+          id: String(material.id),
+          fileType,
+          images: [],
+          video: {
+            videoPath: videoPath || videoUrl,
+            coverPath: coverPath || coverUrl,
+            duration: material.duration ?? 0,
+          },
+          pdf: null,
+          copy: material.content ?? '',
+        }
+      }
+
+      if (fileType === 'PDF') {
+        const fileUrl = resolveMediaUrl(material.fileUrl)
+        const fileName = material.title?.trim() || 'PDF 文档'
+
+        return {
+          id: String(material.id),
+          fileType,
+          images: [],
+          video: null,
+          pdf: {
+            filePath: fileUrl,
+            fileName,
+          },
+          copy: material.content ?? '',
+        }
+      }
+
       const sourceUrls = parseImageUrls(material.fileUrl)
       const paths = await prepareMediaUrls(sourceUrls)
 
       return {
         id: String(material.id),
+        fileType,
         images: sourceUrls.map((url, index) => ({ id: url, path: paths[index] ?? '' })),
+        video: null,
+        pdf: null,
         copy: material.content ?? '',
       }
     })
     .catch(() => null)
 }
 
-function shouldUploadImagePath(path: string): boolean {
+function shouldUploadLocalPath(path: string): boolean {
   if (
     path.startsWith('wxfile://')
     || path.startsWith('http://tmp/')
@@ -135,6 +188,10 @@ function shouldUploadImagePath(path: string): boolean {
     return true
   }
   return !/^https?:\/\//i.test(path)
+}
+
+function uploadLocalPath(path: string): Promise<string> {
+  return shouldUploadLocalPath(path) ? uploadFile('/material/upload-file', path) : Promise.resolve(path)
 }
 
 function buildMaterialTitle(copy: string): string {
@@ -147,15 +204,11 @@ function buildMaterialTitle(copy: string): string {
 }
 
 function uploadLocalImages(images: PublishImageViewModel[]): Promise<string[]> {
-  const tasks = images.map((image) => () =>
-    shouldUploadImagePath(image.path)
-      ? uploadFile('/material/upload-file', image.path)
-      : Promise.resolve(image.path),
-  )
+  const tasks = images.map((image) => () => uploadLocalPath(image.path))
   return runRequestQueue(tasks, UPLOAD_CONCURRENCY)
 }
 
-function createMaterial(imageUrls: string[], copy: string): Promise<string> {
+function createImageMaterial(imageUrls: string[], copy: string): Promise<string> {
   return request<ApiMaterial>({
     method: 'POST',
     path: '/material',
@@ -170,14 +223,91 @@ function createMaterial(imageUrls: string[], copy: string): Promise<string> {
   }).then((material) => String(material.id))
 }
 
+function createVideoMaterial(videoUrl: string, coverUrl: string, duration: number, copy: string): Promise<string> {
+  return request<ApiMaterial>({
+    method: 'POST',
+    path: '/material',
+    data: {
+      title: buildMaterialTitle(copy),
+      content: copy,
+      fileType: 'VIDEO',
+      fileUrl: videoUrl,
+      coverUrl,
+      duration,
+    },
+  }).then((material) => String(material.id))
+}
+
+function createPdfMaterial(pdfUrl: string, fileName: string, copy: string): Promise<string> {
+  const title = fileName.trim() || buildMaterialTitle(copy)
+  return request<ApiMaterial>({
+    method: 'POST',
+    path: '/material',
+    data: {
+      title: title.slice(0, MATERIAL_TITLE_MAX_LENGTH),
+      content: copy,
+      fileType: 'PDF',
+      fileUrl: pdfUrl,
+      coverUrl: '',
+      duration: 0,
+    },
+  }).then((material) => String(material.id))
+}
+
+function uploadVideoAsset(video: PublishVideoViewModel): Promise<{ videoUrl: string; coverUrl: string }> {
+  return Promise.all([uploadLocalPath(video.videoPath), uploadLocalPath(video.coverPath)]).then(
+    ([videoUrl, coverUrl]) => ({ videoUrl, coverUrl }),
+  )
+}
+
 /**
  * 保存素材：编辑既有草稿且图片未改动时仅更新文案（PUT）；
  * 其余情况上传本地图片后创建新素材（后端暂无「更新素材图片」接口，见 HANDOFF 待确认项）。
  */
 function persistMaterial(input: MaterialSubmitInput): Promise<string> {
+  if (input.video) {
+    const videoUnchanged =
+      input.draftId !== null &&
+      input.originalVideoPath !== '' &&
+      input.video.videoPath === input.originalVideoPath
+
+    if (input.draftId !== null && videoUnchanged) {
+      const draftId = input.draftId
+      return request<ApiMaterial>({
+        method: 'PUT',
+        path: `/material/${draftId}`,
+        data: { content: input.copy },
+      }).then(() => draftId)
+    }
+
+    return uploadVideoAsset(input.video).then(({ videoUrl, coverUrl }) =>
+      createVideoMaterial(videoUrl, coverUrl, input.video!.duration, input.copy),
+    )
+  }
+
+  if (input.pdf) {
+    const pdfUnchanged =
+      input.draftId !== null &&
+      input.originalPdfPath !== '' &&
+      input.pdf.filePath === input.originalPdfPath
+
+    if (input.draftId !== null && pdfUnchanged) {
+      const draftId = input.draftId
+      return request<ApiMaterial>({
+        method: 'PUT',
+        path: `/material/${draftId}`,
+        data: { content: input.copy },
+      }).then(() => draftId)
+    }
+
+    return uploadLocalPath(input.pdf.filePath).then((pdfUrl) =>
+      createPdfMaterial(pdfUrl, input.pdf!.fileName, input.copy),
+    )
+  }
+
   if (input.images.length === 0) {
-    wx.showToast({ title: '请先添加图片', icon: 'none' })
-    return Promise.reject(new Error('material images required'))
+    wx.showToast({ title: '请先添加图片、视频或 PDF', icon: 'none' })
+    return Promise.reject(new Error('material media required'))
   }
 
   const imagesUnchanged =
@@ -194,7 +324,7 @@ function persistMaterial(input: MaterialSubmitInput): Promise<string> {
     }).then(() => draftId)
   }
 
-  return uploadLocalImages(input.images).then((imageUrls) => createMaterial(imageUrls, input.copy))
+  return uploadLocalImages(input.images).then((imageUrls) => createImageMaterial(imageUrls, input.copy))
 }
 
 /** 存草稿：素材落库但不生成分享链接（publishStatus 保持 0），返回素材 ID */
