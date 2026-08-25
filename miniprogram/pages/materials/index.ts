@@ -47,10 +47,15 @@ Page({
     visibleMaterials: [] as MaterialCardViewModel[],
     hasVisibleMaterials: false,
     materialsHeaderOpacity: 0,
+    isAndroid: false,
     showPublishSuccessModal: false,
   },
   onLoad(options: Record<string, string | undefined>) {
-    this.setData({ showPublishSuccessModal: options.publishSuccess === '1' })
+    const { platform } = wx.getSystemInfoSync()
+    this.setData({
+      isAndroid: platform === 'android' || platform === 'devtools',
+      showPublishSuccessModal: options.publishSuccess === '1',
+    })
 
     getMaterials().then((materials) => {
       const visibleMaterials = getVisibleMaterials(materials.items, this.data.activeFilter)

@@ -207,7 +207,7 @@ page {
 
 .materials-publish-button {
   position: absolute;
-  bottom: 80rpx;
+  bottom: calc(max(24px, env(safe-area-inset-bottom)) + 20rpx);
   left: 50%;
   display: flex;
   align-items: center;
@@ -225,6 +225,10 @@ page {
   transform: translateX(-50%);
   pointer-events: auto;
   transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.materials-page--android .materials-publish-button {
+  bottom: calc(16px + 20rpx);
 }
 
 .materials-publish-button image {

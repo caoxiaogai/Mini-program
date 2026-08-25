@@ -53,15 +53,69 @@ test('home style preview uses typed Figma mock data', () => {
   const config = read('miniprogram/config/dev.ts')
 
   assert.match(mock, /getHomeStyleMock\(\): HomePageViewModel/)
-  assert.match(mock, /unreadNotificationCount: 0/)
+  assert.match(mock, /unreadNotificationCount: 10/)
+  assert.match(mock, /id: 'mock-notification-lin-xiaoman'/)
+  assert.match(mock, /id: 'mock-material-ai-full-stack'/)
   assert.match(mock, /previewAvatars:/)
   assert.match(config, /HOME_DATA_SOURCE: 'mock' \| 'api' = 'mock'/)
 })
 
-test('home empty preview exposes the complete zero-data view model', async () => {
+test('home style preview exposes populated notification, content and summary data', async () => {
   const { getHomeStyleMock } = await import('../miniprogram/mocks/home.ts')
 
   const homeData = getHomeStyleMock()
+
+  assert.equal(homeData.unreadNotificationCount, 10)
+  assert.equal(homeData.notifications.length, 3)
+  assert.equal(homeData.contents.length, 2)
+  assert.deepEqual(homeData.today, {
+    viewCount: '840',
+    completeRate: '4.5%',
+    forwardCount: '21',
+    viewerCount: '34',
+  })
+  assert.deepEqual(
+    {
+      total: homeData.intentSummary.total,
+      highCount: homeData.intentSummary.highCount,
+      mediumCount: homeData.intentSummary.mediumCount,
+      lowCount: homeData.intentSummary.lowCount,
+    },
+    { total: '50', highCount: '12', mediumCount: '18', lowCount: '20' },
+  )
+})
+
+test('viewing a home notification removes only that preview card and decrements its unread badge', async () => {
+  const { getHomeStyleMock } = await import('../miniprogram/mocks/home.ts')
+  const { markHomeNotificationViewed } = await import('../miniprogram/pages/index/home-notification-preview.ts')
+
+  const homeData = getHomeStyleMock()
+  const viewedNotificationId = 'mock-notification-lin-xiaoman'
+  const nextHomeData = markHomeNotificationViewed(homeData, viewedNotificationId)
+
+  assert.equal(nextHomeData.unreadNotificationCount, 9)
+  assert.equal(nextHomeData.notifications.length, 2)
+  assert.equal(nextHomeData.notifications.some((notification) => notification.id === viewedNotificationId), false)
+  assert.equal(homeData.unreadNotificationCount, 10)
+  assert.equal(homeData.notifications.length, 3)
+})
+
+test('notification tab retains every home preview record after it is viewed', async () => {
+  const { getHomeStyleMock } = await import('../miniprogram/mocks/home.ts')
+  const { getNotificationsMock } = await import('../miniprogram/mocks/notifications.ts')
+
+  const homeData = getHomeStyleMock()
+  const notificationUserIds = new Set(getNotificationsMock().groups.flatMap((group) => group.items.map((item) => item.userId)))
+
+  for (const notification of homeData.notifications) {
+    assert.equal(notificationUserIds.has(notification.userId), true)
+  }
+})
+
+test('home empty preview exposes the complete zero-data view model', async () => {
+  const { getHomeEmptyMock } = await import('../miniprogram/mocks/home.ts')
+
+  const homeData = getHomeEmptyMock()
 
   assert.equal(homeData.unreadNotificationCount, 0)
   assert.deepEqual(homeData.notifications, [])
@@ -121,11 +175,30 @@ test('home page declares the new Figma sections and state branches', () => {
   assert.match(styles, /\.home-hero__subtitle \{[\s\S]*font-size: 44rpx;[\s\S]*font-weight: 500;[\s\S]*line-height: 68rpx;/)
 })
 
+test('home summary cards open the matching analysis tabs', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const logic = read('miniprogram/pages/index/index.ts')
+
+  assert.match(page, /class="home-intent-card" bindtap="onIntentSummaryTap"/)
+  assert.match(page, /class="home-today-card" bindtap="onTodayDataTap"/)
+  assert.match(logic, /onIntentSummaryTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(1\)/)
+  assert.match(logic, /onTodayDataTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(2\)/)
+})
+
+test('home populated today-most card opens work analysis', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const logic = read('miniprogram/pages/index/index.ts')
+
+  assert.match(page, /class="home-content-list"[\s\S]*class="home-content-card" bindtap="onTodayMostTap"/)
+  assert.doesNotMatch(page, /class="home-content-card__item"[\s\S]*bindtap="onContentTap"/)
+  assert.match(logic, /onTodayMostTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(0\)/)
+})
+
 test('home empty state follows Figma 486:2569', () => {
   const page = read('miniprogram/pages/index/index.wxml')
   const styles = read('miniprogram/pages/index/index.less')
 
-  assert.match(page, /class="home-empty home-empty--notification"[\s\S]*暂时还没有人浏览你的作品/)
+  assert.match(page, /class="home-empty home-empty--notification(?: home-notification-empty-card)?"[\s\S]*暂时还没有人浏览你的作品/)
   assert.match(page, /class="home-content-card home-content-card--empty"[\s\S]*还没有作品，你可以发布一个[\s\S]*立即发布/)
   assert.match(page, /class="home-section home-section--ranking"><view class="home-section__header"><text class="home-section__title">排行榜<\/text><\/view><view class="home-ranking-entry" bindtap="onRankingEntryTap"/)
   assert.doesNotMatch(page, /home-section--ranking" wx:if=/)
@@ -136,15 +209,30 @@ test('home empty state follows Figma 486:2569', () => {
   assert.match(styles, /\.home-empty-publish \{[\s\S]*height: 64rpx;[\s\S]*background: @home-accent;/)
 })
 
+test('home real-time notification empty card follows Figma 611:9128', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(page, /class="home-empty home-empty--notification home-notification-empty-card"/)
+  assert.match(page, /class="home-notification-empty-card__cloud" src="\/assets\/analysis\/empty-state-cloud\.png"/)
+  assert.match(page, /class="home-notification-empty-card__message">暂时还没有人浏览你的作品/)
+  assert.match(styles, /\.home-notification-empty-card \{[\s\S]*border: 2rpx solid #f0f0f0;[\s\S]*border-radius: 40rpx;[\s\S]*background: #ffffff;[\s\S]*box-shadow: 0 4rpx 20rpx rgba\(0, 0, 0, 0\.03\);/)
+  assert.match(styles, /\.home-notification-empty-card__cloud \{[\s\S]*width: 78rpx;[\s\S]*height: 78rpx;/)
+  assert.match(styles, /\.home-notification-empty-card__message \{[\s\S]*color: #8a8e94;[\s\S]*font-size: 26rpx;/)
+})
+
 test('home page wires the intended navigation actions', () => {
   const page = read('miniprogram/pages/index/index.wxml')
   const logic = read('miniprogram/pages/index/index.ts')
 
   assert.match(page, /bindtap="onNotificationTap"/)
-  assert.match(page, /bindtap="onContentTap"/)
+  assert.match(page, /class="home-notification-card" data-id="\{\{item\.id\}\}" data-user-id="\{\{item\.userId\}\}" bindtap="onNotificationTap"/)
+  assert.match(page, /class="home-section__more" bindtap="onTabTap" data-id="notifications">查看更多/)
+  assert.match(page, /bindtap="onTodayMostTap"/)
   assert.match(page, /bind:plus="onPlusTap"/)
   assert.match(logic, /pages\/analysis-user-detail\/index\?id=/)
-  assert.match(logic, /pages\/analysis-detail\/index\?id=/)
+  assert.match(logic, /const id = event\.detail\?\.id \?\? \(event\.currentTarget\.dataset\.id as HomeTabId \| undefined\)/)
+  assert.doesNotMatch(page, /class="home-content-card__item"[\s\S]*bindtap="onContentTap"/)
   assert.match(logic, /getMaterials\(\)/)
   assert.match(logic, /getNotifications\(\)/)
   assert.match(logic, /getAnalysisOverview\(/)
@@ -212,7 +300,7 @@ test('profile pending module stays above the locked content overlay', () => {
 
   assert.match(styles, /.home-profile__locked-overlay \{[\s\S]*z-index: 2;/)
   assert.match(styles, /.home-profile__locked-overlay \{[\s\S]*top: 442rpx;/)
-  assert.match(styles, /.home-profile__content \{[\s\S]*z-index: 1;/)
+  assert.match(styles, /.home-profile__content \{[\s\S]*z-index: auto;/)
   assert.match(styles, /.home-profile__pending \{[\s\S]*position: relative;[\s\S]*z-index: 3;/)
 })
 
@@ -295,7 +383,7 @@ test('ranking reuses the profile striped background and fades its content to whi
   assert.match(styles, /\.ranking-list \{[\s\S]*margin-top: 20rpx;/)
 })
 
-test('content cards share the global E6E6E6 border token', () => {
+test('content cards share the global EBEBEB border token', () => {
   const appStyles = read('miniprogram/app.less')
   const homeStyles = read('miniprogram/pages/index/index.less')
   const notificationStyles = read('miniprogram/pages/notifications/notifications.less')
@@ -305,7 +393,7 @@ test('content cards share the global E6E6E6 border token', () => {
   const userDetailStyles = read('miniprogram/pages/analysis-user-detail/index.less')
   const materialStyles = read('miniprogram/pages/materials/index.less')
 
-  assert.match(appStyles, /@content-box-border: #e6e6e6;/)
+  assert.match(appStyles, /@content-box-border: #ebebeb;/)
   assert.match(homeStyles, /@home-border: @content-box-border;/)
   assert.match(notificationStyles, /@notification-card-border: @content-box-border;/)
   assert.match(profileStyles, /\.home-profile__balance \{[\s\S]*border: 1px solid @content-box-border;/)
@@ -656,6 +744,8 @@ test('materials home uses the Figma publish navigation and reserves space above 
   const markup = read('miniprogram/pages/materials/index.wxml')
   const logic = read('miniprogram/pages/materials/index.ts')
   const styles = read('miniprogram/pages/materials/index.less')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
   const pageConfig = JSON.parse(read('miniprogram/pages/materials/index.json'))
 
   assert.equal(pageConfig.usingComponents['bottom-tab-bar'], '/components/bottom-tab-bar/bottom-tab-bar')
@@ -664,8 +754,16 @@ test('materials home uses the Figma publish navigation and reserves space above 
   assert.match(logic, /label: '通知'/)
   assert.match(logic, /label: '分析'/)
   assert.match(logic, /label: '我的'/)
+  assert.match(markup, /<view class="materials-page \{\{isAndroid \? 'materials-page--android' : ''\}\}">/)
+  assert.match(homeMarkup, /<view class="materials-page \{\{isAndroid \? 'materials-page--android' : ''\}\}">/)
+  assert.match(logic, /isAndroid: false/)
+  assert.match(homeLogic, /isAndroid: false/)
+  assert.match(logic, /platform === 'android' \|\| platform === 'devtools'/)
+  assert.match(homeLogic, /platform === 'android' \|\| platform === 'devtools'/)
   assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?padding: 0 40rpx calc\(336rpx \+ env\(safe-area-inset-bottom\)\);/)
   assert.match(styles, /\.materials-publish-bar\s*\{[\s\S]*?bottom: 112rpx;/)
+  assert.match(styles, /\.materials-publish-button\s*\{[\s\S]*?bottom: calc\(max\(24px, env\(safe-area-inset-bottom\)\) \+ 20rpx\);/)
+  assert.match(styles, /\.materials-page--android \.materials-publish-button\s*\{[\s\S]*?bottom: calc\(16px \+ 20rpx\);/)
 })
 
 test('materials home uses fixed preview data and the Figma striped background', async () => {

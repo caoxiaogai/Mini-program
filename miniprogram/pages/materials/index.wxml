@@ -1,4 +1,4 @@
-<view class="materials-page">
+<view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}">
   <view class="materials-page__base"></view>
   <image class="materials-page__status-glow" src="/assets/materials/materials-stripes.svg" mode="scaleToFill" />
 

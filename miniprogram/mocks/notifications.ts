@@ -17,18 +17,20 @@ function createCard(
   avatarUrl: string,
   thumbnailUrl: string,
   statusLabel: string,
+  visitorName = 'xiaogai',
+  actionDate = '8月20日 14:30',
 ): NotificationCardViewModel {
   const intentLabel = intent === 'high' ? '#高意向' : intent === 'medium' ? '#中意向' : '#低意向'
 
   return {
     id,
     userId,
-    visitorName: 'xiaogai',
+    visitorName,
     intent,
     intentLabel,
     action,
     actionLabel,
-    actionDate: '8月20日 14:30',
+    actionDate,
     actionIconPath,
     avatarUrl,
     thumbnailUrl,
@@ -46,6 +48,15 @@ export function getNotificationsMock(): NotificationsViewModel {
   return {
     filters: notificationFilters,
     groups: [
+      {
+        id: 'mock-notification-group-home-preview',
+        label: '8月20日',
+        items: [
+          createCard('mock-notification-lin-xiaoman', 'mock-user-lin-xiaoman', 'high', 'forward', '“转发”了你的作品', '/assets/home-new/action-forward.svg', '/assets/analysis/user-avatar-01.jpg', '/assets/home-new/today-most-01.jpg', '该用户转发了你的作品', '林小满', '8月20日 14:30'),
+          createCard('mock-notification-zhou-zhixing', 'mock-user-zhou-zhixing', 'medium', 'reading', '“阅读”了你的作品', '/assets/home-new/action-reading.svg', '/assets/analysis/user-avatar-03.jpg', '/assets/home-new/today-most-02.jpg', '该用户已完成阅读', '周知行', '8月20日 13:18'),
+          createCard('mock-notification-gu-nanxing', 'mock-user-gu-nanxing', 'low', 'reading', '“阅读”了你的作品', '/assets/home-new/action-reading.svg', '/assets/analysis/user-avatar-05.jpg', '/assets/home-new/today-most-02.jpg', '该用户尚未完成阅读', '顾南星', '8月20日 11:42'),
+        ],
+      },
       {
         id: 'mock-notification-group-1',
         label: '8月17日',
