@@ -9,7 +9,14 @@ export type AnalysisChartPoint = {
 
 export type AnalysisReadRange = 'week' | 'month'
 
+export type AnalysisTotalHeroMetric = {
+  label: string
+  value: string
+  delta: string
+}
+
 export type AnalysisTotalViewModel = {
+  heroMetrics: AnalysisTotalHeroMetric[]
   overview: AnalysisMetric[]
   readTrends: Record<AnalysisReadRange, AnalysisChartPoint[]>
 }
@@ -73,9 +80,8 @@ export type AnalysisAudienceUser = {
   level: AnalysisIntentLevel
   levelLabel: string
   readCount: string
-  viewedWorksCount: string
+  completionCount: string
   shareCount: string
-  showMarker?: boolean
 }
 
 export type AnalysisDetailViewModel = {

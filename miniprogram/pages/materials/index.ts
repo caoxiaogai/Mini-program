@@ -2,6 +2,39 @@ import { getMaterials } from '../../services/materials'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 
+type MaterialsTabId = 'home' | 'notifications' | 'analysis' | 'profile'
+
+const materialsTabItems = [
+  {
+    id: 'home' as const,
+    label: '首页',
+    iconPath: '/assets/home-new/tab-home-default.svg',
+    activeIconPath: '/assets/home-new/tab-home-active.svg',
+    active: false,
+  },
+  {
+    id: 'notifications' as const,
+    label: '通知',
+    iconPath: '/assets/home-new/tab-notification-default.svg',
+    activeIconPath: '/assets/home-new/tab-notification-active.svg',
+    active: false,
+  },
+  {
+    id: 'analysis' as const,
+    label: '分析',
+    iconPath: '/assets/home-new/tab-analysis-default.svg',
+    activeIconPath: '/assets/home-new/tab-analysis-active.svg',
+    active: false,
+  },
+  {
+    id: 'profile' as const,
+    label: '我的',
+    iconPath: '/assets/home-new/tab-profile-default.svg',
+    activeIconPath: '/assets/home-new/tab-profile-active.svg',
+    active: false,
+  },
+]
+
 function getVisibleMaterials(items: MaterialCardViewModel[], filterId: MaterialsFilterId): MaterialCardViewModel[] {
   return filterId === 'all' ? items : items.filter((item) => item.kind === filterId)
 }
@@ -9,6 +42,7 @@ function getVisibleMaterials(items: MaterialCardViewModel[], filterId: Materials
 Page({
   data: {
     materials: null as MaterialsViewModel | null,
+    tabItems: materialsTabItems,
     activeFilter: 'all' as MaterialsFilterId,
     visibleMaterials: [] as MaterialCardViewModel[],
     hasVisibleMaterials: false,
@@ -63,6 +97,27 @@ Page({
   onPublishTap() {
     wx.navigateTo({ url: '/pages/materials/publish/index' })
   },
+  onTabTap(event: CustomEvent<{ id: MaterialsTabId }>) {
+    const { id } = event.detail
+
+    if (id === 'home') {
+      wx.navigateTo({ url: '/pages/index/index' })
+      return
+    }
+
+    if (id === 'notifications') {
+      wx.navigateTo({ url: '/pages/notifications/notifications' })
+      return
+    }
+
+    if (id === 'analysis') {
+      wx.navigateTo({ url: '/pages/analysis/index' })
+      return
+    }
+
+    wx.navigateTo({ url: '/pages/index/index' })
+  },
+  onPlusTap() {},
   onPublishSuccessClose() {
     this.setData({ showPublishSuccessModal: false })
   },

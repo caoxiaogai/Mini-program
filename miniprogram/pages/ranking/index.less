@@ -1,6 +1,5 @@
-@ranking-background: #e8edf5;
+@ranking-background: #ffffff;
 @ranking-muted: #8a8e94;
-@ranking-card-end: #f0f5fa;
 
 page {
   min-height: 100vh;
@@ -9,14 +8,16 @@ page {
 
 .ranking-page {
   position: relative;
+  display: flex;
   min-height: 100vh;
+  flex-direction: column;
   background: #ffffff;
   color: #000000;
   isolation: isolate;
 }
 
 .ranking-page__base {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 999;
   background: @ranking-background;
@@ -33,18 +34,25 @@ page {
 .ranking-page__status-glow {
   position: fixed;
   top: 0;
-  left: 0;
+  left: 4rpx;
   width: 100%;
-  height: 230rpx;
+  height: 260rpx;
   z-index: 1000;
+  background: repeating-linear-gradient(90deg, transparent 0 4rpx, #f0f0f0 4rpx 8rpx);
+  -webkit-mask-image: linear-gradient(180deg, #000000 0%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(180deg, #000000 0%, rgba(0, 0, 0, 0) 100%);
+  opacity: 0.9;
   pointer-events: none;
 }
 
 .ranking-page__content {
   position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   z-index: 1001;
-  padding: 70rpx 40rpx calc(60rpx + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(232, 237, 245, 0) 0%, #e8edf5 13.976%, #e8edf5 100%);
+  padding: 70rpx 40rpx 48rpx;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 13.976%, #ffffff 100%);
   box-sizing: border-box;
 }
 
@@ -93,59 +101,22 @@ page {
   display: flex;
   flex-direction: column;
   margin-top: 20rpx;
-  padding: 30rpx 30rpx 80rpx;
-  border: 2rpx solid #ffffff;
-  border-radius: 32rpx;
-  background: linear-gradient(180deg, #ffffff 0%, #f0f5fa 100%);
-  box-shadow: 0 4rpx 3rpx rgba(0, 0, 0, 0.05);
-  box-sizing: border-box;
-}
-
-.ranking-tabs {
-  position: relative;
-  display: flex;
-  align-items: center;
-  height: 64rpx;
-  padding: @segmented-filter-vertical-inset;
-  border-radius: 16rpx;
-  background: #d3d8e0;
-  box-sizing: border-box;
-}
-
-.ranking-tabs__selection {
-  position: absolute;
-  top: @segmented-filter-vertical-inset;
-  bottom: @segmented-filter-vertical-inset;
-  left: 4rpx;
-  width: calc((100% - 8rpx) / 3);
-  height: auto;
-  border-radius: 12rpx;
+  padding: 40rpx;
+  border: 2rpx solid #f0f0f0;
+  border-radius: 40rpx;
   background: #ffffff;
-  transition: transform 180ms ease-out;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
 }
 
-.ranking-tabs__item {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  height: 56rpx;
+.ranking-panel--empty {
   flex: 1;
-  align-items: center;
-  justify-content: center;
-  color: @ranking-muted;
-  font-size: 26rpx;
-  line-height: 36rpx;
-  white-space: nowrap;
-}
-
-.ranking-tabs__item--active {
-  color: #000000;
 }
 
 .ranking-list {
   display: flex;
   flex-direction: column;
-  margin-top: 10rpx;
+  margin-top: 20rpx;
 }
 
 .ranking-empty-state {

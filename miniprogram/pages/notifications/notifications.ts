@@ -58,6 +58,6 @@ Page({
     wx.navigateTo({ url: '/pages/index/index' })
   },
   onPlusTap() {
-    wx.navigateTo({ url: '/pages/materials/publish/index' })
+    wx.navigateTo({ url: '/pages/materials/index' })
   },
 })

@@ -25,3 +25,9 @@ export const ANALYSIS_DATA_SOURCE: 'mock' | 'api' = 'mock'
  * 确认真实接口有可展示数据后改为 api；页面和组件无需调整。
  */
 export const NOTIFICATION_DATA_SOURCE: 'mock' | 'api' = 'mock'
+
+/**
+ * 素材首页当前使用固定假数据进行 Figma 视觉验收。
+ * 确认真实接口有可展示数据后改为 api；页面和组件无需调整。
+ */
+export const MATERIALS_DATA_SOURCE: 'mock' | 'api' = 'mock'

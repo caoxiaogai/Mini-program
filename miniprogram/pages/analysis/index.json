@@ -1,5 +1,6 @@
 {
   "usingComponents": {
-    "analysis-header": "/components/analysis-header/index"
+    "analysis-header": "/components/analysis-header/index",
+    "segmented-filter": "/components/segmented-filter/index"
   }
 }

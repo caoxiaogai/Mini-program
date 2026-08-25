@@ -1,0 +1,49 @@
+<view class="home-profile">
+  <view class="home-profile__stripes" />
+  <navigation-bar class="home-profile__navigation" back="{{false}}" title="" color="#000000" background="transparent" />
+  <view wx:if="{{profile}}" class="home-profile__content">
+    <view class="home-profile__identity">
+      <image class="home-profile__avatar" src="{{profile.avatarUrl}}" mode="aspectFill" />
+      <text class="home-profile__nickname">{{profile.nickname}}</text>
+    </view>
+
+    <view class="home-profile__balance">
+      <view class="home-profile__balance-copy">
+        <text class="home-profile__balance-value">{{profile.balance}}</text>
+        <text class="home-profile__balance-label">{{profile.balanceLabel}}</text>
+      </view>
+      <view class="home-profile__withdraw" hover-class="home-profile__withdraw--pressed">
+        <text>{{profile.withdrawLabel}}</text>
+      </view>
+    </view>
+
+    <view class="home-profile__membership">
+      <view class="home-profile__membership-art">
+        <image class="home-profile__membership-base" src="/assets/profile/membership-base.svg" mode="scaleToFill" />
+        <image class="home-profile__membership-glow home-profile__membership-glow--cyan" src="/assets/profile/profile-glow-cyan.svg" mode="scaleToFill" />
+        <image class="home-profile__membership-glow home-profile__membership-glow--purple" src="/assets/profile/profile-glow-purple.svg" mode="scaleToFill" />
+        <image class="home-profile__membership-glow home-profile__membership-glow--lilac" src="/assets/profile/profile-glow-lilac.svg" mode="scaleToFill" />
+        <image class="home-profile__membership-glow home-profile__membership-glow--coral" src="/assets/profile/profile-glow-coral.svg" mode="scaleToFill" />
+        <image class="home-profile__membership-fill" src="/assets/profile/membership-fill.svg" mode="scaleToFill" />
+        <image class="home-profile__membership-outline" src="/assets/profile/membership-outline.svg" mode="scaleToFill" />
+      </view>
+      <view class="home-profile__membership-copy">
+        <view class="home-profile__membership-text">
+          <text class="home-profile__membership-title">{{profile.membershipTitle}}</text>
+          <text class="home-profile__membership-subtitle">{{profile.membershipSubtitle}}</text>
+        </view>
+        <view class="home-profile__membership-action">
+          <text>{{profile.membershipActionLabel}}</text>
+          <text class="home-profile__membership-arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="home-profile__pending" data-node-id="594:8711">
+      <view class="home-profile__pending-button"><text>{{profile.pendingTitle}}</text></view>
+      <text class="home-profile__pending-description">{{profile.pendingDescription}}</text>
+    </view>
+  </view>
+  <view wx:else class="home-profile__loading"><text>正在加载</text></view>
+  <view class="home-profile__locked-overlay" />
+</view>

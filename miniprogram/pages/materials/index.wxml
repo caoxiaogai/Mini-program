@@ -1,8 +1,8 @@
 <view class="materials-page">
   <view class="materials-page__base"></view>
-  <image class="materials-page__status-glow" src="/assets/analysis/group-40.svg" mode="scaleToFill" />
+  <image class="materials-page__status-glow" src="/assets/materials/materials-stripes.svg" mode="scaleToFill" />
 
-  <view class="materials-page__header" style="background: rgba(232, 237, 245, {{materialsHeaderOpacity}});">
+  <view class="materials-page__header" style="background: rgba(255, 255, 255, {{materialsHeaderOpacity}});">
     <navigation-bar back="{{true}}" title="素材" color="#000000" background="transparent" />
   </view>
 
@@ -35,7 +35,7 @@
         hover-stay-time="120"
       >
         <view class="materials-card__preview">
-          <image class="materials-card__image" src="{{item.thumbnailUrl}}" mode="aspectFit" />
+          <image class="materials-card__image" src="{{item.thumbnailUrl}}" mode="aspectFill" />
           <view wx:if="{{item.isDraft}}" class="materials-card__draft">草稿</view>
           <image wx:if="{{item.kind === 'video'}}" class="materials-card__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
         </view>
@@ -57,6 +57,8 @@
       <image src="/assets/materials/material-plus.svg" mode="aspectFit" />
     </view>
   </view>
+
+  <bottom-tab-bar items="{{tabItems}}" plus-active="{{true}}" bind:tabtap="onTabTap" bind:plus="onPlusTap" />
 
   <publish-success-modal
     visible="{{showPublishSuccessModal}}"

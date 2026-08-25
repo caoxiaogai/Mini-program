@@ -1,6 +1,6 @@
 <view class="ranking-page">
   <view class="ranking-page__base"></view>
-  <image class="ranking-page__status-glow" src="/assets/analysis/group-40.svg" mode="scaleToFill" />
+  <view class="ranking-page__status-glow" />
   <view class="ranking-page__header" style="background: rgba(232, 237, 245, {{rankingHeaderOpacity}});">
     <navigation-bar title="排行榜" back="{{true}}" color="#000000" background="transparent" />
   </view>
@@ -14,18 +14,8 @@
         <image class="ranking-hero__trophy" src="/assets/ranking/ranking-trophy.png" mode="aspectFit" />
       </view>
 
-      <view wx:if="{{rankingData}}" class="ranking-panel">
-        <view class="ranking-tabs">
-          <view class="ranking-tabs__selection" style="transform: translateX({{rankingTabOffset}}%);"></view>
-          <view
-            wx:for="{{rankingTabs}}"
-            wx:key="id"
-            class="ranking-tabs__item {{item.id === activeRankingMetric ? 'ranking-tabs__item--active' : ''}}"
-            bindtap="onRankingTabTap"
-            data-id="{{item.id}}"
-            data-index="{{index}}"
-          >{{item.label}}</view>
-        </view>
+      <view wx:if="{{rankingData}}" class="ranking-panel {{hasRankingEntries ? '' : 'ranking-panel--empty'}}">
+        <segmented-filter items="{{rankingTabs}}" active-id="{{activeRankingMetric}}" bind:change="onRankingTabTap" />
 
         <view wx:if="{{hasRankingEntries}}" class="ranking-list">
           <view wx:for="{{visibleRankingEntries}}" wx:key="id" class="ranking-entry">

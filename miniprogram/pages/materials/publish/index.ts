@@ -73,7 +73,7 @@ Page({
         this.draftMaterialId = materialId
         this.draftImagePaths = this.data.images.map((image) => image.path)
         wx.showToast({ title: '已保存草稿', icon: 'success' })
-        wx.redirectTo({ url: '/pages/materials/index' })
+        wx.redirectTo({ url: '/pages/index/index?tab=materials' })
       })
       .catch(() => undefined)
       .then(() => {
@@ -88,7 +88,7 @@ Page({
       .then((materialId) => {
         this.draftMaterialId = materialId
         this.draftImagePaths = this.data.images.map((image) => image.path)
-        wx.redirectTo({ url: '/pages/materials/index?publishSuccess=1' })
+        wx.redirectTo({ url: '/pages/index/index?tab=materials&publishSuccess=1' })
       })
       .catch(() => undefined)
       .then(() => {

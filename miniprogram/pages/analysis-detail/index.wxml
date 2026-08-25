@@ -1,7 +1,6 @@
 <view class="detail-page">
-  <image class="detail-page__texture" src="/assets/analysis/group-40.svg" mode="scaleToFill" />
   <view class="detail-page__header">
-    <navigation-bar title="内容分析" back="{{true}}" color="#000000" background="transparent" />
+    <analysis-header title="内容分析" back="{{true}}" title-weight="600" />
   </view>
   <view wx:if="{{detail}}" class="detail-page__content">
     <view class="detail-card">
@@ -24,10 +23,7 @@
     <view class="detail-intent">
       <text class="detail-intent__title">意向用户</text>
       <view class="detail-intent__panel">
-        <view class="detail-intent__tabs" bindtouchstart="onIntentTouchStart" bindtouchend="onIntentTouchEnd">
-          <view class="detail-intent__selection" style="transform: translateX({{intentTabOffset}}%);"></view>
-          <view wx:for="{{intentTabs}}" wx:key="id" class="detail-intent__tab {{item.id === activeIntentLevel ? 'detail-intent__tab--active' : ''}}" bindtap="onIntentTabTap" data-index="{{index}}" data-id="{{item.id}}">{{item.label}}</view>
-        </view>
+        <segmented-filter items="{{intentTabs}}" active-id="{{activeIntentLevel}}" bind:change="onIntentTabTap" bind:touchstart="onIntentTouchStart" bind:touchend="onIntentTouchEnd" />
         <view wx:if="{{hasVisibleIntentUsers}}" class="detail-users">
           <view wx:for="{{visibleIntentUsers}}" wx:key="id" class="detail-user" bindtap="onDetailUserTap" data-id="{{item.id}}">
             <image class="detail-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
@@ -45,7 +41,7 @@
                   <view class="detail-user__stat"><text>转发</text><text>{{item.shareCount}}</text></view>
                 </view>
               </view>
-              <view class="detail-user__line"></view>
+              <view wx:if="{{index < visibleIntentUsers.length - 1}}" class="detail-user__line"></view>
             </view>
           </view>
         </view>

@@ -2,6 +2,9 @@ import type {
   AnalysisAudienceUser,
   AnalysisCard,
   AnalysisChartPoint,
+  AnalysisDetailViewModel,
+  AnalysisIntentUser,
+  AnalysisUserDetailViewModel,
   AnalysisViewModel,
 } from '../types/analysis'
 
@@ -23,6 +26,7 @@ function createCard(
   thumbnailUrl: string,
   title: string,
   forwardCount: string,
+  completionCount = '4',
 ): AnalysisCard {
   return {
     id,
@@ -32,14 +36,14 @@ function createCard(
     publishedAt,
     metrics: [
       { label: '转发', value: forwardCount },
-      { label: '播完', value: '4' },
+      { label: '播完', value: completionCount },
       { label: '浏览', value: '1,231' },
       { label: '观看人数', value: '1,231' },
     ],
     compactMetrics: [
       { label: '浏览', value: '1,231' },
       { label: '转发', value: forwardCount },
-      { label: '完播', value: '4' },
+      { label: '完播', value: completionCount },
     ],
   }
 }
@@ -50,6 +54,7 @@ function createAudienceUser(
   name: string,
   level: AnalysisAudienceUser['level'],
   levelLabel: string,
+  completionCount: string,
 ): AnalysisAudienceUser {
   return {
     id,
@@ -58,9 +63,91 @@ function createAudienceUser(
     level,
     levelLabel,
     readCount: '50',
-    viewedWorksCount: '4',
+    completionCount,
     shareCount: '4',
-    showMarker: true,
+  }
+}
+
+function createDetailIntentUser(
+  id: string,
+  avatarUrl: string,
+  name: string,
+  level: AnalysisIntentUser['level'],
+  levelLabel: string,
+  completionCount: string,
+): AnalysisIntentUser {
+  return {
+    id,
+    avatarUrl,
+    name,
+    level,
+    levelLabel,
+    readCount: '50',
+    completionCount,
+    shareCount: '4',
+  }
+}
+
+function createUserRecord(
+  id: string,
+  thumbnailUrl: string,
+  title: string,
+  progress = '10%',
+): AnalysisUserDetailViewModel['records'][number] {
+  return {
+    id,
+    thumbnailUrl,
+    title,
+    date: '8 月20日',
+    type: '视频',
+    progress,
+    viewDuration: '11s',
+    completionCount: '0',
+    shareCount: '1',
+  }
+}
+
+/** 用户详情页 Figma 497:4640 视觉预览数据。 */
+export function getAnalysisUserDetailStyleMock(userId: string): AnalysisUserDetailViewModel {
+  return {
+    profile: {
+      id: userId,
+      avatarUrl: '/assets/notifications/avatar-duck.png',
+      name: '给个生活比个耶',
+      level: 'high',
+      levelLabel: '高意向',
+      readCount: '56',
+      completionCount: '23',
+      shareCount: '23',
+      viewDuration: '11s',
+    },
+    records: [
+      createUserRecord('mock-user-record-01', '/assets/analysis/content-01.jpg', 'AI Native 产品学习'),
+      createUserRecord('mock-user-record-02', '/assets/materials/material-02.jpg', '资深AI-Native 全栈产品教程，一人...'),
+      createUserRecord('mock-user-record-03', '/assets/home-new/today-most-01.jpg', '明日方舟，这个夏天很美好'),
+      createUserRecord('mock-user-record-04', '/assets/notifications/thumb-river.png', '绿水青山就是金山银山'),
+      createUserRecord('mock-user-record-05', '/assets/notifications/thumb-river.png', 'AI Native 产品学习'),
+    ],
+  }
+}
+
+/** 内容分析详情 Figma 视觉预览数据。 */
+export function getAnalysisDetailStyleMock(cardId: string): AnalysisDetailViewModel {
+  return {
+    card: createCard(
+      cardId,
+      '/assets/analysis/content-02.jpg',
+      '资深AI-Native 全栈产品教程，一人即可干完所有',
+      '1600',
+      '23',
+    ),
+    intentUsers: [
+      createDetailIntentUser('mock-detail-user-01', '/assets/analysis/user-avatar-01.jpg', 'xiaogai', 'high', '高意向', '4'),
+      createDetailIntentUser('mock-detail-user-02', '/assets/analysis/user-avatar-01.jpg', 'xiaogai', 'high', '高意向', '4'),
+      createDetailIntentUser('mock-detail-user-03', '/assets/analysis/user-avatar-01.jpg', 'xiaogai', 'high', '高意向', '4'),
+      createDetailIntentUser('mock-detail-user-04', '/assets/analysis/user-avatar-02.jpg', '快乐小鹅', 'medium', '中意向', '1'),
+      createDetailIntentUser('mock-detail-user-05', '/assets/analysis/user-avatar-03.jpg', '来财来财', 'low', '低意向', '2'),
+    ],
   }
 }
 
@@ -70,10 +157,11 @@ function createAudienceUser(
  */
 export function getAnalysisStyleMock(): AnalysisViewModel {
   const audienceUsers: AnalysisAudienceUser[] = [
-    createAudienceUser('mock-analysis-user-01', '/assets/analysis/user-avatar-01.jpg', '小满', 'high', '高意向'),
-    createAudienceUser('mock-analysis-user-02', '/assets/analysis/user-avatar-02.jpg', '周知行', 'medium', '中意向'),
-    createAudienceUser('mock-analysis-user-03', '/assets/analysis/user-avatar-03.jpg', '顾南星', 'low', '低意向'),
-    createAudienceUser('mock-analysis-user-04', '/assets/analysis/user-avatar-04.jpg', '林小满', 'high', '高意向'),
+    createAudienceUser('mock-analysis-user-01', '/assets/analysis/user-avatar-01.jpg', 'xiaogai', 'high', '高意向', '4'),
+    createAudienceUser('mock-analysis-user-02', '/assets/analysis/user-avatar-01.jpg', 'xiaogai', 'high', '高意向', '4'),
+    createAudienceUser('mock-analysis-user-03', '/assets/analysis/user-avatar-01.jpg', 'xiaogai', 'high', '高意向', '4'),
+    createAudienceUser('mock-analysis-user-04', '/assets/analysis/user-avatar-02.jpg', '快乐小鹅', 'medium', '中意向', '1'),
+    createAudienceUser('mock-analysis-user-05', '/assets/analysis/detail-avatar-02.jpg', '来财来财', 'low', '低意向', '2'),
   ]
 
   return {
@@ -115,25 +203,26 @@ export function getAnalysisStyleMock(): AnalysisViewModel {
       ),
     ],
     userSummary: [
-      { label: '总用户', value: '4' },
-      { label: '完播人数', value: '4' },
-      { label: '转发人数', value: '4' },
+      { label: '高意向', value: '3' },
+      { label: '中意向', value: '24,234' },
+      { label: '低意向', value: '1,223' },
     ],
     audienceUsers,
     totalData: {
+      heroMetrics: [
+        { label: '阅读总次数', value: '122,100次', delta: '+30' },
+        { label: '阅读总人数', value: '920人', delta: '+30' },
+      ],
       overview: [
-        { label: '总发布', value: '3' },
-        { label: '总阅读次数', value: '24,234' },
-        { label: '总转发', value: '1,223' },
-        { label: '总阅读人数', value: '1,231' },
-        { label: '总完播', value: '23' },
-        { label: '总完播率', value: '4.5%' },
-        { label: '高意向', value: '12' },
-        { label: '中意向', value: '18' },
-        { label: '低意向', value: '20' },
+        { label: '总发布', value: '5' },
+        { label: '总转发', value: '233' },
+        { label: '总完播', value: '872' },
+        { label: '高意向', value: '2' },
+        { label: '中意向', value: '2' },
+        { label: '低意向', value: '0' },
       ],
       readTrends: {
-        week: createChartPoints('week', ['日', '一', '二', '三', '四', '五', '六'], [320, 680, 520, 880, 760, 1020, 1231]),
+        week: createChartPoints('week', ['一', '二', '三', '四', '五', '六', '日'], [500, 500, 1200, 550, 350, 700, 500]),
         month: createChartPoints(
           'month',
           Array.from({ length: 30 }, (_, index) => String(index + 1)),

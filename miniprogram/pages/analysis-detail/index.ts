@@ -22,7 +22,6 @@ Page({
     intentTabs,
     activeIntentLevel: 'all' as IntentFilter,
     activeIntentIndex: 0,
-    intentTabOffset: 0,
     intentSwipeStartX: 0,
     visibleIntentUsers: [] as AnalysisIntentUser[],
     hasVisibleIntentUsers: false,
@@ -41,21 +40,14 @@ Page({
       })
     })
   },
-  onIntentTabTap(event: WechatMiniprogram.TouchEvent) {
-    const tabIndex = Number(event.currentTarget.dataset.index)
-    this.setIntentFilter(tabIndex)
+  onIntentTabTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) {
+    this.setIntentFilter(event.detail.index)
   },
-  onIntentTouchStart(event: WechatMiniprogram.TouchEvent) {
-    const touch = event.touches[0]
-    if (!touch) return
-
-    this.setData({ intentSwipeStartX: touch.clientX })
+  onIntentTouchStart(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
+    this.setData({ intentSwipeStartX: event.detail.clientX })
   },
-  onIntentTouchEnd(event: WechatMiniprogram.TouchEvent) {
-    const touch = event.changedTouches[0]
-    if (!touch) return
-
-    const distance = touch.clientX - this.data.intentSwipeStartX
+  onIntentTouchEnd(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
+    const distance = event.detail.clientX - this.data.intentSwipeStartX
     if (Math.abs(distance) < intentSwipeThreshold) return
 
     const direction = distance < 0 ? 1 : -1
@@ -71,7 +63,6 @@ Page({
     this.setData({
       activeIntentLevel: tab.id,
       activeIntentIndex: tabIndex,
-      intentTabOffset: tabIndex * 100,
       visibleIntentUsers: visibleUsers,
       hasVisibleIntentUsers: visibleUsers.length > 0,
     })

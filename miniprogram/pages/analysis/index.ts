@@ -22,6 +22,13 @@ const analysisPeriods: AnalysisPeriodOption[] = [
   { id: 'total', label: '总' },
 ]
 
+const totalAnalysisPeriods: AnalysisPeriodOption[] = [
+  { id: 'day', label: '日' },
+  { id: 'week', label: '本周' },
+  { id: 'month', label: '本月' },
+  { id: 'total', label: '总' },
+]
+
 const analysisSortOptions: AnalysisSortOption[] = [
   { id: 'completion', label: '完播数' },
   { id: 'share', label: '转发数' },
@@ -54,11 +61,6 @@ const analysisIntentTabs: AnalysisIntentTabOption[] = [
   { id: 'low', label: '低意向' },
 ]
 
-const analysisReadRanges: Array<{ id: AnalysisReadRange; label: string }> = [
-  { id: 'week', label: '本周' },
-  { id: 'month', label: '本月' },
-]
-
 const analysisSwipeThreshold = 40
 
 const getVisibleAnalysisUsers = (users: AnalysisAudienceUser[], filter: AnalysisIntentFilter) => {
@@ -76,7 +78,6 @@ Page({
     analysisSwipeStartX: 0,
     analysisPeriods,
     activePeriod: 'day' as AnalysisPeriodId,
-    activePeriodOffset: 0,
     analysisSortOptions,
     activeAnalysisSort: 'view' as AnalysisSortId,
     activeAnalysisSortLabel: '阅读量',
@@ -84,12 +85,12 @@ Page({
     analysisIntentTabs,
     activeAnalysisIntent: 'all' as AnalysisIntentFilter,
     analysisIntentIndex: 0,
-    analysisIntentOffset: 0,
     analysisIntentSwipeStartX: 0,
     visibleAnalysisUsers: [] as AnalysisAudienceUser[],
     hasAnalysisCards: false,
     hasAnalysisUsers: false,
-    analysisReadRanges,
+    totalAnalysisPeriods,
+    activeTotalPeriod: 'total' as AnalysisPeriodId,
     activeAnalysisReadRange: 'week' as AnalysisReadRange,
     visibleAnalysisReadTrend: [] as AnalysisViewModel['totalData']['readTrends']['week'],
   },
@@ -141,15 +142,15 @@ Page({
       analysisTabOffset: index * 100,
     })
   },
-  onAnalysisIntentTap(event: WechatMiniprogram.TouchEvent) {
-    this.setAnalysisIntentFilter(Number(event.currentTarget.dataset.index))
+  onAnalysisIntentTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) {
+    this.setAnalysisIntentFilter(event.detail.index)
   },
-  onAnalysisIntentTouchStart(event: WechatMiniprogram.TouchEvent) {
-    this.setData({ analysisIntentSwipeStartX: event.touches[0]?.clientX ?? 0 })
+  onAnalysisIntentTouchStart(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
+    this.setData({ analysisIntentSwipeStartX: event.detail.clientX })
   },
-  onAnalysisIntentTouchEnd(event: WechatMiniprogram.TouchEvent) {
+  onAnalysisIntentTouchEnd(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
     const startX = this.data.analysisIntentSwipeStartX
-    const endX = event.changedTouches[0]?.clientX ?? startX
+    const endX = event.detail.clientX
     const distance = endX - startX
 
     if (Math.abs(distance) < analysisSwipeThreshold) return
@@ -166,31 +167,29 @@ Page({
     this.setData({
       activeAnalysisIntent: selectedTab.id,
       analysisIntentIndex: index,
-      analysisIntentOffset: index * 100,
       visibleAnalysisUsers: visibleUsers,
       hasAnalysisUsers: visibleUsers.length > 0,
     })
   },
-  onAnalysisRangeTap(event: WechatMiniprogram.TouchEvent) {
-    const range = event.currentTarget.dataset.id as AnalysisReadRange
-    const readTrend = this.data.analysisData?.totalData.readTrends[range]
+  onTotalPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
+    const { id: periodId, index: periodIndex } = event.detail
+    const readRange: AnalysisReadRange = periodId === 'month' ? 'month' : 'week'
 
-    if (!readTrend) return
+    if (!totalAnalysisPeriods[periodIndex]) return
 
     this.setData({
-      activeAnalysisReadRange: range,
-      visibleAnalysisReadTrend: readTrend,
+      activeTotalPeriod: periodId,
+      activeAnalysisReadRange: readRange,
     })
+    this.loadAnalysis(periodId)
   },
-  onPeriodTap(event: WechatMiniprogram.TouchEvent) {
-    const periodId = event.currentTarget.dataset.id as AnalysisPeriodId
-    const periodIndex = Number(event.currentTarget.dataset.index)
+  onPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
+    const { id: periodId, index: periodIndex } = event.detail
 
     if (!Number.isInteger(periodIndex) || periodIndex < 0 || periodIndex >= analysisPeriods.length) return
 
     this.setData({
       activePeriod: periodId,
-      activePeriodOffset: periodIndex * 68,
     })
 
     this.loadAnalysis(periodId)
@@ -220,10 +219,6 @@ Page({
   },
   onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) {
     const userId = event.currentTarget.dataset.id as string
-    const updatedUsers = this.data.visibleAnalysisUsers.map((user) => user.id === userId ? { ...user, showMarker: false } : user)
-
-    this.setData({ visibleAnalysisUsers: updatedUsers })
-
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
   },
 })

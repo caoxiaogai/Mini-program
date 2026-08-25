@@ -1,4 +1,4 @@
-<view class="bottom-tab-bar">
+<view class="bottom-tab-bar {{isAndroid ? 'bottom-tab-bar--android' : ''}}">
   <view class="bottom-tab-bar__scrim">
     <image class="bottom-tab-bar__scrim-image" src="/assets/home-new/bottom-nav-scrim.svg" mode="scaleToFill" />
   </view>
@@ -7,13 +7,14 @@
     <block wx:for="{{items}}" wx:key="id">
       <view
         wx:if="{{index === 2}}"
-        class="bottom-tab-bar__create"
+        class="bottom-tab-bar__create {{plusActive ? 'bottom-tab-bar__create--active' : ''}}"
         bindtap="onPlusTap"
         hover-class="bottom-tab-bar__create--pressed"
         aria-role="button"
         aria-label="发布素材"
       >
-        <image class="bottom-tab-bar__create-icon" src="/assets/home-new/tab-publish-frame-61.svg" mode="aspectFit" />
+        <image wx:if="{{plusActive}}" class="bottom-tab-bar__create-icon" src="/assets/home-new/tab-publish-active.svg" mode="aspectFit" />
+        <image wx:else class="bottom-tab-bar__create-icon" src="/assets/home-new/tab-publish-frame-61.svg" mode="aspectFit" />
         <text class="bottom-tab-bar__label">发布</text>
       </view>
       <view

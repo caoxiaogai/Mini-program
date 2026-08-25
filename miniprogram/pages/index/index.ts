@@ -1,13 +1,18 @@
 import { getAnalysisOverview } from '../../services/analysis'
 import { getHomePageData } from '../../services/home'
+import { getMaterials } from '../../services/materials'
 import { getNotifications } from '../../services/notifications'
 import type { AnalysisAudienceUser, AnalysisIntentLevel, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
 import type { HomePageViewModel } from '../../types/home'
+import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
+import type { ProfilePageViewModel } from '../../types/profile'
+import { getProfilePageData } from '../../services/profile'
 import { getHomeGreeting } from '../../utils/greeting'
 import { getHomeHeaderOpacity } from '../../utils/home-header'
+import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 
-type HomeTabId = 'home' | 'notifications' | 'analysis' | 'profile'
+type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
 type AnalysisSortId = 'completion' | 'share' | 'view'
 type AnalysisTabId = 'work' | 'user' | 'total'
@@ -19,6 +24,8 @@ const tabItems = [
   { id: 'analysis' as HomeTabId, label: '分析', iconPath: '/assets/home-new/tab-analysis.svg', activeIconPath: '/assets/home-new/tab-analysis-active.svg', active: false },
   { id: 'profile' as HomeTabId, label: '我的', iconPath: '/assets/home-new/tab-profile.svg', activeIconPath: '/assets/home-new/tab-profile-active.svg', active: false },
 ]
+
+const rootTabIds: HomeTabId[] = ['home', 'notifications', 'materials', 'analysis', 'profile']
 
 const analysisPeriods = [
   { id: 'day' as AnalysisPeriodId, label: '日' },
@@ -46,9 +53,11 @@ const analysisIntentTabs = [
   { id: 'low' as AnalysisIntentFilter, label: '低意向' },
 ]
 
-const analysisReadRanges: Array<{ id: AnalysisReadRange; label: string }> = [
-  { id: 'week', label: '本周' },
-  { id: 'month', label: '本月' },
+const totalAnalysisPeriods = [
+  { id: 'day' as AnalysisPeriodId, label: '日' },
+  { id: 'week' as AnalysisPeriodId, label: '本周' },
+  { id: 'month' as AnalysisPeriodId, label: '本月' },
+  { id: 'total' as AnalysisPeriodId, label: '总' },
 ]
 
 const analysisSwipeThreshold = 40
@@ -64,20 +73,32 @@ function getVisibleAnalysisUsers(users: AnalysisAudienceUser[], filter: Analysis
   return users.filter((user) => user.level === filter)
 }
 
+function getVisibleMaterials(items: MaterialCardViewModel[], filterId: MaterialsFilterId): MaterialCardViewModel[] {
+  return filterId === 'all' ? items : items.filter((item) => item.kind === filterId)
+}
+
 Page({
   data: {
     greetingHeadline: getHomeGreeting(),
     greetingSubtitle: '今日阳光明媚，祝你好运☀️',
     homeData: null as HomePageViewModel | null,
+    hasNewIntentUsers: false,
     isLoading: true,
     loadError: false,
     tabItems,
+    plusActive: false,
     activeTabIndex: 0,
     homeHeaderOpacity: 0,
     notifications: null as NotificationsViewModel | null,
     activeNotificationFilter: 'all' as NotificationFilterId,
     visibleNotificationGroups: [] as NotificationGroupViewModel[],
     hasVisibleNotificationGroups: false,
+    materials: null as MaterialsViewModel | null,
+    activeMaterialFilter: 'all' as MaterialsFilterId,
+    visibleMaterials: [] as MaterialCardViewModel[],
+    hasVisibleMaterials: false,
+    materialsHeaderOpacity: 0,
+    showPublishSuccessModal: false,
     analysisData: null as AnalysisViewModel | null,
     analysisTabs,
     activeAnalysisTab: 'work' as AnalysisTabId,
@@ -86,7 +107,6 @@ Page({
     analysisSwipeStartX: 0,
     analysisPeriods,
     activePeriod: 'day' as AnalysisPeriodId,
-    activePeriodOffset: 0,
     analysisSortOptions,
     activeAnalysisSort: 'view' as AnalysisSortId,
     activeAnalysisSortLabel: '阅读量',
@@ -94,17 +114,23 @@ Page({
     analysisIntentTabs,
     activeAnalysisIntent: 'all' as AnalysisIntentFilter,
     analysisIntentIndex: 0,
-    analysisIntentOffset: 0,
     analysisIntentSwipeStartX: 0,
     visibleAnalysisUsers: [] as AnalysisAudienceUser[],
     hasAnalysisCards: false,
     hasAnalysisUsers: false,
-    analysisReadRanges,
+    totalAnalysisPeriods,
+    activeTotalPeriod: 'total' as AnalysisPeriodId,
     activeAnalysisReadRange: 'week' as AnalysisReadRange,
     visibleAnalysisReadTrend: [] as AnalysisViewModel['totalData']['readTrends']['week'],
+    profileData: null as ProfilePageViewModel | null,
   },
-  onLoad() {
+  onLoad(options: Record<string, string | undefined>) {
+    if (options.tab === 'materials') {
+      this.setData({ showPublishSuccessModal: options.publishSuccess === '1' })
+      this.setActiveTab(2)
+    }
     this.loadHomeData()
+    this.loadProfileData()
   },
   onShow() {
     this.setData({ greetingHeadline: getHomeGreeting() })
@@ -119,7 +145,7 @@ Page({
     getHomePageData()
       .then((homeData) => {
         const tabItemsWithBadge = this.data.tabItems.map((item) => item.id === 'notifications' ? { ...item, badgeCount: homeData.unreadNotificationCount } : item)
-        this.setData({ homeData, tabItems: tabItemsWithBadge, isLoading: false })
+        this.setData({ homeData, hasNewIntentUsers: homeData.intentSummary.total !== '0', tabItems: tabItemsWithBadge, isLoading: false })
       })
       .catch(() => this.setData({ isLoading: false, loadError: true }))
   },
@@ -129,27 +155,36 @@ Page({
       this.setData({ notifications, visibleNotificationGroups, hasVisibleNotificationGroups: visibleNotificationGroups.length > 0 })
     })
   },
+  loadMaterials() {
+    getMaterials().then((materials) => {
+      const visibleMaterials = getVisibleMaterials(materials.items, this.data.activeMaterialFilter)
+      this.setData({ materials, visibleMaterials, hasVisibleMaterials: visibleMaterials.length > 0 })
+    })
+  },
   loadAnalysis(period: AnalysisPeriodId = this.data.activePeriod) {
     getAnalysisOverview(period).then((analysisData) => {
       const visibleAnalysisUsers = getVisibleAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisIntent)
       this.setData({ analysisData, visibleAnalysisUsers, hasAnalysisCards: analysisData.cards.length > 0, hasAnalysisUsers: visibleAnalysisUsers.length > 0, visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange] })
     })
   },
+  loadProfileData() {
+    getProfilePageData()
+      .then((profileData) => this.setData({ profileData }))
+      .catch(() => this.setData({ profileData: null }))
+  },
   setActiveTab(index: number) {
-    if (!Number.isInteger(index) || index < 0 || index >= tabItems.length) return
+    if (!Number.isInteger(index) || index < 0 || index >= rootTabIds.length) return
     const nextIndex = index
-    const activeItems = this.data.tabItems.map((item, itemIndex) => ({ ...item, active: itemIndex === index }))
-    this.setData({ activeTabIndex: nextIndex, tabItems: activeItems })
-    const id = tabItems[index].id
+    const id = rootTabIds[index]
+    const activeItems = this.data.tabItems.map((item) => ({ ...item, active: item.id === id }))
+    this.setData({ activeTabIndex: nextIndex, tabItems: activeItems, plusActive: id === 'materials' })
     if (id === 'notifications' && !this.data.notifications) this.loadNotifications()
+    if (id === 'materials' && !this.data.materials) this.loadMaterials()
     if (id === 'analysis' && !this.data.analysisData) this.loadAnalysis()
   },
   onTabTap(event: WechatMiniprogram.CustomEvent<{ id: HomeTabId }>) {
-    const index = tabItems.findIndex((item) => item.id === event.detail.id)
+    const index = rootTabIds.findIndex((id) => id === event.detail.id)
     this.setActiveTab(index)
-  },
-  onTabChange(event: WechatMiniprogram.CustomEvent<{ current: string }>) {
-    this.setActiveTab(Number(event.detail.current))
   },
   onRetryTap() {
     this.loadHomeData()
@@ -187,7 +222,17 @@ Page({
   },
   onAnalysisPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
     if (!analysisPeriods[event.detail.index]) return
-    this.setData({ activePeriod: event.detail.id, activePeriodOffset: event.detail.index * 68 })
+    this.setData({ activePeriod: event.detail.id })
+    this.loadAnalysis(event.detail.id)
+  },
+  onTotalAnalysisPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
+    if (!totalAnalysisPeriods[event.detail.index]) return
+    const readRange: AnalysisReadRange = event.detail.id === 'month' ? 'month' : 'week'
+
+    this.setData({
+      activeTotalPeriod: event.detail.id,
+      activeAnalysisReadRange: readRange,
+    })
     this.loadAnalysis(event.detail.id)
   },
   onAnalysisIntentTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) { this.setAnalysisIntentFilter(event.detail.index) },
@@ -200,11 +245,7 @@ Page({
     const selectedTab = analysisIntentTabs[index]
     if (!selectedTab) return
     const visibleAnalysisUsers = getVisibleAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], selectedTab.id)
-    this.setData({ activeAnalysisIntent: selectedTab.id, analysisIntentIndex: index, analysisIntentOffset: index * 100, visibleAnalysisUsers, hasAnalysisUsers: visibleAnalysisUsers.length > 0 })
-  },
-  onAnalysisRangeTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisReadRange }>) {
-    const readTrend = this.data.analysisData?.totalData.readTrends[event.detail.id]
-    if (readTrend) this.setData({ activeAnalysisReadRange: event.detail.id, visibleAnalysisReadTrend: readTrend })
+    this.setData({ activeAnalysisIntent: selectedTab.id, analysisIntentIndex: index, visibleAnalysisUsers, hasAnalysisUsers: visibleAnalysisUsers.length > 0 })
   },
   onAnalysisSortTap() { this.setData({ analysisSortSheetVisible: !this.data.analysisSortSheetVisible }) },
   onAnalysisSortOptionTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisSortId }>) {
@@ -217,11 +258,47 @@ Page({
   },
   onAnalysisUserTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
     if (!event.detail.id) return
-    const visibleAnalysisUsers = this.data.visibleAnalysisUsers.map((user) => user.id === event.detail.id ? { ...user, showMarker: false } : user)
-    this.setData({ visibleAnalysisUsers })
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${event.detail.id}` })
   },
-  onPlusTap() {
+  onMaterialsScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
+    const materialsHeaderOpacity = calculateRankingHeaderOpacity(event.detail.scrollTop)
+    if (materialsHeaderOpacity === this.data.materialsHeaderOpacity) return
+    this.setData({ materialsHeaderOpacity })
+  },
+  onMaterialFilterTap(event: WechatMiniprogram.TouchEvent) {
+    const filterId = event.currentTarget.dataset.id as MaterialsFilterId
+    if (!['all', 'image', 'video', 'pdf'].includes(filterId)) return
+
+    const visibleMaterials = getVisibleMaterials(this.data.materials?.items ?? [], filterId)
+    this.setData({ activeMaterialFilter: filterId, visibleMaterials, hasVisibleMaterials: visibleMaterials.length > 0 })
+  },
+  onMaterialCardTap(event: WechatMiniprogram.TouchEvent) {
+    const materialId = event.currentTarget.dataset.id as string | undefined
+    if (!materialId) return
+
+    const material = this.data.visibleMaterials.find((item) => item.id === materialId)
+    if (!material) return
+
+    const url = material.isDraft
+      ? `/pages/materials/publish/index?id=${materialId}`
+      : `/pages/material-detail/index?id=${materialId}`
+    wx.navigateTo({ url })
+  },
+  onMaterialPublishTap() {
     wx.navigateTo({ url: '/pages/materials/publish/index' })
+  },
+  onPublishSuccessClose() {
+    this.setData({ showPublishSuccessModal: false })
+  },
+  onShareFriendsTap() {
+    this.setData({ showPublishSuccessModal: false })
+    wx.showToast({ title: '分享功能待接入', icon: 'none' })
+  },
+  onShareMomentsTap() {
+    this.setData({ showPublishSuccessModal: false })
+    wx.showToast({ title: '分享功能待接入', icon: 'none' })
+  },
+  onPlusTap() {
+    this.setActiveTab(2)
   },
 })
