@@ -5,10 +5,9 @@ import type {
   ApiIntentCustomer,
   ApiMaterial,
 } from '../types/api'
-import { HOME_DATA_SOURCE } from '../config/dev'
-import { getHomeStyleMock } from '../mocks/home'
 import type { HomeContentViewModel, HomeIntentLevel, HomeNotificationViewModel, HomePageViewModel } from '../types/home'
-import { formatCount, formatDateKey, formatMonthDay, formatMonthDayTime } from '../utils/format'
+import { formatCount, formatDateKey, formatMonthDayTime } from '../utils/format'
+import { prepareMediaUrls } from '../utils/media'
 import { request, resolveMediaUrl } from './request'
 
 const HOME_PREVIEW_LIMIT = 3
@@ -79,14 +78,14 @@ function buildContentCards(contents: ApiContentListItem[], intentCustomers: ApiI
     .map((item) => mapContent(item, intentCustomers))
 }
 
-function getHomePageDataFromApi(): Promise<HomePageViewModel> {
+export function getHomePageData(): Promise<HomePageViewModel> {
   return Promise.all([
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: { timeRange: 'today' } }),
     request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: { timeRange: 'today' } }),
     request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query: { timeRange: 'today' } }),
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: { timeRange: 'today' } }),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
-  ]).then(([dashboard, customers, contents, intentCustomers, materials]) => {
+  ]).then(async ([dashboard, customers, contents, intentCustomers, materials]) => {
     const thumbnailByMaterialId = new Map(
       materials.map((material) => [String(material.id), resolveMediaUrl(material.coverUrl)]),
     )
@@ -103,15 +102,30 @@ function getHomePageDataFromApi(): Promise<HomePageViewModel> {
       .sort((left, right) => String(right.lastViewTime ?? '').localeCompare(String(left.lastViewTime ?? '')))
       .slice(0, HOME_PREVIEW_LIMIT)
       .map((item, index) => mapNotification(item, thumbnailByMaterialId, index))
+    const contentsCards = buildContentCards(contents, intentCustomers)
     const previewCustomers = intentCustomers.slice(0, 5)
     const highCount = dashboard.highIntentCount ?? 0
     const mediumCount = dashboard.mediumIntentCount ?? 0
     const lowCount = dashboard.lowIntentCount ?? 0
 
+    const [notificationAvatars, notificationThumbs, contentThumbs, previewAvatars] = await Promise.all([
+      prepareMediaUrls(notifications.map((item) => item.avatarUrl)),
+      prepareMediaUrls(notifications.map((item) => item.thumbnailUrl)),
+      prepareMediaUrls(contentsCards.map((item) => item.thumbnailUrl)),
+      prepareMediaUrls(previewCustomers.map((customer) => customer.avatar)),
+    ])
+
     return {
       unreadNotificationCount: intentCustomers.length,
-      notifications,
-      contents: buildContentCards(contents, intentCustomers),
+      notifications: notifications.map((item, index) => ({
+        ...item,
+        avatarUrl: notificationAvatars[index] ?? '',
+        thumbnailUrl: notificationThumbs[index] ?? '',
+      })),
+      contents: contentsCards.map((item, index) => ({
+        ...item,
+        thumbnailUrl: contentThumbs[index] ?? '',
+      })),
       intentSummary: {
         total: formatCount(dashboard.totalViewerCount ?? customers.length),
         highCount: formatCount(highCount),
@@ -119,7 +133,7 @@ function getHomePageDataFromApi(): Promise<HomePageViewModel> {
         lowCount: formatCount(lowCount),
         previewAvatars: previewCustomers.map((customer, index) => ({
           id: `${customer.customerId}-${index}`,
-          avatarUrl: resolveMediaUrl(customer.avatar),
+          avatarUrl: previewAvatars[index] ?? '',
         })),
       },
       today: {
@@ -130,13 +144,4 @@ function getHomePageDataFromApi(): Promise<HomePageViewModel> {
       },
     }
   })
-}
-
-/** DEV_MOCK: 仅用于新版首页视觉预览，确认真实接口后切换为 api。 */
-export function getHomePageData(): Promise<HomePageViewModel> {
-  if (HOME_DATA_SOURCE === 'mock') {
-    return Promise.resolve(getHomeStyleMock())
-  }
-
-  return getHomePageDataFromApi()
 }

@@ -1,6 +1,4 @@
 import type { ApiIntentCustomer, ApiMaterial } from '../types/api'
-import { NOTIFICATION_DATA_SOURCE } from '../config/dev'
-import { getNotificationsMock } from '../mocks/notifications'
 import type {
   NotificationCardViewModel,
   NotificationFilterViewModel,
@@ -8,6 +6,7 @@ import type {
   NotificationsViewModel,
 } from '../types/notifications'
 import { buildCustomRangeQuery, formatDateKey, formatMonthDay, formatMonthDayTime } from '../utils/format'
+import { prepareMediaUrls } from '../utils/media'
 import { request, resolveMediaUrl } from './request'
 
 /** 后端查询时间范围上限（custom 最长 62 天） */
@@ -37,26 +36,28 @@ function buildNotificationStatus(item: ApiIntentCustomer): string {
  * 按最近行为日期倒序分组；行为类型按是否转发区分。
  */
 export function getNotifications(): Promise<NotificationsViewModel> {
-  if (NOTIFICATION_DATA_SOURCE === 'mock') {
-    return Promise.resolve(getNotificationsMock())
-  }
-
   const rangeQuery = buildCustomRangeQuery(NOTIFICATION_RANGE_DAYS)
 
   return Promise.all([
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: { ...rangeQuery } }),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
-  ]).then(([intentCustomers, materials]) => {
+  ]).then(async ([intentCustomers, materials]) => {
     const coverByMaterial = new Map(
       materials.map((material) => [String(material.id), resolveMediaUrl(material.coverUrl)]),
     )
     const cardsByDate = new Map<string, NotificationCardViewModel[]>()
+    const visibleItems = intentCustomers.filter((item) => formatDateKey(item.lastViewTime) !== '')
+    const [avatarUrls, thumbnailUrls] = await Promise.all([
+      prepareMediaUrls(visibleItems.map((item) => item.avatar)),
+      prepareMediaUrls(
+        visibleItems.map((item) => (item.materialId ? coverByMaterial.get(String(item.materialId)) ?? '' : '')),
+      ),
+    ])
 
-    intentCustomers.forEach((item) => {
+    visibleItems.forEach((item, index) => {
       const intent = item.intentLevel
       const isForward = item.hasForwarded === 1
       const dateKey = formatDateKey(item.lastViewTime)
-      if (!dateKey) return
 
       const card: NotificationCardViewModel = {
         id: `notification-${item.customerId}`,
@@ -68,8 +69,8 @@ export function getNotifications(): Promise<NotificationsViewModel> {
         actionLabel: isForward ? '“转发”了你的作品' : '“阅读”了你的作品',
         actionDate: formatMonthDayTime(item.lastViewTime),
         actionIconPath: isForward ? '/assets/notifications/action-forward.svg' : '/assets/notifications/action-reading.svg',
-        avatarUrl: resolveMediaUrl(item.avatar),
-        thumbnailUrl: item.materialId ? coverByMaterial.get(String(item.materialId)) ?? '' : '',
+        avatarUrl: avatarUrls[index] ?? '',
+        thumbnailUrl: thumbnailUrls[index] ?? '',
         statusLabel: buildNotificationStatus(item),
       }
 

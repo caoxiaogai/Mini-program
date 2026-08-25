@@ -8,9 +8,9 @@ import type {
   MaterialSubmitInput,
   PublishImageViewModel,
 } from '../types/materials'
-import { MATERIALS_DATA_SOURCE } from '../config/dev'
-import { getMaterialsStyleMock } from '../mocks/materials'
 import { formatDateKey } from '../utils/format'
+import { prepareMediaUrl, prepareMediaUrls } from '../utils/media'
+import { prepareDocumentPageImage } from './document'
 import { request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
 
 const materialsFilters: MaterialsFilterViewModel[] = [
@@ -31,6 +31,7 @@ const materialKinds: Record<string, MaterialCardViewModel['kind']> = {
 const MATERIAL_DEFAULT_TITLE = '图文素材'
 const MATERIAL_TITLE_MAX_LENGTH = 30
 const UPLOAD_CONCURRENCY = 3
+const THUMBNAIL_CONCURRENCY = 6
 
 /** fileUrl 为多图 JSON 数组字符串或单个 URL，统一解析为 URL 列表 */
 function parseImageUrls(fileUrl: string | null): string[] {
@@ -50,45 +51,86 @@ function parseImageUrls(fileUrl: string | null): string[] {
   return [fileUrl].map(resolveMediaUrl)
 }
 
+function isDocumentFileType(fileType: string): boolean {
+  return fileType === 'PDF' || fileType === 'TABLE'
+}
+
 function resolveThumbnail(material: ApiMaterial): string {
   if (material.coverUrl) return resolveMediaUrl(material.coverUrl)
   return material.fileType === 'IMAGE' ? parseImageUrls(material.fileUrl)[0] ?? '' : ''
 }
 
-function getMaterialsFromApi(): Promise<MaterialsViewModel> {
-  return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }).then((materials) => ({
-    filters: materialsFilters,
-    items: materials.map((material) => ({
-      id: String(material.id),
-      title: material.title ?? '',
-      date: formatDateKey(material.createTime),
-      thumbnailUrl: resolveThumbnail(material),
-      kind: materialKinds[material.fileType] ?? 'pdf',
-      isDraft: material.publishStatus === 0,
-    })),
-  }))
+/** 图片/视频用封面；PDF/表格无封面时取第一页渲染图 */
+function prepareMaterialThumbnail(material: ApiMaterial): Promise<string> {
+  if (!material.coverUrl && isDocumentFileType(material.fileType)) {
+    return prepareDocumentPageImage(String(material.id), 0)
+  }
+  return prepareMediaUrl(resolveThumbnail(material))
 }
 
-/** DEV_MOCK: 仅用于素材首页的 Figma 视觉预览，确认真实接口后切换为 api。 */
-export function getMaterials(): Promise<MaterialsViewModel> {
-  if (MATERIALS_DATA_SOURCE === 'mock') return Promise.resolve(getMaterialsStyleMock())
+/** 列表展示用户填写的文案；content 为空时回退 title（兼容旧数据 / 仅有文件名的素材） */
+function resolveMaterialCopy(material: ApiMaterial): string {
+  if (material.content != null && material.content.trim() !== '') return material.content
+  return material.title ?? ''
+}
 
-  return getMaterialsFromApi()
+function splitMaterialCopy(copy: string): string[] {
+  if (!copy) return []
+  return copy.split(/\r?\n/)
+}
+
+export function getMaterials(): Promise<MaterialsViewModel> {
+  return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }).then(async (materials) => {
+    const thumbnailUrls = await runRequestQueue(
+      materials.map((material) => () => prepareMaterialThumbnail(material)),
+      THUMBNAIL_CONCURRENCY,
+    )
+
+    return {
+      filters: materialsFilters,
+      items: materials.map((material, index) => ({
+        id: String(material.id),
+        title: resolveMaterialCopy(material),
+        date: formatDateKey(material.createTime),
+        thumbnailUrl: thumbnailUrls[index] ?? '',
+        kind: materialKinds[material.fileType] ?? 'pdf',
+        isDraft: material.publishStatus === 0,
+      })),
+    }
+  })
 }
 
 export function getMaterialDetail(materialId: string): Promise<MaterialDetailViewModel | null> {
   return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
-    .then((material) => {
-      const images =
-        material.fileType === 'IMAGE'
-          ? parseImageUrls(material.fileUrl)
-          : [material.coverUrl ?? ''].filter((url) => url !== '')
+    .then(async (material) => {
+      const fileType = material.fileType ?? 'IMAGE'
+      const previewUrl = await prepareMaterialThumbnail(material)
+
+      let images: string[] = []
+      let videoUrl = ''
+      let pdfUrl = ''
+      let pdfFileName = ''
+
+      if (fileType === 'IMAGE') {
+        images = await prepareMediaUrls(parseImageUrls(material.fileUrl))
+      } else if (fileType === 'VIDEO') {
+        videoUrl = resolveMediaUrl(material.fileUrl)
+      } else if (fileType === 'PDF' || fileType === 'TABLE') {
+        pdfUrl = resolveMediaUrl(material.fileUrl)
+        pdfFileName = material.title?.trim() || (fileType === 'TABLE' ? '表格文档' : 'PDF 文档')
+      }
 
       return {
         id: String(material.id),
         title: '作品',
-        images,
-        descriptionLines: (material.content ?? '').split(/\r?\n/).filter((line) => line.trim() !== ''),
+        fileType,
+        images: images.filter((url) => url !== ''),
+        previewUrl,
+        videoUrl,
+        duration: material.duration ?? 0,
+        pdfUrl,
+        pdfFileName,
+        descriptionLines: splitMaterialCopy(resolveMaterialCopy(material)),
       }
     })
     .catch(() => null)
@@ -96,16 +138,28 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
 
 export function getMaterialDraft(materialId: string): Promise<MaterialDraftEditViewModel | null> {
   return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
-    .then((material) => ({
-      id: String(material.id),
-      images: parseImageUrls(material.fileUrl).map((url) => ({ id: url, path: url })),
-      copy: material.content ?? '',
-    }))
+    .then(async (material) => {
+      const sourceUrls = parseImageUrls(material.fileUrl)
+      const paths = await prepareMediaUrls(sourceUrls)
+
+      return {
+        id: String(material.id),
+        images: sourceUrls.map((url, index) => ({ id: url, path: paths[index] ?? url })),
+        copy: material.content ?? '',
+      }
+    })
     .catch(() => null)
 }
 
-function isRemoteUrl(path: string): boolean {
-  return path.startsWith('http://') || path.startsWith('https://')
+function shouldUploadLocalPath(path: string): boolean {
+  if (
+    path.startsWith('wxfile://')
+    || path.startsWith('http://tmp/')
+    || path.startsWith('https://tmp/')
+  ) {
+    return true
+  }
+  return !/^https?:\/\//i.test(path)
 }
 
 function buildMaterialTitle(copy: string): string {
@@ -119,7 +173,7 @@ function buildMaterialTitle(copy: string): string {
 
 function uploadLocalImages(images: PublishImageViewModel[]): Promise<string[]> {
   const tasks = images.map((image) => () =>
-    isRemoteUrl(image.path) ? Promise.resolve(image.path) : uploadFile('/material/upload-file', image.path),
+    shouldUploadLocalPath(image.path) ? uploadFile('/material/upload-file', image.path) : Promise.resolve(image.path),
   )
   return runRequestQueue(tasks, UPLOAD_CONCURRENCY)
 }

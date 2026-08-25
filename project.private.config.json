@@ -16,7 +16,7 @@
     "checkInvalidKey": true,
     "useStaticServer": false,
     "useLanDebug": true,
-    "ignoreDevUnusedFiles": true
+    "ignoreDevUnusedFiles": false
   },
   "condition": {}
 }

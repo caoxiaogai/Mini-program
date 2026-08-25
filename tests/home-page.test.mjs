@@ -25,63 +25,61 @@ test('home data layer exposes the new typed service seam', () => {
   assert.match(service, /\/analysis\/dashboard/)
   assert.match(service, /\/analysis\/intent\/list/)
   assert.match(service, /\/analysis\/content\/list/)
-  assert.match(service, /from '\.\.\/mocks\/home'/)
-  assert.match(service, /HOME_DATA_SOURCE/)
+  assert.doesNotMatch(service, /from '\.\.\/mocks\//)
   assert.doesNotMatch(service, /TODO\(API\)/)
 })
 
 test('data access goes through the unified request layer', () => {
   const requestLayer = read('miniprogram/services/request.ts')
+  const config = read('miniprogram/config/dev.ts')
 
   assert.match(requestLayer, /wx\.request\(/)
   assert.match(requestLayer, /DEV_LAN_ORIGIN/)
+  assert.doesNotMatch(requestLayer, /PROD_API_ORIGIN/)
+  assert.doesNotMatch(requestLayer, /envVersion/)
+  assert.match(requestLayer, /\/api\/files\/sales-materials\//)
+  assert.match(config, /DEVTOOLS_ORIGIN = 'http:\/\/127\.0\.0\.1:8080'/)
+  assert.match(config, /DEV_LAN_ORIGIN = 'http:\/\/192\.168\.31\.225:8080'/)
+  assert.doesNotMatch(config, /PROD_API_ORIGIN/)
   assert.match(requestLayer, /export function request</)
   assert.match(requestLayer, /export function ensureLogin/)
   assert.match(requestLayer, /\/wechat\/login/)
 
-  for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking']) {
+  for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile']) {
     const service = read(`miniprogram/services/${name}.ts`)
     assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
-    if (!['home', 'analysis', 'notifications', 'materials'].includes(name)) {
-      assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
-    }
+    assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
   }
 })
 
-test('home style preview uses typed Figma mock data', () => {
-  const mock = read('miniprogram/mocks/home.ts')
-  const config = read('miniprogram/config/dev.ts')
+test('media urls go through the file proxy and are downloaded on device', () => {
+  const requestLayer = read('miniprogram/services/request.ts')
+  const media = read('miniprogram/utils/media.ts')
+  const home = read('miniprogram/services/home.ts')
+  const analysis = read('miniprogram/services/analysis.ts')
+  const notifications = read('miniprogram/services/notifications.ts')
+  const materials = read('miniprogram/services/materials.ts')
 
-  assert.match(mock, /getHomeStyleMock\(\): HomePageViewModel/)
-  assert.match(mock, /unreadNotificationCount: 0/)
-  assert.match(mock, /previewAvatars:/)
-  assert.match(config, /HOME_DATA_SOURCE: 'mock' \| 'api' = 'mock'/)
+  assert.match(requestLayer, /:9000\/sales-materials/)
+  assert.match(requestLayer, /\/api\/files\/sales-materials\//)
+  assert.match(media, /export function prepareMediaUrl/)
+  assert.match(media, /export function prepareMediaUrls/)
+  assert.match(media, /wx\.downloadFile/)
+  assert.match(home, /prepareMediaUrls/)
+  assert.match(analysis, /prepareMediaUrls/)
+  assert.match(notifications, /prepareMediaUrls/)
+  assert.match(materials, /prepareMediaUrls/)
 })
 
-test('home empty preview exposes the complete zero-data view model', async () => {
-  const { getHomeStyleMock } = await import('../miniprogram/mocks/home.ts')
+test('home page data comes from backend analysis APIs', () => {
+  const service = read('miniprogram/services/home.ts')
+  const config = read('miniprogram/config/dev.ts')
 
-  const homeData = getHomeStyleMock()
-
-  assert.equal(homeData.unreadNotificationCount, 0)
-  assert.deepEqual(homeData.notifications, [])
-  assert.deepEqual(homeData.contents, [])
-  assert.deepEqual(
-    {
-      total: homeData.intentSummary.total,
-      highCount: homeData.intentSummary.highCount,
-      mediumCount: homeData.intentSummary.mediumCount,
-      lowCount: homeData.intentSummary.lowCount,
-    },
-    { total: '0', highCount: '0', mediumCount: '0', lowCount: '0' },
-  )
-  assert.equal(homeData.intentSummary.previewAvatars.length, 5)
-  assert.deepEqual(homeData.today, {
-    viewCount: '0',
-    completeRate: '0',
-    forwardCount: '0',
-    viewerCount: '0',
-  })
+  assert.match(service, /path: '\/analysis\/dashboard'/)
+  assert.match(service, /path: '\/analysis\/customer\/list'/)
+  assert.match(service, /path: '\/analysis\/content\/list'/)
+  assert.match(service, /path: '\/analysis\/intent\/list'/)
+  assert.doesNotMatch(config, /HOME_DATA_SOURCE/)
 })
 
 test('home greeting follows the device local time', async () => {
@@ -180,21 +178,28 @@ test('profile tab exposes the Figma 519:5031 structure through a typed service s
   const config = read('miniprogram/pages/index/index.json')
   const types = read('miniprogram/types/profile.ts')
   const service = read('miniprogram/services/profile.ts')
-  const mock = read('miniprogram/mocks/profile.ts')
   const component = read('miniprogram/components/home-profile/index.wxml')
 
   assert.match(types, /export interface ProfilePageViewModel/)
   assert.match(service, /export function getProfilePageData\(\): Promise<ProfilePageViewModel>/)
-  assert.match(service, /from '\.\.\/mocks\/profile'/)
-  assert.match(mock, /balance: '870\.39'/)
-  assert.match(mock, /avatarUrl: '\/assets\/profile\/profile-avatar\.png'/)
-  assert.match(mock, /pendingTitle: '尽情期待'/)
-  assert.match(mock, /pendingDescription: '更多功能，即将呈现'/)
+  assert.match(service, /ensureLogin/)
+  assert.match(service, /user\.nickname/)
+  assert.match(service, /user\.avatar/)
+  assert.match(service, /prepareMediaUrl/)
+  assert.doesNotMatch(service, /from '\.\.\/mocks\//)
+  assert.match(service, /balance: '0'/)
+  assert.doesNotMatch(service, /870\.39/)
+  assert.match(service, /pendingTitle: '尽情期待'/)
+  assert.match(service, /pendingDescription: '更多功能，即将呈现'/)
+  assert.match(service, /TODO\(API\): 接入「我的余额 \/ 提现 \/ 会员」真实接口/)
+  assert.equal(existsSync(new URL('../miniprogram/mocks/profile.ts', import.meta.url)), false)
   assert.match(config, /bottom-tab-bar/)
   assert.match(component, /class="home-profile"/)
   assert.match(component, /class="home-profile__balance"/)
   assert.match(component, /class="home-profile__membership"/)
   assert.match(logic, /getProfilePageData\(\)/)
+  assert.match(read('miniprogram/app.ts'), /from '\.\/services\/profile'/)
+  assert.match(page, /<home-profile profile="\{\{profileData\}\}" \/>/)
 })
 
 test('profile pending module centers the Figma 594:8711 content group', () => {
@@ -476,24 +481,13 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   }
 })
 
-test('notifications use fixed Figma preview mock data until the API is enabled', () => {
+test('notifications map intent customers from the analysis API', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/notifications.ts')
-  const mockPath = 'miniprogram/mocks/notifications.ts'
 
-  assert.match(config, /NOTIFICATION_DATA_SOURCE: 'mock' \| 'api' = 'mock'/)
-  assert.match(service, /NOTIFICATION_DATA_SOURCE/)
-  assert.match(service, /getNotificationsMock/)
-  assert.equal(existsSync(new URL(`../${mockPath}`, import.meta.url)), true, mockPath)
-
-  const mock = read(mockPath)
-  assert.match(mock, /getNotificationsMock\(\): NotificationsViewModel/)
-  assert.match(mock, /label: '8月17日'/)
-  assert.match(mock, /未滑动看完所有图片/)
-  assert.match(mock, /该用户浏览进度80%/)
-  assert.match(mock, /该用户转发了你的作品，查看2次以上/)
-  assert.match(mock, /avatar-duck\.png/)
-  assert.match(mock, /thumb-river\.png/)
+  assert.doesNotMatch(config, /NOTIFICATION_DATA_SOURCE/)
+  assert.match(service, /path: '\/analysis\/intent\/list'/)
+  assert.doesNotMatch(service, /from '\.\.\/mocks\//)
 })
 
 test('notification header and filters stay fixed while the card list scrolls', () => {
@@ -598,12 +592,11 @@ test('unaffected navigation and analysis pages remain registered', () => {
   assert.match(materials, /getMaterials/)
 })
 
-test('user detail page follows Figma 497:4640 and uses the analysis mock seam', () => {
+test('user detail page follows Figma 497:4640', () => {
   const markup = read('miniprogram/pages/analysis-user-detail/index.wxml')
   const styles = read('miniprogram/pages/analysis-user-detail/index.less')
   const logic = read('miniprogram/pages/analysis-user-detail/index.ts')
   const service = read('miniprogram/services/analysis.ts')
-  const mock = read('miniprogram/mocks/analysis.ts')
 
   assert.match(markup, /<navigation-bar title="用户详情" back="\{\{true\}\}"/)
   assert.match(markup, /class="user-detail__profile-card"/)
@@ -631,9 +624,8 @@ test('user detail page follows Figma 497:4640 and uses the analysis mock seam', 
   assert.match(logic, /onContactTap\(\)/)
   assert.match(logic, /noticeVisible: false/)
   assert.match(markup, /微信名称复制成功/)
-  assert.match(service, /if \(ANALYSIS_DATA_SOURCE === 'mock'\) return Promise\.resolve\(getAnalysisUserDetailStyleMock\(userId\)\)/)
-  assert.match(mock, /getAnalysisUserDetailStyleMock\(userId: string\): AnalysisUserDetailViewModel/)
-  assert.match(mock, /createUserRecord\(/)
+  assert.match(service, /getAnalysisUserDetail/)
+  assert.match(service, /\/analysis\/customer\/history/)
 })
 
 test('publish belongs to the root swiper and does not navigate to a separate materials page', () => {
@@ -668,16 +660,17 @@ test('materials home uses the Figma publish navigation and reserves space above 
   assert.match(styles, /\.materials-publish-bar\s*\{[\s\S]*?bottom: 112rpx;/)
 })
 
-test('materials home uses fixed preview data and the Figma striped background', async () => {
+test('materials home uses the mine API and the Figma striped background', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/materials.ts')
   const markup = read('miniprogram/pages/materials/index.wxml')
   const styles = read('miniprogram/pages/materials/index.less')
 
-  assert.match(config, /MATERIALS_DATA_SOURCE: 'mock' \| 'api' = 'mock'/)
-  assert.match(service, /MATERIALS_DATA_SOURCE/)
-  assert.match(service, /getMaterialsStyleMock/)
-  assert.match(service, /if \(MATERIALS_DATA_SOURCE === 'mock'\) return Promise\.resolve\(getMaterialsStyleMock\(\)\)/)
+  assert.doesNotMatch(config, /MATERIALS_DATA_SOURCE/)
+  assert.match(service, /path: '\/material\/mine'/)
+  assert.match(service, /resolveMaterialCopy/)
+  assert.match(service, /title: resolveMaterialCopy\(material\)/)
+  assert.doesNotMatch(service, /from '\.\.\/mocks\//)
   assert.match(markup, /src="\/assets\/materials\/materials-stripes\.svg"/)
   assert.match(markup, /class="materials-card__image" src="\{\{item\.thumbnailUrl\}\}" mode="aspectFill"/)
   assert.match(styles, /\.materials-page__base\s*\{[\s\S]*?background: #ffffff;/)
@@ -706,6 +699,36 @@ test('materials publish button does not place a blue gradient layer over cards o
   assert.match(pageStyles, /\.materials-page__content\s*\{[\s\S]*?z-index: 2;/)
   assert.match(pageStyles, /\.materials-publish-bar\s*\{[\s\S]*?z-index: 3;[\s\S]*?background: transparent;/)
   assert.doesNotMatch(pageStyles, /\.materials-publish-bar\s*\{[\s\S]*?background: linear-gradient/)
+})
+
+test('material detail opens image preview, video player and PDF reader', () => {
+  const app = JSON.parse(read('miniprogram/app.json'))
+  const types = read('miniprogram/types/materials.ts')
+  const service = read('miniprogram/services/materials.ts')
+  const markup = read('miniprogram/pages/material-detail/index.wxml')
+  const logic = read('miniprogram/pages/material-detail/index.ts')
+  const documentService = read('miniprogram/services/document.ts')
+  const documentLogic = read('miniprogram/pages/document-reader/index.ts')
+
+  assert.ok(app.pages.includes('pages/material-detail/index'))
+  assert.ok(app.pages.includes('pages/document-reader/index'))
+  assert.match(types, /fileType: string/)
+  assert.match(types, /videoUrl: string/)
+  assert.match(types, /pdfUrl: string/)
+  assert.match(service, /fileType === 'VIDEO'/)
+  assert.match(service, /videoUrl = resolveMediaUrl\(material\.fileUrl\)/)
+  assert.match(service, /prepareDocumentPageImage\(String\(material\.id\), 0\)/)
+  assert.match(service, /fileType === 'PDF' \|\| fileType === 'TABLE'/)
+  assert.match(markup, /<video[\s\S]*id="materialVideo"[\s\S]*src="\{\{detail\.videoUrl\}\}"/)
+  assert.match(markup, /bindtap="onPdfOpenTap"/)
+  assert.match(markup, /class="material-detail__pdf-preview" src="\{\{detail\.previewUrl\}\}"/)
+  assert.match(markup, /bindtap="onImageTap"/)
+  assert.match(logic, /wx\.previewImage/)
+  assert.match(logic, /\/pages\/document-reader\/index\?materialId=/)
+  assert.match(documentService, /path: `\/material\/\$\{materialId\}\/page-count`/)
+  assert.match(documentService, /\/material\/\$\{materialId\}\/page\/\$\{pageIndex\}\/image/)
+  assert.match(documentLogic, /getDocumentPageCount/)
+  assert.match(documentLogic, /prepareDocumentPageImage/)
 })
 
 test('analysis tabs use the F4F5F5 divider line', () => {
@@ -753,43 +776,28 @@ test('analysis work tab matches the revised Figma compact work list', () => {
   assert.match(homeLogic, /activeAnalysisSortLabel: '阅读量'/)
 })
 
-test('analysis work preview uses fixed local mock data and component styles', () => {
+test('analysis work data comes from backend analysis APIs', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/analysis.ts')
-  const mock = read('miniprogram/mocks/analysis.ts')
   const componentStylesPath = new URL('../miniprogram/components/home-analysis/index.less', import.meta.url)
 
   assert.equal(existsSync(componentStylesPath), true)
-  assert.match(config, /ANALYSIS_DATA_SOURCE: 'mock'/)
-  assert.match(service, /getAnalysisStyleMock/)
-  assert.match(service, /ANALYSIS_DATA_SOURCE === 'mock'/)
-  assert.match(mock, /export function getAnalysisStyleMock\(\)/)
-  assert.equal((mock.match(/mock-analysis-card-\d+/g) ?? []).length, 5)
-  assert.match(mock, /\/assets\/analysis\/content-01\.jpg/)
-  assert.match(mock, /总阅读次数.*24,234/)
-  assert.match(componentStylesPath ? read('miniprogram/components/home-analysis/index.less') : '', /@import ['\"]\.\.\/\.\.\/pages\/analysis\/index\.less['\"]/)
+  assert.doesNotMatch(config, /ANALYSIS_DATA_SOURCE/)
+  assert.match(service, /path: '\/analysis\/dashboard'/)
+  assert.match(service, /path: '\/analysis\/content\/list'/)
+  assert.doesNotMatch(service, /from '\.\.\/mocks\//)
+  assert.match(read('miniprogram/components/home-analysis/index.less'), /@import ['"]\.\.\/\.\.\/pages\/analysis\/index\.less['"]/)
 })
 
-test('analysis user preview exposes the Figma 507:1682 intent summary and completion metrics', async () => {
-  const { getAnalysisStyleMock } = await import('../miniprogram/mocks/analysis.ts')
+test('analysis user mapping uses dashboard intent counts and completion metrics', () => {
+  const service = read('miniprogram/services/analysis.ts')
+  const types = read('miniprogram/types/analysis.ts')
 
-  const analysisData = getAnalysisStyleMock()
-
-  assert.deepEqual(analysisData.userSummary, [
-    { label: '高意向', value: '3' },
-    { label: '中意向', value: '24,234' },
-    { label: '低意向', value: '1,223' },
-  ])
-  assert.deepEqual(
-    analysisData.audienceUsers.map((user) => ({ name: user.name, level: user.level, completionCount: user.completionCount })),
-    [
-      { name: 'xiaogai', level: 'high', completionCount: '4' },
-      { name: 'xiaogai', level: 'high', completionCount: '4' },
-      { name: 'xiaogai', level: 'high', completionCount: '4' },
-      { name: '快乐小鹅', level: 'medium', completionCount: '1' },
-      { name: '来财来财', level: 'low', completionCount: '2' },
-    ],
-  )
+  assert.match(service, /label: '高意向'/)
+  assert.match(service, /label: '中意向'/)
+  assert.match(service, /label: '低意向'/)
+  assert.match(service, /completionCount: formatCount\(customer\.completeCount\)/)
+  assert.match(types, /completionCount: string/)
 })
 
 test('analysis user tab follows the Figma 507:1682 list hierarchy', () => {
@@ -843,11 +851,10 @@ test('home analysis compiles the Figma 517:3836 filters in its own stylesheet', 
   assert.match(styles, /\.home-analysis__filters \.analysis-sort__inner \{[\s\S]*border-radius: 16rpx;[\s\S]*font-size: 26rpx;/)
 })
 
-test('analysis detail page follows Figma 497:5232 with fixed preview data', () => {
+test('analysis detail page follows Figma 497:5232', () => {
   const markup = read('miniprogram/pages/analysis-detail/index.wxml')
   const styles = read('miniprogram/pages/analysis-detail/index.less')
   const service = read('miniprogram/services/analysis.ts')
-  const mock = read('miniprogram/mocks/analysis.ts')
 
   assert.doesNotMatch(markup, /detail-page__texture/)
   assert.match(styles, /page \{[^}]*background: #ffffff;/)
@@ -856,10 +863,8 @@ test('analysis detail page follows Figma 497:5232 with fixed preview data', () =
   assert.match(styles, /\.detail-intent__title \{[^}]*color: #8a8e94;[^}]*font-size: 28rpx;/)
   assert.match(styles, /\.detail-intent__panel \{[^}]*height: auto;[^}]*padding: 40rpx;[^}]*border: 2rpx solid @content-box-border;[^}]*border-radius: 40rpx;/)
   assert.match(styles, /\.detail-user__tag--high \{[^}]*color: #ff4343;[^}]*background: #ffd7ce;/)
-  assert.match(service, /getAnalysisDetailStyleMock/)
-  assert.match(service, /ANALYSIS_DATA_SOURCE === 'mock'/)
-  assert.match(mock, /export function getAnalysisDetailStyleMock\(cardId: string\)/)
-  assert.equal((mock.match(/mock-detail-user-/g) ?? []).length, 5)
+  assert.match(service, /getAnalysisDetail/)
+  assert.match(service, /\/analysis\/content\/detail/)
 })
 
 test('analysis detail reuses the analysis header title typography', () => {
@@ -895,7 +900,6 @@ test('analysis total tab follows Figma 587:8623 overview and peak layout', () =>
   const pageLogic = read('miniprogram/pages/analysis/index.ts')
   const pageStyles = read('miniprogram/pages/analysis/index.less')
   const homeMarkup = read('miniprogram/components/home-analysis/index.wxml')
-  const mock = read('miniprogram/mocks/analysis.ts')
   const service = read('miniprogram/services/analysis.ts')
   const types = read('miniprogram/types/analysis.ts')
 
@@ -913,8 +917,6 @@ test('analysis total tab follows Figma 587:8623 overview and peak layout', () =>
   assert.match(pageStyles, /\.analysis-total__overview-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid @content-box-border;[\s\S]*?border-radius: 40rpx;/)
   assert.match(pageStyles, /\.analysis-total__chart-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid @content-box-border;[\s\S]*?border-radius: 40rpx;/)
   assert.match(types, /heroMetrics: AnalysisTotalHeroMetric\[\]/)
-  assert.match(mock, /value: '122,100次'/)
-  assert.match(mock, /value: '920人'/)
   assert.match(service, /heroMetrics:/)
 })
 

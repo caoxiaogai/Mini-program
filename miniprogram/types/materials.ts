@@ -17,7 +17,19 @@ export interface MaterialCardViewModel {
 export interface MaterialDetailViewModel {
   id: string
   title: string
+  fileType: string
+  /** 图片素材轮播图；视频/PDF 可为空 */
   images: string[]
+  /** 列表与详情预览图（视频为首帧封面） */
+  previewUrl: string
+  /** 视频播放地址（仅 VIDEO） */
+  videoUrl: string
+  /** 视频时长（秒，仅 VIDEO） */
+  duration: number
+  /** PDF/表格文件地址（仅 PDF、TABLE） */
+  pdfUrl: string
+  /** PDF/表格展示文件名（仅 PDF、TABLE） */
+  pdfFileName: string
   descriptionLines: string[]
 }
 

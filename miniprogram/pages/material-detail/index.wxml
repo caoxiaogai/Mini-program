@@ -4,25 +4,76 @@
   </view>
 
   <view wx:if="{{detail}}" class="material-detail-page__content">
-    <swiper
-      class="material-detail__swiper"
-      current="{{activeImageIndex}}"
-      duration="180"
-      indicator-dots="{{false}}"
-      bindchange="onSwiperChange"
-    >
-      <swiper-item wx:for="{{detail.images}}" wx:key="*this">
-        <image class="material-detail__image" src="{{item}}" mode="aspectFit" />
-      </swiper-item>
-    </swiper>
-
-    <view class="material-detail__indicators" aria-label="图片页码">
+    <block wx:if="{{detail.fileType === 'VIDEO'}}">
       <view
-        wx:for="{{detail.images}}"
-        wx:key="*this"
-        class="material-detail__indicator {{index === activeImageIndex ? 'material-detail__indicator--active' : ''}}"
-      ></view>
-    </view>
+        class="material-detail__media material-detail__media--video"
+        bindtouchstart="onVideoTouchStart"
+        bindtouchend="onVideoTouchEnd"
+        bindtouchcancel="onVideoTouchEnd"
+      >
+        <video
+          id="materialVideo"
+          class="material-detail__video"
+          src="{{detail.videoUrl}}"
+          poster="{{detail.previewUrl}}"
+          controls
+          show-center-play-btn
+          show-fullscreen-btn
+          show-play-btn
+          show-progress
+          enable-play-gesture
+          enable-progress-gesture
+          object-fit="contain"
+          bindtimeupdate="onVideoTimeUpdate"
+        />
+      </view>
+    </block>
+
+    <block wx:elif="{{detail.fileType === 'PDF' || detail.fileType === 'TABLE'}}">
+      <view class="material-detail__media material-detail__media--pdf" bindtap="onPdfOpenTap">
+        <block wx:if="{{detail.previewUrl}}">
+          <image class="material-detail__pdf-preview" src="{{detail.previewUrl}}" mode="aspectFit" />
+          <view class="material-detail__pdf-open">
+            <text>点击查看</text>
+          </view>
+        </block>
+        <view wx:else class="material-detail__pdf-card">
+          <view class="material-detail__pdf-badge">{{detail.fileType === 'TABLE' ? '表格' : 'PDF'}}</view>
+          <text class="material-detail__pdf-name">{{detail.pdfFileName}}</text>
+          <view class="material-detail__pdf-action">
+            <text>点击查看</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <swiper
+        class="material-detail__swiper"
+        current="{{activeImageIndex}}"
+        duration="180"
+        indicator-dots="{{false}}"
+        bindchange="onSwiperChange"
+      >
+        <swiper-item wx:for="{{detail.images}}" wx:key="*this">
+          <image
+            class="material-detail__image"
+            src="{{item}}"
+            mode="aspectFit"
+            data-index="{{index}}"
+            bindtap="onImageTap"
+          />
+        </swiper-item>
+      </swiper>
+
+      <view class="material-detail__indicators" aria-label="图片页码">
+        <view
+          wx:for="{{detail.images}}"
+          wx:key="*this"
+          class="material-detail__indicator {{index === activeImageIndex ? 'material-detail__indicator--active' : ''}}"
+        ></view>
+      </view>
+    </block>
 
     <view class="material-detail__description">
       <text wx:for="{{detail.descriptionLines}}" wx:key="*this" class="material-detail__description-line">{{item}}</text>

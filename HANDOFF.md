@@ -211,10 +211,10 @@ miniprogram/
 | 实现素材页面与发布入口视觉 | done | Figma `173:12468` 素材双列卡片、筛选交互、本地资源、首页素材 tab 跳转与顶部滚动透明度已实现 |
 | 实现素材发布页面 | done | Figma `208:13581` 发布页、最多 9 张图片、无限制文案输入、草稿/发表占位交互及成功弹窗已实现 |
 | 实现素材详情分享页 | done | Figma `229:14271` 作品详情页、素材卡片按 id 跳转、轮播图片、描述文案、底部分享按钮与 typed service/mock 已实现 |
-| 接入后端真实接口 | done | 统一 `services/request.ts` 请求层 + 微信登录；首页/分析/通知/素材全部改为后端数据，mock 已删除；排行榜因后端无接口保留空态占位 |
+| 接入后端真实接口 | done | 统一 `services/request.ts` 请求层 + 微信登录；首页/分析/通知/素材/我的头像昵称走后端数据；排行榜与余额/会员因后端无接口保留占位 |
 | 首页像素级与真机适配验收 | pending | 新版首页已实现，等待开发者工具或真机进行视觉核对 |
 | 首页改版（重新开始） | in_progress | 已按新版 Figma `478:1234` 重写首页结构、数据层、底部导航和本地资源 |
-| 实现「我的」页视觉切片 | done | 已按 Figma `519:5031` 接入首页第五个 tab，新增 typed profile service/mock、`home-profile` 组件和本地头像/会员卡资源；Node 测试与静态资源检查通过，等待微信开发者工具或真机核对 |
+| 实现「我的」页视觉切片 | done | 已按 Figma `519:5031` 接入首页第五个 tab；头像/昵称来自登录接口，余额/会员为视觉占位 |
 | 其他页面视觉与真机适配验收 | pending | 后续页面实现后执行 |
 
 ## 验收基线
@@ -240,6 +240,47 @@ miniprogram/
 - 不在文档中记录密钥、AppSecret、用户隐私数据或生产接口凭证。
 
 ## 最近变更
+
+### 2026-08-25：PDF 用第一页做列表和详情预览
+
+- 无 `coverUrl` 的 PDF/表格素材，列表缩略图和详情预览改为 `GET /material/{id}/page/0/image`（文档第一页）。
+- 详情有预览图时展示第一页并保留「点击查看」进入阅读页；渲染失败时回退原来的文件卡片。
+- 首页素材面板与独立素材列表共用 `getMaterials()`，会一起更新。
+
+### 2026-08-25：素材详情支持打开图片、视频、PDF
+
+- 对照 `caoxiaogai-aisales`：详情页按 `fileType` 分别展示图片轮播、视频播放器和 PDF/表格卡片，不再把封面塞进轮播。
+- 图片点击 `wx.previewImage`；视频用原生 `<video>` 播放；PDF/表格点击进入 `/pages/document-reader`，按页请求 `GET /material/{id}/page-count` 与 `GET /material/{id}/page/{n}/image`，真机页图走 `downloadFile`。
+- 未接入旧项目的访客授权遮罩与阅读埋点；销售从素材列表进入即可打开内容。
+
+### 2026-08-25：素材列表展示文案而不是文件名
+
+- 列表卡片 `title` 改为优先取素材 `content`（发布时填写的文案）；文案为空时才回退 `title`（文件名 / 旧数据）。
+- 首页素材面板与独立素材页共用同一 service 映射，不改 WXML。
+
+### 2026-08-25：「我的」页接入登录资料
+
+- 头像、昵称改为 `POST /wechat/login` 返回的 `avatar`、`nickname`；头像走文件代理与真机 `downloadFile`。无头像时回退本地占位图，无昵称时显示「微信用户」。
+- 删除 `mocks/profile.ts`。余额/提现/会员后端尚未提供接口，余额展示 `0`，会员卡与「尽情期待」保留 Figma 文案，并留下 `TODO(API)`。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`；未改动 WXML / Less / JSON。
+
+### 2026-08-25：体验版图片走文件代理并本地下载
+
+- 对照 `caoxiaogai-aisales`：后端 MinIO 直连地址（`:9000/sales-materials` 或裸 bucket 路径）改写为 `/api/files/sales-materials/...`，不再把 `:9000` 主机替换成 API 主机后丢掉代理前缀。
+- 开发者工具用 `127.0.0.1`；真机调试和体验版都请求本机局域网后端 `http://192.168.31.225:8080`，不走 `yjxzhang.com`。
+- 真机与体验版对头像、封面、素材图先 `downloadFile` 再交给 `<image>`；视频/PDF 详情封面同样走代理 URL。
+- 验证：完整测试需重新编译后在体验版确认请求地址为局域网 IP。
+
+### 2026-08-25：修复「我的」service 未被编译
+
+- 开发者工具 `ignoreDevUnusedFiles` 会漏编新加的 `services/profile.ts`，首页报 `module 'services/profile.js' is not defined`。
+- 在 `app.ts` 入口引用 `getProfilePageData`，并将 `ignoreDevUnusedFiles` 设为 false。
+
+### 2026-08-25：开发者工具登录改走 127.0.0.1，避免局域网 502
+
+- 现象：模拟器 `POST /api/wechat/login` 报 HTTP 502。本机 Java 直连同一接口返回 HTTP 200 + 业务码 401（无效 code），说明 502 来自开发者工具经局域网 IP / VPN 的网关，不是 Spring 本身。
+- 处理：开发者工具使用 `http://127.0.0.1:8080/api`，真机预览仍使用 `http://192.168.31.225:8080/api`。
+- 验证：本机 `127.0.0.1:8080` 与 `192.168.31.225:8080` 的 login 均可达（无效 code 时 HTTP 200 + 业务 401）。
 
 ### 2026-08-25：统一内容卡片描边
 
@@ -1098,4 +1139,4 @@ miniprogram/
 - 排行榜后端接口（当前 aisales 未提供销售排行榜数据，页面暂为空态）。
 - 分析页「总」时间范围口径：后端 custom 查询上限 62 天，暂按最近 62 天，需后端确认是否提供全量范围。
 - 后端待补能力：按日阅读趋势接口（当前由前端按日聚合 dashboard）、素材图片更新与素材删除接口（编辑草稿改图会产生新素材）、客户级转发次数（当前仅 0/1 标记）、未读通知/红点口径。
-- 生产环境接口基址与合法域名配置待确认；当前开发环境使用 `http://192.168.31.225:8080/api`。
+- 生产环境接口基址与合法域名配置待确认；当前开发/体验版使用 `http://192.168.31.225:8080/api`。
