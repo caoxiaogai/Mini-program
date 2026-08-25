@@ -79,7 +79,7 @@ Page({
     activePeriodOffset: 0,
     analysisSortOptions,
     activeAnalysisSort: 'view' as AnalysisSortId,
-    activeAnalysisSortLabel: '浏览量',
+    activeAnalysisSortLabel: '阅读量',
     analysisSortSheetVisible: false,
     analysisIntentTabs,
     activeAnalysisIntent: 'all' as AnalysisIntentFilter,
@@ -118,15 +118,15 @@ Page({
       })
     })
   },
-  onAnalysisTabTap(event: WechatMiniprogram.TouchEvent) {
-    this.setAnalysisTab(Number(event.currentTarget.dataset.index))
+  onAnalysisTabTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) {
+    this.setAnalysisTab(event.detail.index)
   },
-  onAnalysisTouchStart(event: WechatMiniprogram.TouchEvent) {
-    this.setData({ analysisSwipeStartX: event.touches[0]?.clientX ?? 0 })
+  onAnalysisTouchStart(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
+    this.setData({ analysisSwipeStartX: event.detail.clientX })
   },
-  onAnalysisTouchEnd(event: WechatMiniprogram.TouchEvent) {
+  onAnalysisTouchEnd(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
     const startX = this.data.analysisSwipeStartX
-    const endX = event.changedTouches[0]?.clientX ?? startX
+    const endX = event.detail.clientX
     const distance = endX - startX
 
     if (Math.abs(distance) < analysisSwipeThreshold) return

@@ -1,51 +1,51 @@
-export interface VisitorPreview {
+export type HomeIntentLevel = 'high' | 'medium' | 'low'
+
+export type HomeNotificationAction = 'forward' | 'reading'
+
+export interface HomeNotificationViewModel {
   id: string
+  userId: string
+  visitorName: string
+  intent: HomeIntentLevel
+  intentLabel: string
+  action: HomeNotificationAction
+  actionLabel: string
+  actionDate: string
+  actionIconPath: string
   avatarUrl: string
+  thumbnailUrl: string
+  statusLabel: string
 }
 
-export interface NewVisitorsSummary {
-  total: number
-  highIntentCount: number
-  visitors: VisitorPreview[]
+export interface HomeContentViewModel {
+  id: string
+  title: string
+  date: string
+  thumbnailUrl: string
+  viewCount: string
+  forwardCount: string
+  highIntentCount: string
 }
 
-export interface ReadingSummary {
-  total: number
+export interface HomeIntentSummaryViewModel {
+  total: string
+  highCount: string
+  mediumCount: string
+  lowCount: string
+  previewAvatars: Array<{ id: string; avatarUrl: string }>
 }
 
-export interface SharingSummary {
-  total: number
-  highlightedContentTitle: string
-  highlightedContentShareCount: number
+export interface HomeTodayViewModel {
+  viewCount: string
+  completeRate: string
+  forwardCount: string
+  viewerCount: string
 }
 
-export type HomeSummaryCardState = 'data' | 'empty'
-
-export interface HomeSummaryCardViewModel {
-  state: HomeSummaryCardState
-  isEmpty: boolean
-  primaryPrefix: string
-  primaryValue: string
-  primarySuffix: string
-  secondaryPrefix: string
-  secondaryValue: string
-  secondarySuffix: string
-}
-
-export interface HomeSummaryVisitorsViewModel extends HomeSummaryCardViewModel {
-  showVisitors: boolean
-  visitors: VisitorPreview[]
-}
-
-export interface HomeSummaryViewModel {
-  newVisitors: HomeSummaryVisitorsViewModel
-  reading: HomeSummaryCardViewModel
-  sharing: HomeSummaryCardViewModel
-}
-
-export interface HomeOverviewViewModel {
-  newVisitors: NewVisitorsSummary
-  reading: ReadingSummary
-  sharing: SharingSummary
+export interface HomePageViewModel {
   unreadNotificationCount: number
+  notifications: HomeNotificationViewModel[]
+  contents: HomeContentViewModel[]
+  intentSummary: HomeIntentSummaryViewModel
+  today: HomeTodayViewModel
 }

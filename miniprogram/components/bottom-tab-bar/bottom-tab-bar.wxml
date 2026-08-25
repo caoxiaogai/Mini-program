@@ -1,19 +1,34 @@
 <view class="bottom-tab-bar">
+  <view class="bottom-tab-bar__scrim">
+    <image class="bottom-tab-bar__scrim-image" src="/assets/home-new/bottom-nav-scrim.svg" mode="scaleToFill" />
+  </view>
+  <view class="bottom-tab-bar__scrim-tail" />
   <view class="bottom-tab-bar__inner">
-    <view
-      wx:for="{{items}}"
-      wx:key="id"
-      class="bottom-tab-bar__item"
-      data-id="{{item.id}}"
-      bindtap="onTabTap"
-      hover-class="bottom-tab-bar__item--pressed"
-      hover-stay-time="80"
-    >
-      <view class="bottom-tab-bar__icon-wrap">
-        <image class="bottom-tab-bar__icon" src="{{item.iconPath}}" mode="aspectFit" />
-        <view wx:if="{{item.badgeCount}}" class="bottom-tab-bar__badge">{{item.badgeCount}}</view>
+    <block wx:for="{{items}}" wx:key="id">
+      <view
+        wx:if="{{index === 2}}"
+        class="bottom-tab-bar__create"
+        bindtap="onPlusTap"
+        hover-class="bottom-tab-bar__create--pressed"
+        aria-role="button"
+        aria-label="发布素材"
+      >
+        <image class="bottom-tab-bar__create-icon" src="/assets/home-new/tab-publish-frame-61.svg" mode="aspectFit" />
+        <text class="bottom-tab-bar__label">发布</text>
       </view>
-      <text class="bottom-tab-bar__label">{{item.label}}</text>
-    </view>
+      <view
+        class="bottom-tab-bar__item {{item.active ? 'bottom-tab-bar__item--active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onTabTap"
+        hover-class="bottom-tab-bar__item--pressed"
+        hover-stay-time="80"
+      >
+        <view class="bottom-tab-bar__icon-wrap">
+          <image class="bottom-tab-bar__icon" src="{{item.active ? item.activeIconPath : item.iconPath}}" mode="aspectFit" />
+          <view wx:if="{{item.badgeCount}}" class="bottom-tab-bar__badge">{{item.badgeCount}}</view>
+        </view>
+        <text class="bottom-tab-bar__label">{{item.label}}</text>
+      </view>
+    </block>
   </view>
 </view>

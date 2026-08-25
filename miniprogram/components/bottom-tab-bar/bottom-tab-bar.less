@@ -1,30 +1,93 @@
-@bottom-tab-text: #000000;
-
 .bottom-tab-bar {
-  box-sizing: border-box;
-  padding: 0 40rpx 20px;
-  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  height: 176rpx;
+  pointer-events: none;
+}
+
+.bottom-tab-bar__scrim {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 176rpx;
+  background: transparent;
+}
+
+.bottom-tab-bar__scrim-image {
+  display: block;
   width: 100%;
+  height: 100%;
+}
+
+.bottom-tab-bar__scrim-tail {
+  position: absolute;
+  right: 0;
+  bottom: -40rpx;
+  left: 0;
+  height: 40rpx;
+  background: #ffffff;
 }
 
 .bottom-tab-bar__inner {
+  position: absolute;
+  right: 40rpx;
+  bottom: max(32px, env(safe-area-inset-bottom));
+  left: 40rpx;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  height: 112rpx;
+  padding: 8rpx;
+  border: 2rpx solid #f0f0f0;
+  border-radius: 112rpx;
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 40rpx rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(5px);
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.bottom-tab-bar__item,
+.bottom-tab-bar__create {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 100%;
+  border-radius: 88rpx;
+  box-sizing: border-box;
 }
 
 .bottom-tab-bar__item {
-  display: flex;
-  flex: none;
   flex-direction: column;
-  align-items: center;
-  min-width: 0;
-  opacity: 1;
-  transition: opacity 0.15s ease;
+  gap: 2rpx;
 }
 
-.bottom-tab-bar__item--pressed {
+.bottom-tab-bar__item--active {
+  background: #e0e0e0;
+}
+
+.bottom-tab-bar__item--pressed,
+.bottom-tab-bar__create--pressed {
   opacity: 0.58;
+}
+
+.bottom-tab-bar__create {
+  flex-direction: column;
+  flex: 1;
+  gap: 2rpx;
+  height: 100%;
+  margin: 0 2rpx;
+  background: transparent;
+}
+
+.bottom-tab-bar__create-icon {
+  width: 48rpx;
+  height: 48rpx;
 }
 
 .bottom-tab-bar__icon-wrap {
@@ -32,37 +95,39 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 90rpx;
-  height: 90rpx;
+  width: 48rpx;
+  height: 48rpx;
 }
 
 .bottom-tab-bar__icon {
-  width: 90rpx;
-  height: 90rpx;
+  width: 48rpx;
+  height: 48rpx;
 }
 
 .bottom-tab-bar__badge {
   position: absolute;
-  top: -2rpx;
-  right: -8rpx;
+  top: -4rpx;
+  right: -10rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 28rpx;
+  width: 40rpx;
   height: 28rpx;
-  padding: 0 8rpx;
+  padding: 0;
   border-radius: 28rpx;
-  background: #ff2929;
+  background: #ff0000;
   color: #ffffff;
   font-size: 20rpx;
-  font-weight: 600;
   line-height: 28rpx;
   box-sizing: border-box;
 }
 
 .bottom-tab-bar__label {
-  margin-top: 10rpx;
-  color: @bottom-tab-text;
-  font-size: 22rpx;
-  line-height: 30rpx;
+  color: #666666;
+  font-size: 20rpx;
+  line-height: 24rpx;
+}
+
+.bottom-tab-bar__item--active .bottom-tab-bar__label {
+  color: #0ec8d9;
 }

@@ -1,6 +1,10 @@
 {
   "usingComponents": {
     "navigation-bar": "/components/navigation-bar/navigation-bar",
-    "bottom-tab-bar": "/components/bottom-tab-bar/bottom-tab-bar"
+    "bottom-tab-bar": "/components/bottom-tab-bar/bottom-tab-bar",
+    "notification-header": "/components/notification-header/index",
+    "analysis-header": "/components/analysis-header/index",
+    "home-notifications": "/components/home-notifications/index",
+    "home-analysis": "/components/home-analysis/index"
   }
 }

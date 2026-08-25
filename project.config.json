@@ -47,7 +47,12 @@
   },
   "libVersion": "2.32.3",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "assets/home"
+      }
+    ],
     "include": []
   },
   "appid": "wxd516cface3568eff",

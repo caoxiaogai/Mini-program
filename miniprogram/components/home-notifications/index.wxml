@@ -1,0 +1,49 @@
+<view class="notification-page notification-page--embedded">
+  <view wx:if="{{notifications}}" class="notification-page__content">
+    <view wx:if="{{hasVisibleGroups}}">
+      <view wx:for="{{visibleGroups}}" wx:key="id" class="notification-group">
+        <text class="notification-group__date">{{item.label}}</text>
+        <view
+          wx:for="{{item.items}}"
+          wx:for-item="notification"
+          wx:key="id"
+          class="notification-card"
+          data-id="{{notification.userId}}"
+          bindtap="onNotificationCardTap"
+          hover-class="notification-card--pressed"
+          hover-start-time="80"
+          hover-stay-time="120"
+        >
+          <view class="notification-card__header">
+            <view class="notification-card__identity">
+              <view class="notification-card__avatar-wrap">
+                <image class="notification-card__avatar" src="{{notification.avatarUrl}}" mode="aspectFill" />
+                <image class="notification-card__action-icon" src="{{notification.actionIconPath}}" mode="aspectFit" />
+              </view>
+              <view class="notification-card__copy">
+                <view class="notification-card__name-row">
+                  <text class="notification-card__name">{{notification.visitorName}}</text>
+                  <text class="notification-card__intent notification-card__intent--{{notification.intent}}">{{notification.intentLabel}}</text>
+                </view>
+                <view class="notification-card__action-row">
+                  <text class="notification-card__action">{{notification.actionLabel}}</text>
+                  <text class="notification-card__date">{{notification.actionDate}}</text>
+                </view>
+              </view>
+            </view>
+            <view class="notification-card__thumbnail-wrap">
+              <image class="notification-card__thumbnail" src="{{notification.thumbnailUrl}}" mode="aspectFill" />
+            </view>
+          </view>
+          <text class="notification-card__status notification-card__status--{{notification.intent}}">{{notification.statusLabel}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="notification-empty-state">
+      <image class="notification-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+      <text>暂无意向用户</text>
+    </view>
+  </view>
+  <view wx:else class="notification-page__loading">正在加载通知</view>
+</view>

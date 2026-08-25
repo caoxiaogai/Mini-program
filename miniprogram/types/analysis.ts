@@ -19,7 +19,9 @@ export type AnalysisCard = {
   thumbnailUrl: string
   title: string
   date: string
+  publishedAt: string
   metrics: AnalysisMetric[]
+  compactMetrics: AnalysisMetric[]
 }
 
 export type AnalysisIntentLevel = 'high' | 'medium' | 'low'

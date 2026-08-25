@@ -1,47 +1,142 @@
-import type { ApiContentListItem, ApiCustomerListItem, ApiDashboard } from '../types/api'
-import type { HomeOverviewViewModel } from '../types/home'
+import type {
+  ApiContentListItem,
+  ApiCustomerListItem,
+  ApiDashboard,
+  ApiIntentCustomer,
+  ApiMaterial,
+} from '../types/api'
+import { HOME_DATA_SOURCE } from '../config/dev'
+import { getHomeStyleMock } from '../mocks/home'
+import type { HomeContentViewModel, HomeIntentLevel, HomeNotificationViewModel, HomePageViewModel } from '../types/home'
+import { formatCount, formatDateKey, formatMonthDay, formatMonthDayTime } from '../utils/format'
 import { request, resolveMediaUrl } from './request'
 
-const HOME_VISITOR_PREVIEW_LIMIT = 5
+const HOME_PREVIEW_LIMIT = 3
+const HOME_CONTENT_LIMIT = 2
 
-/**
- * 首页摘要。后端无单独首页接口，由分析域「今日」数据组合：
- * - 新增用户：今日观看客户数（去重），高意向数取今日高意向客户数
- * - 阅读 / 转发：今日阅读、转发总次数，转发榜首内容作为高亮文案
- * - 通知角标：今日产生意向行为的客户数（后端暂无未读通知概念）
- */
-export function getHomeOverview(): Promise<HomeOverviewViewModel> {
+const intentLabels: Record<HomeIntentLevel, string> = {
+  high: '#高意向',
+  medium: '#中意向',
+  low: '#低意向',
+}
+
+const actionLabels = {
+  forward: '“转发”了你的作品',
+  reading: '“阅读”了你的作品',
+} as const
+
+function buildNotificationStatus(item: ApiIntentCustomer): string {
+  if (item.hasForwarded === 1) return '该用户转发了你的作品'
+  if (item.completed === 1) return '该用户已完成阅读'
+  return '该用户尚未完成阅读'
+}
+
+function mapNotification(
+  item: ApiIntentCustomer,
+  thumbnailByMaterialId: Map<string, string>,
+  index: number,
+): HomeNotificationViewModel {
+  const action = item.hasForwarded === 1 ? 'forward' : 'reading'
+
+  return {
+    id: `home-notification-${item.customerId}-${index}`,
+    userId: String(item.customerId),
+    visitorName: item.nickname ?? '微信用户',
+    intent: item.intentLevel,
+    intentLabel: intentLabels[item.intentLevel],
+    action,
+    actionLabel: actionLabels[action],
+    actionDate: formatMonthDayTime(item.lastViewTime),
+    actionIconPath:
+      action === 'forward' ? '/assets/home-new/action-forward.svg' : '/assets/home-new/action-reading.svg',
+    avatarUrl: resolveMediaUrl(item.avatar),
+    thumbnailUrl: item.materialId ? thumbnailByMaterialId.get(String(item.materialId)) ?? '' : '',
+    statusLabel: buildNotificationStatus(item),
+  }
+}
+
+function mapContent(item: ApiContentListItem, intentCustomers: ApiIntentCustomer[]): HomeContentViewModel {
+  const materialId = String(item.materialId)
+  const highIntentCount = intentCustomers.filter(
+    (customer) => String(customer.materialId) === materialId && customer.intentLevel === 'high',
+  ).length
+
+  return {
+    id: materialId,
+    title: item.title ?? '未命名作品',
+    date: `${formatDateKey(item.createTime)} 发布`,
+    thumbnailUrl: resolveMediaUrl(item.coverUrl),
+    viewCount: formatCount(item.viewCount),
+    forwardCount: formatCount(item.forwardCount),
+    highIntentCount: formatCount(highIntentCount),
+  }
+}
+
+function buildContentCards(contents: ApiContentListItem[], intentCustomers: ApiIntentCustomer[]): HomeContentViewModel[] {
+  return [...contents]
+    .sort((left, right) => (right.viewCount ?? 0) - (left.viewCount ?? 0))
+    .slice(0, HOME_CONTENT_LIMIT)
+    .map((item) => mapContent(item, intentCustomers))
+}
+
+function getHomePageDataFromApi(): Promise<HomePageViewModel> {
   return Promise.all([
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: { timeRange: 'today' } }),
     request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: { timeRange: 'today' } }),
-    request<ApiContentListItem[]>({
-      method: 'GET',
-      path: '/analysis/content/list',
-      query: { timeRange: 'today', orderBy: 'forward_count' },
-    }),
-  ]).then(([dashboard, customers, contents]) => {
-    const topForwarded = contents.find((item) => (item.forwardCount ?? 0) > 0)
-    const intentCustomerCount =
-      (dashboard.highIntentCount ?? 0) + (dashboard.mediumIntentCount ?? 0) + (dashboard.lowIntentCount ?? 0)
+    request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query: { timeRange: 'today' } }),
+    request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: { timeRange: 'today' } }),
+    request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
+  ]).then(([dashboard, customers, contents, intentCustomers, materials]) => {
+    const thumbnailByMaterialId = new Map(
+      materials.map((material) => [String(material.id), resolveMediaUrl(material.coverUrl)]),
+    )
+
+    contents.forEach((content) => {
+      const materialId = String(content.materialId)
+      if (!thumbnailByMaterialId.has(materialId)) {
+        thumbnailByMaterialId.set(materialId, resolveMediaUrl(content.coverUrl))
+      }
+    })
+
+    const notifications = intentCustomers
+      .slice()
+      .sort((left, right) => String(right.lastViewTime ?? '').localeCompare(String(left.lastViewTime ?? '')))
+      .slice(0, HOME_PREVIEW_LIMIT)
+      .map((item, index) => mapNotification(item, thumbnailByMaterialId, index))
+    const previewCustomers = intentCustomers.slice(0, 5)
+    const highCount = dashboard.highIntentCount ?? 0
+    const mediumCount = dashboard.mediumIntentCount ?? 0
+    const lowCount = dashboard.lowIntentCount ?? 0
 
     return {
-      newVisitors: {
-        total: dashboard.totalViewerCount ?? 0,
-        highIntentCount: dashboard.highIntentCount ?? 0,
-        visitors: customers.slice(0, HOME_VISITOR_PREVIEW_LIMIT).map((customer) => ({
-          id: String(customer.customerId),
+      unreadNotificationCount: intentCustomers.length,
+      notifications,
+      contents: buildContentCards(contents, intentCustomers),
+      intentSummary: {
+        total: formatCount(dashboard.totalViewerCount ?? customers.length),
+        highCount: formatCount(highCount),
+        mediumCount: formatCount(mediumCount),
+        lowCount: formatCount(lowCount),
+        previewAvatars: previewCustomers.map((customer, index) => ({
+          id: `${customer.customerId}-${index}`,
           avatarUrl: resolveMediaUrl(customer.avatar),
         })),
       },
-      reading: {
-        total: dashboard.totalViewCount ?? 0,
+      today: {
+        viewCount: formatCount(dashboard.totalViewCount),
+        completeRate: `${dashboard.completeRate ?? 0}%`,
+        forwardCount: formatCount(dashboard.totalForwardCount),
+        viewerCount: formatCount(dashboard.totalViewerCount ?? customers.length),
       },
-      sharing: {
-        total: dashboard.totalForwardCount ?? 0,
-        highlightedContentTitle: topForwarded?.title ?? '',
-        highlightedContentShareCount: topForwarded?.forwardCount ?? 0,
-      },
-      unreadNotificationCount: intentCustomerCount,
     }
   })
+}
+
+/** DEV_MOCK: 仅用于新版首页视觉预览，确认真实接口后切换为 api。 */
+export function getHomePageData(): Promise<HomePageViewModel> {
+  if (HOME_DATA_SOURCE === 'mock') {
+    return Promise.resolve(getHomeStyleMock())
+  }
+
+  return getHomePageDataFromApi()
 }

@@ -21,7 +21,7 @@ export interface NotificationCardViewModel {
   actionIconPath: string
   avatarUrl: string
   thumbnailUrl: string
-  recommendation: string
+  statusLabel: string
 }
 
 export interface NotificationGroupViewModel {

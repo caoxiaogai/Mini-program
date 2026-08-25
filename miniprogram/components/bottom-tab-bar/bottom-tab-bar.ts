@@ -9,5 +9,8 @@ Component({
     onTabTap(event: WechatMiniprogram.TouchEvent) {
       this.triggerEvent('tabtap', { id: event.currentTarget.dataset.id })
     },
+    onPlusTap() {
+      this.triggerEvent('plus')
+    },
   },
 })

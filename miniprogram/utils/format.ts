@@ -39,6 +39,14 @@ export function formatMonthDay(value: string | null | undefined): string {
   return `${date.getMonth() + 1}月${date.getDate()}日`
 }
 
+/** 后端日期时间转“月日 时:分”，例如 '2026-08-20 10:05:00' -> '8月20日 10:05' */
+export function formatMonthDayTime(value: string | null | undefined): string {
+  const date = parseDateTime(value)
+  if (!date) return ''
+
+  return `${formatMonthDay(value)} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`
+}
+
 /** 后端日期时间转 'MM月DD日'，例如 '2026-08-20 10:00:00' -> '08月20日' */
 export function formatPaddedMonthDay(value: string | null | undefined): string {
   const date = parseDateTime(value)

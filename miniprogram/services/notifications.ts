@@ -1,11 +1,13 @@
 import type { ApiIntentCustomer, ApiMaterial } from '../types/api'
+import { NOTIFICATION_DATA_SOURCE } from '../config/dev'
+import { getNotificationsMock } from '../mocks/notifications'
 import type {
   NotificationCardViewModel,
   NotificationFilterViewModel,
   NotificationIntent,
   NotificationsViewModel,
 } from '../types/notifications'
-import { buildCustomRangeQuery, formatDateKey, formatMonthDay, formatPaddedMonthDay } from '../utils/format'
+import { buildCustomRangeQuery, formatDateKey, formatMonthDay, formatMonthDayTime } from '../utils/format'
 import { request, resolveMediaUrl } from './request'
 
 /** 后端查询时间范围上限（custom 最长 62 天） */
@@ -24,10 +26,10 @@ const intentLabels: Record<NotificationIntent, string> = {
   low: '#低意向',
 }
 
-const recommendations: Record<NotificationIntent, string> = {
-  high: '意向程度较高，建议优先联系',
-  medium: '存在兴趣，建议主动跟进',
-  low: '意向程度较低，可保持观察',
+function buildNotificationStatus(item: ApiIntentCustomer): string {
+  if (item.hasForwarded === 1) return '该用户转发了你的作品，查看2次以上'
+  if (item.completed === 1) return '该用户已完成阅读'
+  return '未滑动看完所有图片'
 }
 
 /**
@@ -35,6 +37,10 @@ const recommendations: Record<NotificationIntent, string> = {
  * 按最近行为日期倒序分组；行为类型按是否转发区分。
  */
 export function getNotifications(): Promise<NotificationsViewModel> {
+  if (NOTIFICATION_DATA_SOURCE === 'mock') {
+    return Promise.resolve(getNotificationsMock())
+  }
+
   const rangeQuery = buildCustomRangeQuery(NOTIFICATION_RANGE_DAYS)
 
   return Promise.all([
@@ -60,11 +66,11 @@ export function getNotifications(): Promise<NotificationsViewModel> {
         intentLabel: intentLabels[intent],
         action: isForward ? 'forward' : 'reading',
         actionLabel: isForward ? '“转发”了你的作品' : '“阅读”了你的作品',
-        actionDate: formatMonthDay(item.lastViewTime),
+        actionDate: formatMonthDayTime(item.lastViewTime),
         actionIconPath: isForward ? '/assets/notifications/action-forward.svg' : '/assets/notifications/action-reading.svg',
         avatarUrl: resolveMediaUrl(item.avatar),
         thumbnailUrl: item.materialId ? coverByMaterial.get(String(item.materialId)) ?? '' : '',
-        recommendation: recommendations[intent],
+        statusLabel: buildNotificationStatus(item),
       }
 
       const cards = cardsByDate.get(dateKey) ?? []
@@ -78,7 +84,7 @@ export function getNotifications(): Promise<NotificationsViewModel> {
       filters: notificationFilters,
       groups: sortedDates.map((dateKey) => ({
         id: dateKey,
-        label: formatPaddedMonthDay(`${dateKey} 00:00:00`),
+        label: formatMonthDay(`${dateKey} 00:00:00`),
         items: cardsByDate.get(dateKey) ?? [],
       })),
     }

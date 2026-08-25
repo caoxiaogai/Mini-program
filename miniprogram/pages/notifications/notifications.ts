@@ -1,6 +1,14 @@
 import { getNotifications } from '../../services/notifications'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
-import { calculateRankingHeaderOpacity } from '../../utils/ranking'
+
+type NotificationTabId = 'home' | 'notifications' | 'analysis' | 'profile'
+
+const notificationTabItems = [
+  { id: 'home' as NotificationTabId, label: '首页', iconPath: '/assets/home-new/tab-home.svg', activeIconPath: '/assets/home-new/tab-home-active.svg', active: false },
+  { id: 'notifications' as NotificationTabId, label: '通知', iconPath: '/assets/home-new/tab-notification.svg', activeIconPath: '/assets/home-new/tab-notification-active.svg', active: true },
+  { id: 'analysis' as NotificationTabId, label: '分析', iconPath: '/assets/home-new/tab-analysis.svg', activeIconPath: '/assets/home-new/tab-analysis-active.svg', active: false },
+  { id: 'profile' as NotificationTabId, label: '我的', iconPath: '/assets/home-new/tab-profile.svg', activeIconPath: '/assets/home-new/tab-profile-active.svg', active: false },
+]
 
 function getVisibleNotificationGroups(groups: NotificationGroupViewModel[], filterId: NotificationFilterId): NotificationGroupViewModel[] {
   return groups
@@ -15,7 +23,7 @@ Page({
   data: {
     notifications: null as NotificationsViewModel | null,
     activeFilter: 'all' as NotificationFilterId,
-    notificationHeaderOpacity: 0,
+    tabItems: notificationTabItems,
     visibleGroups: [] as NotificationGroupViewModel[],
     hasVisibleGroups: false,
   },
@@ -25,13 +33,6 @@ Page({
 
       this.setData({ notifications, visibleGroups, hasVisibleGroups: visibleGroups.length > 0 })
     })
-  },
-  onPageScroll(event: WechatMiniprogram.PageScrollOption) {
-    const notificationHeaderOpacity = calculateRankingHeaderOpacity(event.scrollTop)
-
-    if (notificationHeaderOpacity === this.data.notificationHeaderOpacity) return
-
-    this.setData({ notificationHeaderOpacity })
   },
   onFilterTap(event: WechatMiniprogram.TouchEvent) {
     const filterId = event.currentTarget.dataset.id as NotificationFilterId
@@ -52,4 +53,11 @@ Page({
     })
   },
   onContactActionTap() {},
+  onTabTap(event: WechatMiniprogram.CustomEvent<{ id: NotificationTabId }>) {
+    if (event.detail.id === 'notifications') return
+    wx.navigateTo({ url: '/pages/index/index' })
+  },
+  onPlusTap() {
+    wx.navigateTo({ url: '/pages/materials/publish/index' })
+  },
 })

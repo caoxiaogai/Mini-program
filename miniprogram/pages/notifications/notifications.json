@@ -1,5 +1,6 @@
 {
   "usingComponents": {
-    "navigation-bar": "/components/navigation-bar/navigation-bar"
+    "notification-header": "/components/notification-header/index",
+    "bottom-tab-bar": "/components/bottom-tab-bar/bottom-tab-bar"
   }
 }

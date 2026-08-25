@@ -1,34 +1,32 @@
 <view class="analysis-page">
-  <view class="analysis-page__header">
-    <navigation-bar title="分析" back="{{true}}" color="#000000" background="#ffffff" />
-    <view wx:if="{{analysisData}}" class="analysis-tabs" bindtouchstart="onAnalysisTouchStart" bindtouchend="onAnalysisTouchEnd">
-      <view class="analysis-tabs__selection" style="transform: translateX({{analysisTabOffset}}%);"></view>
-      <view wx:for="{{analysisTabs}}" wx:key="id" class="analysis-tabs__item {{item.id === activeAnalysisTab ? 'analysis-tabs__item--active' : ''}}" bindtap="onAnalysisTabTap" data-index="{{index}}">{{item.label}}</view>
-    </view>
-    </view>
-  <view wx:if="{{analysisData && activeAnalysisTab === 'work'}}" class="analysis-page__content">
-    <view class="analysis-work-panel">
-      <view class="analysis-filters">
+  <analysis-header back="{{true}}" analysis-tabs="{{analysisTabs}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-tab-offset="{{analysisTabOffset}}" bind:analysistabtap="onAnalysisTabTap" bind:analysistouchstart="onAnalysisTouchStart" bind:analysistouchend="onAnalysisTouchEnd" />
+  <view wx:if="{{analysisData && activeAnalysisTab === 'work'}}" class="analysis-page__content analysis-page__content--work">
+    <view class="analysis-work-panel analysis-work-panel--redesign">
+      <view class="analysis-filters analysis-filters--redesign">
         <view class="analysis-periods">
           <view class="analysis-periods__selection" style="transform: translateX({{activePeriodOffset}}rpx);"></view>
           <view wx:for="{{analysisPeriods}}" wx:key="id" class="analysis-period {{item.id === activePeriod ? 'analysis-period--active' : ''}}" bindtap="onPeriodTap" data-id="{{item.id}}" data-index="{{index}}"><text>{{item.label}}</text></view>
         </view>
         <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
       </view>
-      <view class="analysis-summary">
+      <view class="analysis-summary analysis-summary--redesign">
         <view wx:for="{{analysisData.summary}}" wx:key="label" class="analysis-summary__card"><text class="analysis-summary__label">{{item.label}}</text><text class="analysis-summary__value">{{item.value}}</text></view>
       </view>
-      <view wx:if="{{hasAnalysisCards}}" class="analysis-list">
-        <view wx:for="{{analysisData.cards}}" wx:key="id" class="analysis-card" hover-class="analysis-card--pressed" hover-stay-time="120" bindtap="onCardTap" data-id="{{item.id}}">
-          <view class="analysis-card__head">
-            <image class="analysis-card__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
-            <view class="analysis-card__identity"><text class="analysis-card__title">{{item.title}}</text><text class="analysis-card__date">{{item.date}}</text></view>
-            <image class="analysis-card__open" src="/assets/analysis/frame-2137.svg" mode="aspectFit" />
-          </view>
-          <view class="analysis-card__metrics"><view wx:for="{{item.metrics}}" wx:key="label" class="analysis-card__metric"><text class="analysis-card__metric-label">{{item.label}}</text><text class="analysis-card__metric-value">{{item.value}}</text></view></view>
+      <view wx:if="{{hasAnalysisCards}}" class="analysis-work-list">
+        <view class="analysis-work-list__inner">
+          <block wx:for="{{analysisData.cards}}" wx:key="id">
+            <view class="analysis-work-row" hover-class="analysis-card--pressed" hover-stay-time="120" bindtap="onCardTap" data-id="{{item.id}}">
+              <view class="analysis-work-row__head">
+                <image class="analysis-work-row__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+                <view class="analysis-work-row__identity"><text class="analysis-work-row__title">{{item.title}}</text><text class="analysis-work-row__date">{{item.publishedAt}}</text></view>
+              </view>
+              <view class="analysis-work-row__metrics"><view wx:for="{{item.compactMetrics}}" wx:key="label" class="analysis-work-row__metric"><text class="analysis-work-row__metric-label">{{item.label}}</text><text class="analysis-work-row__metric-value">{{item.value}}</text></view></view>
+            </view>
+            <view wx:if="{{index < analysisData.cards.length - 1}}" class="analysis-work-row__divider"></view>
+          </block>
         </view>
       </view>
-      <view wx:else class="analysis-empty-state">
+      <view wx:else class="analysis-empty-state analysis-empty-state--work">
         <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
         <text>还没有作品，你可以发布一个</text>
       </view>

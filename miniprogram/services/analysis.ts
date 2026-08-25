@@ -16,6 +16,8 @@ import type {
   AnalysisUserDetailViewModel,
   AnalysisViewModel,
 } from '../types/analysis'
+import { ANALYSIS_DATA_SOURCE } from '../config/dev'
+import { getAnalysisStyleMock } from '../mocks/analysis'
 import {
   buildCustomRangeQuery,
   formatCount,
@@ -75,18 +77,40 @@ function resolveIntentLevel(
 }
 
 function mapContentCard(item: ApiContentListItem): AnalysisCard {
+  const metrics = buildCardMetrics(item.viewCount, item.forwardCount, item.completeCount, item.viewerCount)
+
   return {
     id: String(item.materialId),
     thumbnailUrl: resolveMediaUrl(item.coverUrl),
     title: item.title ?? '',
     date: formatDateKey(item.createTime),
-    metrics: [
-      { label: '转发', value: formatCount(item.forwardCount) },
-      { label: '播完', value: formatCount(item.completeCount) },
-      { label: '浏览', value: formatCount(item.viewCount) },
-      { label: '观看人数', value: formatCount(item.viewerCount) },
+    publishedAt: formatPublishedAt(item.createTime),
+    metrics: metrics.full,
+    compactMetrics: metrics.compact,
+  }
+}
+
+function buildCardMetrics(viewCount: number | null | undefined, forwardCount: number | null | undefined, completeCount: number | null | undefined, viewerCount: number | null | undefined) {
+  return {
+    full: [
+      { label: '转发', value: formatCount(forwardCount) },
+      { label: '播完', value: formatCount(completeCount) },
+      { label: '浏览', value: formatCount(viewCount) },
+      { label: '观看人数', value: formatCount(viewerCount) },
+    ],
+    compact: [
+      { label: '浏览', value: formatCount(viewCount) },
+      { label: '转发', value: formatCount(forwardCount) },
+      { label: '完播', value: formatCount(completeCount) },
     ],
   }
+}
+
+function formatPublishedAt(value: string | null | undefined): string {
+  if (!value) return ''
+
+  const normalized = value.replace('T', ' ')
+  return normalized.length >= 16 ? `${normalized.slice(0, 16)} 发布` : normalized
 }
 
 interface DailyViewCount {
@@ -176,6 +200,8 @@ function fetchViewedWorksCounts(
 }
 
 export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<AnalysisViewModel> {
+  if (ANALYSIS_DATA_SOURCE === 'mock') return Promise.resolve(getAnalysisStyleMock())
+
   const periodQuery = buildPeriodQuery(period)
   const totalQuery = buildPeriodQuery('total')
 
@@ -263,12 +289,9 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
         thumbnailUrl: resolveMediaUrl(material?.coverUrl),
         title: detail.title ?? '',
         date: formatDateKey(material?.createTime),
-        metrics: [
-          { label: '转发', value: formatCount(detail.forwardCount) },
-          { label: '播完', value: formatCount(detail.completeCount) },
-          { label: '浏览', value: formatCount(detail.viewCount) },
-          { label: '观看人数', value: formatCount(detail.viewerCount) },
-        ],
+        publishedAt: formatPublishedAt(material?.createTime),
+        metrics: buildCardMetrics(detail.viewCount, detail.forwardCount, detail.completeCount, detail.viewerCount).full,
+        compactMetrics: buildCardMetrics(detail.viewCount, detail.forwardCount, detail.completeCount, detail.viewerCount).compact,
       },
       intentUsers: (detail.audienceList ?? []).map((audience) => {
         const customerId = String(audience.customerId)

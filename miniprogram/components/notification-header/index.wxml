@@ -1,0 +1,18 @@
+<view class="notification-page__header {{embedded ? 'notification-page__header--embedded' : ''}}">
+  <navigation-bar back="{{false}}" title="通知" background="transparent" />
+  <view wx:if="{{filters.length}}" class="notification-filter" role="tablist">
+    <view
+      wx:for="{{filters}}"
+      wx:key="id"
+      class="notification-filter__item {{activeFilter === item.id ? 'notification-filter__item--active' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onFilterTap"
+      hover-class="notification-filter__item--pressed"
+      hover-stay-time="80"
+      role="tab"
+      aria-selected="{{activeFilter === item.id}}"
+    >
+      <text>{{item.label}}</text>
+    </view>
+  </view>
+</view>
