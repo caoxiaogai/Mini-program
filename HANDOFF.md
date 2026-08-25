@@ -229,6 +229,11 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-25：首页新增用户按客户去重
+
+- 看板 `totalViewerCount` 改为统计时间范围内有 play 记录的去重客户数，不再把各作品观看人数相加。
+- 同一人今天看了多份素材，首页「新增用户」只计 1。
+
 ### 2026-08-24：推送访问对象统一用素材文案
 
 - 微信模板 `thing9` 改为取 `content`（用户填写的文案）首行；为空才回退 `title`。
@@ -334,7 +339,7 @@ miniprogram/
   - 素材：`/material/mine` 列表（`publishStatus=0` 为草稿，TABLE 类型暂归入 PDF 筛选）、`/material/{id}` 详情/草稿（多图 `fileUrl` 为 JSON 数组）；发表 = 上传图片 `/material/upload-file` → `POST /material` → `POST /material/{id}/share`；存草稿同前两步；编辑草稿仅改文案时走 `PUT /material/{id}`，改图片时新建素材（后端无更新图片与删除素材接口，旧草稿会保留）。
   - 排行榜：后端无对应接口，service 返回空榜单并保留 `TODO(API)` 占位，页面展示既有空状态。
 - `app.ts` 启动时执行真实登录；首页底部导航角标初始值由写死的 2 改为 0，由接口数据驱动。删除 `miniprogram/mocks/` 全部文件与目录。
-- 已知数据口径限制（映射自后端现有字段，如需精确值待后端扩展）：客户级转发数仅有 0/1 标记；首页「新增用户」实际为今日观看客户数（去重）。
+- 已知数据口径限制（映射自后端现有字段，如需精确值待后端扩展）：客户级转发数仅有 0/1 标记；首页「新增用户」为今日有 play 记录的去重客户数（同一人看多份素材只计 1）。
 - 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（75 tests passed，已同步移除 mock 相关断言并新增请求层回归）；`npx tsc --noEmit` 中本次新增/修改文件无错误（仅存留 3 处原有页面的 `PageScrollOption` 类型名与 typings 自带库的历史告警）；后端连通性实测 `GET /api/analysis/dashboard` 返回 `code:200`。UI 文件（WXML/Less/JSON）零改动。
 
 ### 2026-08-20：区分素材类型图标并支持草稿编辑

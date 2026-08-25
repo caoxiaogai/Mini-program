@@ -120,7 +120,9 @@ function endLoading(): void {
 }
 
 function showErrorToast(error: ApiError): void {
-  const title = error.code === -1 ? '网络异常，请稍后重试' : '请求失败，请稍后重试'
+  const title = error.code === -1
+    ? (error.message || '网络异常，请稍后重试')
+    : '请求失败，请稍后重试'
   wx.showToast({ title, icon: 'none' })
 }
 
@@ -165,8 +167,10 @@ export function rawRequestWithAuth<T>(options: RequestOptions): Promise<T> {
       reject(error)
     }
 
+    const requestUrl = buildUrl(options.path, options.query)
+
     wx.request({
-      url: buildUrl(options.path, options.query),
+      url: requestUrl,
       method: options.method,
       data: options.data,
       header: {
@@ -174,6 +178,8 @@ export function rawRequestWithAuth<T>(options: RequestOptions): Promise<T> {
         ...(options.skipAuth ? {} : buildAuthHeader()),
       },
       timeout: options.timeout ?? REQUEST_TIMEOUT_MS,
+      enableHttp2: false,
+      enableQuic: false,
       success: (response) => {
         const result = response.data as ApiResponse<T> | undefined
         if (response.statusCode === 200 && result && result.code === 200) {
@@ -182,7 +188,14 @@ export function rawRequestWithAuth<T>(options: RequestOptions): Promise<T> {
         }
         finish(new ApiError(result?.code ?? response.statusCode, result?.message ?? '请求失败'))
       },
-      fail: () => finish(new ApiError(-1, '网络请求失败')),
+      fail: (res) => {
+        const errMsg = res?.errMsg ?? ''
+        console.warn('[request] fail', options.method, requestUrl, errMsg)
+        const message = /domain|url not in/i.test(errMsg)
+          ? '请勾选「不校验合法域名」后重试'
+          : '网络请求失败'
+        finish(new ApiError(-1, message))
+      },
     })
   })
 }
