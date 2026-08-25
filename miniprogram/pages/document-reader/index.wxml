@@ -18,6 +18,7 @@
     type="list"
     scroll-y
     show-scrollbar="{{false}}"
+    bindscroll="onDocumentScroll"
   >
     <view
       wx:for="{{pages}}"
@@ -32,6 +33,7 @@
         src="{{item.url}}"
         mode="widthFix"
         data-page="{{item.index}}"
+        bindload="onPageImageLoad"
         bindtap="onPageTap"
       />
       <view wx:else class="document-reader__placeholder">

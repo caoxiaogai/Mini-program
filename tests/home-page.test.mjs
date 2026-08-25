@@ -805,6 +805,20 @@ test('material detail opens image preview, video player and PDF reader', () => {
   assert.match(documentService, /\/material\/\$\{materialId\}\/page\/\$\{pageIndex\}\/image/)
   assert.match(documentLogic, /getDocumentPageCount/)
   assert.match(documentLogic, /prepareDocumentPageImage/)
+  assert.match(documentLogic, /pickCurrentDocumentPageByScroll/)
+  assert.match(documentLogic, /onDocumentScroll/)
+})
+
+test('document reader current page follows the top of the reading area', async () => {
+  const { pickCurrentDocumentPageByScroll, getDocumentPageBlockHeight } = await import('../miniprogram/utils/document-page.ts')
+  const windowWidth = 393
+  const pageHeight = getDocumentPageBlockHeight(undefined, windowWidth)
+
+  assert.equal(pickCurrentDocumentPageByScroll(0, 7, [], windowWidth), 0)
+  assert.equal(pickCurrentDocumentPageByScroll(pageHeight - 1, 7, [], windowWidth), 0)
+  assert.equal(pickCurrentDocumentPageByScroll(pageHeight, 7, [], windowWidth), 1)
+  assert.equal(pickCurrentDocumentPageByScroll(pageHeight * 3, 7, [], windowWidth), 3)
+  assert.equal(pickCurrentDocumentPageByScroll(0, 0, [], windowWidth), -1)
 })
 
 test('analysis tabs use the F4F5F5 divider line', () => {

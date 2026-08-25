@@ -1,5 +1,6 @@
 import { getDocumentPageCount, prepareDocumentPageImage } from '../../services/document'
 import type { DocumentReaderPage } from '../../types/document'
+import { pickCurrentDocumentPageByScroll } from '../../utils/document-page'
 
 const PRELOAD_AHEAD = 2
 
@@ -15,6 +16,14 @@ function buildPages(totalPages: number): DocumentReaderPage[] {
   return pages
 }
 
+function getWindowWidth(): number {
+  try {
+    return wx.getSystemInfoSync().windowWidth
+  } catch {
+    return 375
+  }
+}
+
 Page({
   data: {
     navTitle: '文档预览',
@@ -27,14 +36,15 @@ Page({
   totalPages: 0,
   loadedUntil: -1,
   loadingPageIndices: [] as number[],
-  maxViewedIndex: -1,
-  pageObserver: null as WechatMiniprogram.IntersectionObserver | null,
+  currentPageIndex: 0,
+  lastScrollTop: 0,
+  windowWidth: 375,
+  pageHeightsPx: [] as Array<number | undefined>,
 
   onLoad(options: Record<string, string | undefined>) {
     this.materialId = options.materialId ?? ''
-    this.loadedUntil = -1
-    this.loadingPageIndices = []
-    this.maxViewedIndex = -1
+    this.windowWidth = getWindowWidth()
+    this.resetPagingState()
 
     if (!this.materialId) {
       this.setData({ status: 'error', errorMessage: '无法打开文档', navTitle: '文档预览' })
@@ -44,8 +54,12 @@ Page({
     this.loadDocument()
   },
 
-  onUnload() {
-    this.disconnectPageObserver()
+  resetPagingState() {
+    this.loadedUntil = -1
+    this.loadingPageIndices = []
+    this.currentPageIndex = 0
+    this.lastScrollTop = 0
+    this.pageHeightsPx = []
   },
 
   onRetryTap() {
@@ -53,7 +67,7 @@ Page({
   },
 
   loadDocument() {
-    this.disconnectPageObserver()
+    this.resetPagingState()
     this.setData({ status: 'loading', navTitle: '文档预览', pages: [] })
 
     getDocumentPageCount(this.materialId)
@@ -64,18 +78,14 @@ Page({
         }
 
         this.totalPages = totalPages
-        this.loadedUntil = -1
-        this.loadingPageIndices = []
+        this.pageHeightsPx = new Array(totalPages)
         this.setData(
           {
             status: 'success',
             navTitle: `1 / ${totalPages}`,
             pages: buildPages(totalPages),
           },
-          () => {
-            this.observePages()
-            this.markPageViewed(0)
-          },
+          () => this.ensurePagesLoaded(0),
         )
       })
       .catch(() => {
@@ -87,27 +97,36 @@ Page({
       })
   },
 
-  disconnectPageObserver() {
-    if (!this.pageObserver) return
-    this.pageObserver.disconnect()
-    this.pageObserver = null
+  onDocumentScroll(event: WechatMiniprogram.ScrollViewScroll) {
+    this.lastScrollTop = event.detail.scrollTop
+    this.syncCurrentPageFromScroll()
   },
 
-  observePages() {
-    this.disconnectPageObserver()
-    const observer = this.createIntersectionObserver({
-      observeAll: true,
-      nativeMode: true,
-    })
-    this.pageObserver = observer
-    observer.relativeToViewport().observe('.document-reader__page', (res) => {
-      if (res.intersectionRatio <= 0) return
-      const fromDataset = Number(res.dataset.page)
-      const fromId = typeof res.id === 'string' ? Number(res.id.replace('doc-page-', '')) : Number.NaN
-      const pageIndex = Number.isNaN(fromDataset) ? fromId : fromDataset
-      if (Number.isNaN(pageIndex)) return
-      this.markPageViewed(pageIndex)
-    })
+  onPageImageLoad(event: WechatMiniprogram.ImageLoad) {
+    const pageIndex = Number(event.currentTarget.dataset.page)
+    const { width, height } = event.detail
+    if (Number.isNaN(pageIndex) || pageIndex < 0 || pageIndex >= this.totalPages) return
+    if (!width || !height) return
+
+    this.pageHeightsPx[pageIndex] = (this.windowWidth * height) / width
+    this.syncCurrentPageFromScroll()
+  },
+
+  syncCurrentPageFromScroll() {
+    const current = pickCurrentDocumentPageByScroll(
+      this.lastScrollTop,
+      this.totalPages,
+      this.pageHeightsPx,
+      this.windowWidth,
+    )
+    if (current < 0) return
+
+    if (current !== this.currentPageIndex) {
+      this.currentPageIndex = current
+      this.setData({ navTitle: `${current + 1} / ${this.totalPages}` })
+    }
+
+    this.ensurePagesLoaded(current)
   },
 
   ensurePagesLoaded(visibleIndex: number) {
@@ -135,16 +154,6 @@ Page({
       .catch(() => {
         this.loadingPageIndices = this.loadingPageIndices.filter((index) => index !== pageIndex)
       })
-  },
-
-  markPageViewed(pageIndex: number) {
-    if (pageIndex < 0 || pageIndex >= this.totalPages) return
-
-    if (pageIndex > this.maxViewedIndex) {
-      this.maxViewedIndex = pageIndex
-    }
-    this.setData({ navTitle: `${pageIndex + 1} / ${this.totalPages}` })
-    this.ensurePagesLoaded(this.maxViewedIndex)
   },
 
   onPageTap(event: WechatMiniprogram.TouchEvent) {
