@@ -15,6 +15,7 @@ import type {
   AnalysisReadRange,
   AnalysisUserDetailViewModel,
   AnalysisViewModel,
+  AnalysisWorkSortId,
 } from '../types/analysis'
 import {
   buildCustomRangeQuery,
@@ -86,7 +87,24 @@ function mapContentCard(item: ApiContentListItem): AnalysisCard {
     publishedAt: formatPublishedAt(item.createTime),
     metrics: metrics.full,
     compactMetrics: metrics.compact,
+    sortCounts: buildCardSortCounts(item.viewCount, item.forwardCount, item.completeCount),
   }
+}
+
+function buildCardSortCounts(
+  viewCount: number | null | undefined,
+  forwardCount: number | null | undefined,
+  completeCount: number | null | undefined,
+): AnalysisCard['sortCounts'] {
+  return {
+    view: viewCount ?? 0,
+    share: forwardCount ?? 0,
+    completion: completeCount ?? 0,
+  }
+}
+
+export function sortAnalysisCards(cards: AnalysisCard[], sortId: AnalysisWorkSortId): AnalysisCard[] {
+  return [...cards].sort((left, right) => right.sortCounts[sortId] - left.sortCounts[sortId])
 }
 
 function buildCardMetrics(viewCount: number | null | undefined, forwardCount: number | null | undefined, completeCount: number | null | undefined, viewerCount: number | null | undefined) {
@@ -273,6 +291,7 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
         publishedAt: formatPublishedAt(material?.createTime),
         metrics: buildCardMetrics(detail.viewCount, detail.forwardCount, detail.completeCount, detail.viewerCount).full,
         compactMetrics: buildCardMetrics(detail.viewCount, detail.forwardCount, detail.completeCount, detail.viewerCount).compact,
+        sortCounts: buildCardSortCounts(detail.viewCount, detail.forwardCount, detail.completeCount),
       },
       intentUsers: audienceList.map((audience, index) => {
         const customerId = String(audience.customerId)

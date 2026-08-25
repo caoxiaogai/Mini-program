@@ -1,8 +1,8 @@
-import { getAnalysisOverview } from '../../services/analysis'
+import { getAnalysisOverview, sortAnalysisCards } from '../../services/analysis'
 import { getHomePageData } from '../../services/home'
-import { getMaterials } from '../../services/materials'
+import { getMaterialDetail, getMaterials } from '../../services/materials'
 import { getNotifications } from '../../services/notifications'
-import type { AnalysisAudienceUser, AnalysisIntentLevel, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
+import type { AnalysisAudienceUser, AnalysisCard, AnalysisIntentLevel, AnalysisReadRange, AnalysisViewModel, AnalysisWorkSortId } from '../../types/analysis'
 import type { HomePageViewModel } from '../../types/home'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
@@ -11,11 +11,12 @@ import { getProfilePageData } from '../../services/profile'
 import { getHomeGreeting } from '../../utils/greeting'
 import { getHomeHeaderOpacity } from '../../utils/home-header'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
+import { takePendingPublishReturn } from '../../utils/publish-return'
+import { buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, showMomentsShareGuide } from '../../utils/share-material'
 import { markHomeNotificationViewed } from './home-notification-preview'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
-type AnalysisSortId = 'completion' | 'share' | 'view'
 type AnalysisTabId = 'work' | 'user' | 'total'
 type AnalysisIntentFilter = 'all' | AnalysisIntentLevel
 
@@ -36,9 +37,9 @@ const analysisPeriods = [
 ]
 
 const analysisSortOptions = [
-  { id: 'completion' as AnalysisSortId, label: '完播数' },
-  { id: 'share' as AnalysisSortId, label: '转发数' },
-  { id: 'view' as AnalysisSortId, label: '浏览量' },
+  { id: 'completion' as AnalysisWorkSortId, label: '完播数' },
+  { id: 'share' as AnalysisWorkSortId, label: '转发数' },
+  { id: 'view' as AnalysisWorkSortId, label: '浏览量' },
 ]
 
 const analysisTabs = [
@@ -101,6 +102,9 @@ Page({
     hasVisibleMaterials: false,
     materialsHeaderOpacity: 0,
     showPublishSuccessModal: false,
+    shareMaterialId: '',
+    shareTitle: '',
+    shareImageUrl: '',
     analysisData: null as AnalysisViewModel | null,
     analysisTabs,
     activeAnalysisTab: 'work' as AnalysisTabId,
@@ -110,9 +114,10 @@ Page({
     analysisPeriods,
     activePeriod: 'day' as AnalysisPeriodId,
     analysisSortOptions,
-    activeAnalysisSort: 'view' as AnalysisSortId,
-    activeAnalysisSortLabel: '阅读量',
+    activeAnalysisSort: 'view' as AnalysisWorkSortId,
+    activeAnalysisSortLabel: '浏览量',
     analysisSortSheetVisible: false,
+    visibleAnalysisCards: [] as AnalysisCard[],
     analysisIntentTabs,
     activeAnalysisIntent: 'all' as AnalysisIntentFilter,
     analysisIntentIndex: 0,
@@ -131,14 +136,21 @@ Page({
     this.setData({ isAndroid: platform === 'android' || platform === 'devtools' })
 
     if (options.tab === 'materials') {
-      this.setData({ showPublishSuccessModal: options.publishSuccess === '1' })
+      const shareMaterialId = options.id ?? ''
+      this.setData({
+        showPublishSuccessModal: options.publishSuccess === '1',
+        shareMaterialId,
+      })
       this.setActiveTab(2)
+      if (shareMaterialId) this.loadShareMaterial(shareMaterialId)
     }
     this.loadHomeData()
     this.loadProfileData()
   },
   onShow() {
     this.setData({ greetingHeadline: getHomeGreeting() })
+    enableMaterialShareMenu()
+    this.applyPendingPublishReturn()
   },
   onHomeScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
     const homeHeaderOpacity = getHomeHeaderOpacity(event.detail.scrollTop)
@@ -166,10 +178,33 @@ Page({
       this.setData({ materials, visibleMaterials, hasVisibleMaterials: visibleMaterials.length > 0 })
     })
   },
+  loadShareMaterial(materialId: string) {
+    getMaterialDetail(materialId).then((detail) => {
+      if (!detail) return
+      this.setData({
+        shareMaterialId: detail.id,
+        shareTitle: buildMaterialShareTitle(detail.descriptionLines),
+        shareImageUrl: detail.previewUrl,
+      })
+    })
+  },
+  applyPendingPublishReturn() {
+    const pending = takePendingPublishReturn()
+    if (!pending) return
+
+    this.setData({
+      showPublishSuccessModal: pending.showSuccessModal,
+      shareMaterialId: pending.materialId,
+    })
+    this.setActiveTab(2)
+    this.loadMaterials()
+    if (pending.showSuccessModal && pending.materialId) this.loadShareMaterial(pending.materialId)
+  },
   loadAnalysis(period: AnalysisPeriodId = this.data.activePeriod) {
     getAnalysisOverview(period).then((analysisData) => {
       const visibleAnalysisUsers = getVisibleAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisIntent)
-      this.setData({ analysisData, visibleAnalysisUsers, hasAnalysisCards: analysisData.cards.length > 0, hasAnalysisUsers: visibleAnalysisUsers.length > 0, visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange] })
+      const visibleAnalysisCards = sortAnalysisCards(analysisData.cards, this.data.activeAnalysisSort)
+      this.setData({ analysisData, visibleAnalysisCards, visibleAnalysisUsers, hasAnalysisCards: visibleAnalysisCards.length > 0, hasAnalysisUsers: visibleAnalysisUsers.length > 0, visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange] })
     })
   },
   loadProfileData() {
@@ -270,9 +305,15 @@ Page({
     this.setData({ activeAnalysisIntent: selectedTab.id, analysisIntentIndex: index, visibleAnalysisUsers, hasAnalysisUsers: visibleAnalysisUsers.length > 0 })
   },
   onAnalysisSortTap() { this.setData({ analysisSortSheetVisible: !this.data.analysisSortSheetVisible }) },
-  onAnalysisSortOptionTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisSortId }>) {
+  onAnalysisSortOptionTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisWorkSortId }>) {
     const option = analysisSortOptions.find((item) => item.id === event.detail.id)
-    if (option) this.setData({ activeAnalysisSort: option.id, activeAnalysisSortLabel: option.label, analysisSortSheetVisible: false })
+    if (!option) return
+    this.setData({
+      activeAnalysisSort: option.id,
+      activeAnalysisSortLabel: option.label,
+      analysisSortSheetVisible: false,
+      visibleAnalysisCards: sortAnalysisCards(this.data.analysisData?.cards ?? [], option.id),
+    })
   },
   onAnalysisSortMaskTap() { this.setData({ analysisSortSheetVisible: false }) },
   onAnalysisCardTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
@@ -310,15 +351,33 @@ Page({
     wx.navigateTo({ url: '/pages/materials/publish/index' })
   },
   onPublishSuccessClose() {
-    this.setData({ showPublishSuccessModal: false })
+    this.setData({
+      showPublishSuccessModal: false,
+      shareMaterialId: '',
+      shareTitle: '',
+      shareImageUrl: '',
+    })
   },
-  onShareFriendsTap() {
-    this.setData({ showPublishSuccessModal: false })
-    wx.showToast({ title: '分享功能待接入', icon: 'none' })
+  onShareAppMessage() {
+    if (!this.data.shareMaterialId) return
+
+    return {
+      title: this.data.shareTitle,
+      path: buildMaterialSharePath(this.data.shareMaterialId),
+      imageUrl: this.data.shareImageUrl || undefined,
+    }
+  },
+  onShareTimeline() {
+    if (!this.data.shareMaterialId) return
+
+    return {
+      title: this.data.shareTitle,
+      query: buildMaterialShareQuery(this.data.shareMaterialId),
+      imageUrl: this.data.shareImageUrl || undefined,
+    }
   },
   onShareMomentsTap() {
-    this.setData({ showPublishSuccessModal: false })
-    wx.showToast({ title: '分享功能待接入', icon: 'none' })
+    showMomentsShareGuide()
   },
   onPlusTap() {
     this.setActiveTab(2)

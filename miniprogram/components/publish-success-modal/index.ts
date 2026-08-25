@@ -10,9 +10,6 @@ Component({
       this.triggerEvent('close')
     },
     onCardTap() {},
-    onShareFriendsTap() {
-      this.triggerEvent('sharefriends')
-    },
     onShareMomentsTap() {
       this.triggerEvent('sharemoments')
     },

@@ -80,11 +80,16 @@
   align-items: center;
   justify-content: center;
   height: 96rpx;
+  margin: 0;
   padding: 16rpx 24rpx;
   border-radius: 110rpx;
   font-size: 28rpx;
   line-height: 1.2;
   box-sizing: border-box;
+}
+
+.publish-success-modal__share-button::after {
+  display: none;
 }
 
 .publish-success-modal__share-button--secondary {
@@ -94,6 +99,7 @@
 }
 
 .publish-success-modal__share-button--primary {
+  border: 0;
   background: @publish-success-accent;
   color: #ffffff;
 }

@@ -1,6 +1,8 @@
-import { getMaterials } from '../../services/materials'
+import { getMaterialDetail, getMaterials } from '../../services/materials'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
+import { takePendingPublishReturn } from '../../utils/publish-return'
+import { buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, showMomentsShareGuide } from '../../utils/share-material'
 
 type MaterialsTabId = 'home' | 'notifications' | 'analysis' | 'profile'
 
@@ -49,14 +51,27 @@ Page({
     materialsHeaderOpacity: 0,
     isAndroid: false,
     showPublishSuccessModal: false,
+    shareMaterialId: '',
+    shareTitle: '',
+    shareImageUrl: '',
   },
   onLoad(options: Record<string, string | undefined>) {
     const { platform } = wx.getSystemInfoSync()
     this.setData({
       isAndroid: platform === 'android' || platform === 'devtools',
       showPublishSuccessModal: options.publishSuccess === '1',
+      shareMaterialId: options.id ?? '',
     })
 
+    if (options.id) this.loadShareMaterial(options.id)
+
+    this.loadMaterials()
+  },
+  onShow() {
+    enableMaterialShareMenu()
+    this.applyPendingPublishReturn()
+  },
+  loadMaterials() {
     getMaterials().then((materials) => {
       const visibleMaterials = getVisibleMaterials(materials.items, this.data.activeFilter)
 
@@ -67,8 +82,8 @@ Page({
       })
     })
   },
-  onPageScroll(event: WechatMiniprogram.PageScrollOption) {
-    const materialsHeaderOpacity = calculateRankingHeaderOpacity(event.scrollTop)
+  onMaterialsScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
+    const materialsHeaderOpacity = calculateRankingHeaderOpacity(event.detail.scrollTop)
 
     if (materialsHeaderOpacity === this.data.materialsHeaderOpacity) return
 
@@ -123,15 +138,54 @@ Page({
     wx.navigateTo({ url: '/pages/index/index' })
   },
   onPlusTap() {},
-  onPublishSuccessClose() {
-    this.setData({ showPublishSuccessModal: false })
+  loadShareMaterial(materialId: string) {
+    getMaterialDetail(materialId).then((detail) => {
+      if (!detail) return
+      this.setData({
+        shareMaterialId: detail.id,
+        shareTitle: buildMaterialShareTitle(detail.descriptionLines),
+        shareImageUrl: detail.previewUrl,
+      })
+    })
   },
-  onShareFriendsTap() {
-    this.setData({ showPublishSuccessModal: false })
-    wx.showToast({ title: '分享功能待接入', icon: 'none' })
+  applyPendingPublishReturn() {
+    const pending = takePendingPublishReturn()
+    if (!pending) return
+
+    this.setData({
+      showPublishSuccessModal: pending.showSuccessModal,
+      shareMaterialId: pending.materialId,
+    })
+    this.loadMaterials()
+    if (pending.showSuccessModal && pending.materialId) this.loadShareMaterial(pending.materialId)
+  },
+  onPublishSuccessClose() {
+    this.setData({
+      showPublishSuccessModal: false,
+      shareMaterialId: '',
+      shareTitle: '',
+      shareImageUrl: '',
+    })
+  },
+  onShareAppMessage() {
+    if (!this.data.shareMaterialId) return
+
+    return {
+      title: this.data.shareTitle,
+      path: buildMaterialSharePath(this.data.shareMaterialId),
+      imageUrl: this.data.shareImageUrl || undefined,
+    }
+  },
+  onShareTimeline() {
+    if (!this.data.shareMaterialId) return
+
+    return {
+      title: this.data.shareTitle,
+      query: buildMaterialShareQuery(this.data.shareMaterialId),
+      imageUrl: this.data.shareImageUrl || undefined,
+    }
   },
   onShareMomentsTap() {
-    this.setData({ showPublishSuccessModal: false })
-    wx.showToast({ title: '分享功能待接入', icon: 'none' })
+    showMomentsShareGuide()
   },
 })

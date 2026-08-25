@@ -1,9 +1,7 @@
-import { getAnalysisOverview } from '../../services/analysis'
-import type { AnalysisAudienceUser, AnalysisIntentLevel, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
+import { getAnalysisOverview, sortAnalysisCards } from '../../services/analysis'
+import type { AnalysisAudienceUser, AnalysisCard, AnalysisIntentLevel, AnalysisReadRange, AnalysisViewModel, AnalysisWorkSortId } from '../../types/analysis'
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
-
-type AnalysisSortId = 'completion' | 'share' | 'view'
 
 interface AnalysisPeriodOption {
   id: AnalysisPeriodId
@@ -11,7 +9,7 @@ interface AnalysisPeriodOption {
 }
 
 interface AnalysisSortOption {
-  id: AnalysisSortId
+  id: AnalysisWorkSortId
   label: string
 }
 
@@ -79,9 +77,10 @@ Page({
     analysisPeriods,
     activePeriod: 'day' as AnalysisPeriodId,
     analysisSortOptions,
-    activeAnalysisSort: 'view' as AnalysisSortId,
-    activeAnalysisSortLabel: '阅读量',
+    activeAnalysisSort: 'view' as AnalysisWorkSortId,
+    activeAnalysisSortLabel: '浏览量',
     analysisSortSheetVisible: false,
+    visibleAnalysisCards: [] as AnalysisCard[],
     analysisIntentTabs,
     activeAnalysisIntent: 'all' as AnalysisIntentFilter,
     analysisIntentIndex: 0,
@@ -109,11 +108,13 @@ Page({
     getAnalysisOverview(period).then((analysisData) => {
       const activeIntent = analysisIntentTabs[this.data.analysisIntentIndex]?.id ?? 'all'
       const visibleAnalysisUsers = getVisibleAnalysisUsers(analysisData.audienceUsers, activeIntent)
+      const visibleAnalysisCards = sortAnalysisCards(analysisData.cards, this.data.activeAnalysisSort)
 
       this.setData({
         analysisData,
+        visibleAnalysisCards,
         visibleAnalysisUsers,
-        hasAnalysisCards: analysisData.cards.length > 0,
+        hasAnalysisCards: visibleAnalysisCards.length > 0,
         hasAnalysisUsers: visibleAnalysisUsers.length > 0,
         visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange],
       })
@@ -198,7 +199,7 @@ Page({
     this.setData({ analysisSortSheetVisible: !this.data.analysisSortSheetVisible })
   },
   onAnalysisSortOptionTap(event: WechatMiniprogram.TouchEvent) {
-    const sortId = event.currentTarget.dataset.id as AnalysisSortId
+    const sortId = event.currentTarget.dataset.id as AnalysisWorkSortId
     const sortOption = analysisSortOptions.find((option) => option.id === sortId)
 
     if (!sortOption) return
@@ -207,6 +208,7 @@ Page({
       activeAnalysisSort: sortOption.id,
       activeAnalysisSortLabel: sortOption.label,
       analysisSortSheetVisible: false,
+      visibleAnalysisCards: sortAnalysisCards(this.data.analysisData?.cards ?? [], sortOption.id),
     })
   },
   onAnalysisSortMaskTap() {

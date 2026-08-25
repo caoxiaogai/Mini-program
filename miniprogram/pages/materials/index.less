@@ -9,7 +9,10 @@ page {
 
 .materials-page {
   position: relative;
+  display: flex;
+  height: 100%;
   min-height: 100vh;
+  flex-direction: column;
   background: #ffffff;
   color: #000000;
   isolation: isolate;
@@ -34,10 +37,30 @@ page {
 }
 
 .materials-page__header {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 4;
+  flex-shrink: 0;
   background: transparent;
+}
+
+.materials-filter {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-shrink: 0;
+  gap: 20rpx;
+  align-items: center;
+  padding: 0 40rpx;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.materials-page__scroll {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  height: 0;
+  min-height: 0;
 }
 
 .materials-page__content {
@@ -46,12 +69,6 @@ page {
   padding: 0 40rpx calc(336rpx + env(safe-area-inset-bottom));
   background: transparent;
   box-sizing: border-box;
-}
-
-.materials-filter {
-  display: flex;
-  gap: 20rpx;
-  align-items: center;
 }
 
 .materials-filter__item {

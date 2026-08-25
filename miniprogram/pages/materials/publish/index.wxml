@@ -4,31 +4,46 @@
   <view class="publish-page__content">
     <view class="publish-page__image-grid">
       <view
-        wx:for="{{images}}"
+        wx:for="{{media}}"
         wx:key="id"
         class="publish-page__image-slot publish-page__image-slot--filled"
       >
-        <image class="publish-page__image" src="{{item.path}}" mode="aspectFill" />
+        <image
+          wx:if="{{item.kind !== 'pdf'}}"
+          class="publish-page__image"
+          src="{{item.kind === 'video' && item.previewPath ? item.previewPath : item.path}}"
+          mode="aspectFill"
+        />
+        <image
+          wx:if="{{item.kind === 'video'}}"
+          class="publish-page__video-play"
+          src="/assets/materials/material-play.svg"
+          mode="aspectFit"
+        />
+        <view wx:if="{{item.kind === 'pdf'}}" class="publish-page__pdf-slot">
+          <text class="publish-page__pdf-badge">PDF</text>
+          <text class="publish-page__pdf-name">{{item.name}}</text>
+        </view>
         <view
           class="publish-page__image-delete"
           data-id="{{item.id}}"
-          catchtap="onDeleteImageTap"
+          catchtap="onDeleteMediaTap"
           hover-class="publish-page__image-delete--pressed"
           hover-stay-time="80"
           aria-role="button"
-          aria-label="删除图片"
+          aria-label="删除素材"
         >
           <image class="publish-page__image-delete-icon" src="/assets/materials/publish-delete.svg" mode="aspectFit" />
         </view>
       </view>
       <view
-        wx:if="{{canAddImage}}"
+        wx:if="{{canAddMedia}}"
         class="publish-page__image-slot publish-page__image-slot--add"
-        bindtap="onAddImageTap"
+        bindtap="onAddMediaTap"
         hover-class="publish-page__image-slot--pressed"
         hover-stay-time="80"
         aria-role="button"
-        aria-label="添加图片"
+        aria-label="添加素材"
       >
         <text class="publish-page__add-icon">+</text>
       </view>
@@ -54,4 +69,33 @@
     </view>
   </view>
 
+  <view wx:if="{{typeSheetVisible}}" class="publish-sheet">
+    <view class="publish-sheet__mask" catchtap="onTypeSheetMaskTap"></view>
+    <view class="publish-sheet__panel">
+      <view
+        wx:for="{{typeOptions}}"
+        wx:key="id"
+        class="publish-sheet__option"
+        data-id="{{item.id}}"
+        bindtap="onTypeOptionTap"
+        hover-class="publish-sheet__option--pressed"
+        hover-stay-time="80"
+      >{{item.label}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{sourceSheetVisible}}" class="publish-sheet">
+    <view class="publish-sheet__mask" catchtap="onSourceSheetMaskTap"></view>
+    <view class="publish-sheet__panel">
+      <view
+        wx:for="{{sourceOptions}}"
+        wx:key="id"
+        class="publish-sheet__option"
+        data-id="{{item.id}}"
+        bindtap="onSourceOptionTap"
+        hover-class="publish-sheet__option--pressed"
+        hover-stay-time="80"
+      >{{item.label}}</view>
+    </view>
+  </view>
 </view>

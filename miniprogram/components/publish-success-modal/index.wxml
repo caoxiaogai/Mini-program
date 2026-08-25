@@ -16,16 +16,16 @@
       </view>
 
       <view class="publish-success-modal__share-actions">
-        <view
+        <button
           class="publish-success-modal__share-button publish-success-modal__share-button--secondary"
-          bindtap="onShareFriendsTap"
+          open-type="share"
           hover-class="publish-success-modal__share-button--pressed"
           hover-stay-time="80"
         >
           <text>分享给好友</text>
           <image class="publish-success-modal__share-icon" src="/assets/materials/detail-share.svg" mode="aspectFit" />
-        </view>
-        <view
+        </button>
+        <button
           class="publish-success-modal__share-button publish-success-modal__share-button--primary"
           bindtap="onShareMomentsTap"
           hover-class="publish-success-modal__share-button--pressed"
@@ -35,7 +35,7 @@
           <view class="publish-success-modal__moments-icon-wrap">
             <image class="publish-success-modal__moments-icon" src="/assets/materials/detail-moments.png" mode="aspectFit" />
           </view>
-        </view>
+        </button>
       </view>
     </view>
   </view>

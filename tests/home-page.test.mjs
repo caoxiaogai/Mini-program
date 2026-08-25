@@ -707,7 +707,63 @@ test('publish belongs to the root swiper and does not navigate to a separate mat
   assert.doesNotMatch(homeLogic, /onPlusTap\(\)\s*\{[\s\S]*?wx\.navigateTo/)
   assert.match(homeLogic, /loadMaterials\(\)/)
   assert.match(homeConfig, /publish-success-modal/)
-  assert.match(publishLogic, /\/pages\/index\/index\?tab=materials/)
+  assert.match(publishLogic, /returnToMaterialsList/)
+  assert.match(read('miniprogram/utils/publish-return.ts'), /wx\.navigateBack/)
+  assert.match(read('miniprogram/utils/publish-return.ts'), /\/pages\/index\/index/)
+})
+
+test('publish page picks image/video from camera or album and PDF from chat files', () => {
+  const markup = read('miniprogram/pages/materials/publish/index.wxml')
+  const logic = read('miniprogram/pages/materials/publish/index.ts')
+  const picker = read('miniprogram/utils/publish-media.ts')
+  const service = read('miniprogram/services/materials.ts')
+  const types = read('miniprogram/types/materials.ts')
+  const app = JSON.parse(read('miniprogram/app.json'))
+
+  assert.match(markup, /bindtap="onAddMediaTap"/)
+  assert.match(markup, /typeSheetVisible/)
+  assert.match(markup, /sourceSheetVisible/)
+  assert.match(picker, /label: '图片\/视频'/)
+  assert.match(picker, /label: 'PDF'/)
+  assert.match(picker, /label: '拍摄'/)
+  assert.match(picker, /label: '从相册选择'/)
+  assert.match(logic, /wx\.chooseMedia\(/)
+  assert.match(logic, /chooseImageOrVideo\(\['camera'\]\)/)
+  assert.match(logic, /chooseImageOrVideo\(\['album'\]\)/)
+  assert.match(logic, /mediaType: \['image', 'video'\]/)
+  assert.match(logic, /wx\.chooseMessageFile\(/)
+  assert.match(logic, /type: 'file'/)
+  assert.match(logic, /extension: \['pdf'\]/)
+  assert.doesNotMatch(logic, /wx\.chooseImage\(/)
+  assert.match(types, /export interface PublishMediaViewModel/)
+  assert.match(service, /fileType: 'VIDEO'/)
+  assert.match(service, /fileType: 'PDF'/)
+  assert.equal(app.permission['scope.camera'].desc, '用于拍摄照片或视频并发布素材')
+})
+
+test('publish success modal shares to friends and moments', () => {
+  const modalMarkup = read('miniprogram/components/publish-success-modal/index.wxml')
+  const modalLogic = read('miniprogram/components/publish-success-modal/index.ts')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const homeConfig = JSON.parse(read('miniprogram/pages/index/index.json'))
+  const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
+  const shareUtil = read('miniprogram/utils/share-material.ts')
+
+  assert.match(modalMarkup, /open-type="share"/)
+  assert.match(modalMarkup, /bindtap="onShareMomentsTap"/)
+  assert.doesNotMatch(modalLogic, /sharefriends/)
+  assert.match(publishLogic, /returnToMaterialsList\(\{ materialId, showSuccessModal: true \}\)/)
+  assert.match(homeLogic, /applyPendingPublishReturn/)
+  assert.match(homeLogic, /onShareAppMessage\(\)/)
+  assert.match(homeLogic, /buildMaterialSharePath/)
+  assert.match(homeLogic, /showMomentsShareGuide/)
+  assert.match(homeLogic, /onShareTimeline\(\)/)
+  assert.match(shareUtil, /请点击右上角「···」，选择「分享到朋友圈」/)
+  assert.match(shareUtil, /shareTimeline/)
+  assert.equal(homeConfig.enableShareAppMessage, true)
+  assert.equal(homeConfig.enableShareTimeline, true)
+  assert.doesNotMatch(homeLogic, /分享功能待接入/)
+  assert.doesNotMatch(shareUtil, /wx\.showShareImageMenu\(/)
 })
 
 test('materials home uses the Figma publish navigation and reserves space above it', () => {
@@ -765,6 +821,26 @@ test('materials header fades to white while the list scrolls', () => {
   const markup = read('miniprogram/pages/materials/index.wxml')
 
   assert.match(markup, /background: rgba\(255, 255, 255, \{\{materialsHeaderOpacity\}\}\);/)
+})
+
+test('materials filter buttons stay fixed above the scrolling list', () => {
+  const markup = read('miniprogram/pages/materials/index.wxml')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/materials/index.less')
+  const pageConfig = JSON.parse(read('miniprogram/pages/materials/index.json'))
+
+  assert.equal(pageConfig.disableScroll, true)
+  assert.match(styles, /\.materials-filter\s*\{[\s\S]*?flex-shrink: 0;/)
+  assert.match(styles, /\.materials-page__scroll\s*\{[\s\S]*?flex: 1;/)
+
+  for (const source of [markup, homeMarkup]) {
+    const filterIndex = source.indexOf('class="materials-filter"')
+    const scrollOpen = source.search(/<scroll-view[^>]*class="[^"]*materials-(?:page__)?scroll/)
+    assert.ok(filterIndex > -1, 'filter toolbar should exist')
+    assert.ok(scrollOpen > filterIndex, 'filter toolbar should sit outside the list scroll-view')
+    const scrollClose = source.indexOf('</scroll-view>', scrollOpen)
+    assert.doesNotMatch(source.slice(scrollOpen, scrollClose), /class="materials-filter"/)
+  }
 })
 
 test('materials publish button does not place a blue gradient layer over cards or navigation', () => {
@@ -863,7 +939,22 @@ test('analysis work tab matches the revised Figma compact work list', () => {
   assert.match(types, /publishedAt: string/)
   assert.match(types, /compactMetrics: AnalysisMetric\[\]/)
   assert.match(service, /compactMetrics:/)
-  assert.match(homeLogic, /activeAnalysisSortLabel: '阅读量'/)
+  assert.match(service, /export function sortAnalysisCards/)
+  assert.match(homeLogic, /activeAnalysisSortLabel: '浏览量'/)
+  assert.match(homeLogic, /sortAnalysisCards\(analysisData\.cards, this\.data\.activeAnalysisSort\)/)
+  assert.match(markup, /\{\{visibleAnalysisCards\}\}/)
+})
+
+test('analysis work list re-sorts when the sort option changes', () => {
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const analysisLogic = read('miniprogram/pages/analysis/index.ts')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const analysisMarkup = read('miniprogram/pages/analysis/index.wxml')
+
+  assert.match(homeLogic, /visibleAnalysisCards: sortAnalysisCards\(this\.data\.analysisData\?\.cards \?\? \[\], option\.id\)/)
+  assert.match(analysisLogic, /visibleAnalysisCards: sortAnalysisCards\(this\.data\.analysisData\?\.cards \?\? \[\], sortOption\.id\)/)
+  assert.match(homeMarkup, /visible-analysis-cards="\{\{visibleAnalysisCards\}\}"/)
+  assert.match(analysisMarkup, /\{\{visibleAnalysisCards\}\}/)
 })
 
 test('analysis work data comes from backend analysis APIs', () => {
@@ -910,6 +1001,17 @@ test('analysis user list stacks its filter above the rows', () => {
   const styles = read('miniprogram/pages/analysis/index.less')
 
   assert.match(styles, /\.analysis-user__list-panel \{[^}]*display: flex;[^}]*flex-direction: column;/)
+})
+
+test('analysis user intent tabs stay visible when the current filter is empty', () => {
+  const standalone = read('miniprogram/pages/analysis/index.wxml')
+  const embedded = read('miniprogram/components/home-analysis/index.wxml')
+
+  for (const markup of [standalone, embedded]) {
+    assert.match(markup, /<view class="analysis-user__list-panel">[\s\S]*<segmented-filter items="\{\{analysisIntentTabs\}\}"/)
+    assert.match(markup, /wx:if="\{\{hasAnalysisUsers\}\}" class="analysis-user__list"/)
+    assert.doesNotMatch(markup, /wx:if="\{\{hasAnalysisUsers\}\}" class="analysis-user__list-panel"/)
+  }
 })
 
 test('analysis work filters match Figma 517:3836', () => {

@@ -6,7 +6,8 @@ import type {
   MaterialsFilterViewModel,
   MaterialsViewModel,
   MaterialSubmitInput,
-  PublishImageViewModel,
+  PublishMediaKind,
+  PublishMediaViewModel,
 } from '../types/materials'
 import { formatDateKey } from '../utils/format'
 import { prepareMediaUrl, prepareMediaUrls } from '../utils/media'
@@ -28,7 +29,12 @@ const materialKinds: Record<string, MaterialCardViewModel['kind']> = {
   TABLE: 'pdf',
 }
 
-const MATERIAL_DEFAULT_TITLE = '图文素材'
+const MATERIAL_DEFAULT_TITLES = {
+  IMAGE: '图文素材',
+  VIDEO: '视频素材',
+  PDF: 'PDF 文档',
+  TABLE: '表格文档',
+} as const
 const MATERIAL_TITLE_MAX_LENGTH = 30
 const UPLOAD_CONCURRENCY = 3
 const THUMBNAIL_CONCURRENCY = 6
@@ -136,15 +142,43 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
     .catch(() => null)
 }
 
+function kindFromFileType(fileType: string): PublishMediaKind {
+  return materialKinds[fileType] ?? 'pdf'
+}
+
 export function getMaterialDraft(materialId: string): Promise<MaterialDraftEditViewModel | null> {
   return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
     .then(async (material) => {
+      const fileType = material.fileType ?? 'IMAGE'
+      const kind = kindFromFileType(fileType)
       const sourceUrls = parseImageUrls(material.fileUrl)
       const paths = await prepareMediaUrls(sourceUrls)
+      const previewPath = material.coverUrl ? await prepareMediaUrl(resolveMediaUrl(material.coverUrl)) : ''
+
+      const media: PublishMediaViewModel[] =
+        kind === 'image'
+          ? sourceUrls.map((url, index) => ({
+              id: url,
+              path: paths[index] ?? url,
+              kind: 'image',
+              previewPath: '',
+              name: '',
+              duration: 0,
+            }))
+          : [
+              {
+                id: sourceUrls[0] ?? String(material.id),
+                path: paths[0] ?? sourceUrls[0] ?? '',
+                kind,
+                previewPath,
+                name: kind === 'pdf' ? material.title?.trim() || MATERIAL_DEFAULT_TITLES.PDF : '',
+                duration: material.duration ?? 0,
+              },
+            ]
 
       return {
         id: String(material.id),
-        images: sourceUrls.map((url, index) => ({ id: url, path: paths[index] ?? url })),
+        media,
         copy: material.content ?? '',
       }
     })
@@ -162,53 +196,110 @@ function shouldUploadLocalPath(path: string): boolean {
   return !/^https?:\/\//i.test(path)
 }
 
-function buildMaterialTitle(copy: string): string {
+function buildMaterialTitle(copy: string, fallbackTitle: string): string {
   const firstLine = copy
     .split(/\r?\n/)
     .map((line) => line.trim())
     .find((line) => line !== '')
 
-  return firstLine ? firstLine.slice(0, MATERIAL_TITLE_MAX_LENGTH) : MATERIAL_DEFAULT_TITLE
+  return firstLine ? firstLine.slice(0, MATERIAL_TITLE_MAX_LENGTH) : fallbackTitle.slice(0, MATERIAL_TITLE_MAX_LENGTH)
 }
 
-function uploadLocalImages(images: PublishImageViewModel[]): Promise<string[]> {
-  const tasks = images.map((image) => () =>
-    shouldUploadLocalPath(image.path) ? uploadFile('/material/upload-file', image.path) : Promise.resolve(image.path),
+function uploadLocalFile(path: string): Promise<string> {
+  return shouldUploadLocalPath(path) ? uploadFile('/material/upload-file', path) : Promise.resolve(path)
+}
+
+function uploadLocalFiles(items: PublishMediaViewModel[]): Promise<string[]> {
+  return runRequestQueue(
+    items.map((item) => () => uploadLocalFile(item.path)),
+    UPLOAD_CONCURRENCY,
   )
-  return runRequestQueue(tasks, UPLOAD_CONCURRENCY)
 }
 
-function createMaterial(imageUrls: string[], copy: string): Promise<string> {
+function createMaterial(input: {
+  fileType: 'IMAGE' | 'VIDEO' | 'PDF'
+  fileUrl: string
+  coverUrl: string
+  duration: number
+  copy: string
+  fallbackTitle: string
+}): Promise<string> {
   return request<ApiMaterial>({
     method: 'POST',
     path: '/material',
     data: {
-      title: buildMaterialTitle(copy),
-      content: copy,
-      fileType: 'IMAGE',
-      fileUrl: JSON.stringify(imageUrls),
-      coverUrl: imageUrls[0] ?? '',
-      duration: 0,
+      title: buildMaterialTitle(input.copy, input.fallbackTitle),
+      content: input.copy,
+      fileType: input.fileType,
+      fileUrl: input.fileUrl,
+      coverUrl: input.coverUrl,
+      duration: input.duration,
     },
   }).then((material) => String(material.id))
 }
 
-/**
- * 保存素材：编辑既有草稿且图片未改动时仅更新文案（PUT）；
- * 其余情况上传本地图片后创建新素材（后端暂无「更新素材图片」接口，见 HANDOFF 待确认项）。
- */
-function persistMaterial(input: MaterialSubmitInput): Promise<string> {
-  if (input.images.length === 0) {
-    wx.showToast({ title: '请先添加图片', icon: 'none' })
-    return Promise.reject(new Error('material images required'))
+function persistNewMaterial(input: MaterialSubmitInput): Promise<string> {
+  const kind = input.media[0]?.kind
+  if (kind === 'video') {
+    const video = input.media[0]
+    return uploadLocalFile(video.path).then((fileUrl) => {
+      const coverTask = video.previewPath ? uploadLocalFile(video.previewPath).catch(() => '') : Promise.resolve('')
+      return coverTask.then((coverUrl) =>
+        createMaterial({
+          fileType: 'VIDEO',
+          fileUrl,
+          coverUrl,
+          duration: Math.round(video.duration),
+          copy: input.copy,
+          fallbackTitle: MATERIAL_DEFAULT_TITLES.VIDEO,
+        }),
+      )
+    })
   }
 
-  const imagesUnchanged =
-    input.draftId !== null &&
-    input.originalImagePaths.length === input.images.length &&
-    input.images.every((image, index) => image.path === input.originalImagePaths[index])
+  if (kind === 'pdf') {
+    const pdf = input.media[0]
+    const fallbackTitle = pdf.name.replace(/\.pdf$/i, '').trim() || MATERIAL_DEFAULT_TITLES.PDF
+    return uploadLocalFile(pdf.path).then((fileUrl) =>
+      createMaterial({
+        fileType: 'PDF',
+        fileUrl,
+        coverUrl: '',
+        duration: 0,
+        copy: input.copy,
+        fallbackTitle,
+      }),
+    )
+  }
 
-  if (input.draftId !== null && imagesUnchanged) {
+  return uploadLocalFiles(input.media).then((imageUrls) =>
+    createMaterial({
+      fileType: 'IMAGE',
+      fileUrl: JSON.stringify(imageUrls),
+      coverUrl: imageUrls[0] ?? '',
+      duration: 0,
+      copy: input.copy,
+      fallbackTitle: MATERIAL_DEFAULT_TITLES.IMAGE,
+    }),
+  )
+}
+
+/**
+ * 保存素材：编辑既有草稿且文件未改动时仅更新文案（PUT）；
+ * 其余情况上传本地文件后创建新素材（后端暂无「更新素材文件」接口，见 HANDOFF 待确认项）。
+ */
+function persistMaterial(input: MaterialSubmitInput): Promise<string> {
+  if (input.media.length === 0) {
+    wx.showToast({ title: '请先添加素材', icon: 'none' })
+    return Promise.reject(new Error('material media required'))
+  }
+
+  const mediaUnchanged =
+    input.draftId !== null &&
+    input.originalMediaPaths.length === input.media.length &&
+    input.media.every((item, index) => item.path === input.originalMediaPaths[index])
+
+  if (input.draftId !== null && mediaUnchanged) {
     const draftId = input.draftId
     return request<ApiMaterial>({
       method: 'PUT',
@@ -217,7 +308,7 @@ function persistMaterial(input: MaterialSubmitInput): Promise<string> {
     }).then(() => draftId)
   }
 
-  return uploadLocalImages(input.images).then((imageUrls) => createMaterial(imageUrls, input.copy))
+  return persistNewMaterial(input)
 }
 
 /** 存草稿：素材落库但不生成分享链接（publishStatus 保持 0），返回素材 ID */

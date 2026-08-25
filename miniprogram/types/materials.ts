@@ -38,22 +38,31 @@ export interface MaterialsViewModel {
   items: MaterialCardViewModel[]
 }
 
-export interface PublishImageViewModel {
+export type PublishMediaKind = Exclude<MaterialsFilterId, 'all'>
+
+export interface PublishMediaViewModel {
   id: string
   path: string
+  kind: PublishMediaKind
+  /** 视频封面临时路径；图片/PDF 为空 */
+  previewPath: string
+  /** PDF 文件名；图片/视频为空 */
+  name: string
+  /** 视频时长（秒） */
+  duration: number
 }
 
 export interface MaterialDraftEditViewModel {
   id: string
-  images: PublishImageViewModel[]
+  media: PublishMediaViewModel[]
   copy: string
 }
 
 export interface MaterialSubmitInput {
   /** 正在编辑的既有草稿素材 ID；新建时为 null */
   draftId: string | null
-  /** 进入编辑时草稿的原始图片路径，用于判断图片是否被改动 */
-  originalImagePaths: string[]
-  images: PublishImageViewModel[]
+  /** 进入编辑时草稿的原始文件路径，用于判断素材是否被改动 */
+  originalMediaPaths: string[]
+  media: PublishMediaViewModel[]
   copy: string
 }

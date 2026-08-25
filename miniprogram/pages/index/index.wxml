@@ -20,29 +20,29 @@
     </view>
     <view class="home-page__tab-panel home-page__notification-panel" hidden="{{activeTabIndex !== 1}}"><notification-header embedded="{{true}}" filters="{{notifications.filters}}" active-filter="{{activeNotificationFilter}}" bind:filtertap="onNotificationFilterTap" /><scroll-view scroll-y class="home-page__tab-scroll home-page__notification-scroll"><home-notifications notifications="{{notifications}}" active-filter="{{activeNotificationFilter}}" visible-groups="{{visibleNotificationGroups}}" has-visible-groups="{{hasVisibleNotificationGroups}}" bind:cardtap="onNotificationCardTap" bind:contactaction="onNotificationContactAction" /></scroll-view></view>
     <view class="home-page__tab-panel home-page__materials-panel" hidden="{{activeTabIndex !== 2}}">
-      <scroll-view scroll-y class="home-page__tab-scroll home-page__materials-scroll" bindscroll="onMaterialsScroll">
-        <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}">
-          <view class="materials-page__base"></view>
-          <image class="materials-page__status-glow" src="/assets/materials/materials-stripes.svg" mode="scaleToFill" />
-          <view class="materials-page__header" style="background: rgba(255, 255, 255, {{materialsHeaderOpacity}});">
-            <navigation-bar back="{{false}}" title="素材" color="#000000" background="transparent" />
+      <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}">
+        <view class="materials-page__base"></view>
+        <image class="materials-page__status-glow" src="/assets/materials/materials-stripes.svg" mode="scaleToFill" />
+        <view class="materials-page__header" style="background: rgba(255, 255, 255, {{materialsHeaderOpacity}});">
+          <navigation-bar back="{{false}}" title="素材" color="#000000" background="transparent" />
+        </view>
+        <view wx:if="{{materials}}" class="materials-filter" role="tablist">
+          <view
+            wx:for="{{materials.filters}}"
+            wx:key="id"
+            class="materials-filter__item {{activeMaterialFilter === item.id ? 'materials-filter__item--active' : ''}}"
+            bindtap="onMaterialFilterTap"
+            data-id="{{item.id}}"
+            hover-class="materials-filter__item--pressed"
+            hover-stay-time="80"
+            role="tab"
+            aria-selected="{{activeMaterialFilter === item.id}}"
+          >
+            <text>{{item.label}}</text>
           </view>
+        </view>
+        <scroll-view scroll-y class="home-page__tab-scroll home-page__materials-scroll" bindscroll="onMaterialsScroll" show-scrollbar="{{false}}">
           <view wx:if="{{materials}}" class="materials-page__content">
-            <view class="materials-filter" role="tablist">
-              <view
-                wx:for="{{materials.filters}}"
-                wx:key="id"
-                class="materials-filter__item {{activeMaterialFilter === item.id ? 'materials-filter__item--active' : ''}}"
-                bindtap="onMaterialFilterTap"
-                data-id="{{item.id}}"
-                hover-class="materials-filter__item--pressed"
-                hover-stay-time="80"
-                role="tab"
-                aria-selected="{{activeMaterialFilter === item.id}}"
-              >
-                <text>{{item.label}}</text>
-              </view>
-            </view>
             <view wx:if="{{hasVisibleMaterials}}" class="materials-grid">
               <view
                 wx:for="{{visibleMaterials}}"
@@ -70,8 +70,8 @@
               <text>还没有素材，发布一个吧</text>
             </view>
           </view>
-        </view>
-      </scroll-view>
+        </scroll-view>
+      </view>
       <view class="materials-publish-bar">
         <view class="materials-publish-button" bindtap="onMaterialPublishTap" hover-class="materials-publish-button--pressed" hover-stay-time="80">
           <text>发布素材</text>
@@ -85,7 +85,7 @@
         <segmented-filter items="{{totalAnalysisPeriods}}" active-id="{{activeTotalPeriod}}" bind:change="onTotalAnalysisPeriodTap" />
       </view>
       <scroll-view scroll-y class="home-page__tab-scroll home-page__analysis-scroll">
-        <home-analysis embedded="{{true}}" analysis-data="{{analysisData}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-periods="{{analysisPeriods}}" active-period="{{activePeriod}}" active-analysis-sort-label="{{activeAnalysisSortLabel}}" analysis-sort-options="{{analysisSortOptions}}" analysis-sort-sheet-visible="{{analysisSortSheetVisible}}" analysis-intent-tabs="{{analysisIntentTabs}}" active-analysis-intent="{{activeAnalysisIntent}}" visible-analysis-users="{{visibleAnalysisUsers}}" has-analysis-cards="{{hasAnalysisCards}}" has-analysis-users="{{hasAnalysisUsers}}" total-analysis-periods="{{totalAnalysisPeriods}}" active-total-period="{{activeTotalPeriod}}" active-analysis-read-range="{{activeAnalysisReadRange}}" visible-analysis-read-trend="{{visibleAnalysisReadTrend}}" bind:periodtap="onAnalysisPeriodTap" bind:totalperiodtap="onTotalAnalysisPeriodTap" bind:analysisintenttap="onAnalysisIntentTap" bind:analysisintenttouchstart="onAnalysisIntentTouchStart" bind:analysisintenttouchend="onAnalysisIntentTouchEnd" bind:analysissorttap="onAnalysisSortTap" bind:analysissortoptiontap="onAnalysisSortOptionTap" bind:analysissortmasktap="onAnalysisSortMaskTap" bind:cardtap="onAnalysisCardTap" bind:usertap="onAnalysisUserTap" />
+        <home-analysis embedded="{{true}}" analysis-data="{{analysisData}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-periods="{{analysisPeriods}}" active-period="{{activePeriod}}" active-analysis-sort-label="{{activeAnalysisSortLabel}}" analysis-sort-options="{{analysisSortOptions}}" analysis-sort-sheet-visible="{{analysisSortSheetVisible}}" visible-analysis-cards="{{visibleAnalysisCards}}" analysis-intent-tabs="{{analysisIntentTabs}}" active-analysis-intent="{{activeAnalysisIntent}}" visible-analysis-users="{{visibleAnalysisUsers}}" has-analysis-cards="{{hasAnalysisCards}}" has-analysis-users="{{hasAnalysisUsers}}" total-analysis-periods="{{totalAnalysisPeriods}}" active-total-period="{{activeTotalPeriod}}" active-analysis-read-range="{{activeAnalysisReadRange}}" visible-analysis-read-trend="{{visibleAnalysisReadTrend}}" bind:periodtap="onAnalysisPeriodTap" bind:totalperiodtap="onTotalAnalysisPeriodTap" bind:analysisintenttap="onAnalysisIntentTap" bind:analysisintenttouchstart="onAnalysisIntentTouchStart" bind:analysisintenttouchend="onAnalysisIntentTouchEnd" bind:analysissorttap="onAnalysisSortTap" bind:analysissortoptiontap="onAnalysisSortOptionTap" bind:analysissortmasktap="onAnalysisSortMaskTap" bind:cardtap="onAnalysisCardTap" bind:usertap="onAnalysisUserTap" />
       </scroll-view>
     </view>
     <view class="home-page__tab-panel home-page__profile-panel" hidden="{{activeTabIndex !== 4}}"><home-profile profile="{{profileData}}" /></view>
@@ -94,7 +94,6 @@
   <publish-success-modal
     visible="{{showPublishSuccessModal}}"
     bind:close="onPublishSuccessClose"
-    bind:sharefriends="onShareFriendsTap"
     bind:sharemoments="onShareMomentsTap"
   />
 </view>

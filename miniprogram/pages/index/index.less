@@ -71,9 +71,22 @@ page {
   box-sizing: border-box;
 }
 
-.home-page__materials-panel,
-.home-page__materials-scroll {
+.home-page__materials-panel {
+  display: flex;
+  flex-direction: column;
   background: #ffffff;
+}
+
+.home-page__materials-panel .materials-page {
+  flex: 1;
+  min-height: 0;
+}
+
+.home-page__materials-scroll {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  background: transparent;
 }
 
 .home-tab-loading {

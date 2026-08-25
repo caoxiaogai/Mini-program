@@ -1,7 +1,6 @@
-import type { AnalysisAudienceUser, AnalysisIntentLevel, AnalysisViewModel } from '../../types/analysis'
+import type { AnalysisIntentLevel, AnalysisWorkSortId } from '../../types/analysis'
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
-type AnalysisSortId = 'completion' | 'share' | 'view'
 type AnalysisIntentFilter = 'all' | AnalysisIntentLevel
 
 Component({
@@ -13,9 +12,10 @@ Component({
     analysisTabOffset: { type: Number, value: 0 },
     analysisPeriods: { type: Array, value: [] },
     activePeriod: { type: String, value: 'day' },
-    activeAnalysisSortLabel: { type: String, value: '阅读量' },
+    activeAnalysisSortLabel: { type: String, value: '浏览量' },
     analysisSortOptions: { type: Array, value: [] },
     analysisSortSheetVisible: { type: Boolean, value: false },
+    visibleAnalysisCards: { type: Array, value: [] },
     analysisIntentTabs: { type: Array, value: [] },
     activeAnalysisIntent: { type: String, value: 'all' },
     visibleAnalysisUsers: { type: Array, value: [] },
@@ -36,7 +36,7 @@ Component({
     onAnalysisIntentTouchEnd(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) { this.triggerEvent('analysisintenttouchend', event.detail) },
     onTotalPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) { this.triggerEvent('totalperiodtap', event.detail) },
     onAnalysisSortTap() { this.triggerEvent('analysissorttap') },
-    onAnalysisSortOptionTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysissortoptiontap', { id: event.currentTarget.dataset.id as AnalysisSortId }) },
+    onAnalysisSortOptionTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysissortoptiontap', { id: event.currentTarget.dataset.id as AnalysisWorkSortId }) },
     onAnalysisSortMaskTap() { this.triggerEvent('analysissortmasktap') },
     onCardTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('cardtap', { id: event.currentTarget.dataset.id as string }) },
     onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('usertap', { id: event.currentTarget.dataset.id as string }) },

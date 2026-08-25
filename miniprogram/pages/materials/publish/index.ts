@@ -1,17 +1,35 @@
 import { getMaterialDraft, publishMaterial, saveMaterialDraft } from '../../../services/materials'
-import type { MaterialSubmitInput, PublishImageViewModel } from '../../../types/materials'
+import { returnToMaterialsList } from '../../../utils/publish-return'
+import type { MaterialSubmitInput, PublishMediaViewModel } from '../../../types/materials'
+import {
+  canAddPublishMedia,
+  isPdfFileName,
+  MAX_IMAGE_COUNT,
+  MAX_VIDEO_DURATION_SECONDS,
+  mediaFilesToPublishItems,
+  mergePublishMedia,
+  PUBLISH_SOURCE_OPTIONS,
+  PUBLISH_TYPE_OPTIONS,
+} from '../../../utils/publish-media'
 
-const MAX_IMAGE_COUNT = 9
-const initialImages: PublishImageViewModel[] = []
+const initialMedia: PublishMediaViewModel[] = []
+
+function isUserCancel(errMsg?: string): boolean {
+  return typeof errMsg === 'string' && /cancel/i.test(errMsg)
+}
 
 Page({
   draftMaterialId: null as string | null,
-  draftImagePaths: [] as string[],
+  draftMediaPaths: [] as string[],
   submitting: false,
   data: {
-    images: initialImages,
-    canAddImage: initialImages.length < MAX_IMAGE_COUNT,
+    media: initialMedia,
+    canAddMedia: canAddPublishMedia(initialMedia),
     copy: '',
+    typeSheetVisible: false,
+    sourceSheetVisible: false,
+    typeOptions: PUBLISH_TYPE_OPTIONS,
+    sourceOptions: PUBLISH_SOURCE_OPTIONS,
   },
   onLoad(options: Record<string, string | undefined>) {
     const materialId = options.id
@@ -21,11 +39,11 @@ Page({
       if (!draft) return
 
       this.draftMaterialId = draft.id
-      this.draftImagePaths = draft.images.map((image) => image.path)
+      this.draftMediaPaths = draft.media.map((item) => item.path)
 
       this.setData({
-        images: draft.images,
-        canAddImage: draft.images.length < MAX_IMAGE_COUNT,
+        media: draft.media,
+        canAddMedia: canAddPublishMedia(draft.media),
         copy: draft.copy,
       })
     })
@@ -33,33 +51,111 @@ Page({
   buildSubmitInput(): MaterialSubmitInput {
     return {
       draftId: this.draftMaterialId,
-      originalImagePaths: this.draftImagePaths,
-      images: this.data.images,
+      originalMediaPaths: this.draftMediaPaths,
+      media: this.data.media,
       copy: this.data.copy,
     }
   },
-  onAddImageTap() {
-    const count = MAX_IMAGE_COUNT - this.data.images.length
-    if (count <= 0) return
+  applySelectedMedia(incoming: PublishMediaViewModel[]) {
+    const { items, message } = mergePublishMedia(this.data.media, incoming)
+    if (message) wx.showToast({ title: message, icon: 'none' })
+    this.setData({ media: items, canAddMedia: canAddPublishMedia(items) })
+  },
+  onAddMediaTap() {
+    if (!this.data.canAddMedia) return
+    this.setData({ typeSheetVisible: true, sourceSheetVisible: false })
+  },
+  onTypeSheetMaskTap() {
+    this.setData({ typeSheetVisible: false })
+  },
+  onSourceSheetMaskTap() {
+    this.setData({ sourceSheetVisible: false })
+  },
+  onTypeOptionTap(event: WechatMiniprogram.TouchEvent) {
+    const optionId = event.currentTarget.dataset.id as string
+    if (optionId === 'media') {
+      this.setData({ typeSheetVisible: false, sourceSheetVisible: true })
+      return
+    }
+    if (optionId !== 'pdf') return
 
-    wx.chooseImage({
-      count,
+    if (this.data.media.length > 0) {
+      this.setData({ typeSheetVisible: false })
+      wx.showToast({ title: '已添加图片，不能同时选择 PDF', icon: 'none' })
+      return
+    }
+
+    this.setData({ typeSheetVisible: false }, () => {
+      this.choosePdfFromChat()
+    })
+  },
+  onSourceOptionTap(event: WechatMiniprogram.TouchEvent) {
+    const optionId = event.currentTarget.dataset.id as string
+    if (optionId === 'camera') {
+      this.setData({ sourceSheetVisible: false }, () => {
+        this.chooseImageOrVideo(['camera'])
+      })
+      return
+    }
+    if (optionId !== 'album') return
+
+    this.setData({ sourceSheetVisible: false }, () => {
+      this.chooseImageOrVideo(['album'])
+    })
+  },
+  chooseImageOrVideo(sourceType: Array<'album' | 'camera'>) {
+    const imageCount = this.data.media.filter((item) => item.kind === 'image').length
+    const remaining = this.data.media.length === 0 ? MAX_IMAGE_COUNT : MAX_IMAGE_COUNT - imageCount
+
+    wx.chooseMedia({
+      count: Math.max(remaining, 1),
+      mediaType: ['image', 'video'],
+      sourceType,
+      maxDuration: MAX_VIDEO_DURATION_SECONDS,
+      camera: 'back',
       sizeType: ['compressed'],
-      sourceType: ['album', 'camera'],
       success: (result) => {
-        const selectedImages = result.tempFilePaths
-          .slice(0, count)
-          .map((path) => ({ id: path, path }))
-        const images = [...this.data.images, ...selectedImages]
-        this.setData({ images, canAddImage: images.length < MAX_IMAGE_COUNT })
+        this.applySelectedMedia(mediaFilesToPublishItems(result.tempFiles, result.type))
+      },
+      fail: (error) => {
+        if (!isUserCancel(error.errMsg)) wx.showToast({ title: '选择失败，请稍后重试', icon: 'none' })
       },
     })
   },
-  onDeleteImageTap(event: WechatMiniprogram.TouchEvent) {
-    const imageId = event.currentTarget.dataset.id as string
-    const images = this.data.images.filter((image) => image.id !== imageId)
+  choosePdfFromChat() {
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      extension: ['pdf'],
+      success: (result) => {
+        const file = result.tempFiles[0]
+        if (!file) return
+        if (!isPdfFileName(file.name)) {
+          wx.showToast({ title: '请选择 PDF 文件', icon: 'none' })
+          return
+        }
 
-    this.setData({ images, canAddImage: images.length < MAX_IMAGE_COUNT })
+        this.applySelectedMedia([
+          {
+            id: file.path,
+            path: file.path,
+            kind: 'pdf',
+            previewPath: '',
+            name: file.name,
+            duration: 0,
+          },
+        ])
+      },
+      fail: (error) => {
+        if (!isUserCancel(error.errMsg)) wx.showToast({ title: '选择失败，请稍后重试', icon: 'none' })
+      },
+    })
+  },
+  onDeleteMediaTap(event: WechatMiniprogram.TouchEvent) {
+    const mediaId = event.currentTarget.dataset.id as string
+    const media = this.data.media.filter((item) => item.id !== mediaId)
+
+    this.setData({ media, canAddMedia: canAddPublishMedia(media) })
   },
   onCopyInput(event: WechatMiniprogram.TextareaInput) {
     this.setData({ copy: event.detail.value })
@@ -71,9 +167,9 @@ Page({
     saveMaterialDraft(this.buildSubmitInput())
       .then((materialId) => {
         this.draftMaterialId = materialId
-        this.draftImagePaths = this.data.images.map((image) => image.path)
+        this.draftMediaPaths = this.data.media.map((item) => item.path)
         wx.showToast({ title: '已保存草稿', icon: 'success' })
-        wx.redirectTo({ url: '/pages/index/index?tab=materials' })
+        returnToMaterialsList({ materialId, showSuccessModal: false })
       })
       .catch(() => undefined)
       .then(() => {
@@ -87,8 +183,8 @@ Page({
     publishMaterial(this.buildSubmitInput())
       .then((materialId) => {
         this.draftMaterialId = materialId
-        this.draftImagePaths = this.data.images.map((image) => image.path)
-        wx.redirectTo({ url: '/pages/index/index?tab=materials&publishSuccess=1' })
+        this.draftMediaPaths = this.data.media.map((item) => item.path)
+        returnToMaterialsList({ materialId, showSuccessModal: true })
       })
       .catch(() => undefined)
       .then(() => {

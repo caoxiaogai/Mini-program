@@ -1,5 +1,9 @@
 export type AnalysisMetric = { label: string; value: string }
 
+export type AnalysisWorkSortId = 'completion' | 'share' | 'view'
+
+export type AnalysisCardSortCounts = Record<AnalysisWorkSortId, number>
+
 export type AnalysisChartPoint = {
   id: string
   label: string
@@ -29,6 +33,7 @@ export type AnalysisCard = {
   publishedAt: string
   metrics: AnalysisMetric[]
   compactMetrics: AnalysisMetric[]
+  sortCounts: AnalysisCardSortCounts
 }
 
 export type AnalysisIntentLevel = 'high' | 'medium' | 'low'

@@ -9,5 +9,7 @@
     "home-analysis": "/components/home-analysis/index",
     "home-profile": "/components/home-profile/index",
     "publish-success-modal": "/components/publish-success-modal/index"
-  }
+  },
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true
 }

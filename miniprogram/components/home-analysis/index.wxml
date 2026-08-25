@@ -18,7 +18,7 @@
       </view>
       <view wx:if="{{hasAnalysisCards}}" class="analysis-work-list">
         <view class="analysis-work-list__inner">
-          <block wx:for="{{analysisData.cards}}" wx:key="id">
+          <block wx:for="{{visibleAnalysisCards}}" wx:key="id">
             <view class="analysis-work-row" hover-class="analysis-card--pressed" hover-stay-time="120" bindtap="onCardTap" data-id="{{item.id}}">
               <view class="analysis-work-row__head">
                 <image class="analysis-work-row__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
@@ -26,7 +26,7 @@
               </view>
               <view class="analysis-work-row__metrics"><view wx:for="{{item.compactMetrics}}" wx:key="label" class="analysis-work-row__metric"><text class="analysis-work-row__metric-label">{{item.label}}</text><text class="analysis-work-row__metric-value">{{item.value}}</text></view></view>
             </view>
-            <view wx:if="{{index < analysisData.cards.length - 1}}" class="analysis-work-row__divider"></view>
+            <view wx:if="{{index < visibleAnalysisCards.length - 1}}" class="analysis-work-row__divider"></view>
           </block>
         </view>
       </view>
@@ -43,9 +43,9 @@
         <view wx:for="{{analysisData.userSummary}}" wx:key="label" class="analysis-user__summary-card"><text class="analysis-user__summary-label">{{item.label}}</text><text class="analysis-user__summary-value">{{item.value}}</text></view>
       </view>
       <text class="analysis-user__title">意向用户</text>
-      <view wx:if="{{hasAnalysisUsers}}" class="analysis-user__list-panel">
+      <view class="analysis-user__list-panel">
         <segmented-filter items="{{analysisIntentTabs}}" active-id="{{activeAnalysisIntent}}" bind:change="onAnalysisIntentTap" bind:touchstart="onAnalysisIntentTouchStart" bind:touchend="onAnalysisIntentTouchEnd" />
-        <view class="analysis-user__list">
+        <view wx:if="{{hasAnalysisUsers}}" class="analysis-user__list">
           <view wx:for="{{visibleAnalysisUsers}}" wx:key="id" class="analysis-user" bindtap="onAnalysisUserTap" data-id="{{item.id}}" hover-class="analysis-user--pressed">
             <image class="analysis-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
             <view class="analysis-user__body">
@@ -57,10 +57,10 @@
             </view>
           </view>
         </view>
-      </view>
-      <view wx:else class="analysis-empty-state analysis-empty-state--user">
-        <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
-        <text>还没用户，快去发布作品吧</text>
+        <view wx:else class="analysis-empty-state analysis-empty-state--user">
+          <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+          <text>还没用户，快去发布作品吧</text>
+        </view>
       </view>
     </view>
   </view>

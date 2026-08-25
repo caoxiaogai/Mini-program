@@ -27,5 +27,10 @@
   },
   "componentFramework": "glass-easel",
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "permission": {
+    "scope.camera": {
+      "desc": "用于拍摄照片或视频并发布素材"
+    }
+  }
 }
