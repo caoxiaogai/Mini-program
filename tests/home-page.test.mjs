@@ -287,12 +287,33 @@ test('ranking reuses the profile striped background and fades its content to whi
   assert.match(styles, /@ranking-background: #ffffff;/)
   assert.match(styles, /\.ranking-page__status-glow \{[\s\S]*left: 4rpx;[\s\S]*height: 260rpx;[\s\S]*background: repeating-linear-gradient\(90deg, transparent 0 4rpx, #f0f0f0 4rpx 8rpx\);[\s\S]*mask-image: linear-gradient\(180deg, #000000 0%, rgba\(0, 0, 0, 0\) 100%\);[\s\S]*opacity: 0\.9;/)
   assert.match(styles, /\.ranking-page__content \{[\s\S]*background: linear-gradient\(180deg, rgba\(255, 255, 255, 0\) 0%, #ffffff 13\.976%, #ffffff 100%\);/)
-  assert.match(styles, /\.ranking-panel \{[\s\S]*padding: 40rpx;[\s\S]*border: 2rpx solid #f0f0f0;[\s\S]*border-radius: 40rpx;[\s\S]*background: #ffffff;[\s\S]*box-shadow: 0 4rpx 20rpx rgba\(0, 0, 0, 0\.03\);/)
+  assert.match(styles, /\.ranking-panel \{[\s\S]*padding: 40rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-radius: 40rpx;[\s\S]*background: #ffffff;[\s\S]*box-shadow: 0 4rpx 20rpx rgba\(0, 0, 0, 0\.03\);/)
   assert.match(markup, /class="ranking-panel \{\{hasRankingEntries \? '' : 'ranking-panel--empty'\}\}"/)
   assert.match(styles, /\.ranking-page \{[\s\S]*display: flex;[\s\S]*flex-direction: column;/)
   assert.match(styles, /\.ranking-page__content \{[\s\S]*display: flex;[\s\S]*flex: 1;[\s\S]*flex-direction: column;[\s\S]*padding: 70rpx 40rpx 48rpx;/)
   assert.match(styles, /\.ranking-panel--empty \{[\s\S]*flex: 1;/)
   assert.match(styles, /\.ranking-list \{[\s\S]*margin-top: 20rpx;/)
+})
+
+test('content cards share the global E6E6E6 border token', () => {
+  const appStyles = read('miniprogram/app.less')
+  const homeStyles = read('miniprogram/pages/index/index.less')
+  const notificationStyles = read('miniprogram/pages/notifications/notifications.less')
+  const profileStyles = read('miniprogram/components/home-profile/index.less')
+  const analysisStyles = read('miniprogram/pages/analysis/index.less')
+  const detailStyles = read('miniprogram/pages/analysis-detail/index.less')
+  const userDetailStyles = read('miniprogram/pages/analysis-user-detail/index.less')
+  const materialStyles = read('miniprogram/pages/materials/index.less')
+
+  assert.match(appStyles, /@content-box-border: #e6e6e6;/)
+  assert.match(homeStyles, /@home-border: @content-box-border;/)
+  assert.match(notificationStyles, /@notification-card-border: @content-box-border;/)
+  assert.match(profileStyles, /\.home-profile__balance \{[\s\S]*border: 1px solid @content-box-border;/)
+  assert.match(analysisStyles, /\.analysis-user__summary-card \{[\s\S]*border: 2rpx solid @content-box-border;/)
+  assert.match(analysisStyles, /\.analysis-total__overview-item \{[\s\S]*border: 2rpx solid @content-box-border;/)
+  assert.match(detailStyles, /\.detail-card \{[^}]*border: 2rpx solid @content-box-border;/)
+  assert.match(userDetailStyles, /\.user-detail__profile-card \{[\s\S]*border: 2rpx solid @content-box-border;/)
+  assert.match(materialStyles, /\.materials-card__info \{[\s\S]*border: 2rpx solid @content-box-border;/)
 })
 
 test('ranking and analysis periods use the shared segmented filter control', () => {
@@ -603,7 +624,7 @@ test('user detail page follows Figma 497:4640 and uses the analysis mock seam', 
   assert.match(styles, /\.user-detail__contact \{[\s\S]*height: 72rpx;[\s\S]*background: #0ec8d9;/)
   assert.match(styles, /\.user-detail__record \{[\s\S]*height: 176rpx;[\s\S]*background: #f5f5f5;/)
   assert.match(styles, /\.user-detail__records-section \{[\s\S]*margin-top: 40rpx;[\s\S]*gap: 10rpx;/)
-  assert.match(styles, /\.user-detail__records-card \{[\s\S]*padding: 30rpx;[\s\S]*border: 2rpx solid #f0f0f0;[\s\S]*border-radius: 40rpx;/)
+  assert.match(styles, /\.user-detail__records-card \{[\s\S]*padding: 30rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-radius: 40rpx;/)
   assert.match(styles, /\.user-detail__record-stats view \{[\s\S]*flex-direction: column;/)
   assert.match(styles, /\.user-detail__copy-feedback \{[\s\S]*width: 530rpx;[\s\S]*border-radius: 28rpx;[\s\S]*background: rgba\(0, 0, 0, 0\.8\);/)
   assert.match(logic, /onCopyUsername\(\)/)
@@ -666,7 +687,7 @@ test('materials home uses fixed preview data and the Figma striped background', 
 test('materials card information follows Figma 519:4383', () => {
   const styles = read('miniprogram/pages/materials/index.less')
 
-  assert.match(styles, /\.materials-card__info\s*\{[\s\S]*gap: 20rpx;[\s\S]*padding: 16rpx 20rpx;[\s\S]*border: 2rpx solid #f0f0f0;[\s\S]*border-top: 0;[\s\S]*border-radius: 0 0 24rpx 24rpx;[\s\S]*background: #ffffff;[\s\S]*box-shadow: 0 0 20rpx rgba\(0, 0, 0, 0\.05\);/)
+  assert.match(styles, /\.materials-card__info\s*\{[\s\S]*gap: 20rpx;[\s\S]*padding: 16rpx 20rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-top: 0;[\s\S]*border-radius: 0 0 24rpx 24rpx;[\s\S]*background: #ffffff;[\s\S]*box-shadow: 0 0 20rpx rgba\(0, 0, 0, 0\.05\);/)
   assert.match(styles, /\.materials-card__title\s*\{[\s\S]*font-size: 28rpx;[\s\S]*font-weight: 400;/)
   assert.match(styles, /\.materials-card__date\s*\{[\s\S]*color: @materials-muted;[\s\S]*font-size: 28rpx;/)
 })
@@ -782,8 +803,8 @@ test('analysis user tab follows the Figma 507:1682 list hierarchy', () => {
     assert.doesNotMatch(markup, />观看作品<\/text>/)
   }
 
-  assert.match(styles, /\.analysis-user__summary-card \{[\s\S]*height: 130rpx;[\s\S]*border: 2rpx solid #f0f0f0;[\s\S]*border-radius: 24rpx;[\s\S]*background: #ffffff;/)
-  assert.match(styles, /\.analysis-user__list-panel \{[\s\S]*min-height: 946rpx;[\s\S]*padding: 40rpx 40rpx 88rpx;[\s\S]*border: 2rpx solid #f0f0f0;[\s\S]*border-radius: 40rpx;[\s\S]*background: #ffffff;/)
+  assert.match(styles, /\.analysis-user__summary-card \{[\s\S]*height: 130rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-radius: 24rpx;[\s\S]*background: #ffffff;/)
+  assert.match(styles, /\.analysis-user__list-panel \{[\s\S]*min-height: 946rpx;[\s\S]*padding: 40rpx 40rpx 88rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-radius: 40rpx;[\s\S]*background: #ffffff;/)
   assert.match(styles, /\.analysis-user__tag--high \{[\s\S]*color: #ff4343;[\s\S]*background: #ffd7ce;/)
 })
 
@@ -830,10 +851,10 @@ test('analysis detail page follows Figma 497:5232 with fixed preview data', () =
 
   assert.doesNotMatch(markup, /detail-page__texture/)
   assert.match(styles, /page \{[^}]*background: #ffffff;/)
-  assert.match(styles, /\.detail-card \{[^}]*height: 332rpx;[^}]*padding: 40rpx;[^}]*border: 2rpx solid #f0f0f0;[^}]*border-radius: 40rpx;/)
+  assert.match(styles, /\.detail-card \{[^}]*height: 332rpx;[^}]*padding: 40rpx;[^}]*border: 2rpx solid @content-box-border;[^}]*border-radius: 40rpx;/)
   assert.match(styles, /\.detail-card__thumbnail \{[^}]*width: 100rpx;[^}]*height: 136rpx;/)
   assert.match(styles, /\.detail-intent__title \{[^}]*color: #8a8e94;[^}]*font-size: 28rpx;/)
-  assert.match(styles, /\.detail-intent__panel \{[^}]*height: auto;[^}]*padding: 40rpx;[^}]*border: 2rpx solid #f0f0f0;[^}]*border-radius: 40rpx;/)
+  assert.match(styles, /\.detail-intent__panel \{[^}]*height: auto;[^}]*padding: 40rpx;[^}]*border: 2rpx solid @content-box-border;[^}]*border-radius: 40rpx;/)
   assert.match(styles, /\.detail-user__tag--high \{[^}]*color: #ff4343;[^}]*background: #ffd7ce;/)
   assert.match(service, /getAnalysisDetailStyleMock/)
   assert.match(service, /ANALYSIS_DATA_SOURCE === 'mock'/)
@@ -889,8 +910,8 @@ test('analysis total tab follows Figma 587:8623 overview and peak layout', () =>
 
   assert.match(pageLogic, /const totalAnalysisPeriods: AnalysisPeriodOption\[\]/)
   assert.match(pageLogic, /onTotalPeriodTap/)
-  assert.match(pageStyles, /\.analysis-total__overview-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid #f0f0f0;[\s\S]*?border-radius: 40rpx;/)
-  assert.match(pageStyles, /\.analysis-total__chart-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid #f0f0f0;[\s\S]*?border-radius: 40rpx;/)
+  assert.match(pageStyles, /\.analysis-total__overview-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid @content-box-border;[\s\S]*?border-radius: 40rpx;/)
+  assert.match(pageStyles, /\.analysis-total__chart-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid @content-box-border;[\s\S]*?border-radius: 40rpx;/)
   assert.match(types, /heroMetrics: AnalysisTotalHeroMetric\[\]/)
   assert.match(mock, /value: '122,100次'/)
   assert.match(mock, /value: '920人'/)

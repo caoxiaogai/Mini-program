@@ -4,7 +4,7 @@ page { min-height: 100vh; background: #ffffff; }
 .detail-page__header { position: sticky; top: 0; z-index: 1002; background: #ffffff; }
 .detail-page__content { padding: 30rpx 40rpx 100rpx; box-sizing: border-box; }
 
-.detail-card { display: flex; height: 332rpx; flex-direction: column; justify-content: center; padding: 40rpx; border: 2rpx solid #f0f0f0; border-radius: 40rpx; background: linear-gradient(180deg, #f3fbfc 0%, #ffffff 100%); box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05); box-sizing: border-box; }
+.detail-card { display: flex; height: 332rpx; flex-direction: column; justify-content: center; padding: 40rpx; border: 2rpx solid @content-box-border; border-radius: 40rpx; background: linear-gradient(180deg, #f3fbfc 0%, #ffffff 100%); box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05); box-sizing: border-box; }
 .detail-card__inner { display: flex; width: 100%; flex-direction: column; gap: 40rpx; }
 .detail-card__head { display: flex; min-width: 0; align-items: flex-start; gap: 20rpx; }
 .detail-card__thumbnail { width: 100rpx; height: 136rpx; flex: none; border-radius: 16rpx; background: #dee2e7; }
@@ -18,7 +18,7 @@ page { min-height: 100vh; background: #ffffff; }
 
 .detail-intent { display: flex; flex-direction: column; gap: 20rpx; margin-top: 64rpx; }
 .detail-intent__title { color: #8a8e94; font-size: 28rpx; font-weight: 500; line-height: normal; }
-.detail-intent__panel { display: flex; height: auto; flex-direction: column; gap: 40rpx; padding: 40rpx; border: 2rpx solid #f0f0f0; border-radius: 40rpx; background: #ffffff; box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03); box-sizing: border-box; }
+.detail-intent__panel { display: flex; height: auto; flex-direction: column; gap: 40rpx; padding: 40rpx; border: 2rpx solid @content-box-border; border-radius: 40rpx; background: #ffffff; box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03); box-sizing: border-box; }
 .detail-users { display: flex; flex-direction: column; gap: 30rpx; }
 .detail-intent__empty-state { display: flex; min-height: 360rpx; flex-direction: column; align-items: center; justify-content: center; gap: 10rpx; color: #8a8e94; font-size: 26rpx; line-height: normal; }
 .detail-intent__empty-state__icon { width: 78rpx; height: 78rpx; }
