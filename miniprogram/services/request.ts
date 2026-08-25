@@ -2,11 +2,11 @@
 // 页面不直接使用本文件；所有数据访问经由 services/ 下的业务 service。
 
 import type { ApiLoginData, ApiResponse } from '../types/api'
-import { DEV_LAN_ORIGIN } from '../config/dev'
+import { DEV_LAN_ORIGIN, DEVTOOLS_ORIGIN } from '../config/dev'
 
-const DEVTOOLS_API_BASE_URL = `${DEV_LAN_ORIGIN}/api`
+const DEVTOOLS_API_BASE_URL = `${DEVTOOLS_ORIGIN}/api`
 
-/** 开发者工具和真机预览统一访问运行后端电脑的局域网地址 */
+/** 开发者工具走本机回环；真机预览走局域网 IP */
 function resolveApiBaseUrl(): string {
   try {
     if (wx.getSystemInfoSync().platform === 'devtools') {

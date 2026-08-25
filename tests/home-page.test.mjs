@@ -25,16 +25,18 @@ test('home data layer exposes the new typed service seam', () => {
   assert.match(service, /\/analysis\/dashboard/)
   assert.match(service, /\/analysis\/intent\/list/)
   assert.match(service, /\/analysis\/content\/list/)
-  assert.match(service, /from '\.\.\/mocks\/home'/)
-  assert.match(service, /HOME_DATA_SOURCE/)
+  assert.doesNotMatch(service, /from '\.\.\/mocks\//)
   assert.doesNotMatch(service, /TODO\(API\)/)
 })
 
 test('data access goes through the unified request layer', () => {
   const requestLayer = read('miniprogram/services/request.ts')
+  const config = read('miniprogram/config/dev.ts')
 
   assert.match(requestLayer, /wx\.request\(/)
+  assert.match(requestLayer, /DEVTOOLS_ORIGIN/)
   assert.match(requestLayer, /DEV_LAN_ORIGIN/)
+  assert.match(config, /DEVTOOLS_ORIGIN = 'http:\/\/127\.0\.0\.1:8080'/)
   assert.match(requestLayer, /export function request</)
   assert.match(requestLayer, /export function ensureLogin/)
   assert.match(requestLayer, /\/wechat\/login/)
@@ -42,21 +44,20 @@ test('data access goes through the unified request layer', () => {
   for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking']) {
     const service = read(`miniprogram/services/${name}.ts`)
     assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
-    if (!['home', 'analysis', 'notifications'].includes(name)) {
-      assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
-    }
+    assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
   }
 })
 
-test('home style preview uses typed fictional mock data', () => {
-  const mock = read('miniprogram/mocks/home.ts')
+test('home page data comes from backend analysis APIs', () => {
+  const service = read('miniprogram/services/home.ts')
   const config = read('miniprogram/config/dev.ts')
 
-  assert.match(mock, /getHomeStyleMock\(\): HomePageViewModel/)
-  assert.match(mock, /林小满/)
-  assert.match(mock, /周知行/)
-  assert.match(mock, /unreadNotificationCount: 10/)
-  assert.match(config, /HOME_DATA_SOURCE: 'mock' \| 'api' = 'mock'/)
+  assert.match(service, /path: '\/analysis\/dashboard'/)
+  assert.match(service, /path: '\/analysis\/customer\/list'/)
+  assert.match(service, /path: '\/analysis\/content\/list'/)
+  assert.match(service, /path: '\/analysis\/intent\/list'/)
+  assert.doesNotMatch(config, /HOME_DATA_SOURCE/)
+  assert.equal(existsSync(new URL('../miniprogram/mocks/home.ts', import.meta.url)), false)
 })
 
 test('home greeting follows the device local time', async () => {
@@ -288,24 +289,15 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   }
 })
 
-test('notifications use fixed Figma preview mock data until the API is enabled', () => {
+test('notifications load from the intent customer API', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/notifications.ts')
-  const mockPath = 'miniprogram/mocks/notifications.ts'
 
-  assert.match(config, /NOTIFICATION_DATA_SOURCE: 'mock' \| 'api' = 'mock'/)
-  assert.match(service, /NOTIFICATION_DATA_SOURCE/)
-  assert.match(service, /getNotificationsMock/)
-  assert.equal(existsSync(new URL(`../${mockPath}`, import.meta.url)), true, mockPath)
-
-  const mock = read(mockPath)
-  assert.match(mock, /getNotificationsMock\(\): NotificationsViewModel/)
-  assert.match(mock, /label: '8月17日'/)
-  assert.match(mock, /未滑动看完所有图片/)
-  assert.match(mock, /该用户浏览进度80%/)
-  assert.match(mock, /该用户转发了你的作品，查看2次以上/)
-  assert.match(mock, /avatar-duck\.png/)
-  assert.match(mock, /thumb-river\.png/)
+  assert.match(service, /path: '\/analysis\/intent\/list'/)
+  assert.match(service, /path: '\/material\/mine'/)
+  assert.doesNotMatch(service, /getNotificationsMock/)
+  assert.doesNotMatch(config, /NOTIFICATION_DATA_SOURCE/)
+  assert.equal(existsSync(new URL('../miniprogram/mocks/notifications.ts', import.meta.url)), false)
 })
 
 test('notification header and filters stay fixed while the card list scrolls', () => {
@@ -455,21 +447,20 @@ test('analysis work tab matches the revised Figma compact work list', () => {
   assert.match(homeLogic, /activeAnalysisSortLabel: '阅读量'/)
 })
 
-test('analysis work preview uses fixed local mock data and component styles', () => {
+test('analysis overview loads from backend APIs and keeps component styles', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/analysis.ts')
-  const mock = read('miniprogram/mocks/analysis.ts')
   const componentStylesPath = new URL('../miniprogram/components/home-analysis/index.less', import.meta.url)
 
   assert.equal(existsSync(componentStylesPath), true)
-  assert.match(config, /ANALYSIS_DATA_SOURCE: 'mock'/)
-  assert.match(service, /getAnalysisStyleMock/)
-  assert.match(service, /ANALYSIS_DATA_SOURCE === 'mock'/)
-  assert.match(mock, /export function getAnalysisStyleMock\(\)/)
-  assert.equal((mock.match(/mock-analysis-card-\d+/g) ?? []).length, 5)
-  assert.match(mock, /\/assets\/analysis\/content-01\.jpg/)
-  assert.match(mock, /总阅读次数.*24,234/)
-  assert.match(componentStylesPath ? read('miniprogram/components/home-analysis/index.less') : '', /@import ['\"]\.\.\/\.\.\/pages\/analysis\/index\.less['\"]/)
+  assert.match(service, /path: '\/analysis\/dashboard'/)
+  assert.match(service, /path: '\/analysis\/content\/list'/)
+  assert.match(service, /path: '\/analysis\/customer\/list'/)
+  assert.match(service, /path: '\/analysis\/intent\/list'/)
+  assert.doesNotMatch(service, /getAnalysisStyleMock/)
+  assert.doesNotMatch(config, /ANALYSIS_DATA_SOURCE/)
+  assert.equal(existsSync(new URL('../miniprogram/mocks/analysis.ts', import.meta.url)), false)
+  assert.match(read('miniprogram/components/home-analysis/index.less'), /@import ['\"]\.\.\/\.\.\/pages\/analysis\/index\.less['\"]/)
 })
 
 test('analysis work filters match Figma 517:3836', () => {

@@ -9,19 +9,9 @@
 export const DEV_LAN_ORIGIN = 'http://192.168.31.225:8080'
 
 /**
- * 新版首页当前使用固定假数据进行视觉验收。
- * 确认真实接口有可展示数据后改为 api；页面和组件无需调整。
+ * 微信开发者工具与后端同机时走本机回环。
+ * 模拟器走局域网 IP 时，VPN / 局域网调试代理可能返回 502 Bad Gateway。
  */
-export const HOME_DATA_SOURCE: 'mock' | 'api' = 'mock'
+export const DEVTOOLS_ORIGIN = 'http://127.0.0.1:8080'
 
-/**
- * 分析页当前使用固定假数据进行 Figma 视觉验收。
- * 确认真实接口有可展示数据后改为 api；页面和组件无需调整。
- */
-export const ANALYSIS_DATA_SOURCE: 'mock' | 'api' = 'mock'
-
-/**
- * 通知页当前使用固定假数据进行 Figma 视觉验收。
- * 确认真实接口有可展示数据后改为 api；页面和组件无需调整。
- */
-export const NOTIFICATION_DATA_SOURCE: 'mock' | 'api' = 'mock'
+// export const DEV_LAN_ORIGIN = 'https://www.yjxzhang.com'

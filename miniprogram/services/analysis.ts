@@ -16,8 +16,6 @@ import type {
   AnalysisUserDetailViewModel,
   AnalysisViewModel,
 } from '../types/analysis'
-import { ANALYSIS_DATA_SOURCE } from '../config/dev'
-import { getAnalysisStyleMock } from '../mocks/analysis'
 import {
   buildCustomRangeQuery,
   formatCount,
@@ -200,8 +198,6 @@ function fetchViewedWorksCounts(
 }
 
 export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<AnalysisViewModel> {
-  if (ANALYSIS_DATA_SOURCE === 'mock') return Promise.resolve(getAnalysisStyleMock())
-
   const periodQuery = buildPeriodQuery(period)
   const totalQuery = buildPeriodQuery('total')
 

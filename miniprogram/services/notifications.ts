@@ -1,6 +1,4 @@
 import type { ApiIntentCustomer, ApiMaterial } from '../types/api'
-import { NOTIFICATION_DATA_SOURCE } from '../config/dev'
-import { getNotificationsMock } from '../mocks/notifications'
 import type {
   NotificationCardViewModel,
   NotificationFilterViewModel,
@@ -37,10 +35,6 @@ function buildNotificationStatus(item: ApiIntentCustomer): string {
  * 按最近行为日期倒序分组；行为类型按是否转发区分。
  */
 export function getNotifications(): Promise<NotificationsViewModel> {
-  if (NOTIFICATION_DATA_SOURCE === 'mock') {
-    return Promise.resolve(getNotificationsMock())
-  }
-
   const rangeQuery = buildCustomRangeQuery(NOTIFICATION_RANGE_DAYS)
 
   return Promise.all([

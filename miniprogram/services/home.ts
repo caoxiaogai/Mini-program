@@ -5,10 +5,8 @@ import type {
   ApiIntentCustomer,
   ApiMaterial,
 } from '../types/api'
-import { HOME_DATA_SOURCE } from '../config/dev'
-import { getHomeStyleMock } from '../mocks/home'
 import type { HomeContentViewModel, HomeIntentLevel, HomeNotificationViewModel, HomePageViewModel } from '../types/home'
-import { formatCount, formatDateKey, formatMonthDay, formatMonthDayTime } from '../utils/format'
+import { formatCount, formatDateKey, formatMonthDayTime } from '../utils/format'
 import { request, resolveMediaUrl } from './request'
 
 const HOME_PREVIEW_LIMIT = 3
@@ -79,7 +77,7 @@ function buildContentCards(contents: ApiContentListItem[], intentCustomers: ApiI
     .map((item) => mapContent(item, intentCustomers))
 }
 
-function getHomePageDataFromApi(): Promise<HomePageViewModel> {
+export function getHomePageData(): Promise<HomePageViewModel> {
   return Promise.all([
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: { timeRange: 'today' } }),
     request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: { timeRange: 'today' } }),
@@ -130,13 +128,4 @@ function getHomePageDataFromApi(): Promise<HomePageViewModel> {
       },
     }
   })
-}
-
-/** DEV_MOCK: 仅用于新版首页视觉预览，确认真实接口后切换为 api。 */
-export function getHomePageData(): Promise<HomePageViewModel> {
-  if (HOME_DATA_SOURCE === 'mock') {
-    return Promise.resolve(getHomeStyleMock())
-  }
-
-  return getHomePageDataFromApi()
 }
