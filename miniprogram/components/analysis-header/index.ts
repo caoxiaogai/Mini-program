@@ -1,5 +1,7 @@
 Component({
   properties: {
+    title: { type: String, value: '分析' },
+    titleWeight: { type: Number, value: 700 },
     embedded: { type: Boolean, value: false },
     back: { type: Boolean, value: false },
     analysisTabs: { type: Array, value: [] },

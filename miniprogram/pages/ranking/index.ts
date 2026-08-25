@@ -13,7 +13,6 @@ Page({
     rankingData: null as RankingViewModel | null,
     rankingTabs,
     activeRankingMetric: 'views' as RankingMetric,
-    rankingTabOffset: 0,
     visibleRankingEntries: [] as RankingEntryViewModel[],
     hasRankingEntries: false,
     rankingHeaderOpacity: 0,
@@ -36,9 +35,8 @@ Page({
 
     this.setData({ rankingHeaderOpacity })
   },
-  onRankingTabTap(event: WechatMiniprogram.TouchEvent) {
-    const metric = event.currentTarget.dataset.id as RankingMetric
-    const tabIndex = Number(event.currentTarget.dataset.index)
+  onRankingTabTap(event: WechatMiniprogram.CustomEvent<{ id: RankingMetric; index: number }>) {
+    const { id: metric, index: tabIndex } = event.detail
 
     if (!rankingTabs.some((tab) => tab.id === metric) || !Number.isInteger(tabIndex)) return
 
@@ -46,7 +44,6 @@ Page({
 
     this.setData({
       activeRankingMetric: metric,
-      rankingTabOffset: tabIndex * 100,
       visibleRankingEntries,
       hasRankingEntries: visibleRankingEntries.length > 0,
     })

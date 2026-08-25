@@ -35,7 +35,7 @@
 .bottom-tab-bar__inner {
   position: absolute;
   right: 40rpx;
-  bottom: max(32px, env(safe-area-inset-bottom));
+  bottom: max(24px, env(safe-area-inset-bottom));
   left: 40rpx;
   display: flex;
   align-items: center;
@@ -48,6 +48,10 @@
   backdrop-filter: blur(5px);
   box-sizing: border-box;
   pointer-events: auto;
+}
+
+.bottom-tab-bar--android .bottom-tab-bar__inner {
+  bottom: 16px;
 }
 
 .bottom-tab-bar__item,
@@ -85,11 +89,14 @@
   background: transparent;
 }
 
+.bottom-tab-bar__create--active {
+  background: #e0e0e0;
+}
+
 .bottom-tab-bar__create-icon {
   width: 48rpx;
   height: 48rpx;
 }
-
 .bottom-tab-bar__icon-wrap {
   position: relative;
   display: flex;
@@ -129,5 +136,9 @@
 }
 
 .bottom-tab-bar__item--active .bottom-tab-bar__label {
+  color: #0ec8d9;
+}
+
+.bottom-tab-bar__create--active .bottom-tab-bar__label {
   color: #0ec8d9;
 }

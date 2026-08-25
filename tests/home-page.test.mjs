@@ -25,18 +25,16 @@ test('home data layer exposes the new typed service seam', () => {
   assert.match(service, /\/analysis\/dashboard/)
   assert.match(service, /\/analysis\/intent\/list/)
   assert.match(service, /\/analysis\/content\/list/)
-  assert.doesNotMatch(service, /from '\.\.\/mocks\//)
+  assert.match(service, /from '\.\.\/mocks\/home'/)
+  assert.match(service, /HOME_DATA_SOURCE/)
   assert.doesNotMatch(service, /TODO\(API\)/)
 })
 
 test('data access goes through the unified request layer', () => {
   const requestLayer = read('miniprogram/services/request.ts')
-  const config = read('miniprogram/config/dev.ts')
 
   assert.match(requestLayer, /wx\.request\(/)
-  assert.match(requestLayer, /DEVTOOLS_ORIGIN/)
   assert.match(requestLayer, /DEV_LAN_ORIGIN/)
-  assert.match(config, /DEVTOOLS_ORIGIN = 'http:\/\/127\.0\.0\.1:8080'/)
   assert.match(requestLayer, /export function request</)
   assert.match(requestLayer, /export function ensureLogin/)
   assert.match(requestLayer, /\/wechat\/login/)
@@ -44,20 +42,46 @@ test('data access goes through the unified request layer', () => {
   for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking']) {
     const service = read(`miniprogram/services/${name}.ts`)
     assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
-    assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
+    if (!['home', 'analysis', 'notifications', 'materials'].includes(name)) {
+      assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
+    }
   }
 })
 
-test('home page data comes from backend analysis APIs', () => {
-  const service = read('miniprogram/services/home.ts')
+test('home style preview uses typed Figma mock data', () => {
+  const mock = read('miniprogram/mocks/home.ts')
   const config = read('miniprogram/config/dev.ts')
 
-  assert.match(service, /path: '\/analysis\/dashboard'/)
-  assert.match(service, /path: '\/analysis\/customer\/list'/)
-  assert.match(service, /path: '\/analysis\/content\/list'/)
-  assert.match(service, /path: '\/analysis\/intent\/list'/)
-  assert.doesNotMatch(config, /HOME_DATA_SOURCE/)
-  assert.equal(existsSync(new URL('../miniprogram/mocks/home.ts', import.meta.url)), false)
+  assert.match(mock, /getHomeStyleMock\(\): HomePageViewModel/)
+  assert.match(mock, /unreadNotificationCount: 0/)
+  assert.match(mock, /previewAvatars:/)
+  assert.match(config, /HOME_DATA_SOURCE: 'mock' \| 'api' = 'mock'/)
+})
+
+test('home empty preview exposes the complete zero-data view model', async () => {
+  const { getHomeStyleMock } = await import('../miniprogram/mocks/home.ts')
+
+  const homeData = getHomeStyleMock()
+
+  assert.equal(homeData.unreadNotificationCount, 0)
+  assert.deepEqual(homeData.notifications, [])
+  assert.deepEqual(homeData.contents, [])
+  assert.deepEqual(
+    {
+      total: homeData.intentSummary.total,
+      highCount: homeData.intentSummary.highCount,
+      mediumCount: homeData.intentSummary.mediumCount,
+      lowCount: homeData.intentSummary.lowCount,
+    },
+    { total: '0', highCount: '0', mediumCount: '0', lowCount: '0' },
+  )
+  assert.equal(homeData.intentSummary.previewAvatars.length, 5)
+  assert.deepEqual(homeData.today, {
+    viewCount: '0',
+    completeRate: '0',
+    forwardCount: '0',
+    viewerCount: '0',
+  })
 })
 
 test('home greeting follows the device local time', async () => {
@@ -76,6 +100,7 @@ test('home greeting follows the device local time', async () => {
 
 test('home page declares the new Figma sections and state branches', () => {
   const page = read('miniprogram/pages/index/index.wxml')
+  const component = read('miniprogram/components/home-profile/index.wxml')
   const logic = read('miniprogram/pages/index/index.ts')
   const styles = read('miniprogram/pages/index/index.less')
 
@@ -96,6 +121,21 @@ test('home page declares the new Figma sections and state branches', () => {
   assert.match(styles, /\.home-hero__subtitle \{[\s\S]*font-size: 44rpx;[\s\S]*font-weight: 500;[\s\S]*line-height: 68rpx;/)
 })
 
+test('home empty state follows Figma 486:2569', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(page, /class="home-empty home-empty--notification"[\s\S]*暂时还没有人浏览你的作品/)
+  assert.match(page, /class="home-content-card home-content-card--empty"[\s\S]*还没有作品，你可以发布一个[\s\S]*立即发布/)
+  assert.match(page, /class="home-section home-section--ranking"><view class="home-section__header"><text class="home-section__title">排行榜<\/text><\/view><view class="home-ranking-entry" bindtap="onRankingEntryTap"/)
+  assert.doesNotMatch(page, /home-section--ranking" wx:if=/)
+  assert.match(page, /今日有个新增用户/)
+  assert.match(page, /src="\/assets\/analysis\/empty-state-cloud\.png"/)
+  assert.match(styles, /\.home-empty--notification \{[\s\S]*height: 172rpx;[\s\S]*gap: 20rpx;/)
+  assert.match(styles, /\.home-content-card--empty \{[\s\S]*padding: 30rpx 40rpx;/)
+  assert.match(styles, /\.home-empty-publish \{[\s\S]*height: 64rpx;[\s\S]*background: @home-accent;/)
+})
+
 test('home page wires the intended navigation actions', () => {
   const page = read('miniprogram/pages/index/index.wxml')
   const logic = read('miniprogram/pages/index/index.ts')
@@ -105,29 +145,81 @@ test('home page wires the intended navigation actions', () => {
   assert.match(page, /bind:plus="onPlusTap"/)
   assert.match(logic, /pages\/analysis-user-detail\/index\?id=/)
   assert.match(logic, /pages\/analysis-detail\/index\?id=/)
-  assert.match(logic, /pages\/materials\/publish\/index/)
+  assert.match(logic, /getMaterials\(\)/)
   assert.match(logic, /getNotifications\(\)/)
   assert.match(logic, /getAnalysisOverview\(/)
   assert.doesNotMatch(logic, /onTabTap[\s\S]*pages\/notifications\/notifications/)
   assert.doesNotMatch(logic, /onTabTap[\s\S]*pages\/analysis\/index/)
 })
 
-test('home bottom navigation switches instantly in one swiper container', () => {
+test('home bottom navigation switches primary pages without a swipe container', () => {
   const page = read('miniprogram/pages/index/index.wxml')
   const logic = read('miniprogram/pages/index/index.ts')
   const config = read('miniprogram/pages/index/index.json')
 
-  assert.match(page, /<swiper class="home-page__tabs" current="\{\{activeTabIndex\}\}" duration="0" bindchange="onTabChange">/)
+  assert.match(page, /<view class="home-page__tabs">/)
+  assert.doesNotMatch(page, /<swiper class="home-page__tabs"/)
+  assert.match(page, /class="home-page__tab-panel" hidden="\{\{activeTabIndex !== 0\}\}"/)
+  assert.match(page, /class="home-page__tab-panel home-page__notification-panel" hidden="\{\{activeTabIndex !== 1\}\}"/)
+  assert.match(page, /class="home-page__tab-panel home-page__analysis-panel" hidden="\{\{activeTabIndex !== 3\}\}"/)
   assert.match(page, /<notification-header[\s\S]*bind:filtertap="onNotificationFilterTap"/)
   assert.match(page, /<home-analysis[\s\S]*bind:periodtap="onAnalysisPeriodTap"/)
-  assert.match(page, /我的页面待设计/)
+  assert.match(page, /<home-profile profile="\{\{profileData\}\}" \/>/)
   assert.match(logic, /activeTabIndex: 0/)
-  assert.match(logic, /onTabChange\(event: WechatMiniprogram.CustomEvent<{ current: string }>\)/)
+  assert.doesNotMatch(logic, /onTabChange/)
   assert.match(logic, /activeTabIndex: nextIndex/)
   assert.doesNotMatch(logic, /event.detail.id === 'notifications'[\s\S]*navigateTo/)
   assert.doesNotMatch(logic, /event.detail.id === 'analysis'[\s\S]*navigateTo/)
   assert.match(config, /home-notifications/)
   assert.match(config, /home-analysis/)
+})
+
+test('profile tab exposes the Figma 519:5031 structure through a typed service seam', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const logic = read('miniprogram/pages/index/index.ts')
+  const config = read('miniprogram/pages/index/index.json')
+  const types = read('miniprogram/types/profile.ts')
+  const service = read('miniprogram/services/profile.ts')
+  const mock = read('miniprogram/mocks/profile.ts')
+  const component = read('miniprogram/components/home-profile/index.wxml')
+
+  assert.match(types, /export interface ProfilePageViewModel/)
+  assert.match(service, /export function getProfilePageData\(\): Promise<ProfilePageViewModel>/)
+  assert.match(service, /from '\.\.\/mocks\/profile'/)
+  assert.match(mock, /balance: '870\.39'/)
+  assert.match(mock, /avatarUrl: '\/assets\/profile\/profile-avatar\.png'/)
+  assert.match(mock, /pendingTitle: '尽情期待'/)
+  assert.match(mock, /pendingDescription: '更多功能，即将呈现'/)
+  assert.match(config, /bottom-tab-bar/)
+  assert.match(component, /class="home-profile"/)
+  assert.match(component, /class="home-profile__balance"/)
+  assert.match(component, /class="home-profile__membership"/)
+  assert.match(logic, /getProfilePageData\(\)/)
+})
+
+test('profile pending module centers the Figma 594:8711 content group', () => {
+  const component = read('miniprogram/components/home-profile/index.wxml')
+  const styles = read('miniprogram/components/home-profile/index.less')
+
+  assert.match(component, /class="home-profile__pending" data-node-id="594:8711"/)
+  assert.match(styles, /.home-profile__pending \{[\s\S]*width: 252rpx;[\s\S]*align-items: center;/)
+  assert.match(styles, /.home-profile__pending \{[\s\S]*margin: 16rpx auto 0;/)
+  assert.match(styles, /.home-profile__pending-button \{[\s\S]*padding: 0 48rpx;[\s\S]*border-radius: 84rpx;/)
+})
+
+test('profile pending module stays above the locked content overlay', () => {
+  const styles = read('miniprogram/components/home-profile/index.less')
+
+  assert.match(styles, /.home-profile__locked-overlay \{[\s\S]*z-index: 2;/)
+  assert.match(styles, /.home-profile__locked-overlay \{[\s\S]*top: 442rpx;/)
+  assert.match(styles, /.home-profile__content \{[\s\S]*z-index: 1;/)
+  assert.match(styles, /.home-profile__pending \{[\s\S]*position: relative;[\s\S]*z-index: 3;/)
+})
+
+test('home analysis passes the selected analysis tab to its content view', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+
+  assert.match(page, /<home-analysis[\s\S]*active-analysis-tab="\{\{activeAnalysisTab\}\}"/)
 })
 
 test('home navigation title and background fade in over 100px of scroll', async () => {
@@ -145,7 +237,19 @@ test('home navigation title and background fade in over 100px of scroll', async 
   assert.equal(getHomeHeaderOpacity(50), 0.5)
   assert.equal(getHomeHeaderOpacity(100), 1)
   assert.equal(getHomeHeaderOpacity(180), 1)
-  assert.match(styles, /\.home-page__hero-background \{[\s\S]*position: absolute;/)
+  assert.match(styles, /\.home-page__hero-background\s*\{[^}]*position: fixed;/)
+})
+
+test('primary page backgrounds stay fixed while first-screen content pulls down', () => {
+  const materialsStyles = read('miniprogram/pages/materials/index.less')
+  const rankingStyles = read('miniprogram/pages/ranking/index.less')
+  const profileStyles = read('miniprogram/components/home-profile/index.less')
+
+  assert.match(materialsStyles, /\.materials-page__base\s*\{[^}]*position: fixed;/)
+  assert.match(materialsStyles, /\.materials-page__status-glow\s*\{[^}]*position: fixed;/)
+  assert.match(rankingStyles, /\.ranking-page__base\s*\{[^}]*position: fixed;/)
+  assert.match(rankingStyles, /\.ranking-page__status-glow\s*\{[^}]*position: fixed;/)
+  assert.match(profileStyles, /\.home-profile__stripes\s*\{[^}]*position: fixed;/)
 })
 
 test('home page places a high-resolution ranking entry between notifications and today-most', () => {
@@ -172,6 +276,66 @@ test('home page places a high-resolution ranking entry between notifications and
   const trophy = getPngDimensions('miniprogram/assets/ranking/ranking-trophy.png')
   assert.ok(title.width >= 576 && title.height >= 150, 'ranking title should be a 3x-or-higher asset')
   assert.ok(trophy.width >= 294 && trophy.height >= 351, 'ranking trophy should be a 3x-or-higher asset')
+})
+
+test('ranking reuses the profile striped background and fades its content to white', () => {
+  const markup = read('miniprogram/pages/ranking/index.wxml')
+  const styles = read('miniprogram/pages/ranking/index.less')
+
+  assert.match(markup, /<view class="ranking-page__status-glow" \/>/)
+  assert.doesNotMatch(markup, /ranking-stripes\.svg/)
+  assert.match(styles, /@ranking-background: #ffffff;/)
+  assert.match(styles, /\.ranking-page__status-glow \{[\s\S]*left: 4rpx;[\s\S]*height: 260rpx;[\s\S]*background: repeating-linear-gradient\(90deg, transparent 0 4rpx, #f0f0f0 4rpx 8rpx\);[\s\S]*mask-image: linear-gradient\(180deg, #000000 0%, rgba\(0, 0, 0, 0\) 100%\);[\s\S]*opacity: 0\.9;/)
+  assert.match(styles, /\.ranking-page__content \{[\s\S]*background: linear-gradient\(180deg, rgba\(255, 255, 255, 0\) 0%, #ffffff 13\.976%, #ffffff 100%\);/)
+  assert.match(styles, /\.ranking-panel \{[\s\S]*padding: 40rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-radius: 40rpx;[\s\S]*background: #ffffff;[\s\S]*box-shadow: 0 4rpx 20rpx rgba\(0, 0, 0, 0\.03\);/)
+  assert.match(markup, /class="ranking-panel \{\{hasRankingEntries \? '' : 'ranking-panel--empty'\}\}"/)
+  assert.match(styles, /\.ranking-page \{[\s\S]*display: flex;[\s\S]*flex-direction: column;/)
+  assert.match(styles, /\.ranking-page__content \{[\s\S]*display: flex;[\s\S]*flex: 1;[\s\S]*flex-direction: column;[\s\S]*padding: 70rpx 40rpx 48rpx;/)
+  assert.match(styles, /\.ranking-panel--empty \{[\s\S]*flex: 1;/)
+  assert.match(styles, /\.ranking-list \{[\s\S]*margin-top: 20rpx;/)
+})
+
+test('content cards share the global E6E6E6 border token', () => {
+  const appStyles = read('miniprogram/app.less')
+  const homeStyles = read('miniprogram/pages/index/index.less')
+  const notificationStyles = read('miniprogram/pages/notifications/notifications.less')
+  const profileStyles = read('miniprogram/components/home-profile/index.less')
+  const analysisStyles = read('miniprogram/pages/analysis/index.less')
+  const detailStyles = read('miniprogram/pages/analysis-detail/index.less')
+  const userDetailStyles = read('miniprogram/pages/analysis-user-detail/index.less')
+  const materialStyles = read('miniprogram/pages/materials/index.less')
+
+  assert.match(appStyles, /@content-box-border: #e6e6e6;/)
+  assert.match(homeStyles, /@home-border: @content-box-border;/)
+  assert.match(notificationStyles, /@notification-card-border: @content-box-border;/)
+  assert.match(profileStyles, /\.home-profile__balance \{[\s\S]*border: 1px solid @content-box-border;/)
+  assert.match(analysisStyles, /\.analysis-user__summary-card \{[\s\S]*border: 2rpx solid @content-box-border;/)
+  assert.match(analysisStyles, /\.analysis-total__overview-item \{[\s\S]*border: 2rpx solid @content-box-border;/)
+  assert.match(detailStyles, /\.detail-card \{[^}]*border: 2rpx solid @content-box-border;/)
+  assert.match(userDetailStyles, /\.user-detail__profile-card \{[\s\S]*border: 2rpx solid @content-box-border;/)
+  assert.match(materialStyles, /\.materials-card__info \{[\s\S]*border: 2rpx solid @content-box-border;/)
+})
+
+test('ranking and analysis periods use the shared segmented filter control', () => {
+  const rankingMarkup = read('miniprogram/pages/ranking/index.wxml')
+  const rankingConfig = JSON.parse(read('miniprogram/pages/ranking/index.json'))
+  const analysisMarkup = read('miniprogram/pages/analysis/index.wxml')
+  const analysisConfig = JSON.parse(read('miniprogram/pages/analysis/index.json'))
+  const componentMarkup = read('miniprogram/components/segmented-filter/index.wxml')
+  const componentLogic = read('miniprogram/components/segmented-filter/index.ts')
+  const componentStyles = read('miniprogram/components/segmented-filter/index.less')
+
+  assert.equal(rankingConfig.usingComponents['segmented-filter'], '/components/segmented-filter/index')
+  assert.equal(analysisConfig.usingComponents['segmented-filter'], '/components/segmented-filter/index')
+  assert.match(rankingMarkup, /<segmented-filter items="\{\{rankingTabs\}\}" active-id="\{\{activeRankingMetric\}\}" bind:change="onRankingTabTap" \/>/)
+  assert.match(analysisMarkup, /<segmented-filter items="\{\{analysisPeriods\}\}" active-id="\{\{activePeriod\}\}" item-width="68" bind:change="onPeriodTap" \/>/)
+  assert.match(componentMarkup, /wx:for="\{\{items\}\}"/)
+  assert.match(componentMarkup, /bindtap="onItemTap"/)
+  assert.match(componentLogic, /triggerEvent\('change', \{ id, index \}\)/)
+  assert.match(componentStyles, /height: 64rpx;/)
+  assert.match(componentStyles, /padding: @segmented-filter-vertical-inset;/)
+  assert.match(componentStyles, /top: @segmented-filter-vertical-inset;/)
+  assert.match(componentStyles, /bottom: @segmented-filter-vertical-inset;/)
 })
 
 test('new homepage assets are local and sized for the target frame', () => {
@@ -221,7 +385,11 @@ test('bottom navigation matches the new floating Figma treatment', () => {
   assert.match(logic, /triggerEvent\('tabtap'/)
   assert.match(logic, /triggerEvent\('plus'/)
   assert.match(styles, /position: fixed;/)
-  assert.match(styles, /bottom: max\(32px, env\(safe-area-inset-bottom\)\);/)
+  assert.match(component, /bottom-tab-bar \{\{isAndroid \? 'bottom-tab-bar--android' : ''\}\}/)
+  assert.match(logic, /wx\.getSystemInfoSync\(\)/)
+  assert.match(logic, /isAndroid: platform === 'android' \|\| platform === 'devtools'/)
+  assert.match(styles, /bottom: max\(24px, env\(safe-area-inset-bottom\)\);/)
+  assert.match(styles, /\.bottom-tab-bar--android \.bottom-tab-bar__inner\s*\{[\s\S]*bottom: 16px;/)
   assert.match(styles, /border-radius: 112rpx;/)
   assert.doesNotMatch(styles, /backdrop-filter: blur\(7\.7px\);/)
   assert.match(styles, /background: rgba\(255, 255, 255, 0\.4\);/)
@@ -250,6 +418,25 @@ test('bottom navigation uses selected cyan states and the supplied publish icon'
   assert.match(styles, /\.bottom-tab-bar__item--active \.bottom-tab-bar__label \{[\s\S]*color: #0ec8d9;/)
   assert.match(publishIcon, /width="20" height="20"/)
   assert.match(publishIcon, /fill="#666666"/)
+})
+
+test('publish navigation receives the same selected state as the other root tabs', () => {
+  const component = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.wxml')
+  const styles = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.less')
+  const page = read('miniprogram/pages/materials/index.wxml')
+  const logic = read('miniprogram/pages/materials/index.ts')
+  const activePublishIcon = read('miniprogram/assets/home-new/tab-publish-active.svg')
+
+  assert.match(component, /plusActive/)
+  assert.match(component, /bottom-tab-bar__create--active/)
+  assert.match(component, /tab-publish-active\.svg/)
+  assert.match(styles, /\.bottom-tab-bar__create--active\s*\{[\s\S]*background: #e0e0e0;/)
+  assert.match(styles, /\.bottom-tab-bar__create--active \.bottom-tab-bar__label\s*\{[\s\S]*color: #0ec8d9;/)
+  assert.doesNotMatch(styles, /\.bottom-tab-bar__create--active \.bottom-tab-bar__create-icon\s*\{[\s\S]*filter:/)
+  assert.match(page, /plus-active="\{\{true\}\}"/)
+  assert.match(logic, /id: 'home'[\s\S]*active: false/)
+  assert.match(activePublishIcon, /fill="#0EC8D9"/)
+  assert.match(activePublishIcon, /fill="white"/)
 })
 
 test('notification screen follows the revised Figma 486:1850 card treatment', () => {
@@ -289,15 +476,24 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   }
 })
 
-test('notifications load from the intent customer API', () => {
+test('notifications use fixed Figma preview mock data until the API is enabled', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/notifications.ts')
+  const mockPath = 'miniprogram/mocks/notifications.ts'
 
-  assert.match(service, /path: '\/analysis\/intent\/list'/)
-  assert.match(service, /path: '\/material\/mine'/)
-  assert.doesNotMatch(service, /getNotificationsMock/)
-  assert.doesNotMatch(config, /NOTIFICATION_DATA_SOURCE/)
-  assert.equal(existsSync(new URL('../miniprogram/mocks/notifications.ts', import.meta.url)), false)
+  assert.match(config, /NOTIFICATION_DATA_SOURCE: 'mock' \| 'api' = 'mock'/)
+  assert.match(service, /NOTIFICATION_DATA_SOURCE/)
+  assert.match(service, /getNotificationsMock/)
+  assert.equal(existsSync(new URL(`../${mockPath}`, import.meta.url)), true, mockPath)
+
+  const mock = read(mockPath)
+  assert.match(mock, /getNotificationsMock\(\): NotificationsViewModel/)
+  assert.match(mock, /label: '8月17日'/)
+  assert.match(mock, /未滑动看完所有图片/)
+  assert.match(mock, /该用户浏览进度80%/)
+  assert.match(mock, /该用户转发了你的作品，查看2次以上/)
+  assert.match(mock, /avatar-duck\.png/)
+  assert.match(mock, /thumb-river\.png/)
 })
 
 test('notification header and filters stay fixed while the card list scrolls', () => {
@@ -402,6 +598,116 @@ test('unaffected navigation and analysis pages remain registered', () => {
   assert.match(materials, /getMaterials/)
 })
 
+test('user detail page follows Figma 497:4640 and uses the analysis mock seam', () => {
+  const markup = read('miniprogram/pages/analysis-user-detail/index.wxml')
+  const styles = read('miniprogram/pages/analysis-user-detail/index.less')
+  const logic = read('miniprogram/pages/analysis-user-detail/index.ts')
+  const service = read('miniprogram/services/analysis.ts')
+  const mock = read('miniprogram/mocks/analysis.ts')
+
+  assert.match(markup, /<navigation-bar title="用户详情" back="\{\{true\}\}"/)
+  assert.match(markup, /class="user-detail__profile-card"/)
+  assert.match(markup, /class="user-detail__name" bindtap="onCopyUsername"/)
+  assert.match(markup, /class="user-detail__contact" bindtap="onContactTap"/)
+  assert.match(markup, /联系用户/)
+  assert.match(markup, /class="user-detail__records-card"/)
+  assert.match(markup, /class="user-detail__records-section"/)
+  assert.match(markup, /class="user-detail__records"/)
+  assert.match(markup, /阅读记录/)
+  assert.doesNotMatch(markup, /user-detail__record-tabs/)
+  assert.match(markup, /微信名称复制成功，/)
+  assert.match(markup, /关闭小程序后，前往微信联系用户。/)
+  assert.match(markup, /wx:if="\{\{noticeVisible\}\}" class="user-detail__copy-feedback"/)
+  assert.match(styles, /\.user-detail-page \{[\s\S]*background: #ffffff;/)
+  assert.match(styles, /\.user-detail-page__content \{[\s\S]*padding: 40rpx 40rpx 40rpx;/)
+  assert.match(styles, /\.user-detail__profile-card \{[\s\S]*min-height: 370rpx;[\s\S]*border-radius: 40rpx;/)
+  assert.match(styles, /\.user-detail__contact \{[\s\S]*height: 72rpx;[\s\S]*background: #0ec8d9;/)
+  assert.match(styles, /\.user-detail__record \{[\s\S]*height: 176rpx;[\s\S]*background: #f5f5f5;/)
+  assert.match(styles, /\.user-detail__records-section \{[\s\S]*margin-top: 40rpx;[\s\S]*gap: 10rpx;/)
+  assert.match(styles, /\.user-detail__records-card \{[\s\S]*padding: 30rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-radius: 40rpx;/)
+  assert.match(styles, /\.user-detail__record-stats view \{[\s\S]*flex-direction: column;/)
+  assert.match(styles, /\.user-detail__copy-feedback \{[\s\S]*width: 530rpx;[\s\S]*border-radius: 28rpx;[\s\S]*background: rgba\(0, 0, 0, 0\.8\);/)
+  assert.match(logic, /onCopyUsername\(\)/)
+  assert.match(logic, /onContactTap\(\)/)
+  assert.match(logic, /noticeVisible: false/)
+  assert.match(markup, /微信名称复制成功/)
+  assert.match(service, /if \(ANALYSIS_DATA_SOURCE === 'mock'\) return Promise\.resolve\(getAnalysisUserDetailStyleMock\(userId\)\)/)
+  assert.match(mock, /getAnalysisUserDetailStyleMock\(userId: string\): AnalysisUserDetailViewModel/)
+  assert.match(mock, /createUserRecord\(/)
+})
+
+test('publish belongs to the root swiper and does not navigate to a separate materials page', () => {
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const homeConfig = read('miniprogram/pages/index/index.json')
+  const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
+
+  assert.match(homeMarkup, /home-page__materials-panel/)
+  assert.match(homeMarkup, /bindtap="onMaterialPublishTap"/)
+  assert.match(homeLogic, /const rootTabIds: HomeTabId\[\] = \['home', 'notifications', 'materials', 'analysis', 'profile'\]/)
+  assert.match(homeLogic, /onPlusTap\(\)\s*\{\s*this\.setActiveTab\(2\)\s*}/)
+  assert.doesNotMatch(homeLogic, /onPlusTap\(\)\s*\{[\s\S]*?wx\.navigateTo/)
+  assert.match(homeLogic, /loadMaterials\(\)/)
+  assert.match(homeConfig, /publish-success-modal/)
+  assert.match(publishLogic, /\/pages\/index\/index\?tab=materials/)
+})
+
+test('materials home uses the Figma publish navigation and reserves space above it', () => {
+  const markup = read('miniprogram/pages/materials/index.wxml')
+  const logic = read('miniprogram/pages/materials/index.ts')
+  const styles = read('miniprogram/pages/materials/index.less')
+  const pageConfig = JSON.parse(read('miniprogram/pages/materials/index.json'))
+
+  assert.equal(pageConfig.usingComponents['bottom-tab-bar'], '/components/bottom-tab-bar/bottom-tab-bar')
+  assert.match(markup, /<bottom-tab-bar items="\{\{tabItems\}\}" plus-active="\{\{true\}\}" bind:tabtap="onTabTap" bind:plus="onPlusTap" \/>/)
+  assert.match(logic, /label: '首页'/)
+  assert.match(logic, /label: '通知'/)
+  assert.match(logic, /label: '分析'/)
+  assert.match(logic, /label: '我的'/)
+  assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?padding: 0 40rpx calc\(336rpx \+ env\(safe-area-inset-bottom\)\);/)
+  assert.match(styles, /\.materials-publish-bar\s*\{[\s\S]*?bottom: 112rpx;/)
+})
+
+test('materials home uses fixed preview data and the Figma striped background', async () => {
+  const config = read('miniprogram/config/dev.ts')
+  const service = read('miniprogram/services/materials.ts')
+  const markup = read('miniprogram/pages/materials/index.wxml')
+  const styles = read('miniprogram/pages/materials/index.less')
+
+  assert.match(config, /MATERIALS_DATA_SOURCE: 'mock' \| 'api' = 'mock'/)
+  assert.match(service, /MATERIALS_DATA_SOURCE/)
+  assert.match(service, /getMaterialsStyleMock/)
+  assert.match(service, /if \(MATERIALS_DATA_SOURCE === 'mock'\) return Promise\.resolve\(getMaterialsStyleMock\(\)\)/)
+  assert.match(markup, /src="\/assets\/materials\/materials-stripes\.svg"/)
+  assert.match(markup, /class="materials-card__image" src="\{\{item\.thumbnailUrl\}\}" mode="aspectFill"/)
+  assert.match(styles, /\.materials-page__base\s*\{[\s\S]*?background: #ffffff;/)
+  assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?background: transparent;/)
+})
+
+test('materials card information follows Figma 519:4383', () => {
+  const styles = read('miniprogram/pages/materials/index.less')
+
+  assert.match(styles, /\.materials-card__info\s*\{[\s\S]*gap: 20rpx;[\s\S]*padding: 16rpx 20rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-top: 0;[\s\S]*border-radius: 0 0 24rpx 24rpx;[\s\S]*background: #ffffff;[\s\S]*box-shadow: 0 0 20rpx rgba\(0, 0, 0, 0\.05\);/)
+  assert.match(styles, /\.materials-card__title\s*\{[\s\S]*font-size: 28rpx;[\s\S]*font-weight: 400;/)
+  assert.match(styles, /\.materials-card__date\s*\{[\s\S]*color: @materials-muted;[\s\S]*font-size: 28rpx;/)
+})
+
+test('materials header fades to white while the list scrolls', () => {
+  const markup = read('miniprogram/pages/materials/index.wxml')
+
+  assert.match(markup, /background: rgba\(255, 255, 255, \{\{materialsHeaderOpacity\}\}\);/)
+})
+
+test('materials publish button does not place a blue gradient layer over cards or navigation', () => {
+  const pageStyles = read('miniprogram/pages/materials/index.less')
+  const navigationStyles = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.less')
+
+  assert.match(navigationStyles, /\.bottom-tab-bar\s*\{[\s\S]*?z-index: 1000;/)
+  assert.match(pageStyles, /\.materials-page__content\s*\{[\s\S]*?z-index: 2;/)
+  assert.match(pageStyles, /\.materials-publish-bar\s*\{[\s\S]*?z-index: 3;[\s\S]*?background: transparent;/)
+  assert.doesNotMatch(pageStyles, /\.materials-publish-bar\s*\{[\s\S]*?background: linear-gradient/)
+})
+
 test('analysis tabs use the F4F5F5 divider line', () => {
   const appStyles = read('miniprogram/app.less')
   const styles = read('miniprogram/pages/analysis/index.less')
@@ -447,30 +753,78 @@ test('analysis work tab matches the revised Figma compact work list', () => {
   assert.match(homeLogic, /activeAnalysisSortLabel: '阅读量'/)
 })
 
-test('analysis overview loads from backend APIs and keeps component styles', () => {
+test('analysis work preview uses fixed local mock data and component styles', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/analysis.ts')
+  const mock = read('miniprogram/mocks/analysis.ts')
   const componentStylesPath = new URL('../miniprogram/components/home-analysis/index.less', import.meta.url)
 
   assert.equal(existsSync(componentStylesPath), true)
-  assert.match(service, /path: '\/analysis\/dashboard'/)
-  assert.match(service, /path: '\/analysis\/content\/list'/)
-  assert.match(service, /path: '\/analysis\/customer\/list'/)
-  assert.match(service, /path: '\/analysis\/intent\/list'/)
-  assert.doesNotMatch(service, /getAnalysisStyleMock/)
-  assert.doesNotMatch(config, /ANALYSIS_DATA_SOURCE/)
-  assert.equal(existsSync(new URL('../miniprogram/mocks/analysis.ts', import.meta.url)), false)
-  assert.match(read('miniprogram/components/home-analysis/index.less'), /@import ['\"]\.\.\/\.\.\/pages\/analysis\/index\.less['\"]/)
+  assert.match(config, /ANALYSIS_DATA_SOURCE: 'mock'/)
+  assert.match(service, /getAnalysisStyleMock/)
+  assert.match(service, /ANALYSIS_DATA_SOURCE === 'mock'/)
+  assert.match(mock, /export function getAnalysisStyleMock\(\)/)
+  assert.equal((mock.match(/mock-analysis-card-\d+/g) ?? []).length, 5)
+  assert.match(mock, /\/assets\/analysis\/content-01\.jpg/)
+  assert.match(mock, /总阅读次数.*24,234/)
+  assert.match(componentStylesPath ? read('miniprogram/components/home-analysis/index.less') : '', /@import ['\"]\.\.\/\.\.\/pages\/analysis\/index\.less['\"]/)
+})
+
+test('analysis user preview exposes the Figma 507:1682 intent summary and completion metrics', async () => {
+  const { getAnalysisStyleMock } = await import('../miniprogram/mocks/analysis.ts')
+
+  const analysisData = getAnalysisStyleMock()
+
+  assert.deepEqual(analysisData.userSummary, [
+    { label: '高意向', value: '3' },
+    { label: '中意向', value: '24,234' },
+    { label: '低意向', value: '1,223' },
+  ])
+  assert.deepEqual(
+    analysisData.audienceUsers.map((user) => ({ name: user.name, level: user.level, completionCount: user.completionCount })),
+    [
+      { name: 'xiaogai', level: 'high', completionCount: '4' },
+      { name: 'xiaogai', level: 'high', completionCount: '4' },
+      { name: 'xiaogai', level: 'high', completionCount: '4' },
+      { name: '快乐小鹅', level: 'medium', completionCount: '1' },
+      { name: '来财来财', level: 'low', completionCount: '2' },
+    ],
+  )
+})
+
+test('analysis user tab follows the Figma 507:1682 list hierarchy', () => {
+  const standalone = read('miniprogram/pages/analysis/index.wxml')
+  const embedded = read('miniprogram/components/home-analysis/index.wxml')
+  const styles = read('miniprogram/pages/analysis/index.less')
+
+  for (const markup of [standalone, embedded]) {
+    assert.match(markup, /class="analysis-user__summary"[\s\S]*class="analysis-user__title">意向用户<[\s\S]*class="analysis-user__list-panel"[\s\S]*<segmented-filter items="\{\{analysisIntentTabs\}\}" active-id="\{\{activeAnalysisIntent\}\}"/)
+    assert.match(markup, />完播<\/text>/)
+    assert.doesNotMatch(markup, />观看作品<\/text>/)
+  }
+
+  assert.match(styles, /\.analysis-user__summary-card \{[\s\S]*height: 130rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-radius: 24rpx;[\s\S]*background: #ffffff;/)
+  assert.match(styles, /\.analysis-user__list-panel \{[\s\S]*min-height: 946rpx;[\s\S]*padding: 40rpx 40rpx 88rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-radius: 40rpx;[\s\S]*background: #ffffff;/)
+  assert.match(styles, /\.analysis-user__tag--high \{[\s\S]*color: #ff4343;[\s\S]*background: #ffd7ce;/)
+})
+
+test('analysis user list stacks its filter above the rows', () => {
+  const styles = read('miniprogram/pages/analysis/index.less')
+
+  assert.match(styles, /\.analysis-user__list-panel \{[^}]*display: flex;[^}]*flex-direction: column;/)
 })
 
 test('analysis work filters match Figma 517:3836', () => {
+  const markup = read('miniprogram/pages/analysis/index.wxml')
   const styles = read('miniprogram/pages/analysis/index.less')
+  const componentStyles = read('miniprogram/components/segmented-filter/index.less')
 
   assert.match(styles, /\.analysis-page__content--work \{[\s\S]*padding-top: calc\(@notification-header-height \+ 40rpx\);[\s\S]*background: #ffffff;/)
   assert.match(styles, /\.analysis-filters--redesign\s*\{[\s\S]*margin-top: 0;[\s\S]*justify-content: flex-start;[\s\S]*gap: 40rpx;/)
-  assert.match(styles, /\.analysis-periods \{[\s\S]*height: 64rpx;[\s\S]*padding: @segmented-filter-vertical-inset;[\s\S]*border-radius: 20rpx;[\s\S]*background: #e0e0e0;/)
-  assert.match(styles, /\.analysis-periods__selection \{[\s\S]*width: 68rpx;[\s\S]*border-radius: 16rpx;[\s\S]*background: #ffffff;/)
-  assert.match(styles, /\.analysis-period \{[\s\S]*height: 56rpx;[\s\S]*font-size: 26rpx;/)
+  assert.match(markup, /<segmented-filter items="\{\{analysisPeriods\}\}" active-id="\{\{activePeriod\}\}" item-width="68" bind:change="onPeriodTap" \/>/)
+  assert.match(componentStyles, /\.segmented-filter \{[\s\S]*height: 64rpx;[\s\S]*padding: @segmented-filter-vertical-inset;[\s\S]*border-radius: 20rpx;[\s\S]*background: #e0e0e0;/)
+  assert.match(componentStyles, /\.segmented-filter__selection \{[\s\S]*border-radius: 16rpx;[\s\S]*background: #ffffff;/)
+  assert.match(componentStyles, /\.segmented-filter__item \{[\s\S]*height: 56rpx;[\s\S]*font-size: 26rpx;/)
   assert.match(styles, /\.analysis-sort \{[\s\S]*height: 64rpx;[\s\S]*padding: @segmented-filter-vertical-inset;[\s\S]*border-radius: 20rpx;[\s\S]*background: #e0e0e0;/)
   assert.match(styles, /\.analysis-sort__inner \{[\s\S]*gap: 8rpx;[\s\S]*padding: 0 20rpx;[\s\S]*border-radius: 16rpx;[\s\S]*font-size: 26rpx;/)
   assert.match(styles, /\.analysis-filters--redesign \.analysis-sort \{[\s\S]*border: 0;[\s\S]*background: #e0e0e0;/)
@@ -479,12 +833,120 @@ test('analysis work filters match Figma 517:3836', () => {
 test('home analysis compiles the Figma 517:3836 filters in its own stylesheet', () => {
   const markup = read('miniprogram/components/home-analysis/index.wxml')
   const styles = read('miniprogram/components/home-analysis/index.less')
+  const config = JSON.parse(read('miniprogram/components/home-analysis/index.json'))
 
   assert.match(markup, /analysis-filters analysis-filters--redesign home-analysis__filters/)
+  assert.match(markup, /<segmented-filter items="\{\{analysisPeriods\}\}" active-id="\{\{activePeriod\}\}" item-width="68" bind:change="onPeriodTap" \/>/)
+  assert.equal(config.usingComponents['segmented-filter'], '/components/segmented-filter/index')
   assert.match(styles, /\.home-analysis__filters \{[\s\S]*margin-top: 0;[\s\S]*justify-content: flex-start;[\s\S]*gap: 40rpx;/)
-  assert.match(styles, /\.home-analysis__filters \.analysis-periods \{[\s\S]*height: 64rpx;[\s\S]*border-radius: 20rpx;[\s\S]*background: #e0e0e0;/)
   assert.match(styles, /\.home-analysis__filters \.analysis-sort \{[\s\S]*height: 64rpx;[\s\S]*border: 0;[\s\S]*border-radius: 20rpx;[\s\S]*background: #e0e0e0;/)
   assert.match(styles, /\.home-analysis__filters \.analysis-sort__inner \{[\s\S]*border-radius: 16rpx;[\s\S]*font-size: 26rpx;/)
+})
+
+test('analysis detail page follows Figma 497:5232 with fixed preview data', () => {
+  const markup = read('miniprogram/pages/analysis-detail/index.wxml')
+  const styles = read('miniprogram/pages/analysis-detail/index.less')
+  const service = read('miniprogram/services/analysis.ts')
+  const mock = read('miniprogram/mocks/analysis.ts')
+
+  assert.doesNotMatch(markup, /detail-page__texture/)
+  assert.match(styles, /page \{[^}]*background: #ffffff;/)
+  assert.match(styles, /\.detail-card \{[^}]*height: 332rpx;[^}]*padding: 40rpx;[^}]*border: 2rpx solid @content-box-border;[^}]*border-radius: 40rpx;/)
+  assert.match(styles, /\.detail-card__thumbnail \{[^}]*width: 100rpx;[^}]*height: 136rpx;/)
+  assert.match(styles, /\.detail-intent__title \{[^}]*color: #8a8e94;[^}]*font-size: 28rpx;/)
+  assert.match(styles, /\.detail-intent__panel \{[^}]*height: auto;[^}]*padding: 40rpx;[^}]*border: 2rpx solid @content-box-border;[^}]*border-radius: 40rpx;/)
+  assert.match(styles, /\.detail-user__tag--high \{[^}]*color: #ff4343;[^}]*background: #ffd7ce;/)
+  assert.match(service, /getAnalysisDetailStyleMock/)
+  assert.match(service, /ANALYSIS_DATA_SOURCE === 'mock'/)
+  assert.match(mock, /export function getAnalysisDetailStyleMock\(cardId: string\)/)
+  assert.equal((mock.match(/mock-detail-user-/g) ?? []).length, 5)
+})
+
+test('analysis detail reuses the analysis header title typography', () => {
+  const headerMarkup = read('miniprogram/components/analysis-header/index.wxml')
+  const headerLogic = read('miniprogram/components/analysis-header/index.ts')
+  const detailMarkup = read('miniprogram/pages/analysis-detail/index.wxml')
+  const detailConfig = JSON.parse(read('miniprogram/pages/analysis-detail/index.json'))
+
+  assert.match(headerMarkup, /<navigation-bar title="\{\{title\}\}"/)
+  assert.match(headerLogic, /title: \{ type: String, value: '分析' \}/)
+  assert.match(detailMarkup, /<analysis-header title="内容分析" back="\{\{true\}\}" title-weight="600" \/>/)
+  assert.doesNotMatch(detailMarkup, /<navigation-bar/)
+  assert.equal(detailConfig.usingComponents['analysis-header'], '/components/analysis-header/index')
+  assert.equal(detailConfig.usingComponents['navigation-bar'], undefined)
+})
+
+test('analysis detail title uses the lighter detail weight only', () => {
+  const navigationLogic = read('miniprogram/components/navigation-bar/navigation-bar.ts')
+  const navigationMarkup = read('miniprogram/components/navigation-bar/navigation-bar.wxml')
+  const headerLogic = read('miniprogram/components/analysis-header/index.ts')
+  const headerMarkup = read('miniprogram/components/analysis-header/index.wxml')
+  const detailMarkup = read('miniprogram/pages/analysis-detail/index.wxml')
+
+  assert.match(navigationLogic, /titleWeight:\s*\{\s*type: Number,\s*value: 700\s*\}/)
+  assert.match(navigationMarkup, /weui-navigation-bar__center' style="font-weight: \{\{titleWeight\}\};"/)
+  assert.match(headerLogic, /titleWeight: \{ type: Number, value: 700 \}/)
+  assert.match(headerMarkup, /title-weight="\{\{titleWeight\}\}"/)
+  assert.match(detailMarkup, /<analysis-header title="内容分析" back="\{\{true\}\}" title-weight="600" \/>/)
+})
+
+test('analysis total tab follows Figma 587:8623 overview and peak layout', () => {
+  const pageMarkup = read('miniprogram/pages/analysis/index.wxml')
+  const pageLogic = read('miniprogram/pages/analysis/index.ts')
+  const pageStyles = read('miniprogram/pages/analysis/index.less')
+  const homeMarkup = read('miniprogram/components/home-analysis/index.wxml')
+  const mock = read('miniprogram/mocks/analysis.ts')
+  const service = read('miniprogram/services/analysis.ts')
+  const types = read('miniprogram/types/analysis.ts')
+
+  for (const markup of [pageMarkup, homeMarkup]) {
+    assert.match(markup, /<segmented-filter[^>]*items="\{\{totalAnalysisPeriods\}\}" active-id="\{\{activeTotalPeriod\}\}" bind:change="onTotalPeriodTap"/)
+    assert.match(markup, /数据总览/)
+    assert.match(markup, /analysisData\.totalData\.heroMetrics/)
+    assert.match(markup, /阅读峰值/)
+    assert.doesNotMatch(markup, /阅读数据/)
+    assert.doesNotMatch(markup, /analysis-total__range-tabs/)
+  }
+
+  assert.match(pageLogic, /const totalAnalysisPeriods: AnalysisPeriodOption\[\]/)
+  assert.match(pageLogic, /onTotalPeriodTap/)
+  assert.match(pageStyles, /\.analysis-total__overview-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid @content-box-border;[\s\S]*?border-radius: 40rpx;/)
+  assert.match(pageStyles, /\.analysis-total__chart-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid @content-box-border;[\s\S]*?border-radius: 40rpx;/)
+  assert.match(types, /heroMetrics: AnalysisTotalHeroMetric\[\]/)
+  assert.match(mock, /value: '122,100次'/)
+  assert.match(mock, /value: '920人'/)
+  assert.match(service, /heroMetrics:/)
+})
+
+test('analysis total hero metrics are direct flex items', () => {
+  const markups = [
+    read('miniprogram/pages/analysis/index.wxml'),
+    read('miniprogram/components/home-analysis/index.wxml'),
+  ]
+  const styles = read('miniprogram/pages/analysis/index.less')
+
+  for (const markup of markups) {
+    assert.match(markup, /wx:for="\{\{analysisData\.totalData\.heroMetrics\}\}"[\s\S]*class="analysis-total__hero-metric/)
+    assert.doesNotMatch(markup, /<block wx:for="\{\{analysisData\.totalData\.heroMetrics\}\}"/)
+  }
+
+  assert.match(styles, /\.analysis-total__hero-metric--secondary \{[\s\S]*border-left: 2rpx solid #f0f0f0;/)
+})
+
+test('home analysis keeps the total period control above its scroll view', () => {
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const componentMarkup = read('miniprogram/components/home-analysis/index.wxml')
+  const homeStyles = read('miniprogram/pages/index/index.less')
+
+  assert.match(homeMarkup, /<analysis-header[\s\S]*home-page__analysis-total-filter[\s\S]*<segmented-filter items="\{\{totalAnalysisPeriods\}\}" active-id="\{\{activeTotalPeriod\}\}" bind:change="onTotalAnalysisPeriodTap" \/>[\s\S]*<scroll-view scroll-y class="home-page__tab-scroll home-page__analysis-scroll">/)
+  assert.match(componentMarkup, /<segmented-filter wx:if="\{\{!embedded\}\}" items="\{\{totalAnalysisPeriods\}\}" active-id="\{\{activeTotalPeriod\}\}" bind:change="onTotalPeriodTap" \/>/)
+  assert.match(homeStyles, /\.home-page__analysis-total-filter \{[\s\S]*padding: 32rpx 40rpx 0;/)
+})
+
+test('navigation titles use one explicit Chinese typography token', () => {
+  const styles = read('miniprogram/components/navigation-bar/navigation-bar.less')
+
+  assert.match(styles, /\.weui-navigation-bar__center\s*\{[\s\S]*?font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;[\s\S]*?font-size: 17px;[\s\S]*?font-weight: 700;/)
 })
 
 test('static assets stay below the preview package budget', () => {

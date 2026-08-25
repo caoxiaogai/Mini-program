@@ -10,10 +10,7 @@
   <view wx:if="{{analysisData && activeAnalysisTab === 'work'}}" class="analysis-page__content analysis-page__content--work">
     <view class="analysis-work-panel analysis-work-panel--redesign">
       <view class="analysis-filters analysis-filters--redesign home-analysis__filters">
-        <view class="analysis-periods">
-          <view class="analysis-periods__selection" style="transform: translateX({{activePeriodOffset}}rpx);"></view>
-          <view wx:for="{{analysisPeriods}}" wx:key="id" class="analysis-period {{item.id === activePeriod ? 'analysis-period--active' : ''}}" bindtap="onPeriodTap" data-id="{{item.id}}" data-index="{{index}}"><text>{{item.label}}</text></view>
-        </view>
+        <segmented-filter items="{{analysisPeriods}}" active-id="{{activePeriod}}" item-width="68" bind:change="onPeriodTap" />
         <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
       </view>
       <view class="analysis-summary analysis-summary--redesign">
@@ -42,21 +39,19 @@
 
   <view wx:if="{{analysisData && activeAnalysisTab === 'user'}}" class="analysis-page__content">
     <view class="analysis-user-panel">
-      <view class="analysis-user__intent-tabs" bindtouchstart="onAnalysisIntentTouchStart" bindtouchend="onAnalysisIntentTouchEnd">
-        <view class="analysis-user__intent-selection" style="transform: translateX({{analysisIntentOffset}}%);"></view>
-        <view wx:for="{{analysisIntentTabs}}" wx:key="id" class="analysis-user__intent-tab {{item.id === activeAnalysisIntent ? 'analysis-user__intent-tab--active' : ''}}" bindtap="onAnalysisIntentTap" data-index="{{index}}">{{item.label}}</view>
-      </view>
       <view class="analysis-user__summary">
         <view wx:for="{{analysisData.userSummary}}" wx:key="label" class="analysis-user__summary-card"><text class="analysis-user__summary-label">{{item.label}}</text><text class="analysis-user__summary-value">{{item.value}}</text></view>
       </view>
+      <text class="analysis-user__title">意向用户</text>
       <view wx:if="{{hasAnalysisUsers}}" class="analysis-user__list-panel">
+        <segmented-filter items="{{analysisIntentTabs}}" active-id="{{activeAnalysisIntent}}" bind:change="onAnalysisIntentTap" bind:touchstart="onAnalysisIntentTouchStart" bind:touchend="onAnalysisIntentTouchEnd" />
         <view class="analysis-user__list">
-          <view wx:for="{{visibleAnalysisUsers}}" wx:key="id" class="analysis-user {{item.showMarker ? 'analysis-user--marked' : ''}}" bindtap="onAnalysisUserTap" data-id="{{item.id}}">
+          <view wx:for="{{visibleAnalysisUsers}}" wx:key="id" class="analysis-user" bindtap="onAnalysisUserTap" data-id="{{item.id}}" hover-class="analysis-user--pressed">
             <image class="analysis-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
             <view class="analysis-user__body">
               <view class="analysis-user__summary-line">
                 <view class="analysis-user__identity"><text class="analysis-user__name">{{item.name}}</text><text class="analysis-user__tag analysis-user__tag--{{item.level}}">#{{item.levelLabel}}</text></view>
-                <view class="analysis-user__stats"><view class="analysis-user__stat"><text class="analysis-user__stat-label">阅读</text><text class="analysis-user__stat-value">{{item.readCount}}</text></view><view class="analysis-user__stat-divider"></view><view class="analysis-user__stat"><text class="analysis-user__stat-label">观看作品</text><text class="analysis-user__stat-value">{{item.viewedWorksCount}}</text></view><view class="analysis-user__stat-divider"></view><view class="analysis-user__stat"><text class="analysis-user__stat-label">转发</text><text class="analysis-user__stat-value">{{item.shareCount}}</text></view></view>
+                <view class="analysis-user__stats"><view class="analysis-user__stat"><text class="analysis-user__stat-label">阅读</text><text class="analysis-user__stat-value">{{item.readCount}}</text></view><view class="analysis-user__stat-divider"></view><view class="analysis-user__stat"><text class="analysis-user__stat-label">完播</text><text class="analysis-user__stat-value">{{item.completionCount}}</text></view><view class="analysis-user__stat-divider"></view><view class="analysis-user__stat"><text class="analysis-user__stat-label">转发</text><text class="analysis-user__stat-value">{{item.shareCount}}</text></view></view>
               </view>
               <view class="analysis-user__line"></view>
             </view>
@@ -71,18 +66,22 @@
   </view>
 
   <view wx:if="{{analysisData && activeAnalysisTab === 'total'}}" class="analysis-page__content">
+    <segmented-filter wx:if="{{!embedded}}" items="{{totalAnalysisPeriods}}" active-id="{{activeTotalPeriod}}" bind:change="onTotalPeriodTap" />
     <view class="analysis-total-panel">
       <view class="analysis-total__overview-card">
-        <text class="analysis-total__title">作品数据总览</text>
+        <text class="analysis-total__title">数据总览</text>
+        <view class="analysis-total__hero-metrics">
+          <view wx:for="{{analysisData.totalData.heroMetrics}}" wx:key="label" class="analysis-total__hero-metric {{index === 0 ? '' : 'analysis-total__hero-metric--secondary'}}">
+            <text class="analysis-total__hero-value">{{item.value}}</text>
+            <view class="analysis-total__hero-meta"><text>{{item.label}}</text><text>较昨日</text><text class="analysis-total__hero-delta">{{item.delta}}</text></view>
+          </view>
+        </view>
         <view class="analysis-total__overview-grid">
           <view wx:for="{{analysisData.totalData.overview}}" wx:key="label" class="analysis-total__overview-item"><text class="analysis-total__overview-label">{{item.label}}</text><text class="analysis-total__overview-value">{{item.value}}</text></view>
         </view>
       </view>
       <view class="analysis-total__chart-card">
-        <view class="analysis-total__chart-header">
-          <text class="analysis-total__title">阅读数据</text>
-          <view class="analysis-total__range-tabs"><view wx:for="{{analysisReadRanges}}" wx:key="id" class="analysis-total__range-tab {{item.id === activeAnalysisReadRange ? 'analysis-total__range-tab--active' : ''}}" bindtap="onAnalysisRangeTap" data-id="{{item.id}}">{{item.label}}</view></view>
-        </view>
+        <text class="analysis-total__title">阅读峰值</text>
         <view class="analysis-total__chart {{activeAnalysisReadRange === 'month' ? 'analysis-total__chart--month' : ''}}">
           <view class="analysis-total__chart-gridline analysis-total__chart-gridline--top"><text>1500</text></view>
           <view class="analysis-total__chart-gridline analysis-total__chart-gridline--upper"><text>1000</text></view>

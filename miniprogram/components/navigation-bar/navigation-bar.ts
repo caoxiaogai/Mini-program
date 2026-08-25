@@ -14,6 +14,10 @@ Component({
       type: String,
       value: ''
     },
+    titleWeight: {
+      type: Number,
+      value: 700
+    },
     background: {
       type: String,
       value: ''

@@ -8,6 +8,8 @@ import type {
   MaterialSubmitInput,
   PublishImageViewModel,
 } from '../types/materials'
+import { MATERIALS_DATA_SOURCE } from '../config/dev'
+import { getMaterialsStyleMock } from '../mocks/materials'
 import { formatDateKey } from '../utils/format'
 import { request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
 
@@ -53,7 +55,7 @@ function resolveThumbnail(material: ApiMaterial): string {
   return material.fileType === 'IMAGE' ? parseImageUrls(material.fileUrl)[0] ?? '' : ''
 }
 
-export function getMaterials(): Promise<MaterialsViewModel> {
+function getMaterialsFromApi(): Promise<MaterialsViewModel> {
   return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }).then((materials) => ({
     filters: materialsFilters,
     items: materials.map((material) => ({
@@ -65,6 +67,13 @@ export function getMaterials(): Promise<MaterialsViewModel> {
       isDraft: material.publishStatus === 0,
     })),
   }))
+}
+
+/** DEV_MOCK: 仅用于素材首页的 Figma 视觉预览，确认真实接口后切换为 api。 */
+export function getMaterials(): Promise<MaterialsViewModel> {
+  if (MATERIALS_DATA_SOURCE === 'mock') return Promise.resolve(getMaterialsStyleMock())
+
+  return getMaterialsFromApi()
 }
 
 export function getMaterialDetail(materialId: string): Promise<MaterialDetailViewModel | null> {

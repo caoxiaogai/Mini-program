@@ -16,6 +16,8 @@ import type {
   AnalysisUserDetailViewModel,
   AnalysisViewModel,
 } from '../types/analysis'
+import { ANALYSIS_DATA_SOURCE } from '../config/dev'
+import { getAnalysisDetailStyleMock, getAnalysisStyleMock, getAnalysisUserDetailStyleMock } from '../mocks/analysis'
 import {
   buildCustomRangeQuery,
   formatCount,
@@ -171,33 +173,9 @@ function getReadTrends(): Promise<Record<AnalysisReadRange, AnalysisChartPoint[]
   })
 }
 
-/** 客户观看作品数：后端列表接口不含该字段，用内容详情受众列表按客户聚合 */
-function fetchViewedWorksCounts(
-  contents: ApiContentListItem[],
-  periodQuery: Record<string, string>,
-): Promise<Map<string, number>> {
-  const counts = new Map<string, number>()
-
-  const tasks = contents.map((item) => () =>
-    request<ApiContentDetail | null>({
-      method: 'GET',
-      path: '/analysis/content/detail',
-      query: { ...periodQuery, materialId: String(item.materialId) },
-      silent: true,
-    })
-      .then((detail) => {
-        ;(detail?.audienceList ?? []).forEach((audience) => {
-          const key = String(audience.customerId)
-          counts.set(key, (counts.get(key) ?? 0) + 1)
-        })
-      })
-      .catch(() => undefined),
-  )
-
-  return runRequestQueue(tasks, REQUEST_CONCURRENCY).then(() => counts)
-}
-
 export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<AnalysisViewModel> {
+  if (ANALYSIS_DATA_SOURCE === 'mock') return Promise.resolve(getAnalysisStyleMock())
+
   const periodQuery = buildPeriodQuery(period)
   const totalQuery = buildPeriodQuery('total')
 
@@ -208,11 +186,8 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: periodQuery }),
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: totalQuery }),
     getReadTrends(),
-  ]).then(([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) =>
-    fetchViewedWorksCounts(contents, periodQuery).then((viewedWorksCounts) => {
+  ]).then(([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) => {
       const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
-      const forwardedCustomerCount = intentCustomers.filter((item) => item.hasForwarded === 1).length
-      const completedCustomerCount = customers.filter((item) => (item.completeCount ?? 0) > 0).length
 
       return {
         summary: [
@@ -222,9 +197,9 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
         ],
         cards: contents.map(mapContentCard),
         userSummary: [
-          { label: '总用户', value: formatCount(customers.length) },
-          { label: '完播人数', value: formatCount(completedCustomerCount) },
-          { label: '转发人数', value: formatCount(forwardedCustomerCount) },
+          { label: '高意向', value: formatCount(dashboard.highIntentCount) },
+          { label: '中意向', value: formatCount(dashboard.mediumIntentCount) },
+          { label: '低意向', value: formatCount(dashboard.lowIntentCount) },
         ],
         audienceUsers: customers.map((customer) => {
           const customerId = String(customer.customerId)
@@ -238,18 +213,19 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
             level,
             levelLabel: intentLevelLabels[level],
             readCount: formatCount(customer.viewCount),
-            viewedWorksCount: formatCount(viewedWorksCounts.get(customerId)),
+            completionCount: formatCount(customer.completeCount),
             shareCount: intent?.hasForwarded === 1 ? '1' : '0',
           }
         }),
         totalData: {
+          heroMetrics: [
+            { label: '阅读总次数', value: formatCount(totalDashboard.totalViewCount), delta: '+0' },
+            { label: '阅读总人数', value: formatCount(totalDashboard.totalViewerCount), delta: '+0' },
+          ],
           overview: [
             { label: '总发布', value: formatCount(totalDashboard.totalPublishCount) },
-            { label: '总阅读次数', value: formatCount(totalDashboard.totalViewCount) },
             { label: '总转发', value: formatCount(totalDashboard.totalForwardCount) },
-            { label: '总阅读人数', value: formatCount(totalDashboard.totalViewerCount) },
             { label: '总完播', value: formatCount(totalDashboard.totalCompleteCount) },
-            { label: '总完播率', value: `${totalDashboard.completeRate ?? 0}%` },
             { label: '高意向', value: formatCount(totalDashboard.highIntentCount) },
             { label: '中意向', value: formatCount(totalDashboard.mediumIntentCount) },
             { label: '低意向', value: formatCount(totalDashboard.lowIntentCount) },
@@ -257,11 +233,12 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
           readTrends,
         },
       }
-    }),
-  )
+    })
 }
 
 export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewModel | null> {
+  if (ANALYSIS_DATA_SOURCE === 'mock') return Promise.resolve(getAnalysisDetailStyleMock(cardId))
+
   const rangeQuery = buildPeriodQuery('total')
 
   return Promise.all([
@@ -310,6 +287,8 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
 }
 
 export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetailViewModel | null> {
+  if (ANALYSIS_DATA_SOURCE === 'mock') return Promise.resolve(getAnalysisUserDetailStyleMock(userId))
+
   const rangeQuery = buildPeriodQuery('total')
 
   return Promise.all([

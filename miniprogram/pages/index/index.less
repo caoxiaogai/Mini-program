@@ -1,10 +1,11 @@
 @import '../notifications/notifications.less';
 @import '../analysis/index.less';
+@import '../materials/index.less';
 
 @home-page-background: #fafafa;
 @home-muted: #8a8e94;
 @home-muted-light: #999999;
-@home-border: #f0f0f0;
+@home-border: @content-box-border;
 @home-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
 @home-accent: #0ec8d9;
 
@@ -63,13 +64,16 @@ page {
   background: #fff;
 }
 
-.home-profile-placeholder {
-  display: flex;
-  min-height: 100%;
-  align-items: center;
-  justify-content: center;
-  color: @home-muted;
-  font-size: 32rpx;
+.home-page__analysis-total-filter {
+  flex: none;
+  padding: 32rpx 40rpx 0;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.home-page__materials-panel,
+.home-page__materials-scroll {
+  background: #ffffff;
 }
 
 .home-tab-loading {
@@ -81,8 +85,12 @@ page {
   font-size: 28rpx;
 }
 
+.home-page__profile-panel {
+  background: #ffffff;
+}
+
 .home-page__hero-background {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -433,6 +441,15 @@ page {
   padding: 30rpx 40rpx;
 }
 
+.home-content-card--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20rpx;
+  padding: 30rpx 40rpx;
+}
+
 .home-content-card__item {
   transition: transform 120ms ease-out, opacity 120ms ease-out;
 }
@@ -610,6 +627,53 @@ page {
   font-size: 24rpx;
   line-height: 36rpx;
   text-align: center;
+}
+
+.home-empty--notification {
+  height: 172rpx;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.home-empty__cloud {
+  display: block;
+  width: 78rpx;
+  height: 78rpx;
+}
+
+.home-content-card--empty .home-empty__cloud {
+  width: 58rpx;
+  height: 58rpx;
+}
+
+.home-empty__message {
+  color: @home-muted;
+  font-size: 26rpx;
+  line-height: 32rpx;
+}
+
+.home-empty-publish {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64rpx;
+  padding: 0 28rpx;
+  border-radius: 52rpx;
+  background: @home-accent;
+  color: #ffffff;
+  font-size: 26rpx;
+  line-height: 64rpx;
+  box-sizing: border-box;
+}
+
+.home-empty-publish__plus {
+  margin-left: 16rpx;
+  font-size: 30rpx;
+  font-weight: 400;
+}
+
+.home-empty-publish--pressed {
+  opacity: 0.72;
 }
 
 .home-state {

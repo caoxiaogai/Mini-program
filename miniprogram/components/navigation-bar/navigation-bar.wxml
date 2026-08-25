@@ -40,7 +40,7 @@
     </view>
 
     <!-- 标题 -->
-    <view class='weui-navigation-bar__center'>
+    <view class='weui-navigation-bar__center' style="font-weight: {{titleWeight}};">
       <view wx:if="{{loading}}" class="weui-navigation-bar__loading" aria-role="alert">
         <view
           class="weui-loading"

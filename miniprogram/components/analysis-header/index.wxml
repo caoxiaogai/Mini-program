@@ -1,5 +1,5 @@
 <view class="analysis-page__header {{embedded ? 'analysis-page__header--embedded' : ''}}">
-  <navigation-bar title="分析" back="{{back}}" color="#000000" background="#ffffff" />
+  <navigation-bar title="{{title}}" title-weight="{{titleWeight}}" back="{{back}}" color="#000000" background="#ffffff" />
   <view wx:if="{{analysisTabs.length}}" class="analysis-tabs" bindtouchstart="onAnalysisTouchStart" bindtouchend="onAnalysisTouchEnd">
     <view class="analysis-tabs__selection" style="transform: translateX({{analysisTabOffset}}%);"></view>
     <view wx:for="{{analysisTabs}}" wx:key="id" class="analysis-tabs__item {{item.id === activeAnalysisTab ? 'analysis-tabs__item--active' : ''}}" bindtap="onAnalysisTabTap" data-index="{{index}}">{{item.label}}</view>

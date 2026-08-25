@@ -4,7 +4,10 @@
     "bottom-tab-bar": "/components/bottom-tab-bar/bottom-tab-bar",
     "notification-header": "/components/notification-header/index",
     "analysis-header": "/components/analysis-header/index",
+    "segmented-filter": "/components/segmented-filter/index",
     "home-notifications": "/components/home-notifications/index",
-    "home-analysis": "/components/home-analysis/index"
+    "home-analysis": "/components/home-analysis/index",
+    "home-profile": "/components/home-profile/index",
+    "publish-success-modal": "/components/publish-success-modal/index"
   }
 }
