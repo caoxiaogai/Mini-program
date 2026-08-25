@@ -274,6 +274,10 @@ Page({
     const option = analysisSortOptions.find((item) => item.id === event.detail.id)
     if (option) this.setData({ activeAnalysisSort: option.id, activeAnalysisSortLabel: option.label, analysisSortSheetVisible: false })
   },
+  onHomeAnalysisSortOptionTap(event: WechatMiniprogram.TouchEvent) {
+    const option = analysisSortOptions.find((item) => item.id === event.currentTarget.dataset.id as AnalysisSortId)
+    if (option) this.setData({ activeAnalysisSort: option.id, activeAnalysisSortLabel: option.label, analysisSortSheetVisible: false })
+  },
   onAnalysisSortMaskTap() { this.setData({ analysisSortSheetVisible: false }) },
   onAnalysisCardTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
     if (event.detail.id) wx.navigateTo({ url: `/pages/analysis-detail/index?id=${event.detail.id}` })

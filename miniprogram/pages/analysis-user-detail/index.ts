@@ -29,6 +29,12 @@ Page({
   onContactTap() {
     this.showNotice()
   },
+  onUserRecordTap(event: WechatMiniprogram.TouchEvent) {
+    const contentId = event.currentTarget.dataset.contentId as string | undefined
+    if (!contentId) return
+
+    wx.navigateTo({ url: `/pages/analysis-detail/index?id=${contentId}` })
+  },
   showNotice() {
     if (this.noticeTimer !== null) {
       clearTimeout(this.noticeTimer)

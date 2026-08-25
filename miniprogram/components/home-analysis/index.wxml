@@ -93,7 +93,7 @@
     </view>
   </view>
 
-  <view wx:if="{{analysisSortSheetVisible}}" class="analysis-sort-sheet">
+  <view wx:if="{{analysisSortSheetVisible && !embedded}}" class="analysis-sort-sheet">
     <view class="analysis-sort-sheet__mask" catchtap="onAnalysisSortMaskTap"></view>
     <view class="analysis-sort-sheet__panel">
       <view wx:for="{{analysisSortOptions}}" wx:key="id" class="analysis-sort-sheet__option" bindtap="onAnalysisSortOptionTap" data-id="{{item.id}}">{{item.label}}</view>

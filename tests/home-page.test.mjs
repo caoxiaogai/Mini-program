@@ -1,8 +1,22 @@
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { stripTypeScriptTypes } from 'node:module'
 import test from 'node:test'
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+
+const loadPageDefinition = (path, dependencies = {}) => {
+  const source = read(path)
+    .replace(/^import[^\n]+\n/gm, '')
+    .replace(/^Page\(/m, 'capturePage(')
+  const executable = stripTypeScriptTypes(source, { mode: 'strip' })
+  let definition = null
+  const names = [...Object.keys(dependencies), 'capturePage']
+  const values = [...Object.values(dependencies), (pageDefinition) => { definition = pageDefinition }]
+
+  new Function(...names, executable)(...values)
+  return definition
+}
 
 const getPngDimensions = (path) => {
   const bytes = readFileSync(new URL(`../${path}`, import.meta.url))
@@ -173,6 +187,13 @@ test('home page declares the new Figma sections and state branches', () => {
   assert.match(logic, /this\.setData\(\{ greetingHeadline: getHomeGreeting\(\) \}\)/)
   assert.match(styles, /\.home-hero__headline \{[\s\S]*font-size: 44rpx;[\s\S]*font-weight: 500;[\s\S]*line-height: 68rpx;/)
   assert.match(styles, /\.home-hero__subtitle \{[\s\S]*font-size: 44rpx;[\s\S]*font-weight: 500;[\s\S]*line-height: 68rpx;/)
+})
+
+test('home hero aligns the greeting and notification start with Figma 619:9173', () => {
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(styles, /\.home-hero \{[\s\S]*height: 520rpx;/)
+  assert.match(styles, /\.home-hero__copy \{[\s\S]*top: 310rpx;/)
 })
 
 test('home summary cards open the matching analysis tabs', () => {
@@ -428,7 +449,7 @@ test('ranking and analysis periods use the shared segmented filter control', () 
 
 test('new homepage assets are local and sized for the target frame', () => {
   const assets = [
-    'miniprogram/assets/home-new/hero-lounge.png',
+    'miniprogram/assets/home-new/home-hero-glow.svg',
     'miniprogram/assets/home-new/today-most-01.jpg',
     'miniprogram/assets/home-new/today-most-02.jpg',
     'miniprogram/assets/home-new/action-forward.svg',
@@ -453,9 +474,16 @@ test('new homepage assets are local and sized for the target frame', () => {
   for (const asset of assets) {
     assert.equal(existsSync(new URL(`../${asset}`, import.meta.url)), true, asset)
   }
+})
 
-  const hero = getPngDimensions('miniprogram/assets/home-new/hero-lounge.png')
-  assert.ok(hero.width >= 500 && hero.height >= 300)
+test('home hero uses the supplied glow SVG instead of the cat illustration', () => {
+  const markup = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(markup, /class="home-hero__glow" src="\/assets\/home-new\/home-hero-glow\.svg"/)
+  assert.doesNotMatch(markup, /hero-lounge\.png/)
+  assert.doesNotMatch(markup, /home-hero__image-frame/)
+  assert.match(styles, /\.home-hero__glow \{[\s\S]*position: absolute;[\s\S]*width: 538rpx;[\s\S]*height: 538rpx;/)
 })
 
 test('bottom navigation matches the new floating Figma treatment', () => {
@@ -637,9 +665,7 @@ test('home page uses the 20px content inset and scroll-safe bottom space', () =>
   const styles = read('miniprogram/pages/index/index.less')
 
   assert.match(styles, /padding: 0 40rpx 200rpx;/)
-  assert.match(styles, /left: 56rpx;/)
-  assert.match(styles, /width: 674rpx;/)
-  assert.match(styles, /height: 414rpx;/)
+  assert.match(styles, /\.home-hero__glow \{[\s\S]*top: -106rpx;[\s\S]*left: 375rpx;[\s\S]*width: 538rpx;[\s\S]*height: 538rpx;/)
   assert.match(styles, /background: linear-gradient\(180deg, #b5ebfe 0%, @home-page-background 100%\);/)
   assert.match(styles, /border-radius: 40rpx;/)
   assert.match(page, /class="home-content-card__divider"/)
@@ -701,6 +727,7 @@ test('user detail page follows Figma 497:4640 and uses the analysis mock seam', 
   assert.match(markup, /class="user-detail__records-card"/)
   assert.match(markup, /class="user-detail__records-section"/)
   assert.match(markup, /class="user-detail__records"/)
+  assert.match(markup, /class="user-detail__record" bindtap="onUserRecordTap" data-content-id="\{\{item\.contentId\}\}"/)
   assert.match(markup, /阅读记录/)
   assert.doesNotMatch(markup, /user-detail__record-tabs/)
   assert.match(markup, /微信名称复制成功，/)
@@ -711,6 +738,7 @@ test('user detail page follows Figma 497:4640 and uses the analysis mock seam', 
   assert.match(styles, /\.user-detail__profile-card \{[\s\S]*min-height: 370rpx;[\s\S]*border-radius: 40rpx;/)
   assert.match(styles, /\.user-detail__contact \{[\s\S]*height: 72rpx;[\s\S]*background: #0ec8d9;/)
   assert.match(styles, /\.user-detail__record \{[\s\S]*height: 176rpx;[\s\S]*background: #f5f5f5;/)
+  assert.match(styles, /\.user-detail__record--pressed \{[\s\S]*opacity: 0\.72;/)
   assert.match(styles, /\.user-detail__records-section \{[\s\S]*margin-top: 40rpx;[\s\S]*gap: 10rpx;/)
   assert.match(styles, /\.user-detail__records-card \{[\s\S]*padding: 30rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-radius: 40rpx;/)
   assert.match(styles, /\.user-detail__record-stats view \{[\s\S]*flex-direction: column;/)
@@ -722,6 +750,22 @@ test('user detail page follows Figma 497:4640 and uses the analysis mock seam', 
   assert.match(service, /if \(ANALYSIS_DATA_SOURCE === 'mock'\) return Promise\.resolve\(getAnalysisUserDetailStyleMock\(userId\)\)/)
   assert.match(mock, /getAnalysisUserDetailStyleMock\(userId: string\): AnalysisUserDetailViewModel/)
   assert.match(mock, /createUserRecord\(/)
+})
+
+test('tapping a user reading record navigates to that content analysis detail', () => {
+  const navigatedUrls = []
+  const page = loadPageDefinition('miniprogram/pages/analysis-user-detail/index.ts', {
+    getAnalysisUserDetail: () => Promise.resolve(null),
+    wx: {
+      navigateTo: ({ url }) => navigatedUrls.push(url),
+    },
+  })
+
+  assert.equal(typeof page.onUserRecordTap, 'function')
+
+  page.onUserRecordTap({ currentTarget: { dataset: { contentId: 'material-56' } } })
+
+  assert.deepEqual(navigatedUrls, ['/pages/analysis-detail/index?id=material-56'])
 })
 
 test('publish belongs to the root swiper and does not navigate to a separate materials page', () => {
@@ -1039,6 +1083,16 @@ test('home analysis keeps the total period control above its scroll view', () =>
   assert.match(homeMarkup, /<analysis-header[\s\S]*home-page__analysis-total-filter[\s\S]*<segmented-filter items="\{\{totalAnalysisPeriods\}\}" active-id="\{\{activeTotalPeriod\}\}" bind:change="onTotalAnalysisPeriodTap" \/>[\s\S]*<scroll-view scroll-y class="home-page__tab-scroll home-page__analysis-scroll">/)
   assert.match(componentMarkup, /<segmented-filter wx:if="\{\{!embedded\}\}" items="\{\{totalAnalysisPeriods\}\}" active-id="\{\{activeTotalPeriod\}\}" bind:change="onTotalPeriodTap" \/>/)
   assert.match(homeStyles, /\.home-page__analysis-total-filter \{[\s\S]*padding: 32rpx 40rpx 0;/)
+})
+
+test('home analysis sort sheet is rendered above the fixed analysis header', () => {
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const componentMarkup = read('miniprogram/components/home-analysis/index.wxml')
+
+  assert.match(homeMarkup, /<view wx:if="\{\{analysisSortSheetVisible\}\}" class="analysis-sort-sheet">[\s\S]*catchtap="onAnalysisSortMaskTap"[\s\S]*bindtap="onHomeAnalysisSortOptionTap"/)
+  assert.match(homeLogic, /onHomeAnalysisSortOptionTap\(event: WechatMiniprogram\.TouchEvent\)/)
+  assert.match(componentMarkup, /wx:if="\{\{analysisSortSheetVisible && !embedded\}\}" class="analysis-sort-sheet"/)
 })
 
 test('navigation titles use one explicit Chinese typography token', () => {

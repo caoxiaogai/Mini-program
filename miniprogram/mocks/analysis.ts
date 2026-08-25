@@ -90,12 +90,14 @@ function createDetailIntentUser(
 
 function createUserRecord(
   id: string,
+  contentId: string,
   thumbnailUrl: string,
   title: string,
   progress = '10%',
 ): AnalysisUserDetailViewModel['records'][number] {
   return {
     id,
+    contentId,
     thumbnailUrl,
     title,
     date: '8 月20日',
@@ -122,11 +124,11 @@ export function getAnalysisUserDetailStyleMock(userId: string): AnalysisUserDeta
       viewDuration: '11s',
     },
     records: [
-      createUserRecord('mock-user-record-01', '/assets/analysis/content-01.jpg', 'AI Native 产品学习'),
-      createUserRecord('mock-user-record-02', '/assets/materials/material-02.jpg', '资深AI-Native 全栈产品教程，一人...'),
-      createUserRecord('mock-user-record-03', '/assets/home-new/today-most-01.jpg', '明日方舟，这个夏天很美好'),
-      createUserRecord('mock-user-record-04', '/assets/notifications/thumb-river.png', '绿水青山就是金山银山'),
-      createUserRecord('mock-user-record-05', '/assets/notifications/thumb-river.png', 'AI Native 产品学习'),
+      createUserRecord('mock-user-record-01', 'mock-analysis-content-01', '/assets/analysis/content-01.jpg', 'AI Native 产品学习'),
+      createUserRecord('mock-user-record-02', 'mock-analysis-content-02', '/assets/materials/material-02.jpg', '资深AI-Native 全栈产品教程，一人...'),
+      createUserRecord('mock-user-record-03', 'mock-analysis-content-03', '/assets/home-new/today-most-01.jpg', '明日方舟，这个夏天很美好'),
+      createUserRecord('mock-user-record-04', 'mock-analysis-content-04', '/assets/notifications/thumb-river.png', '绿水青山就是金山银山'),
+      createUserRecord('mock-user-record-05', 'mock-analysis-content-05', '/assets/notifications/thumb-river.png', 'AI Native 产品学习'),
     ],
   }
 }

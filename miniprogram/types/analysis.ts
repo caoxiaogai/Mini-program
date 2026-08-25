@@ -46,6 +46,7 @@ export type AnalysisIntentUser = {
 
 export type AnalysisUserRecord = {
   id: string
+  contentId: string
   thumbnailUrl: string
   title: string
   date: string

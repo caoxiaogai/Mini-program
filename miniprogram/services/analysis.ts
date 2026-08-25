@@ -333,6 +333,7 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
       // 后端观看历史暂不含单条转发数，shareCount 固定为 0（「转发」筛选相应为空）
       records: history.map((record, index) => ({
         id: `${record.materialId}-${index}`,
+        contentId: String(record.materialId),
         thumbnailUrl: coverByMaterial.get(String(record.materialId)) ?? '',
         title: record.title ?? '',
         date: formatMonthDay(record.viewTime),
