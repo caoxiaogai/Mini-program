@@ -11,6 +11,7 @@ import { getProfilePageData } from '../../services/profile'
 import { getHomeGreeting } from '../../utils/greeting'
 import { getHomeHeaderOpacity } from '../../utils/home-header'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
+import { markHomeNotificationViewed } from './home-notification-preview'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
@@ -87,6 +88,7 @@ Page({
     loadError: false,
     tabItems,
     plusActive: false,
+    isAndroid: false,
     activeTabIndex: 0,
     homeHeaderOpacity: 0,
     notifications: null as NotificationsViewModel | null,
@@ -125,6 +127,9 @@ Page({
     profileData: null as ProfilePageViewModel | null,
   },
   onLoad(options: Record<string, string | undefined>) {
+    const { platform } = wx.getSystemInfoSync()
+    this.setData({ isAndroid: platform === 'android' || platform === 'devtools' })
+
     if (options.tab === 'materials') {
       this.setData({ showPublishSuccessModal: options.publishSuccess === '1' })
       this.setActiveTab(2)
@@ -182,23 +187,40 @@ Page({
     if (id === 'materials' && !this.data.materials) this.loadMaterials()
     if (id === 'analysis' && !this.data.analysisData) this.loadAnalysis()
   },
-  onTabTap(event: WechatMiniprogram.CustomEvent<{ id: HomeTabId }>) {
-    const index = rootTabIds.findIndex((id) => id === event.detail.id)
+  onTabTap(event: WechatMiniprogram.CustomEvent<{ id?: HomeTabId }>) {
+    const id = event.detail?.id ?? (event.currentTarget.dataset.id as HomeTabId | undefined)
+    const index = rootTabIds.findIndex((tabId) => tabId === id)
     this.setActiveTab(index)
   },
   onRetryTap() {
     this.loadHomeData()
   },
   onNotificationTap(event: WechatMiniprogram.TouchEvent) {
+    const notificationId = event.currentTarget.dataset.id as string | undefined
     const userId = event.currentTarget.dataset.userId as string | undefined
+
+    if (notificationId && this.data.homeData) {
+      const homeData = markHomeNotificationViewed(this.data.homeData, notificationId)
+      const tabItems = this.data.tabItems.map((item) => item.id === 'notifications' ? { ...item, badgeCount: homeData.unreadNotificationCount } : item)
+      this.setData({ homeData, tabItems })
+    }
+
     if (userId) wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
-  },
-  onContentTap(event: WechatMiniprogram.TouchEvent) {
-    const contentId = event.currentTarget.dataset.id as string | undefined
-    if (contentId) wx.navigateTo({ url: `/pages/analysis-detail/index?id=${contentId}` })
   },
   onRankingEntryTap() {
     wx.navigateTo({ url: '/pages/ranking/index' })
+  },
+  onTodayMostTap() {
+    this.setActiveTab(3)
+    this.setAnalysisTab(0)
+  },
+  onIntentSummaryTap() {
+    this.setActiveTab(3)
+    this.setAnalysisTab(1)
+  },
+  onTodayDataTap() {
+    this.setActiveTab(3)
+    this.setAnalysisTab(2)
   },
   onNotificationFilterTap(event: WechatMiniprogram.CustomEvent<{ filterId: NotificationFilterId }>) {
     const filterId = event.detail.filterId
