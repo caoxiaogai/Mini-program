@@ -1,0 +1,15 @@
+<view class="settings-page">
+  <view class="settings-page__header">
+    <navigation-bar title="设置" back="{{true}}" color="#000000" background="#ffffff" />
+  </view>
+
+  <view class="settings-page__content">
+    <view class="settings-card">
+      <view class="settings-card__copy">
+        <text class="settings-card__title">推送意向门槛</text>
+        <text class="settings-card__hint">客户达到所选意向等级时，通过服务号推送提醒（需要先关注「言界阿乐」服务号）。默认高意向。</text>
+      </view>
+      <segmented-filter items="{{notifyIntentLevelOptions}}" active-id="{{activeNotifyIntentLevel}}" bind:change="onNotifyIntentLevelChange" />
+    </view>
+  </view>
+</view>

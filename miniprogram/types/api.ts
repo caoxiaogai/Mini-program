@@ -98,6 +98,14 @@ export interface ApiCustomerViewHistory {
 
 export type ApiIntentLevel = 'high' | 'medium' | 'low'
 
+/** GET/PUT /user/notify-settings 的推送意向门槛 */
+export type ApiNotifyIntentLevel = 'low' | 'medium' | 'high'
+
+/** GET/PUT /user/notify-settings 响应（NotifySettingsVO） */
+export interface ApiNotifySettings {
+  notifyIntentLevel: ApiNotifyIntentLevel | null
+}
+
 /** GET /analysis/intent/list 响应项（IntentCustomerVO，一名客户一行） */
 export interface ApiIntentCustomer {
   customerId: string

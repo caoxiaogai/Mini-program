@@ -59,7 +59,7 @@ test('data access goes through the unified request layer', () => {
   assert.match(requestLayer, /export function ensureLogin/)
   assert.match(requestLayer, /\/wechat\/login/)
 
-  for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile', 'tracking']) {
+  for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile', 'tracking', 'user']) {
     const service = read(`miniprogram/services/${name}.ts`)
     assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
     if (name !== 'ranking') {
@@ -273,7 +273,7 @@ test('home bottom navigation switches primary pages without a swipe container', 
   assert.match(page, /class="home-page__tab-panel home-page__analysis-panel" hidden="\{\{activeTabIndex !== 3\}\}"/)
   assert.match(page, /<notification-header[\s\S]*bind:filtertap="onNotificationFilterTap"/)
   assert.match(page, /<home-analysis[\s\S]*bind:periodtap="onAnalysisPeriodTap"/)
-  assert.match(page, /<home-profile profile="\{\{profileData\}\}" \/>/)
+  assert.match(page, /<home-profile profile="\{\{profileData\}\}" bind:settingstap="onProfileSettingsTap" \/>/)
   assert.match(logic, /activeTabIndex: 0/)
   assert.doesNotMatch(logic, /onTabChange/)
   assert.match(logic, /activeTabIndex: nextIndex/)
@@ -310,7 +310,10 @@ test('profile tab exposes the Figma 519:5031 structure through a typed service s
   assert.match(component, /class="home-profile__membership"/)
   assert.match(logic, /getProfilePageData\(\)/)
   assert.match(read('miniprogram/app.ts'), /from '\.\/services\/profile'/)
-  assert.match(page, /<home-profile profile="\{\{profileData\}\}" \/>/)
+  assert.match(page, /<home-profile profile="\{\{profileData\}\}" bind:settingstap="onProfileSettingsTap" \/>/)
+  assert.match(component, /bindtap="onSettingsTap"/)
+  assert.match(logic, /onProfileSettingsTap\(\)/)
+  assert.match(logic, /\/pages\/settings\/index/)
 })
 
 test('profile pending module centers the Figma 594:8711 content group', () => {
@@ -330,6 +333,34 @@ test('profile pending module stays above the locked content overlay', () => {
   assert.match(styles, /.home-profile__locked-overlay \{[\s\S]*top: 442rpx;/)
   assert.match(styles, /.home-profile__content \{[\s\S]*z-index: auto;/)
   assert.match(styles, /.home-profile__pending \{[\s\S]*position: relative;[\s\S]*z-index: 3;/)
+})
+
+test('profile settings opens a notify intent threshold page', () => {
+  const app = JSON.parse(read('miniprogram/app.json'))
+  const userService = read('miniprogram/services/user.ts')
+  const apiTypes = read('miniprogram/types/api.ts')
+  const settingTypes = read('miniprogram/types/settings.ts')
+  const pageLogic = read('miniprogram/pages/settings/index.ts')
+  const pageMarkup = read('miniprogram/pages/settings/index.wxml')
+  const pageConfig = JSON.parse(read('miniprogram/pages/settings/index.json'))
+
+  assert.ok(app.pages.includes('pages/settings/index'))
+  assert.match(apiTypes, /export type ApiNotifyIntentLevel = 'low' \| 'medium' \| 'high'/)
+  assert.match(settingTypes, /DEFAULT_NOTIFY_INTENT_LEVEL: NotifyIntentLevel = 'high'/)
+  assert.match(userService, /path: '\/user\/notify-settings'/)
+  assert.match(userService, /method: 'PUT'/)
+  assert.match(userService, /data: \{ notifyIntentLevel \}/)
+  assert.match(userService, /silent: true/)
+  assert.doesNotMatch(userService, /wx\.request\(/)
+  assert.doesNotMatch(userService, /from '\.\.\/mocks\//)
+
+  assert.equal(pageConfig.enablePullDownRefresh, true)
+  assert.match(pageMarkup, /推送意向门槛/)
+  assert.match(pageMarkup, /<segmented-filter items="\{\{notifyIntentLevelOptions\}\}" active-id="\{\{activeNotifyIntentLevel\}\}"/)
+  assert.match(pageLogic, /getNotifySettings/)
+  assert.match(pageLogic, /updateNotifySettings/)
+  assert.match(pageLogic, /DEFAULT_NOTIFY_INTENT_LEVEL/)
+  assert.match(pageLogic, /onPullDownRefresh/)
 })
 
 test('home analysis passes the selected analysis tab to its content view', () => {
@@ -1661,6 +1692,7 @@ test('every page can pull from the top to refresh', () => {
     'pages/analysis/index',
     'pages/analysis-detail/index',
     'pages/analysis-user-detail/index',
+    'pages/settings/index',
   ]
 
   assert.deepEqual([...app.pages].sort(), [...scrollViewPages, ...pageRefreshPages].sort())

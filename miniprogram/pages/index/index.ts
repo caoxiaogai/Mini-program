@@ -242,6 +242,9 @@ Page({
       .then((profileData) => this.setData({ profileData }))
       .catch(() => this.setData({ profileData: null }))
   },
+  onProfileSettingsTap() {
+    wx.navigateTo({ url: '/pages/settings/index' })
+  },
   refreshActiveTab() {
     const tab = rootTabIds[this.data.activeTabIndex]
     if (tab === 'notifications') return this.loadNotifications()

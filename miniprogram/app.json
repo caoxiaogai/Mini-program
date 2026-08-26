@@ -10,6 +10,7 @@
     "pages/analysis/index",
     "pages/analysis-detail/index",
     "pages/analysis-user-detail/index",
+    "pages/settings/index",
     "pages/logs/logs"
   ],
   "window": {

@@ -217,6 +217,7 @@ miniprogram/
 | 实现「我的」页视觉切片 | done | 已按 Figma `519:5031` 接入首页第五个 tab；头像/昵称来自登录接口，余额/会员为视觉占位 |
 | 所有页面下拉刷新 | done | 滑到顶部再下拉刷新当前页数据；发布页只收起动画，不覆盖未保存编辑 |
 | 分享素材浏览埋点 | done | 朋友打开素材详情/文档阅读页上报 `POST /tracking/event`，转发上报 `POST /tracking/forward`；浏览次数与意向由后端统计 |
+| 推送意向门槛自定义 | done | 默认高意向；「我的」进入设置页三选一（低/中/高），经 `GET/PUT /user/notify-settings` 读写 `notifyIntentLevel` |
 | 其他页面视觉与真机适配验收 | pending | 后续页面实现后执行 |
 
 ## 验收基线
@@ -242,6 +243,12 @@ miniprogram/
 - 不在文档中记录密钥、AppSecret、用户隐私数据或生产接口凭证。
 
 ## 最近变更
+
+### 2026-08-26：推送意向门槛可在「我的 / 设置」自定义
+
+- 默认仍为高意向。销售可在「我的」右上角「设置」中选择低 / 中 / 高，客户达到所选等级时才走服务号推送。
+- 前端通过 `GET/PUT /user/notify-settings` 读写 `notifyIntentLevel`；后端按门槛比较意向，每个客户×素材仍只推一次。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，设置页真机保存待确认。
 
 ### 2026-08-26：合并 origin/developer-v2 到 main-v2
 

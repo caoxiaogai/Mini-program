@@ -53,12 +53,25 @@
 
 .home-profile__nickname {
   min-width: 0;
+  flex: 1;
   overflow: hidden;
   color: #000000;
   font-size: 40rpx;
   line-height: 56rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.home-profile__settings {
+  flex: none;
+  padding: 16rpx 0 16rpx 24rpx;
+  color: #8a8e94;
+  font-size: 28rpx;
+  line-height: 40rpx;
+}
+
+.home-profile__settings--pressed {
+  opacity: 0.65;
 }
 
 .home-profile__balance {

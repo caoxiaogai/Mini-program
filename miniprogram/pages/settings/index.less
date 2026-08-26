@@ -1,0 +1,52 @@
+page {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.settings-page {
+  min-height: 100vh;
+  background: #ffffff;
+  color: #000000;
+}
+
+.settings-page__header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #ffffff;
+}
+
+.settings-page__content {
+  padding: 40rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  padding: 40rpx;
+  border: 2rpx solid @content-box-border;
+  border-radius: 40rpx;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.settings-card__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.settings-card__title {
+  color: #000000;
+  font-size: 32rpx;
+  font-weight: 500;
+  line-height: 44rpx;
+}
+
+.settings-card__hint {
+  color: #8a8e94;
+  font-size: 24rpx;
+  line-height: 34rpx;
+}

@@ -5,4 +5,9 @@ Component({
       value: null,
     },
   },
+  methods: {
+    onSettingsTap() {
+      this.triggerEvent('settingstap')
+    },
+  },
 })
