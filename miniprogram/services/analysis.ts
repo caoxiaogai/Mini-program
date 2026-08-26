@@ -34,8 +34,6 @@ export type AnalysisTimeRange = 'day' | 'week' | 'month' | 'total' | 'custom'
 
 const MAX_QUERY_RANGE_DAYS = 62
 
-const READ_TREND_MAX_HEIGHT = 250
-const READ_TREND_MIN_HEIGHT = 24
 const WEEK_TREND_DAYS = 7
 const MONTH_TREND_DAYS = 30
 const TREND_CACHE_TTL_MS = 60000
@@ -146,16 +144,10 @@ function fetchDailyViewCounts(days: number): Promise<DailyViewCount[]> {
 }
 
 function buildChartPoints(days: DailyViewCount[], range: AnalysisReadRange): AnalysisChartPoint[] {
-  const maxViewCount = days.reduce((max, day) => Math.max(max, day.viewCount), 0)
-
   return days.map((day) => ({
     id: `${range}-${formatDateTime(day.date).slice(0, 10)}`,
     label: range === 'week' ? WEEKDAY_LABELS[day.date.getDay()] : String(day.date.getDate()),
     value: formatCount(day.viewCount),
-    height:
-      day.viewCount <= 0 || maxViewCount <= 0
-        ? 0
-        : Math.round(READ_TREND_MIN_HEIGHT + (day.viewCount / maxViewCount) * (READ_TREND_MAX_HEIGHT - READ_TREND_MIN_HEIGHT)),
   }))
 }
 

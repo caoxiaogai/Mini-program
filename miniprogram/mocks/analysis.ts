@@ -11,13 +11,10 @@ import type {
 const publishedAt = '2026-10-10 16:39 发布'
 
 function createChartPoints(range: 'week' | 'month', labels: string[], values: number[]): AnalysisChartPoint[] {
-  const maxValue = Math.max(...values)
-
   return labels.map((label, index) => ({
     id: `mock-${range}-${index + 1}`,
     label,
     value: values[index].toLocaleString('en-US'),
-    height: Math.round(24 + (values[index] / maxValue) * 226),
   }))
 }
 
@@ -227,11 +224,11 @@ export function getAnalysisStyleMock(): AnalysisViewModel {
         { label: '低意向', value: '0' },
       ],
       readTrends: {
-        week: createChartPoints('week', ['一', '二', '三', '四', '五', '六', '日'], [500, 500, 1200, 550, 350, 700, 500]),
+        week: createChartPoints('week', ['一', '二', '三', '四', '五', '六', '日'], [420, 680, 520, 980, 760, 1240, 1100]),
         month: createChartPoints(
           'month',
           Array.from({ length: 30 }, (_, index) => String(index + 1)),
-          [320, 420, 380, 520, 610, 560, 680, 720, 650, 810, 740, 920, 860, 980, 1030, 940, 880, 1100, 1020, 1160, 990, 1080, 1140, 1231, 1010, 1180, 1120, 1200, 1080, 1231],
+          [320, 420, 380, 520, 610, 560, 680, 720, 650, 810, 740, 920, 860, 980, 1030, 940, 880, 1100, 1020, 1160, 990, 1080, 1140, 1231, 1010, 1180, 1450, 1200, 1080, 1231],
         ),
       },
     },

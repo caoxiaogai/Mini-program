@@ -36,6 +36,13 @@ const totalAnalysisPeriods: AnalysisPeriodOption[] = [
   { id: 'total', label: '总' },
 ]
 
+function getAnalysisTrendSlotCount(period: AnalysisPeriodId): number {
+  if (period === 'day') return 24
+  if (period === 'week') return 7
+  if (period === 'month') return 30
+  return 0
+}
+
 const analysisSortOptions: AnalysisSortOption[] = [
   { id: 'completion', label: '完播数' },
   { id: 'share', label: '转发数' },
@@ -84,6 +91,7 @@ Page({
     activeTotalPeriod: 'total' as AnalysisPeriodId,
     activeAnalysisReadRange: 'week' as AnalysisReadRange,
     visibleAnalysisReadTrend: [] as AnalysisViewModel['totalData']['readTrends']['week'],
+    analysisTrendSlotCount: getAnalysisTrendSlotCount('total'),
   },
   onLoad(options: Record<string, string | undefined>) {
     const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
@@ -160,6 +168,7 @@ Page({
     this.setData({
       activeTotalPeriod: periodId,
       activeAnalysisReadRange: readRange,
+      analysisTrendSlotCount: getAnalysisTrendSlotCount(periodId),
     })
     this.loadAnalysis(periodId)
   },

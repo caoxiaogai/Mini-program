@@ -23,6 +23,7 @@ Component({
     activeTotalPeriod: { type: String, value: 'total' },
     activeAnalysisReadRange: { type: String, value: 'week' },
     visibleAnalysisReadTrend: { type: Array, value: [] },
+    analysisTrendSlotCount: { type: Number, value: 0 },
   },
   methods: {
     onAnalysisTabTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysistabtap', { index: Number(event.currentTarget.dataset.index) }) },
