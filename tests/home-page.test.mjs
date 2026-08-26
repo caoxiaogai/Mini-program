@@ -583,11 +583,31 @@ test('bottom navigation uses selected cyan states and the supplied publish icon'
   assert.match(logic, /activeIconPath: '\/assets\/home-new\/tab-profile-active\.svg'/)
   assert.match(styles, /\.bottom-tab-bar__create \{[\s\S]*flex-direction: column;[\s\S]*gap: 2rpx;/)
   assert.match(styles, /\.bottom-tab-bar__create-icon \{[\s\S]*width: 48rpx;[\s\S]*height: 48rpx;/)
-  assert.match(styles, /\.bottom-tab-bar__item--active \{[\s\S]*background: #e0e0e0;/)
+  assert.doesNotMatch(styles, /\.bottom-tab-bar__item--active \{[\s\S]*background: #e0e0e0;/)
   assert.match(styles, /\.bottom-tab-bar__label \{[\s\S]*color: #666666;/)
   assert.match(styles, /\.bottom-tab-bar__item--active \.bottom-tab-bar__label \{[\s\S]*color: #0ec8d9;/)
   assert.match(publishIcon, /width="20" height="20"/)
   assert.match(publishIcon, /fill="#666666"/)
+})
+
+test('bottom navigation slides one shared selection surface to the tapped destination', () => {
+  const component = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.wxml')
+  const logic = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.ts')
+  const styles = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.less')
+
+  assert.match(component, /class="bottom-tab-bar__selection" style="transform: translateX\(\{\{activeIndicatorOffset\}\}\);"/)
+  assert.match(logic, /activeIndicatorIndex: 0/)
+  assert.match(logic, /activeIndicatorOffset: '0%'/)
+  assert.match(logic, /activeIndicatorIndex[\s\S]*plusActive[\s\S]*findIndex/)
+  assert.match(styles, /\.bottom-tab-bar__selection \{[\s\S]*position: absolute;[\s\S]*width: calc\(\(100% - 16rpx\) \/ 5\);[\s\S]*background: #e0e0e0;[\s\S]*transition: transform 220ms ease-out;/)
+  assert.match(styles, /\.bottom-tab-bar__item,\n\.bottom-tab-bar__create \{[\s\S]*position: relative;/)
+})
+
+test('bottom navigation provides light haptic feedback for tab and publish taps', () => {
+  const logic = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.ts')
+
+  assert.match(logic, /onTabTap\(event[\s\S]*wx\.vibrateShort\(\{ type: 'light' \}\)[\s\S]*triggerEvent\('tabtap'/)
+  assert.match(logic, /onPlusTap\(\)[\s\S]*wx\.vibrateShort\(\{ type: 'light' \}\)[\s\S]*triggerEvent\('plus'/)
 })
 
 test('publish navigation receives the same selected state as the other root tabs', () => {
@@ -600,7 +620,7 @@ test('publish navigation receives the same selected state as the other root tabs
   assert.match(component, /plusActive/)
   assert.match(component, /bottom-tab-bar__create--active/)
   assert.match(component, /tab-publish-active\.svg/)
-  assert.match(styles, /\.bottom-tab-bar__create--active\s*\{[\s\S]*background: #e0e0e0;/)
+  assert.doesNotMatch(styles, /\.bottom-tab-bar__create--active\s*\{[\s\S]*background: #e0e0e0;/)
   assert.match(styles, /\.bottom-tab-bar__create--active \.bottom-tab-bar__label\s*\{[\s\S]*color: #0ec8d9;/)
   assert.doesNotMatch(styles, /\.bottom-tab-bar__create--active \.bottom-tab-bar__create-icon\s*\{[\s\S]*filter:/)
   assert.match(page, /plus-active="\{\{true\}\}"/)

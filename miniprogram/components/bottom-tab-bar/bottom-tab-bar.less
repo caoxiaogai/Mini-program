@@ -50,12 +50,27 @@
   pointer-events: auto;
 }
 
+.bottom-tab-bar__selection {
+  position: absolute;
+  top: 8rpx;
+  bottom: 8rpx;
+  left: 8rpx;
+  width: calc((100% - 16rpx) / 5);
+  border-radius: 88rpx;
+  background: #e0e0e0;
+  transition: transform 220ms ease-out;
+  will-change: transform;
+  pointer-events: none;
+}
+
 .bottom-tab-bar--android .bottom-tab-bar__inner {
   bottom: 16px;
 }
 
 .bottom-tab-bar__item,
 .bottom-tab-bar__create {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex: 1;
   align-items: center;
@@ -72,7 +87,7 @@
 }
 
 .bottom-tab-bar__item--active {
-  background: #e0e0e0;
+  background: transparent;
 }
 
 .bottom-tab-bar__item--pressed,
@@ -90,7 +105,7 @@
 }
 
 .bottom-tab-bar__create--active {
-  background: #e0e0e0;
+  background: transparent;
 }
 
 .bottom-tab-bar__create-icon {

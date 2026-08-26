@@ -241,6 +241,18 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-26：底部导航增加轻触震动
+
+- 公共 `bottom-tab-bar` 的普通 Tab 和发布按钮点击统一调用 `wx.vibrateShort({ type: 'light' })`，再派发原有导航事件。
+- 使用微信短震动轻量级触感；不使用长震动，不改变页面切换和选中背景滑动逻辑。设备不支持时由平台自动降级。
+- 验证：`node --test tests/home-page.test.mjs` 共 `79 tests passed`，`git diff --check` 通过。
+
+### 2026-08-26：底部导航选中背景改为横向滑动
+
+- 公共 `bottom-tab-bar` 新增独立选中层，点击首页、通知、发布、分析或我的时，灰色背景通过 `transform` 在五个位置之间平滑移动，不再随 active 按钮瞬间切换。
+- 选中层使用 220ms `ease-out` 动画；发布按钮仍按第 3 个视觉位置计算，图标、文字和页面切换逻辑保持不变。
+- 验证：`node --test tests/home-page.test.mjs` 共 `78 tests passed`，`git diff --check` 通过。
+
 ### 2026-08-26：首页今日最多指标文案微调
 
 - 仅将首页「今日浏览最多」卡片内的指标「浏览」改为「浏览次数」；分析页及其他全局文案未改动。
