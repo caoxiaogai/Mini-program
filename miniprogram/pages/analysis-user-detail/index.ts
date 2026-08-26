@@ -11,13 +11,13 @@ const recordSortOptions: Array<{ id: RecordSortId; label: string }> = [
 ]
 
 const getRecordSortValue = (record: AnalysisUserRecord, sortId: RecordSortId) => {
-  const valueBySort: Record<RecordSortId, string> = {
-    views: record.readCount,
-    completion: record.completionCount,
-    shares: record.shareCount,
-  }
+  const raw = sortId === 'views'
+    ? record.readCount
+    : sortId === 'completion'
+      ? record.completionCount
+      : record.shareCount
 
-  return Number(valueBySort[sortId].replace(/[^\d.-]/g, '')) || 0
+  return Number(String(raw ?? '').replace(/[^\d.-]/g, '')) || 0
 }
 
 const sortUserRecords = (records: AnalysisUserRecord[], sortId: RecordSortId) => {

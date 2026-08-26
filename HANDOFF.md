@@ -244,6 +244,12 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-26：修复用户详情页按浏览次数排序崩溃
+
+- 打开用户详情时默认按「浏览次数」排序，但 `GET /analysis/customer/history` 映射漏了 `readCount`，`replace` 打在 `undefined` 上。
+- 每条观看记录补 `readCount: '1'`（历史接口是逐条 tracking，没有单条浏览数字段）；排序对空计数字段按 0 处理。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，详情页真机打开待确认。
+
 ### 2026-08-26：推送意向门槛可在「我的 / 设置」自定义
 
 - 默认仍为高意向。销售可在「我的」右上角「设置」中选择低 / 中 / 高，客户达到所选等级时才走服务号推送。

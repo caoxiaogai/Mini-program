@@ -826,6 +826,8 @@ test('user detail page follows Figma 497:4640', () => {
   assert.match(markup, /微信名称复制成功/)
   assert.match(service, /getAnalysisUserDetail/)
   assert.match(service, /\/analysis\/customer\/history/)
+  assert.match(service, /readCount: '1'/)
+  assert.match(service, /shareCount: '0'/)
 })
 
 test('tapping a user reading record navigates to that content analysis detail', () => {
@@ -1539,6 +1541,19 @@ test('user detail record sorting updates the visible list only', () => {
 
   assert.equal(context.data.activeRecordSort, 'shares')
   assert.deepEqual(context.data.visibleUserRecords.map((record) => record.id), ['first', 'second'])
+
+  const incomplete = [
+    { id: 'missing' },
+    { id: 'counted', readCount: '8', completionCount: '3', shareCount: '1' },
+  ]
+  const incompleteContext = {
+    data: { detail: { records: incomplete }, activeRecordSort: 'shares' },
+    setData(update) { Object.assign(this.data, update) },
+  }
+
+  page.onRecordSortChange.call(incompleteContext, { detail: { id: 'views' } })
+
+  assert.deepEqual(incompleteContext.data.visibleUserRecords.map((record) => record.id), ['counted', 'missing'])
 })
 
 test('analysis work period filter sits inside and filters only the work list', () => {

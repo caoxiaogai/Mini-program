@@ -401,7 +401,7 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
         shareCount: intent?.hasForwarded === 1 ? '1' : '0',
         viewDuration: formatSeconds(customer?.totalDuration),
       },
-      // 后端观看历史暂不含单条转发数，shareCount 固定为 0（「转发」筛选相应为空）
+      // 后端观看历史无单条浏览/转发计数字段：每条是一次 tracking 记录，readCount 按 1，shareCount 固定 0
       records: history.map((record, index) => ({
         id: `${record.materialId}-${index}`,
         contentId: String(record.materialId),
@@ -411,6 +411,7 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
         type: fileTypeLabels[record.fileType ?? ''] ?? '内容',
         progress: `${record.progress ?? 0}%`,
         viewDuration: formatSeconds(record.duration),
+        readCount: '1',
         completionCount: record.completed === 1 ? '1' : '0',
         shareCount: '0',
       })),
