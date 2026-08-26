@@ -41,6 +41,19 @@ export const getDateRangeLimits = (now = new Date()): { minDate: string; maxDate
   }
 }
 
+export const startOfWeekMonday = (now: Date): Date => {
+  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const weekday = date.getDay() === 0 ? 7 : date.getDay()
+  date.setDate(date.getDate() - (weekday - 1))
+  return date
+}
+
+export const getTotalRangeStart = (now = new Date()): Date => {
+  const { minDate } = getDateRangeLimits(now)
+  const [year, month, day] = minDate.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
 export const normalizeDateRange = (startDate: string, endDate: string): DateRange => (
   startDate <= endDate ? { startDate, endDate } : { startDate: endDate, endDate: startDate }
 )

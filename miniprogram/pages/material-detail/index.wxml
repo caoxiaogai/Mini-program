@@ -33,19 +33,11 @@
     </block>
 
     <block wx:elif="{{detail.fileType === 'PDF' || detail.fileType === 'TABLE'}}">
-      <view class="material-detail__media material-detail__media--pdf" bindtap="onPdfOpenTap">
-        <block wx:if="{{detail.previewUrl}}">
-          <image class="material-detail__pdf-preview" src="{{detail.previewUrl}}" mode="aspectFit" />
-          <view class="material-detail__pdf-open">
-            <text>点击查看</text>
-          </view>
-        </block>
+      <view class="material-detail__media material-detail__media--pdf" bindtap="onPdfOpenTap" hover-class="material-detail__media--pressed" hover-stay-time="80">
+        <image wx:if="{{detail.previewUrl}}" class="material-detail__pdf-preview" src="{{detail.previewUrl}}" mode="aspectFit" />
         <view wx:else class="material-detail__pdf-card">
           <view class="material-detail__pdf-badge">{{detail.fileType === 'TABLE' ? '表格' : 'PDF'}}</view>
           <text class="material-detail__pdf-name">{{detail.pdfFileName}}</text>
-          <view class="material-detail__pdf-action">
-            <text>点击查看</text>
-          </view>
         </view>
       </view>
     </block>

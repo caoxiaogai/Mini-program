@@ -7,7 +7,10 @@ Component({
   },
   methods: {
     onNotificationCardTap(event: WechatMiniprogram.TouchEvent) {
-      this.triggerEvent('cardtap', { userId: event.currentTarget.dataset.id as string })
+      this.triggerEvent('cardtap', {
+        userId: event.currentTarget.dataset.id as string,
+        lastViewTime: event.currentTarget.dataset.lastViewTime as string | undefined,
+      })
     },
   },
 })

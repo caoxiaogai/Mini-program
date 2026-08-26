@@ -1,3 +1,3 @@
-<view class="analysis-trend-chart host-class">
+<view class="analysis-trend-chart {{axisScale ? 'analysis-trend-chart--axis' : ''}} host-class">
   <image wx:if="{{chartSource}}" class="analysis-trend-chart__image" src="{{chartSource}}" mode="scaleToFill" />
 </view>

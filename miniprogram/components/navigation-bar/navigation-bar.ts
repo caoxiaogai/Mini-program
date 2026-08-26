@@ -1,3 +1,5 @@
+import { HOME_PAGE_PATH } from '../../utils/share-material'
+
 Component({
   options: {
     multipleSlots: true // 在组件定义时的选项中启用多slot支持
@@ -100,7 +102,10 @@ Component({
       const data = this.data
       if (data.delta) {
         wx.navigateBack({
-          delta: data.delta
+          delta: data.delta,
+          fail: () => {
+            wx.reLaunch({ url: HOME_PAGE_PATH })
+          },
         })
       }
       this.triggerEvent('back', { delta: data.delta }, {})

@@ -11,6 +11,7 @@ export interface HomeNotificationViewModel {
   action: HomeNotificationAction
   actionLabel: string
   actionDate: string
+  lastViewTime: string
   actionIconPath: string
   avatarUrl: string
   thumbnailUrl: string

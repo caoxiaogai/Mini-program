@@ -52,6 +52,12 @@ Page({
     }))
   },
   onCopyUsername() {
+    this.copyUsername()
+  },
+  onContactTap() {
+    this.copyUsername()
+  },
+  copyUsername() {
     const username = this.data.detail?.profile.name
     if (!username) return
 
@@ -62,9 +68,6 @@ Page({
         this.showNotice()
       },
     })
-  },
-  onContactTap() {
-    this.showNotice()
   },
   onRecordSortChange(event: WechatMiniprogram.CustomEvent<{ id: RecordSortId }>) {
     const sortId = event.detail.id

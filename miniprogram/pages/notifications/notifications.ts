@@ -1,4 +1,5 @@
 import { getNotifications } from '../../services/notifications'
+import { persistViewedNotification } from '../../utils/notification-viewed'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
@@ -54,6 +55,8 @@ Page({
   onNotificationCardTap(event: WechatMiniprogram.TouchEvent) {
     const userId = event.currentTarget.dataset.id as string
     if (!userId) return
+
+    persistViewedNotification(userId, event.currentTarget.dataset.lastViewTime as string | undefined)
 
     wx.navigateTo({
       url: `/pages/analysis-user-detail/index?id=${userId}`,

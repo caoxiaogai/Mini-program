@@ -3,6 +3,7 @@ import type {
   ApiContentListItem,
   ApiCustomerListItem,
   ApiCustomerViewHistory,
+  ApiDailyView,
   ApiDashboard,
   ApiIntentCustomer,
   ApiMaterial,
@@ -28,20 +29,18 @@ import {
   formatSeconds,
 } from '../utils/format'
 import type { DateRange } from '../utils/date-range'
+import { getTotalRangeStart, startOfWeekMonday } from '../utils/date-range'
+import { aggregateCustomerHistoryByMaterial } from '../utils/analysis-users'
 import { prepareMediaUrls } from '../utils/media'
-import { request, resolveMediaUrl, runRequestQueue } from './request'
+import { request, resolveMediaUrl } from './request'
 
 /** 分析页时间筛选：日/周/月对应后端 today/week/month；日历自定义走 custom；「总」受后端 custom 上限约束取最近 62 天（待后端确认全量口径） */
 export type AnalysisTimeRange = 'day' | 'week' | 'month' | 'total' | 'custom'
 
 const MAX_QUERY_RANGE_DAYS = 62
 
-const WEEK_TREND_DAYS = 7
-const MONTH_TREND_DAYS = 30
 const TREND_CACHE_TTL_MS = 60000
-const REQUEST_CONCURRENCY = 6
-
-const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六']
+const TOTAL_TREND_WEEKS = 6
 
 const intentLevelLabels: Record<AnalysisIntentLevel, string> = {
   high: '高意向',
@@ -181,58 +180,207 @@ function formatPublishedAt(value: string | null | undefined): string {
   return normalized.length >= 16 ? `${normalized.slice(0, 16)} 发布` : normalized
 }
 
-interface DailyViewCount {
-  date: Date
-  viewCount: number
+let monthTrendCache: { expiresAt: number; monthKey: string; value: AnalysisChartPoint[] } | null = null
+let dayTrendCache: { expiresAt: number; dateKey: string; value: AnalysisChartPoint[] } | null = null
+let weekTrendCache: { expiresAt: number; weekKey: string; value: AnalysisChartPoint[] } | null = null
+let totalTrendCache: { expiresAt: number; rangeKey: string; value: AnalysisChartPoint[] } | null = null
+
+function isoWeekday(date: Date): number {
+  const day = date.getDay()
+  return day === 0 ? 7 : day
 }
 
-let readTrendsCache: { expiresAt: number; value: Record<AnalysisReadRange, AnalysisChartPoint[]> } | null = null
+function toDateKey(date: Date): string {
+  return formatDateTime(date).slice(0, 10)
+}
 
-/** 后端无按日趋势接口，按天聚合 dashboard 阅读数得到趋势；单日失败按 0 降级 */
-function fetchDailyViewCounts(days: number): Promise<DailyViewCount[]> {
-  const now = new Date()
-  const tasks: Array<() => Promise<DailyViewCount>> = []
+function mapTrendRowsByDate(rows: ApiDailyView[] | null | undefined): Map<string, number> {
+  const byDate = new Map<string, number>()
+  for (const row of rows ?? []) {
+    if (!row.date) continue
+    byDate.set(row.date.slice(0, 10), row.viewCount ?? 0)
+  }
+  return byDate
+}
 
-  for (let offset = days - 1; offset >= 0; offset -= 1) {
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset)
-    const dayEnd = new Date(dayStart.getFullYear(), dayStart.getMonth(), dayStart.getDate(), 23, 59, 59)
+function buildWeekTrendPoints(rows: ApiDailyView[], now = new Date()): AnalysisChartPoint[] {
+  const byDate = mapTrendRowsByDate(rows)
+  const monday = startOfWeekMonday(now)
+  const todayWeekday = isoWeekday(now)
+  const points: AnalysisChartPoint[] = []
 
-    tasks.push(() =>
-      request<ApiDashboard>({
-        method: 'GET',
-        path: '/analysis/dashboard',
-        query: { timeRange: 'custom', startDate: formatDateTime(dayStart), endDate: formatDateTime(dayEnd) },
-        silent: true,
-      })
-        .then((dashboard) => ({ date: dayStart, viewCount: dashboard.totalViewCount ?? 0 }))
-        .catch(() => ({ date: dayStart, viewCount: 0 })),
-    )
+  for (let weekday = 1; weekday <= todayWeekday; weekday += 1) {
+    const date = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + weekday - 1)
+    const key = toDateKey(date)
+    points.push({
+      id: `week-${key}`,
+      label: String(weekday),
+      value: formatCount(byDate.get(key) ?? 0),
+    })
   }
 
-  return runRequestQueue(tasks, REQUEST_CONCURRENCY)
+  return points
 }
 
-function buildChartPoints(days: DailyViewCount[], range: AnalysisReadRange): AnalysisChartPoint[] {
-  return days.map((day) => ({
-    id: `${range}-${formatDateTime(day.date).slice(0, 10)}`,
-    label: range === 'week' ? WEEKDAY_LABELS[day.date.getDay()] : String(day.date.getDate()),
-    value: formatCount(day.viewCount),
-  }))
+function buildMonthTrendPoints(rows: ApiDailyView[], now = new Date()): AnalysisChartPoint[] {
+  const byDate = mapTrendRowsByDate(rows)
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const today = now.getDate()
+  const points: AnalysisChartPoint[] = []
+
+  for (let day = 1; day <= today; day += 1) {
+    const date = new Date(year, month, day)
+    const key = toDateKey(date)
+    points.push({
+      id: `month-${key}`,
+      label: String(day),
+      value: formatCount(byDate.get(key) ?? 0),
+    })
+  }
+
+  return points
+}
+
+function buildTotalTrendPoints(rows: ApiDailyView[], now = new Date()): AnalysisChartPoint[] {
+  const byDate = mapTrendRowsByDate(rows)
+  const rangeStart = getTotalRangeStart(now)
+  const thisMonday = startOfWeekMonday(now)
+  const firstMonday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - (TOTAL_TREND_WEEKS - 1) * 7)
+  const startKey = toDateKey(rangeStart)
+  const todayKey = toDateKey(now)
+  const points: AnalysisChartPoint[] = []
+
+  for (let week = 1; week <= TOTAL_TREND_WEEKS; week += 1) {
+    const weekMonday = new Date(firstMonday.getFullYear(), firstMonday.getMonth(), firstMonday.getDate() + (week - 1) * 7)
+    let viewCount = 0
+
+    for (let offset = 0; offset < 7; offset += 1) {
+      const date = new Date(weekMonday.getFullYear(), weekMonday.getMonth(), weekMonday.getDate() + offset)
+      const key = toDateKey(date)
+      if (key < startKey || key > todayKey) continue
+      viewCount += byDate.get(key) ?? 0
+    }
+
+    points.push({
+      id: `total-${toDateKey(weekMonday)}`,
+      label: String(week),
+      value: formatCount(viewCount),
+    })
+  }
+
+  return points
+}
+
+function emptyReadTrends(): Record<AnalysisReadRange, AnalysisChartPoint[]> {
+  return { day: [], week: [], month: [], total: [] }
+}
+
+function getDayReadTrend(): Promise<AnalysisChartPoint[]> {
+  const now = new Date()
+  const dateKey = formatDateTime(now).slice(0, 10)
+
+  if (dayTrendCache && dayTrendCache.dateKey === dateKey && dayTrendCache.expiresAt > Date.now()) {
+    return Promise.resolve(dayTrendCache.value)
+  }
+
+  return request<ApiDailyView[]>({
+    method: 'GET',
+    path: '/analysis/trend',
+    query: { timeRange: 'today' },
+    silent: true,
+  })
+    .then((rows) => {
+      const value = (rows ?? []).map((row, index) => {
+        const hour = row.hour ?? index
+        return {
+          id: `day-${row.date ?? dateKey}-${hour}`,
+          label: String(hour),
+          value: formatCount(row.viewCount),
+        }
+      })
+      dayTrendCache = { expiresAt: Date.now() + TREND_CACHE_TTL_MS, dateKey, value }
+      return value
+    })
+    .catch(() => [])
+}
+
+function getWeekReadTrend(): Promise<AnalysisChartPoint[]> {
+  const now = new Date()
+  const weekKey = toDateKey(startOfWeekMonday(now))
+
+  if (weekTrendCache && weekTrendCache.weekKey === weekKey && weekTrendCache.expiresAt > Date.now()) {
+    return Promise.resolve(weekTrendCache.value)
+  }
+
+  return request<ApiDailyView[]>({
+    method: 'GET',
+    path: '/analysis/trend',
+    query: { timeRange: 'week' },
+    silent: true,
+  })
+    .then((rows) => {
+      const value = buildWeekTrendPoints(rows, now)
+      weekTrendCache = { expiresAt: Date.now() + TREND_CACHE_TTL_MS, weekKey, value }
+      return value
+    })
+    .catch(() => [])
+}
+
+function getMonthReadTrend(): Promise<AnalysisChartPoint[]> {
+  const now = new Date()
+  const monthKey = toDateKey(now)
+
+  if (monthTrendCache && monthTrendCache.monthKey === monthKey && monthTrendCache.expiresAt > Date.now()) {
+    return Promise.resolve(monthTrendCache.value)
+  }
+
+  return request<ApiDailyView[]>({
+    method: 'GET',
+    path: '/analysis/trend',
+    query: { timeRange: 'month' },
+    silent: true,
+  })
+    .then((rows) => {
+      const value = buildMonthTrendPoints(rows, now)
+      monthTrendCache = { expiresAt: Date.now() + TREND_CACHE_TTL_MS, monthKey, value }
+      return value
+    })
+    .catch(() => [])
+}
+
+function getTotalReadTrend(): Promise<AnalysisChartPoint[]> {
+  const now = new Date()
+  const rangeKey = `${toDateKey(getTotalRangeStart(now))}_${toDateKey(now)}`
+
+  if (totalTrendCache && totalTrendCache.rangeKey === rangeKey && totalTrendCache.expiresAt > Date.now()) {
+    return Promise.resolve(totalTrendCache.value)
+  }
+
+  return request<ApiDailyView[]>({
+    method: 'GET',
+    path: '/analysis/trend',
+    query: { timeRange: 'all' },
+    silent: true,
+  })
+    .then((rows) => {
+      const value = buildTotalTrendPoints(rows, now)
+      totalTrendCache = { expiresAt: Date.now() + TREND_CACHE_TTL_MS, rangeKey, value }
+      return value
+    })
+    .catch(() => [])
 }
 
 function getReadTrends(): Promise<Record<AnalysisReadRange, AnalysisChartPoint[]>> {
-  if (readTrendsCache && readTrendsCache.expiresAt > Date.now()) {
-    return Promise.resolve(readTrendsCache.value)
-  }
-
-  return fetchDailyViewCounts(MONTH_TREND_DAYS).then((monthDays) => {
-    const value: Record<AnalysisReadRange, AnalysisChartPoint[]> = {
-      week: buildChartPoints(monthDays.slice(-WEEK_TREND_DAYS), 'week'),
-      month: buildChartPoints(monthDays, 'month'),
-    }
-    readTrendsCache = { expiresAt: Date.now() + TREND_CACHE_TTL_MS, value }
-    return value
-  })
+  return Promise.all([getDayReadTrend(), getWeekReadTrend(), getMonthReadTrend(), getTotalReadTrend()]).then(
+    ([day, week, month, total]) => ({
+      ...emptyReadTrends(),
+      day,
+      week,
+      month,
+      total,
+    }),
+  )
 }
 
 export function getAnalysisOverview(
@@ -309,16 +457,17 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
       method: 'GET',
       path: '/analysis/content/detail',
       query: { ...rangeQuery, materialId: cardId },
-    }),
+    }).catch(() => null),
     request<ApiMaterial>({ method: 'GET', path: `/material/${cardId}`, silent: true }).catch(() => null),
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: rangeQuery, silent: true }).catch(
       () => [] as ApiIntentCustomer[],
     ),
   ]).then(async ([detail, material, intentCustomers]) => {
-    if (!detail) return null
+    if (!detail && !material) return null
 
-    const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
-    const audienceList = detail.audienceList ?? []
+    const intentByCustomer = new Map((intentCustomers ?? []).map((item) => [String(item.customerId), item]))
+    const audienceList = detail?.audienceList ?? []
+    const metrics = buildCardMetrics(detail?.viewCount, detail?.forwardCount, detail?.completeCount, detail?.viewerCount)
     const [thumbnailUrl, avatarUrls] = await Promise.all([
       prepareMediaUrls([resolveMediaUrl(material?.coverUrl)]).then((urls) => urls[0] ?? ''),
       prepareMediaUrls(audienceList.map((audience) => audience.avatar)),
@@ -326,14 +475,14 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
 
     return {
       card: {
-        id: String(detail.materialId),
+        id: String(detail?.materialId ?? material?.id ?? cardId),
         thumbnailUrl,
-        title: detail.title ?? '',
+        title: detail?.title ?? material?.title ?? '',
         date: formatDateKey(material?.createTime),
         publishedAt: formatPublishedAt(material?.createTime),
-        metrics: buildCardMetrics(detail.viewCount, detail.forwardCount, detail.completeCount, detail.viewerCount).full,
-        compactMetrics: buildCardMetrics(detail.viewCount, detail.forwardCount, detail.completeCount, detail.viewerCount).compact,
-        sortCounts: buildCardSortCounts(detail.viewCount, detail.forwardCount, detail.completeCount),
+        metrics: metrics.full,
+        compactMetrics: metrics.compact,
+        sortCounts: buildCardSortCounts(detail?.viewCount, detail?.forwardCount, detail?.completeCount),
       },
       intentUsers: audienceList.map((audience, index) => {
         const customerId = String(audience.customerId)
@@ -384,9 +533,10 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
       customer?.viewCount ?? intent?.viewCount ?? 0,
       customer?.completeCount ?? intent?.completed ?? 0,
     )
+    const aggregated = aggregateCustomerHistoryByMaterial(history ?? [])
     const [avatarUrl, recordThumbs] = await Promise.all([
       prepareMediaUrls([customer?.avatar ?? intent?.avatar]).then((urls) => urls[0] ?? ''),
-      prepareMediaUrls(history.map((record) => coverByMaterial.get(String(record.materialId)) ?? '')),
+      prepareMediaUrls(aggregated.map((record) => coverByMaterial.get(record.materialId) ?? '')),
     ])
 
     return {
@@ -401,19 +551,18 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
         shareCount: intent?.hasForwarded === 1 ? '1' : '0',
         viewDuration: formatSeconds(customer?.totalDuration),
       },
-      // 后端观看历史无单条浏览/转发计数字段：每条是一次 tracking 记录，readCount 按 1，shareCount 固定 0
-      records: history.map((record, index) => ({
-        id: `${record.materialId}-${index}`,
-        contentId: String(record.materialId),
+      records: aggregated.map((record, index) => ({
+        id: record.materialId,
+        contentId: record.materialId,
         thumbnailUrl: recordThumbs[index] ?? '',
-        title: record.title ?? '',
+        title: record.title,
         date: formatMonthDay(record.viewTime),
         type: fileTypeLabels[record.fileType ?? ''] ?? '内容',
-        progress: `${record.progress ?? 0}%`,
+        progress: `${record.progress}%`,
         viewDuration: formatSeconds(record.duration),
-        readCount: '1',
-        completionCount: record.completed === 1 ? '1' : '0',
-        shareCount: '0',
+        readCount: formatCount(record.viewCount),
+        completionCount: formatCount(record.completeCount),
+        shareCount: formatCount(record.shareCount),
       })),
     }
   })

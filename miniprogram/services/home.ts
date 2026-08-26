@@ -8,6 +8,7 @@ import type {
 import type { HomeContentViewModel, HomeIntentLevel, HomeNotificationViewModel, HomePageViewModel } from '../types/home'
 import { formatCount, formatDateKey, formatMonthDayTime } from '../utils/format'
 import { prepareMediaUrls } from '../utils/media'
+import { readViewedNotificationMap, selectUnviewedIntentCustomers } from '../utils/notification-viewed'
 import { request, resolveMediaUrl } from './request'
 
 const HOME_PREVIEW_LIMIT = 3
@@ -33,12 +34,11 @@ function buildNotificationStatus(item: ApiIntentCustomer): string {
 function mapNotification(
   item: ApiIntentCustomer,
   thumbnailByMaterialId: Map<string, string>,
-  index: number,
 ): HomeNotificationViewModel {
   const action = item.hasForwarded === 1 ? 'forward' : 'reading'
 
   return {
-    id: `home-notification-${item.customerId}-${index}`,
+    id: `home-notification-${item.customerId}`,
     userId: String(item.customerId),
     visitorName: item.nickname ?? '微信用户',
     intent: item.intentLevel,
@@ -46,6 +46,7 @@ function mapNotification(
     action,
     actionLabel: actionLabels[action],
     actionDate: formatMonthDayTime(item.lastViewTime),
+    lastViewTime: item.lastViewTime ?? '',
     actionIconPath:
       action === 'forward' ? '/assets/home-new/action-forward.svg' : '/assets/home-new/action-reading.svg',
     avatarUrl: resolveMediaUrl(item.avatar),
@@ -97,11 +98,12 @@ export function getHomePageData(): Promise<HomePageViewModel> {
       }
     })
 
-    const notifications = intentCustomers
+    const unreadCustomers = selectUnviewedIntentCustomers(intentCustomers, readViewedNotificationMap())
+    const notifications = unreadCustomers
       .slice()
       .sort((left, right) => String(right.lastViewTime ?? '').localeCompare(String(left.lastViewTime ?? '')))
       .slice(0, HOME_PREVIEW_LIMIT)
-      .map((item, index) => mapNotification(item, thumbnailByMaterialId, index))
+      .map((item) => mapNotification(item, thumbnailByMaterialId))
     const contentsCards = buildContentCards(contents, intentCustomers)
     const previewCustomers = intentCustomers.slice(0, 5)
     const highCount = dashboard.highIntentCount ?? 0
@@ -116,7 +118,7 @@ export function getHomePageData(): Promise<HomePageViewModel> {
     ])
 
     return {
-      unreadNotificationCount: intentCustomers.length,
+      unreadNotificationCount: unreadCustomers.length,
       notifications: notifications.map((item, index) => ({
         ...item,
         avatarUrl: notificationAvatars[index] ?? '',

@@ -84,6 +84,13 @@ export interface ApiCustomerListItem {
   lastViewTime: string | null
 }
 
+/** GET /analysis/trend 响应项（DailyViewVO） */
+export interface ApiDailyView {
+  date: string | null
+  hour: number | null
+  viewCount: number | null
+}
+
 /** GET /analysis/customer/history 响应项（CustomerViewHistoryVO） */
 export interface ApiCustomerViewHistory {
   materialId: string
@@ -94,6 +101,7 @@ export interface ApiCustomerViewHistory {
   progress: number | null
   completed: number | null
   viewTime: string | null
+  actionType: string | null
 }
 
 export type ApiIntentLevel = 'high' | 'medium' | 'low'
@@ -118,6 +126,22 @@ export interface ApiIntentCustomer {
   materialTitle: string | null
   intentLevel: ApiIntentLevel
   lastViewTime: string | null
+}
+
+/** GET /analysis/notify/list 响应项（NotificationEventVO，每一次浏览或转发一行） */
+export interface ApiNotificationEvent {
+  id: string
+  customerId: string
+  nickname: string | null
+  avatar: string | null
+  materialId: string | null
+  materialTitle: string | null
+  actionType: string | null
+  duration: number | null
+  progress: number | null
+  completed: number | null
+  intentLevel: ApiIntentLevel | null
+  viewTime: string | null
 }
 
 export type ApiMaterialFileType = 'PDF' | 'IMAGE' | 'VIDEO' | 'TABLE'

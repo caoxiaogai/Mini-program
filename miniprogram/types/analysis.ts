@@ -10,7 +10,7 @@ export type AnalysisChartPoint = {
   value: string
 }
 
-export type AnalysisReadRange = 'week' | 'month'
+export type AnalysisReadRange = 'day' | 'week' | 'month' | 'total'
 
 export type AnalysisTotalHeroMetric = {
   label: string

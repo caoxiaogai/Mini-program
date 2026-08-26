@@ -85,12 +85,9 @@
       </view>
       <view class="analysis-total__chart-card">
         <text class="analysis-total__title">浏览峰值</text>
-        <view class="analysis-total__chart {{activeAnalysisReadRange === 'month' ? 'analysis-total__chart--month' : ''}}">
-          <view class="analysis-total__chart-gridline analysis-total__chart-gridline--top"><text>1500</text></view>
-          <view class="analysis-total__chart-gridline analysis-total__chart-gridline--upper"><text>1000</text></view>
-          <view class="analysis-total__chart-gridline analysis-total__chart-gridline--lower"><text>500</text></view>
-          <view class="analysis-total__chart-gridline analysis-total__chart-gridline--bottom"><text>0</text></view>
-          <analysis-trend-chart host-class="analysis-total__trend-chart" points="{{visibleAnalysisReadTrend}}" slot-count="{{analysisTrendSlotCount}}" />
+        <view class="analysis-total__chart {{chartAxisScale ? 'analysis-total__chart--axis' : ''}}">
+          <view wx:for="{{chartAxisTicks}}" wx:key="id" class="analysis-total__chart-gridline analysis-total__chart-gridline--{{item.position}}"><text>{{item.value}}</text></view>
+          <analysis-trend-chart host-class="analysis-total__trend-chart" points="{{visibleAnalysisReadTrend}}" slot-count="{{analysisTrendSlotCount}}" axis-max="{{chartAxisMax}}" axis-scale="{{chartAxisScale}}" />
         </view>
       </view>
     </view>

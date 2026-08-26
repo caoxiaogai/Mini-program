@@ -18,6 +18,7 @@ export interface NotificationCardViewModel {
   action: NotificationAction
   actionLabel: string
   actionDate: string
+  lastViewTime: string
   actionIconPath: string
   avatarUrl: string
   thumbnailUrl: string

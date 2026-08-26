@@ -218,6 +218,18 @@ miniprogram/
 | 所有页面下拉刷新 | done | 滑到顶部再下拉刷新当前页数据；发布页只收起动画，不覆盖未保存编辑 |
 | 分享素材浏览埋点 | done | 朋友打开素材详情/文档阅读页上报 `POST /tracking/event`，转发上报 `POST /tracking/forward`；浏览次数与意向由后端统计 |
 | 推送意向门槛自定义 | done | 默认高意向；「我的」进入设置页三选一（低/中/高），经 `GET/PUT /user/notify-settings` 读写 `notifyIntentLevel` |
+| 总数据按日浏览峰值坐标轴 | done | 横轴 0/4/8/12/16/20/24，纵轴随浏览量取整；小时数据走 `GET /analysis/trend?timeRange=today` |
+| 总数据按周浏览峰值坐标轴 | done | 横轴周一到周日用 1–7，纵轴随浏览量取整；数据走 `GET /analysis/trend?timeRange=week` |
+| 总数据按月浏览峰值坐标轴 | done | 横轴 1 号到本月最后一天，数字隔 5 天显示；纵轴随阅读量取整；数据走 `GET /analysis/trend?timeRange=month` |
+| 总数据按总浏览峰值坐标轴 | done | 横轴近两月最近 6 周用 1–6 表示第几周，纵轴随阅读量取整；数据走 `GET /analysis/trend?timeRange=all` |
+| 用户详情同一作品浏览合并 | done | 同一作品只展示一条：进度取最大，观看时长/浏览次数/转发取合计 |
+| 首页已看通知刷新后不再出现 | done | 看过的互动消息写入本地已读；刷新后同一条不再回到首页预览和未读角标 |
+| 通知页按每次浏览拆条 | done | 同一用户每次浏览/转发各一条通知，数据走 `GET /analysis/notify/list` |
+| 用户详情联系用户复制用户名 | done | 「联系用户」写入剪贴板后再显示复制成功提示 |
+| 分享素材返回先到首页 | done | 朋友打开分享卡片后页面栈为首页→详情；左滑/返回先回小程序首页，再返回才退出到聊天 |
+| 今日浏览最多进入作品分析 | done | 首页「今日浏览最多」查看更多和单条作品都切换到分析页的「作品分析」 |
+| 无浏览作品内容分析空白 | done | 从未被浏览/转发的作品打开内容分析时仍展示作品卡片和空意向用户，不再整页空白 |
+| PDF 点击预览图查看 | done | 素材详情 PDF 去掉「点击查看」按钮，点击预览图进入阅读页 |
 | 其他页面视觉与真机适配验收 | pending | 后续页面实现后执行 |
 
 ## 验收基线
@@ -243,6 +255,93 @@ miniprogram/
 - 不在文档中记录密钥、AppSecret、用户隐私数据或生产接口凭证。
 
 ## 最近变更
+
+### 2026-08-26：PDF 点击预览图即可查看
+
+- 素材详情的 PDF/表格去掉「点击查看」按钮；点击预览图（没有预览图时点文件卡片）进入阅读页。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，真机点预览图待确认。
+
+### 2026-08-26：未产生浏览的作品也能打开内容分析
+
+- 从未被浏览或转发的作品，`GET /analysis/content/detail` 原先查不到统计行会返回空，内容分析页只剩标题。
+- 后端改为从素材表左连统计，没有记录时仍返回作品信息和 0 次浏览/转发；受众列表为空。
+- 前端在详情接口为空时，仍用素材信息渲染作品卡，意向用户展示「没有意向用户」。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启后详情接口才从素材表补空数据。当前环境无微信开发者工具 GUI，真机打开待确认。
+
+### 2026-08-26：首页「今日浏览最多」进入作品分析
+
+- 点击「查看更多」或任意一条今日浏览最多作品，都切换到分析页的「作品分析」，不再打开单条内容分析详情。
+- 空状态「立即发布」仍进入素材发布，不受影响。作品分析列表里点某一条仍可进入内容分析详情。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，首页点击跳转待真机确认。
+
+### 2026-08-26：朋友打开分享素材后返回先到首页
+
+- 分享卡片改为打开首页并带上 `materialId`，首页再 `navigateTo` 详情，页面栈为 `[首页, 详情]`。左滑或点返回先回到小程序首页，再返回才退出到聊天。
+- 旧分享链接仍可能直接打开详情；详情若是栈底页会 `reLaunch` 到上述首页路径，避免一次返回就离开小程序。导航栏 `navigateBack` 失败时也回到首页。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，朋友打开分享卡片后的左滑返回待真机确认。
+
+### 2026-08-26：用户详情「联系用户」会复制用户名
+
+- 「联系用户」原先只弹出提示、没有写入剪贴板。现在与点击用户名相同，复制成功后再显示「微信名称复制成功」。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，真机剪贴板待确认。
+
+### 2026-08-26：通知页按每一次浏览拆成一条
+
+- 通知页不再按客户合并。每一次 `play` 浏览、每一次 `forward` 转发各生成一条通知，同一用户多次打开会看到多条。
+- 新增 `GET /analysis/notify/list`（近 62 天），从 `tracking_record` 取 play/forward 行；卡片上的高/中/低意向仍用该客户在范围内的峰值，便于顶部筛选。
+- 首页「互动消息」仍按客户摘要最近 3 条，未改。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启后通知页才走新接口。当前环境无微信开发者工具 GUI，通知页真机打开待确认。
+
+### 2026-08-26：看过的首页通知刷新后不再出现
+
+- 点击首页互动消息或通知卡片后，将该客户当前这次浏览记为已读；刷新首页时先排除已读记录，再补预览条数和未读角标。
+- 通知 ID 改为按客户稳定生成，避免刷新后下标变化把同一条当成新通知。同一客户若之后又有新的 `lastViewTime`，会重新作为新通知出现。
+- 通知 Tab 仍展示完整列表，方便回看；不新增已读接口。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，首页下拉刷新真机待确认。
+
+### 2026-08-26：用户详情同一作品只展示一条浏览记录
+
+- 用户详情浏览记录按作品（`materialId`）合并：进度取各次浏览的最大值，观看时长、浏览次数、转发取合计。
+- `GET /analysis/customer/history` 现有响应补 `actionType`（`play` / `forward` 等）。`play` 计为浏览，`forward` 计为转发，不把转发行当成一次浏览。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启后历史接口才带 `actionType`。当前环境无微信开发者工具 GUI，详情页真机打开待确认。
+
+### 2026-08-26：总浏览峰值横轴改为 1–6 周序号
+
+- 横轴固定 6 个刻度：1 / 2 / 3 / 4 / 5 / 6，分别表示最近六周的第一周到第六周。没有折线时也画出这些数字。
+- 数据仍走 `GET /analysis/trend?timeRange=all`（近两个月），前端从本周往前取 6 个自然周汇总。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，总视图真机待确认。
+
+### 2026-08-26：总浏览峰值改为近两月按周坐标
+
+- 横轴按近两月（与日历筛选同一起点）的自然周铺开，用 1、2、3… 标记每一周；当前约 10 周。刻度和折线画在同一张 SVG 里，共用 270px 坐标系；纵轴随阅读量自动取整。
+- 每周从周一起算，首周和本周不足 7 天只累计范围内的天数。数据走 `GET /analysis/trend?timeRange=all`，前端按周汇总。后端趋势「总」范围改为近两个月（当天往前两个月）。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启后总图才按近两月聚合。当前环境无微信开发者工具 GUI，总视图真机待确认。
+
+### 2026-08-26：本月浏览峰值改为当月日期坐标
+
+- 横轴按本月实际天数铺 1 号到最后一天（28/29/30/31），刻度数字隔 5 天显示，例如 1 / 6 / 11 / 16；31 天的月份会标到 31，30 天的月份最后一档是 26，不强行贴最后一天。
+- 刻度和折线画在同一张 SVG 里，共用 270px 坐标系；纵轴随本月阅读量自动取整。折线只画到今天，不画本月尚未到来的日期。
+- 数据改走 `GET /analysis/trend?timeRange=month`。后端趋势月范围改为日历月（本月 1 号到今天）。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启后本月图才按日历月聚合。当前环境无微信开发者工具 GUI，月视图真机待确认。
+
+### 2026-08-26：本周浏览峰值改为周一到周日坐标
+
+- 横轴 1–7 表示周一到周日，刻度和折线画在同一张 SVG 里，共用 270px 坐标系；纵轴随本周浏览量自动取整。
+- 数据改走 `GET /analysis/trend?timeRange=week`。后端趋势周范围改为日历周（本周一到今天），只补到当天，不画未来星期。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启后本周图才按日历周聚合。当前环境无微信开发者工具 GUI，周视图真机待确认。
+
+### 2026-08-26：按日浏览峰值横轴改为线性时间轴
+
+- 按日峰值展示 0–24 小时的连续时间变化，横轴改用 0 / 4 / 8 / 12 / 16 / 20 / 24 等间隔刻度，首尾贴合绘图区两端。
+- 刻度和折线统一使用 0–24 小时线性比例，避免等宽排版不等时间间隔数字造成标签与数据点错位；本周 / 本月 / 总未改。
+- 小程序当前渲染层未稳定应用外层 WXML 刻度的 flex 和动态定位，因此横轴刻度改为直接绘制在折线 SVG 中；每个刻度与折线小时点共用同一 270px 坐标系，不再受 WXML 样式隔离影响。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，日视图真机待确认。
+
+### 2026-08-26：总数据「按日」浏览峰值改为当天小时坐标
+
+- 横轴表示一天的时间，只标 0 / 4 / 8 / 12 / 16 / 20 / 24，避免 24 个时刻挤在一起；刻度和小时数据共用 0–24 线性比例。纵轴随当天浏览量自动取整刻度，不再写死 1500。
+- 日视图数据改走已有 `GET /analysis/trend?timeRange=today`。后端按 `tracking_record` 小时聚合 play session，补齐到当前小时。本周 / 本月 / 总仍用原按日趋势，等后续再改。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启后按日图才有真实小时数据。当前环境无微信开发者工具 GUI，日视图真机待确认。
 
 ### 2026-08-26：修复用户详情页按浏览次数排序崩溃
 
@@ -994,8 +1093,8 @@ miniprogram/
 - 各 service 映射（页面与 ViewModel 均未改动）：
   - 首页：`/analysis/dashboard` + `/analysis/customer/list` + `/analysis/content/list`（today）组合；通知角标取今日意向客户数（后端无未读通知概念）。
   - 分析页：dashboard / content list / customer list / intent list 并行；「观看作品数」由各内容详情受众列表聚合（后端列表无该字段）；阅读趋势图由按日 dashboard 聚合（后端无趋势接口，30 天数据带 60s 缓存）；周期筛选「日/周/月」映射 today/week/month，「总」受后端 custom 上限限制取最近 62 天（标记待确认）；点击周期后按所选范围重新加载。
-  - 分析详情 / 用户详情：`/analysis/content/detail`、`/analysis/customer/history` + `/material/mine` 补封面；观看历史无单条转发数，记录 `shareCount` 固定 0。
-  - 通知页：`/analysis/intent/list` 按日期分组映射为通知卡片（每客户一条，转发/阅读按 `hasForwarded` 区分）。
+  - 分析详情 / 用户详情：`/analysis/content/detail`、`/analysis/customer/history` + `/material/mine` 补封面；用户详情按作品合并浏览记录（进度取最大，时长/浏览次数/转发取合计），历史项含 `actionType`。
+  - 通知页：`/analysis/notify/list` 每一次浏览或转发一条，按日期分组；意向标签取该客户峰值。首页互动消息仍用 `/analysis/intent/list`（每客户一条）。
   - 素材：`/material/mine` 列表（`publishStatus=0` 为草稿，TABLE 类型暂归入 PDF 筛选）、`/material/{id}` 详情/草稿（多图 `fileUrl` 为 JSON 数组）；发表 = 上传文件 `/material/upload-file` → `POST /material`（`IMAGE` 多图 JSON / `VIDEO` / `PDF`）→ `POST /material/{id}/share`；存草稿同前两步；编辑草稿仅改文案时走 `PUT /material/{id}`，改文件时新建素材（后端无更新文件与删除素材接口，旧草稿会保留）。
   - 排行榜：后端无对应接口，service 返回空榜单并保留 `TODO(API)` 占位，页面展示既有空状态。
 - `app.ts` 启动时执行真实登录；首页底部导航角标初始值由写死的 2 改为 0，由接口数据驱动。删除 `miniprogram/mocks/` 全部文件与目录。

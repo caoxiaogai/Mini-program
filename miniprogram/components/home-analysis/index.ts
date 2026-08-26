@@ -21,9 +21,12 @@ Component({
     hasAnalysisUsers: { type: Boolean, value: false },
     totalAnalysisPeriods: { type: Array, value: [] },
     activeTotalPeriod: { type: String, value: 'total' },
-    activeAnalysisReadRange: { type: String, value: 'week' },
+    activeAnalysisReadRange: { type: String, value: 'total' },
     visibleAnalysisReadTrend: { type: Array, value: [] },
     analysisTrendSlotCount: { type: Number, value: 0 },
+    chartAxisTicks: { type: Array, value: [] },
+    chartAxisMax: { type: Number, value: 1500 },
+    chartAxisScale: { type: String, value: '' },
   },
   methods: {
     onAnalysisTabTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysistabtap', { index: Number(event.currentTarget.dataset.index) }) },

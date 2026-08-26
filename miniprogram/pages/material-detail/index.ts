@@ -12,6 +12,7 @@ import {
   buildMaterialShareQuery,
   buildMaterialShareTitle,
   enableMaterialShareMenu,
+  isRootPageStack,
   showMomentsShareGuide,
 } from '../../utils/share-material'
 
@@ -45,8 +46,15 @@ Page({
   videoTouchStartY: 0,
 
   onLoad(options: Record<string, string | undefined>) {
-    this.materialId = options.id ?? ''
-    this.pageTrackingId = options.trackingId ?? ''
+    const materialId = options.id ?? ''
+    const trackingId = options.trackingId ?? ''
+    if (materialId && isRootPageStack()) {
+      wx.reLaunch({ url: buildMaterialSharePath(materialId, trackingId) })
+      return
+    }
+
+    this.materialId = materialId
+    this.pageTrackingId = trackingId
     this.trackingSessionId = createTrackingSessionId()
     this.viewedImageIndices = []
     this.hasReportedComplete = false

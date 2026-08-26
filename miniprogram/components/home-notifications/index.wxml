@@ -9,6 +9,7 @@
           wx:key="id"
           class="notification-card"
           data-id="{{notification.userId}}"
+          data-last-view-time="{{notification.lastViewTime}}"
           bindtap="onNotificationCardTap"
           hover-class="notification-card--pressed"
           hover-start-time="80"

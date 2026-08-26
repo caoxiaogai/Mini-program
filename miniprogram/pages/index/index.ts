@@ -2,7 +2,7 @@ import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../
 import { getHomePageData } from '../../services/home'
 import { getMaterialDetail, getMaterials } from '../../services/materials'
 import { getNotifications } from '../../services/notifications'
-import type { AnalysisAudienceUser, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
+import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
 import type { HomePageViewModel } from '../../types/home'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
@@ -14,9 +14,11 @@ import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
+import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
-import { buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, showMomentsShareGuide } from '../../utils/share-material'
+import { buildHomeShareQuery, buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, showMomentsShareGuide } from '../../utils/share-material'
+import { persistViewedNotification } from '../../utils/notification-viewed'
 import { markHomeNotificationViewed } from './home-notification-preview'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
@@ -62,12 +64,7 @@ const totalAnalysisPeriods = [
   { id: 'total' as AnalysisPeriodId, label: '总' },
 ]
 
-function getAnalysisTrendSlotCount(period: AnalysisPeriodId): number {
-  if (period === 'day') return 24
-  if (period === 'week') return 7
-  if (period === 'month') return 30
-  return 0
-}
+const defaultTrendState = buildTotalTrendState('total')
 
 const analysisSwipeThreshold = 40
 
@@ -132,9 +129,7 @@ Page({
     hasAnalysisUsers: false,
     totalAnalysisPeriods,
     activeTotalPeriod: 'total' as AnalysisPeriodId,
-    activeAnalysisReadRange: 'week' as AnalysisReadRange,
-    visibleAnalysisReadTrend: [] as AnalysisViewModel['totalData']['readTrends']['week'],
-    analysisTrendSlotCount: getAnalysisTrendSlotCount('total'),
+    ...defaultTrendState,
     profileData: null as ProfilePageViewModel | null,
     pullRefreshing: false,
   },
@@ -150,6 +145,8 @@ Page({
       })
       this.setActiveTab(2)
       if (shareMaterialId) this.loadShareMaterial(shareMaterialId)
+    } else if (options.materialId) {
+      wx.navigateTo({ url: buildMaterialDetailPath(options.materialId, options.trackingId) })
     }
     this.loadHomeData()
     this.loadProfileData()
@@ -214,11 +211,12 @@ Page({
     if (period !== 'custom') return dateRange
     return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
   },
-  loadAnalysis(period: AnalysisPeriodId = this.data.activePeriod) {
+  loadAnalysis(period: AnalysisPeriodId = this.data.activePeriod, trendPeriod: AnalysisPeriodId = this.data.activeTotalPeriod) {
     return getAnalysisOverview(period, undefined, this.data.activeAnalysisSort).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
-      this.setData({ analysisData, visibleAnalysisUsers, workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary, visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards, hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards, hasAnalysisUsers: visibleAnalysisUsers.length > 0, visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange] })
+      const trendState = buildTotalTrendState(trendPeriod, analysisData.totalData.readTrends[getAnalysisReadRange(trendPeriod)])
+      this.setData({ analysisData, visibleAnalysisUsers, workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary, visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards, hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards, hasAnalysisUsers: visibleAnalysisUsers.length > 0, ...trendState })
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
@@ -286,6 +284,8 @@ Page({
     const userId = event.currentTarget.dataset.userId as string | undefined
 
     if (notificationId && this.data.homeData) {
+      const notification = this.data.homeData.notifications.find((item) => item.id === notificationId)
+      if (notification) persistViewedNotification(notification.userId, notification.lastViewTime)
       const homeData = markHomeNotificationViewed(this.data.homeData, notificationId)
       const tabItems = this.data.tabItems.map((item) => item.id === 'notifications' ? { ...item, badgeCount: homeData.unreadNotificationCount } : item)
       this.setData({ homeData, tabItems })
@@ -296,9 +296,9 @@ Page({
   onRankingEntryTap() {
     wx.navigateTo({ url: '/pages/ranking/index' })
   },
-  onTodayMostItemTap(event: WechatMiniprogram.TouchEvent) {
-    const id = event.currentTarget.dataset.id as string | undefined
-    if (id) wx.navigateTo({ url: `/pages/analysis-detail/index?id=${id}` })
+  onTodayMostTap() {
+    this.setActiveTab(3)
+    this.setAnalysisTab(0)
   },
   onIntentSummaryTap() {
     this.setActiveTab(3)
@@ -306,10 +306,10 @@ Page({
   },
   onTodayDataTap() {
     const hasAnalysisData = Boolean(this.data.analysisData)
-    this.setData({ activeTotalPeriod: 'day', activeAnalysisReadRange: 'week', analysisTrendSlotCount: getAnalysisTrendSlotCount('day') })
+    this.setData({ activeTotalPeriod: 'day', ...buildTotalTrendState('day', this.data.analysisData?.totalData?.readTrends?.day ?? []) })
     this.setActiveTab(3)
     this.setAnalysisTab(2)
-    if (hasAnalysisData) this.loadAnalysis('day')
+    if (hasAnalysisData) this.loadAnalysis('day', 'day')
   },
   onNotificationFilterTap(event: WechatMiniprogram.CustomEvent<{ filterId: NotificationFilterId }>) {
     const filterId = event.detail.filterId
@@ -317,8 +317,18 @@ Page({
     const visibleNotificationGroups = getVisibleNotificationGroups(this.data.notifications?.groups ?? [], filterId)
     this.setData({ activeNotificationFilter: filterId, visibleNotificationGroups, hasVisibleNotificationGroups: visibleNotificationGroups.length > 0 })
   },
-  onNotificationCardTap(event: WechatMiniprogram.CustomEvent<{ userId: string }>) {
-    if (event.detail.userId) wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${event.detail.userId}` })
+  onNotificationCardTap(event: WechatMiniprogram.CustomEvent<{ userId: string; lastViewTime?: string }>) {
+    const userId = event.detail.userId
+    if (!userId) return
+
+    persistViewedNotification(userId, event.detail.lastViewTime)
+    if (this.data.homeData) {
+      const homeData = markHomeNotificationViewed(this.data.homeData, `home-notification-${userId}`)
+      const tabItems = this.data.tabItems.map((item) => item.id === 'notifications' ? { ...item, badgeCount: homeData.unreadNotificationCount } : item)
+      this.setData({ homeData, tabItems })
+    }
+
+    wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
   },
   onNotificationContactAction() {},
   onAnalysisTabTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) { this.setAnalysisTab(event.detail.index) },
@@ -366,14 +376,13 @@ Page({
   },
   onTotalAnalysisPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
     if (!totalAnalysisPeriods[event.detail.index]) return
-    const readRange: AnalysisReadRange = event.detail.id === 'month' ? 'month' : 'week'
+    const periodId = event.detail.id
 
     this.setData({
-      activeTotalPeriod: event.detail.id,
-      activeAnalysisReadRange: readRange,
-      analysisTrendSlotCount: getAnalysisTrendSlotCount(event.detail.id),
+      activeTotalPeriod: periodId,
+      ...buildTotalTrendState(periodId, this.data.analysisData?.totalData?.readTrends?.[getAnalysisReadRange(periodId)] ?? []),
     })
-    this.loadAnalysis(event.detail.id)
+    this.loadAnalysis(periodId, periodId)
   },
   onAnalysisSortTap() { this.setData({ analysisSortSheetVisible: !this.data.analysisSortSheetVisible }) },
   onAnalysisSortOptionTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisSortId }>) {
@@ -462,7 +471,7 @@ Page({
 
     return {
       title: this.data.shareTitle,
-      query: buildMaterialShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
+      query: buildHomeShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl: this.data.shareImageUrl || undefined,
     }
   },

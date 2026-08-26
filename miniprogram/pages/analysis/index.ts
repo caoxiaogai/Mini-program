@@ -1,8 +1,9 @@
 import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
-import type { AnalysisAudienceUser, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
+import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
+import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
@@ -37,12 +38,7 @@ const totalAnalysisPeriods: AnalysisPeriodOption[] = [
   { id: 'total', label: '总' },
 ]
 
-function getAnalysisTrendSlotCount(period: AnalysisPeriodId): number {
-  if (period === 'day') return 24
-  if (period === 'week') return 7
-  if (period === 'month') return 30
-  return 0
-}
+const defaultTrendState = buildTotalTrendState('total')
 
 const analysisSortOptions: AnalysisSortOption[] = [
   { id: 'completion', label: '完播数' },
@@ -90,9 +86,7 @@ Page({
     hasAnalysisUsers: false,
     totalAnalysisPeriods,
     activeTotalPeriod: 'total' as AnalysisPeriodId,
-    activeAnalysisReadRange: 'week' as AnalysisReadRange,
-    visibleAnalysisReadTrend: [] as AnalysisViewModel['totalData']['readTrends']['week'],
-    analysisTrendSlotCount: getAnalysisTrendSlotCount('total'),
+    ...defaultTrendState,
   },
   onLoad(options: Record<string, string | undefined>) {
     const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
@@ -121,10 +115,11 @@ Page({
     if (period !== 'custom') return dateRange
     return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
   },
-  loadAnalysis(period: AnalysisPeriodId) {
+  loadAnalysis(period: AnalysisPeriodId, trendPeriod: AnalysisPeriodId = this.data.activeTotalPeriod) {
     return getAnalysisOverview(period, undefined, this.data.activeAnalysisSort).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
+      const trendState = buildTotalTrendState(trendPeriod, analysisData.totalData.readTrends[getAnalysisReadRange(trendPeriod)])
 
       this.setData({
         analysisData,
@@ -133,7 +128,7 @@ Page({
         visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards,
         hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards,
         hasAnalysisUsers: visibleAnalysisUsers.length > 0,
-        visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange],
+        ...trendState,
       })
     })
   },
@@ -178,16 +173,14 @@ Page({
   },
   onTotalPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
     const { id: periodId, index: periodIndex } = event.detail
-    const readRange: AnalysisReadRange = periodId === 'month' ? 'month' : 'week'
 
     if (!totalAnalysisPeriods[periodIndex]) return
 
     this.setData({
       activeTotalPeriod: periodId,
-      activeAnalysisReadRange: readRange,
-      analysisTrendSlotCount: getAnalysisTrendSlotCount(periodId),
+      ...buildTotalTrendState(periodId, this.data.analysisData?.totalData?.readTrends?.[getAnalysisReadRange(periodId)] ?? []),
     })
-    this.loadAnalysis(periodId)
+    this.loadAnalysis(periodId, periodId)
   },
   onPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
     const { id: periodId, index: periodIndex } = event.detail

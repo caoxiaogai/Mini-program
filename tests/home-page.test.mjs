@@ -5,6 +5,23 @@ import test from 'node:test'
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
+const currentMonthDays = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
+const totalTrendWeeks = 6
+
+const stubTrendState = (period = 'total', points = []) => ({
+  activeAnalysisReadRange: period === 'day' ? 'day' : period === 'month' ? 'month' : period === 'total' ? 'total' : 'week',
+  visibleAnalysisReadTrend: points,
+  analysisTrendSlotCount: period === 'day' ? 24 : period === 'week' ? 7 : period === 'month' ? currentMonthDays : period === 'total' ? totalTrendWeeks : 0,
+  chartAxisMax: period === 'day' || period === 'week' || period === 'month' || period === 'total' ? 3 : 1500,
+  chartAxisTicks: [],
+  chartAxisScale: period === 'day' ? 'hour' : period === 'week' ? 'weekday' : period === 'month' ? 'month' : period === 'total' ? 'week' : '',
+})
+
+const trendPageDeps = {
+  buildTotalTrendState: stubTrendState,
+  getAnalysisReadRange: (period) => (period === 'day' ? 'day' : period === 'month' ? 'month' : period === 'total' ? 'total' : 'week'),
+}
+
 const loadPageDefinition = (path, dependencies = {}) => {
   const source = read(path)
     .replace(/^import[^\n]+\n/gm, '')
@@ -123,10 +140,39 @@ test('viewing a home notification removes only that preview card and decrements 
   assert.equal(homeData.notifications.length, 3)
 })
 
+test('viewed home notifications stay hidden after reload', async () => {
+  const {
+    isViewedNotification,
+    rememberViewedNotification,
+    selectUnviewedIntentCustomers,
+  } = await import('../miniprogram/utils/notification-viewed.ts')
+  const home = read('miniprogram/services/home.ts')
+  const logic = read('miniprogram/pages/index/index.ts')
+
+  const viewed = rememberViewedNotification({}, 'c1', '2026-08-26 12:00:00')
+  const unread = selectUnviewedIntentCustomers([
+    { customerId: 'c1', lastViewTime: '2026-08-26 12:00:00' },
+    { customerId: 'c2', lastViewTime: '2026-08-26 11:00:00' },
+    { customerId: 'c1', lastViewTime: '2026-08-26 13:00:00' },
+  ], viewed)
+
+  assert.equal(isViewedNotification('c1', '2026-08-26 12:00:00', viewed), true)
+  assert.equal(isViewedNotification('c1', '2026-08-26 13:00:00', viewed), false)
+  assert.deepEqual(unread.map((item) => `${item.customerId}:${item.lastViewTime}`), [
+    'c2:2026-08-26 11:00:00',
+    'c1:2026-08-26 13:00:00',
+  ])
+  assert.match(home, /selectUnviewedIntentCustomers\(intentCustomers, readViewedNotificationMap\(\)\)/)
+  assert.match(home, /id: `home-notification-\$\{item\.customerId\}`/)
+  assert.doesNotMatch(home, /home-notification-\$\{item\.customerId\}-\$\{index\}/)
+  assert.match(logic, /persistViewedNotification\(notification\.userId, notification\.lastViewTime\)/)
+})
+
 test('viewing a home notification does not change the notification tab data source', () => {
   const logic = read('miniprogram/pages/index/index.ts')
 
   assert.match(logic, /markHomeNotificationViewed/)
+  assert.match(logic, /persistViewedNotification/)
   assert.match(logic, /loadNotifications\(\) \{\s*return getNotifications\(\)/)
 })
 
@@ -182,6 +228,9 @@ test('home summary cards open the matching analysis tabs', () => {
 
   assert.match(page, /class="home-intent-card" bindtap="onIntentSummaryTap"/)
   assert.match(page, /class="home-today-card" bindtap="onTodayDataTap"/)
+  assert.match(page, /class="home-section__more" bindtap="onTodayMostTap">查看更多/)
+  assert.match(page, /class="home-content-card__item" bindtap="onTodayMostTap"/)
+  assert.match(logic, /onTodayMostTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(0\)/)
   assert.match(logic, /onIntentSummaryTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(1\)/)
   assert.match(logic, /onTodayDataTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(2\)/)
 })
@@ -194,25 +243,29 @@ test('home today data includes high, medium and low intent metrics', () => {
   assert.match(styles, /\.home-today-card__intent-metrics \{[\s\S]*margin-top: 40rpx;/)
 })
 
-test('home today-most records open their content analysis details', () => {
-  const page = read('miniprogram/pages/index/index.wxml')
-  const navigatedUrls = []
-  const homePage = loadPageDefinition('miniprogram/pages/index/index.ts', {
+test('home today-most opens work analysis', () => {
+  const pageMarkup = read('miniprogram/pages/index/index.wxml')
+  const page = loadPageDefinition('miniprogram/pages/index/index.ts', {
     getHomeGreeting: () => '',
     getDefaultDateRange: () => ({ startDate: '2026-08-20', endDate: '2026-08-26' }),
     getDateRangeLimits: () => ({ minDate: '2026-06-26', maxDate: '2026-08-26' }),
-    wx: {
-      navigateTo: ({ url }) => navigatedUrls.push(url),
-    },
+    ...trendPageDeps,
   })
+  const calls = []
+  const context = {
+    data: {},
+    setActiveTab(index) { calls.push(['tab', index]) },
+    setAnalysisTab(index) { calls.push(['analysis', index]) },
+  }
 
-  assert.match(page, /class="home-section__more" bindtap="onTabTap" data-id="analysis">查看更多/)
-  assert.match(page, /class="home-content-card__item" data-id="\{\{item\.id\}\}" bindtap="onTodayMostItemTap"/)
-  assert.doesNotMatch(page, /class="home-content-card" bindtap="onTodayMostTap"/)
+  assert.match(pageMarkup, /class="home-section__more" bindtap="onTodayMostTap">查看更多/)
+  assert.match(pageMarkup, /class="home-content-card__item" bindtap="onTodayMostTap"/)
+  assert.doesNotMatch(pageMarkup, /class="home-content-card" bindtap="onTodayMostTap"/)
+  assert.doesNotMatch(pageMarkup, /onTodayMostItemTap/)
 
-  homePage.onTodayMostItemTap({ currentTarget: { dataset: { id: 'mock-material-ai-full-stack' } } })
+  page.onTodayMostTap.call(context)
 
-  assert.deepEqual(navigatedUrls, ['/pages/analysis-detail/index?id=mock-material-ai-full-stack'])
+  assert.deepEqual(calls, [['tab', 3], ['analysis', 0]])
 })
 
 test('home empty state follows Figma 486:2569', () => {
@@ -249,7 +302,7 @@ test('home page wires the intended navigation actions', () => {
   assert.match(page, /bindtap="onNotificationTap"/)
   assert.match(page, /class="home-notification-card" data-id="\{\{item\.id\}\}" data-user-id="\{\{item\.userId\}\}" bindtap="onNotificationTap"/)
   assert.match(page, /class="home-section__more" bindtap="onTabTap" data-id="notifications">查看更多/)
-  assert.match(page, /bindtap="onTodayMostItemTap"/)
+  assert.match(page, /bindtap="onTodayMostTap"/)
   assert.match(page, /bind:plus="onPlusTap"/)
   assert.match(logic, /pages\/analysis-user-detail\/index\?id=/)
   assert.match(logic, /const id = event\.detail\?\.id \?\? \(event\.currentTarget\.dataset\.id as HomeTabId \| undefined\)/)
@@ -651,6 +704,7 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   const header = read('miniprogram/components/notification-header/index.wxml')
   const styles = read('miniprogram/pages/notifications/notifications.less')
   const service = read('miniprogram/services/notifications.ts')
+  const mapper = read('miniprogram/utils/notifications.ts')
   const types = read('miniprogram/types/notifications.ts')
   const config = JSON.parse(read('miniprogram/pages/notifications/notifications.json'))
 
@@ -666,8 +720,9 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   assert.match(styles, /\.notification-card \{[\s\S]*min-height: 216rpx;[\s\S]*border-radius: 40rpx;[\s\S]*background: #ffffff;/)
   assert.match(styles, /\.notification-card__thumbnail \{[\s\S]*width: 100rpx;[\s\S]*height: 136rpx;/)
   assert.match(styles, /\.notification-card__status--high \{[\s\S]*background: #ffd7ce;[\s\S]*color: #ff4343;/)
-  assert.match(service, /formatMonthDayTime\(item\.lastViewTime\)/)
-  assert.match(service, /statusLabel: buildNotificationStatus\(item\)/)
+  assert.match(mapper, /formatMonthDayTime\(event\.viewTime\)/)
+  assert.match(mapper, /statusLabel: buildNotificationStatus\(event\)/)
+  assert.match(service, /mapNotificationEvent/)
   assert.match(types, /statusLabel: string/)
   assert.equal(config.usingComponents['bottom-tab-bar'], '/components/bottom-tab-bar/bottom-tab-bar')
 
@@ -681,13 +736,71 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   }
 })
 
-test('notifications map intent customers from the analysis API', () => {
+test('notifications map each browse from the notify list API', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/notifications.ts')
 
   assert.doesNotMatch(config, /NOTIFICATION_DATA_SOURCE/)
-  assert.match(service, /path: '\/analysis\/intent\/list'/)
+  assert.match(service, /path: '\/analysis\/notify\/list'/)
+  assert.doesNotMatch(service, /path: '\/analysis\/intent\/list'/)
   assert.doesNotMatch(service, /from '\.\.\/mocks\//)
+})
+
+test('notification page keeps one card for each browse of the same user', async () => {
+  const { groupNotificationCards, mapNotificationEvent } = await import('../miniprogram/utils/notifications.ts')
+  const first = mapNotificationEvent({
+    id: '101',
+    customerId: 'c1',
+    nickname: '用户甲',
+    avatar: null,
+    materialId: '10',
+    materialTitle: '作品A',
+    actionType: 'play',
+    duration: 8,
+    progress: 40,
+    completed: 0,
+    intentLevel: 'medium',
+    viewTime: '2026-08-26 12:00:00',
+  }, '', '')
+  const second = mapNotificationEvent({
+    id: '102',
+    customerId: 'c1',
+    nickname: '用户甲',
+    avatar: null,
+    materialId: '10',
+    materialTitle: '作品A',
+    actionType: 'play',
+    duration: 20,
+    progress: 100,
+    completed: 1,
+    intentLevel: 'medium',
+    viewTime: '2026-08-26 11:00:00',
+  }, '', '')
+  const forward = mapNotificationEvent({
+    id: '103',
+    customerId: 'c1',
+    nickname: '用户甲',
+    avatar: null,
+    materialId: '10',
+    materialTitle: '作品A',
+    actionType: 'forward',
+    duration: 0,
+    progress: 0,
+    completed: 0,
+    intentLevel: 'medium',
+    viewTime: '2026-08-25 18:00:00',
+  }, '', '')
+  const groups = groupNotificationCards([first, second, forward])
+
+  assert.equal(first.userId, second.userId)
+  assert.notEqual(first.id, second.id)
+  assert.equal(first.action, 'reading')
+  assert.equal(second.statusLabel, '该用户已完成浏览')
+  assert.equal(forward.action, 'forward')
+  assert.equal(groups.length, 2)
+  assert.equal(groups[0].id, '2026-08-26')
+  assert.equal(groups[0].items.length, 2)
+  assert.equal(groups[1].items.length, 1)
 })
 
 test('notification header and filters stay fixed while the card list scrolls', () => {
@@ -822,12 +935,72 @@ test('user detail page follows Figma 497:4640', () => {
   assert.match(styles, /\.user-detail__copy-feedback \{[\s\S]*width: 530rpx;[\s\S]*border-radius: 28rpx;[\s\S]*background: rgba\(0, 0, 0, 0\.8\);/)
   assert.match(logic, /onCopyUsername\(\)/)
   assert.match(logic, /onContactTap\(\)/)
+  assert.match(logic, /copyUsername\(\)/)
   assert.match(logic, /noticeVisible: false/)
   assert.match(markup, /微信名称复制成功/)
   assert.match(service, /getAnalysisUserDetail/)
   assert.match(service, /\/analysis\/customer\/history/)
-  assert.match(service, /readCount: '1'/)
-  assert.match(service, /shareCount: '0'/)
+  assert.match(service, /aggregateCustomerHistoryByMaterial/)
+  assert.match(service, /readCount: formatCount\(record\.viewCount\)/)
+  assert.match(service, /shareCount: formatCount\(record\.shareCount\)/)
+})
+
+test('user detail contact copies the username', () => {
+  const copied = []
+  const page = loadPageDefinition('miniprogram/pages/analysis-user-detail/index.ts', {
+    getAnalysisUserDetail: () => Promise.resolve(null),
+    wx: {
+      setClipboardData: ({ data, success }) => {
+        copied.push(data)
+        success?.()
+      },
+      hideToast: () => {},
+    },
+  })
+  const context = {
+    data: { detail: { profile: { name: '测试用户' } }, noticeVisible: false },
+    noticeTimer: null,
+    setData(update) { Object.assign(this.data, update) },
+    copyUsername: page.copyUsername,
+    showNotice() { this.setData({ noticeVisible: true }) },
+  }
+
+  page.onContactTap.call(context)
+
+  assert.deepEqual(copied, ['测试用户'])
+  assert.equal(context.data.noticeVisible, true)
+})
+
+test('user detail history merges the same work into one record', async () => {
+  const { aggregateCustomerHistoryByMaterial } = await import('../miniprogram/utils/analysis-users.ts')
+  const merged = aggregateCustomerHistoryByMaterial([
+    { materialId: 10, title: '作品A', fileType: 'VIDEO', duration: 0, progress: 0, completed: 0, viewTime: '2026-08-26 13:00:00', actionType: 'forward' },
+    { materialId: 10, title: '作品A', fileType: 'VIDEO', duration: 10, progress: 40, completed: 0, viewTime: '2026-08-26 12:00:00', actionType: 'play' },
+    { materialId: 10, title: '作品A', fileType: 'VIDEO', duration: 20, progress: 80, completed: 1, viewTime: '2026-08-25 12:00:00', actionType: 'play' },
+    { materialId: 10, title: '作品A', fileType: 'VIDEO', duration: 5, progress: 10, completed: 0, viewTime: '2026-08-25 11:00:00', actionType: 'end' },
+    { materialId: 11, title: '作品B', fileType: 'PDF', duration: 5, progress: 10, completed: 0, viewTime: '2026-08-24 12:00:00', actionType: 'play' },
+  ])
+
+  assert.equal(merged.length, 2)
+  assert.equal(merged[0].materialId, '10')
+  assert.equal(merged[0].progress, 80)
+  assert.equal(merged[0].duration, 30)
+  assert.equal(merged[0].viewCount, 2)
+  assert.equal(merged[0].completeCount, 1)
+  assert.equal(merged[0].shareCount, 1)
+  assert.equal(merged[0].viewTime, '2026-08-26 13:00:00')
+  assert.equal(merged[1].materialId, '11')
+  assert.equal(merged[1].viewCount, 1)
+  assert.equal(merged[1].shareCount, 0)
+
+  const missingAction = aggregateCustomerHistoryByMaterial([
+    { materialId: '9', title: '旧数据', fileType: 'PDF', duration: 3, progress: 15, completed: 0, viewTime: '2026-08-20 10:00:00' },
+    { materialId: '9', title: '旧数据', fileType: 'PDF', duration: 4, progress: 20, completed: 0, viewTime: '2026-08-19 10:00:00' },
+  ])
+  assert.equal(missingAction.length, 1)
+  assert.equal(missingAction[0].viewCount, 2)
+  assert.equal(missingAction[0].duration, 7)
+  assert.equal(missingAction[0].progress, 20)
 })
 
 test('tapping a user reading record navigates to that content analysis detail', () => {
@@ -1026,6 +1199,8 @@ test('material detail opens image preview, video player and PDF reader', () => {
   assert.match(markup, /<video[\s\S]*id="materialVideo"[\s\S]*src="\{\{detail\.videoUrl\}\}"/)
   assert.match(markup, /bindtap="onPdfOpenTap"/)
   assert.match(markup, /class="material-detail__pdf-preview" src="\{\{detail\.previewUrl\}\}"/)
+  assert.doesNotMatch(markup, /点击查看/)
+  assert.doesNotMatch(markup, /material-detail__pdf-open/)
   assert.match(markup, /bindtap="onImageTap"/)
   assert.match(logic, /wx\.previewImage/)
   assert.match(logic, /\/pages\/document-reader\/index\?/)
@@ -1082,6 +1257,35 @@ test('friend material views report play and forward tracking events', () => {
 
   assert.match(homeLogic, /shareTrackingId/)
   assert.match(homeLogic, /buildMaterialSharePath\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
+})
+
+test('shared material opens home first so back does not leave the mini program', async () => {
+  const {
+    buildHomeShareQuery,
+    buildMaterialDetailPath,
+    buildMaterialSharePath,
+    buildMaterialShareQuery,
+    HOME_PAGE_PATH,
+    MATERIAL_DETAIL_PATH,
+  } = await import('../miniprogram/utils/share-material.ts')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const detailLogic = read('miniprogram/pages/material-detail/index.ts')
+  const navigationLogic = read('miniprogram/components/navigation-bar/navigation-bar.ts')
+
+  assert.equal(HOME_PAGE_PATH, '/pages/index/index')
+  assert.equal(MATERIAL_DETAIL_PATH, '/pages/material-detail/index')
+  assert.equal(buildMaterialSharePath('abc', 't1'), '/pages/index/index?materialId=abc&trackingId=t1')
+  assert.equal(buildHomeShareQuery('abc', 't1'), 'materialId=abc&trackingId=t1')
+  assert.equal(buildMaterialDetailPath('abc', 't1'), '/pages/material-detail/index?id=abc&trackingId=t1')
+  assert.equal(buildMaterialShareQuery('abc', 't1'), 'id=abc&trackingId=t1')
+
+  assert.match(homeLogic, /options\.materialId/)
+  assert.match(homeLogic, /buildMaterialDetailPath\(options\.materialId, options\.trackingId\)/)
+  assert.match(homeLogic, /buildHomeShareQuery\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
+  assert.match(detailLogic, /isRootPageStack\(\)/)
+  assert.match(detailLogic, /wx\.reLaunch\(\{ url: buildMaterialSharePath\(materialId, trackingId\) \}\)/)
+  assert.match(navigationLogic, /fail: \(\) => \{/)
+  assert.match(navigationLogic, /wx\.reLaunch\(\{ url: HOME_PAGE_PATH \}\)/)
 })
 
 test('material detail shares to friends and guides moments sharing', () => {
@@ -1286,6 +1490,12 @@ test('analysis detail page follows Figma 497:5232', () => {
   assert.match(styles, /\.detail-user__tag--high \{[^}]*color: #ff4343;[^}]*background: #ffd7ce;/)
   assert.match(service, /getAnalysisDetail/)
   assert.match(service, /\/analysis\/content\/detail/)
+  assert.match(service, /if \(!detail && !material\) return null/)
+  assert.match(service, /detail\?\.audienceList \?\? \[\]/)
+  assert.doesNotMatch(service, /if \(!detail\) return null/)
+  assert.match(markup, /wx:if="\{\{hasVisibleIntentUsers\}\}"/)
+  assert.match(markup, /class="detail-intent__empty-state"/)
+  assert.match(markup, /没有意向用户/)
 })
 
 test('analysis detail reuses the analysis header title typography', () => {
@@ -1329,7 +1539,8 @@ test('analysis total tab follows Figma 587:8623 overview and peak layout', () =>
     assert.match(markup, /数据总览/)
     assert.match(markup, /analysisData\.totalData\.heroMetrics/)
     assert.match(markup, /浏览峰值/)
-    assert.match(markup, /<analysis-trend-chart host-class="analysis-total__trend-chart" points="\{\{visibleAnalysisReadTrend\}\}" slot-count="\{\{analysisTrendSlotCount\}\}" \/>/)
+    assert.match(markup, /<analysis-trend-chart host-class="analysis-total__trend-chart" points="\{\{visibleAnalysisReadTrend\}\}" slot-count="\{\{analysisTrendSlotCount\}\}" axis-max="\{\{chartAxisMax\}\}" axis-scale="\{\{chartAxisScale\}\}" \/>/)
+    assert.doesNotMatch(markup, /chartHourLabels|analysis-total__chart-hours|analysis-total__chart-hour|hour-scale|chartHourScale|analysis-total__chart--month/)
     assert.doesNotMatch(markup, /class="analysis-total__chart-labels"|class="analysis-total__chart-label"/)
     assert.doesNotMatch(markup, /analysis-total__chart-bars|analysis-total__chart-bar|analysis-total__chart-line-dot|read-trend-line\.svg/)
     assert.doesNotMatch(markup, /阅读数据/)
@@ -1341,8 +1552,20 @@ test('analysis total tab follows Figma 587:8623 overview and peak layout', () =>
   assert.match(pageStyles, /\.analysis-total__overview-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid @content-box-border;[\s\S]*?border-radius: 40rpx;/)
   assert.match(pageStyles, /\.analysis-total__chart-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid @content-box-border;[\s\S]*?border-radius: 40rpx;/)
   assert.match(pageStyles, /\.analysis-total__trend-chart\s*\{[\s\S]*?position: relative;[\s\S]*?height: 304rpx;/)
+  assert.match(pageStyles, /\.analysis-total__chart--axis \{[\s\S]*height: 336rpx;/)
+  assert.match(pageStyles, /\.analysis-total__chart--axis \.analysis-total__trend-chart \{[\s\S]*height: 336rpx;/)
+  assert.doesNotMatch(pageStyles, /analysis-total__chart-hours|analysis-total__chart-hour|analysis-total__chart--day/)
   assert.match(types, /heroMetrics: AnalysisTotalHeroMetric\[\]/)
+  assert.match(types, /export type AnalysisReadRange = 'day' \| 'week' \| 'month' \| 'total'/)
   assert.match(service, /heroMetrics:/)
+  assert.match(service, /path: '\/analysis\/trend'/)
+  assert.match(service, /timeRange: 'today'/)
+  assert.match(service, /timeRange: 'week'/)
+  assert.match(service, /timeRange: 'month'/)
+  assert.match(service, /timeRange: 'all'/)
+  assert.match(service, /label: String\(weekday\)/)
+  assert.match(service, /label: String\(day\)/)
+  assert.match(service, /label: String\(week\)/)
 })
 
 test('analysis total hero metrics are direct flex items', () => {
@@ -1360,18 +1583,20 @@ test('analysis total hero metrics are direct flex items', () => {
   assert.match(styles, /\.analysis-total__hero-metric--secondary \{[\s\S]*border-left: 2rpx solid #f0f0f0;/)
 })
 
-test('analysis trend chart renders in the scrolling content layer without horizontal time labels', () => {
+test('analysis trend chart renders its day ticks inside the scrolling SVG layer', () => {
   const componentMarkup = read('miniprogram/components/analysis-trend-chart/index.wxml')
   const componentLogic = read('miniprogram/components/analysis-trend-chart/index.ts')
   const componentStyles = read('miniprogram/components/analysis-trend-chart/index.less')
   const componentConfig = read('miniprogram/components/analysis-trend-chart/index.json')
 
   assert.match(componentMarkup, /<image wx:if="\{\{chartSource\}\}" class="analysis-trend-chart__image" src="\{\{chartSource\}\}" mode="scaleToFill" \/>/)
+  assert.match(componentMarkup, /analysis-trend-chart--axis/)
   assert.doesNotMatch(componentMarkup, /<canvas|analysis-trend-chart__labels|analysis-trend-chart__label/)
   assert.doesNotMatch(componentLogic, /createSelectorQuery|getContext\(['"]2d['"]\)|bezierCurveTo/)
   assert.match(componentLogic, /externalClasses:\s*\['host-class'\]/)
   assert.doesNotMatch(componentLogic, /showLabels/)
-  assert.match(componentStyles, /\.analysis-trend-chart__image\s*\{[\s\S]*?width: 100%;[\s\S]*?height: 304rpx;/)
+  assert.match(componentStyles, /\.analysis-trend-chart--axis\s*\{[\s\S]*?height: 336rpx;/)
+  assert.match(componentStyles, /\.analysis-trend-chart__image\s*\{[\s\S]*?width: 100%;[\s\S]*?height: 100%;/)
   assert.match(componentConfig, /"component":\s*true/)
 })
 
@@ -1417,18 +1642,153 @@ test('analysis trend chart converts supplied values into a smooth Figma-sized SV
 
     assert.ok(componentDefinition.properties.slotCount)
     assert.equal(componentDefinition.properties.slotCount.value, 0)
-    assert.equal(typeof componentDefinition.observers['points, slotCount'], 'function')
+    assert.ok(componentDefinition.properties.axisMax)
+    assert.ok(componentDefinition.properties.axisScale)
+    assert.equal(componentDefinition.properties.axisScale.value, '')
+    assert.equal(typeof componentDefinition.observers['points, slotCount, axisMax, axisScale'], 'function')
 
     const updates = []
-    componentDefinition.observers['points, slotCount'].call(
+    componentDefinition.observers['points, slotCount, axisMax, axisScale'].call(
       { setData(update) { updates.push(update) } },
       Array.from({ length: 12 }, (_, index) => ({ id: `component-hour-${index}`, label: String(index), value: '750' })),
       24,
+      1500,
+      '',
     )
     const componentSvg = decodeURIComponent(updates[0].chartSource.slice(updates[0].chartSource.indexOf(',') + 1))
     const componentPath = componentSvg.match(/<path d="([^"]+)"/)?.[1] ?? ''
 
     assert.match(componentPath, /135 75\.5$/)
+
+    const hourScaleSource = chartModule.buildAnalysisTrendSvgSource(
+      Array.from({ length: 13 }, (_, index) => ({ id: `noon-${index}`, label: String(index), value: '750' })),
+      24,
+      1500,
+      'hour',
+    )
+    const hourScaleSvg = decodeURIComponent(hourScaleSource.slice(hourScaleSource.indexOf(',') + 1))
+    const hourScalePath = hourScaleSvg.match(/<path d="([^"]+)"/)?.[1] ?? ''
+
+    assert.match(hourScalePath, /135 75\.5$/)
+    assert.match(hourScaleSvg, /viewBox="0 0 270 168"/)
+    assert.match(hourScaleSvg, /<text x="0" y="165"[^>]*text-anchor="start">0<\/text>/)
+    assert.match(hourScaleSvg, /<text x="45" y="165"[^>]*text-anchor="middle">4<\/text>/)
+    assert.match(hourScaleSvg, /<text x="135" y="165"[^>]*text-anchor="middle">12<\/text>/)
+    assert.match(hourScaleSvg, /<text x="270" y="165"[^>]*text-anchor="end">24<\/text>/)
+
+    const scaledSource = chartModule.buildAnalysisTrendSvgSource(
+      [
+        { id: 'low', label: '0', value: '0' },
+        { id: 'high', label: '12', value: '9' },
+      ],
+      24,
+      9,
+      'hour',
+    )
+    const scaledSvg = decodeURIComponent(scaledSource.slice(scaledSource.indexOf(',') + 1))
+    const scaledPath = scaledSvg.match(/<path d="([^"]+)"/)?.[1] ?? ''
+
+    assert.match(scaledPath, /135 0\.5$/)
+
+    const alignedTickSource = chartModule.buildAnalysisTrendSvgSource(
+      [
+        { id: 'hour-4', label: '4', value: '750' },
+        { id: 'hour-20', label: '20', value: '750' },
+      ],
+      24,
+      1500,
+      'hour',
+    )
+    const alignedTickSvg = decodeURIComponent(alignedTickSource.slice(alignedTickSource.indexOf(',') + 1))
+    const alignedTickPath = alignedTickSvg.match(/<path d="([^"]+)"/)?.[1] ?? ''
+
+    assert.match(alignedTickPath, /^M45 75\.5 .+ 225 75\.5$/)
+
+    const weekScaleSource = chartModule.buildAnalysisTrendSvgSource(
+      [
+        { id: 'mon', label: '1', value: '0' },
+        { id: 'wed', label: '3', value: '750' },
+        { id: 'sun', label: '7', value: '0' },
+      ],
+      7,
+      1500,
+      'weekday',
+    )
+    const weekScaleSvg = decodeURIComponent(weekScaleSource.slice(weekScaleSource.indexOf(',') + 1))
+    const weekScalePath = weekScaleSvg.match(/<path d="([^"]+)"/)?.[1] ?? ''
+
+    assert.match(weekScaleSvg, /viewBox="0 0 270 168"/)
+    assert.match(weekScaleSvg, /<text x="0" y="165"[^>]*text-anchor="start">1<\/text>/)
+    assert.match(weekScaleSvg, /<text x="135" y="165"[^>]*text-anchor="middle">4<\/text>/)
+    assert.match(weekScaleSvg, /<text x="270" y="165"[^>]*text-anchor="end">7<\/text>/)
+    assert.match(weekScalePath, /^M0 150\.5 .+ 90 75\.5 .+ 270 150\.5$/)
+
+    const monthScaleSource = chartModule.buildAnalysisTrendSvgSource(
+      [
+        { id: 'd1', label: '1', value: '0' },
+        { id: 'd16', label: '16', value: '750' },
+        { id: 'd31', label: '31', value: '0' },
+      ],
+      31,
+      1500,
+      'month',
+    )
+    const monthScaleSvg = decodeURIComponent(monthScaleSource.slice(monthScaleSource.indexOf(',') + 1))
+    const monthScalePath = monthScaleSvg.match(/<path d="([^"]+)"/)?.[1] ?? ''
+
+    assert.match(monthScaleSvg, /viewBox="0 0 270 168"/)
+    assert.match(monthScaleSvg, /<text x="0" y="165"[^>]*text-anchor="start">1<\/text>/)
+    assert.match(monthScaleSvg, /<text x="45" y="165"[^>]*text-anchor="middle">6<\/text>/)
+    assert.match(monthScaleSvg, /<text x="135" y="165"[^>]*text-anchor="middle">16<\/text>/)
+    assert.match(monthScaleSvg, /<text x="270" y="165"[^>]*text-anchor="end">31<\/text>/)
+    assert.doesNotMatch(monthScaleSvg, />2<\/text>/)
+    assert.doesNotMatch(monthScaleSvg, />7<\/text>/)
+    assert.match(monthScalePath, /^M0 150\.5 .+ 135 75\.5 .+ 270 150\.5$/)
+
+    const shortMonthSource = chartModule.buildAnalysisTrendSvgSource(
+      [
+        { id: 'd1', label: '1', value: '750' },
+        { id: 'd30', label: '30', value: '750' },
+      ],
+      30,
+      1500,
+      'month',
+    )
+    const shortMonthSvg = decodeURIComponent(shortMonthSource.slice(shortMonthSource.indexOf(',') + 1))
+
+    assert.match(shortMonthSvg, /<text x="0" y="165"[^>]*text-anchor="start">1<\/text>/)
+    assert.match(shortMonthSvg, /<text x="232\.76" y="165"[^>]*text-anchor="middle">26<\/text>/)
+    assert.doesNotMatch(shortMonthSvg, />30<\/text>/)
+    assert.doesNotMatch(shortMonthSvg, />31<\/text>/)
+
+    const totalWeekSource = chartModule.buildAnalysisTrendSvgSource(
+      [
+        { id: 'w1', label: '1', value: '0' },
+        { id: 'w4', label: '4', value: '750' },
+        { id: 'w6', label: '6', value: '0' },
+      ],
+      6,
+      1500,
+      'week',
+    )
+    const totalWeekSvg = decodeURIComponent(totalWeekSource.slice(totalWeekSource.indexOf(',') + 1))
+    const totalWeekPath = totalWeekSvg.match(/<path d="([^"]+)"/)?.[1] ?? ''
+
+    assert.match(totalWeekSvg, /viewBox="0 0 270 168"/)
+    assert.match(totalWeekSvg, /<text x="0" y="165"[^>]*text-anchor="start">1<\/text>/)
+    assert.match(totalWeekSvg, /<text x="54" y="165"[^>]*text-anchor="middle">2<\/text>/)
+    assert.match(totalWeekSvg, /<text x="108" y="165"[^>]*text-anchor="middle">3<\/text>/)
+    assert.match(totalWeekSvg, /<text x="162" y="165"[^>]*text-anchor="middle">4<\/text>/)
+    assert.match(totalWeekSvg, /<text x="216" y="165"[^>]*text-anchor="middle">5<\/text>/)
+    assert.match(totalWeekSvg, /<text x="270" y="165"[^>]*text-anchor="end">6<\/text>/)
+    assert.doesNotMatch(totalWeekSvg, />7<\/text>|>10<\/text>/)
+    assert.match(totalWeekPath, /^M0 150\.5 .+ 162 75\.5 .+ 270 150\.5$/)
+
+    const emptyWeekSource = chartModule.buildAnalysisTrendSvgSource([], 6, 3, 'week')
+    const emptyWeekSvg = decodeURIComponent(emptyWeekSource.slice(emptyWeekSource.indexOf(',') + 1))
+    assert.match(emptyWeekSvg, /<text x="0" y="165"[^>]*text-anchor="start">1<\/text>/)
+    assert.match(emptyWeekSvg, /<text x="270" y="165"[^>]*text-anchor="end">6<\/text>/)
+    assert.doesNotMatch(emptyWeekSvg, /<path /)
   } finally {
     globalThis.Component = originalComponent
   }
@@ -1470,6 +1830,7 @@ test('home today data opens total analysis with the day period selected', () => 
     getHomeGreeting: () => '',
     getDefaultDateRange: () => ({ startDate: '2026-08-20', endDate: '2026-08-26' }),
     getDateRangeLimits: () => ({ minDate: '2026-06-26', maxDate: '2026-08-26' }),
+    ...trendPageDeps,
   })
   const calls = []
   const context = {
@@ -1483,8 +1844,9 @@ test('home today data opens total analysis with the day period selected', () => 
   page.onTodayDataTap.call(context)
 
   assert.equal(context.data.activeTotalPeriod, 'day')
-  assert.equal(context.data.activeAnalysisReadRange, 'week')
+  assert.equal(context.data.activeAnalysisReadRange, 'day')
   assert.equal(context.data.analysisTrendSlotCount, 24)
+  assert.equal(context.data.chartAxisScale, 'hour')
   assert.deepEqual(calls, [['tab', 3], ['analysis', 2], ['period', 'day']])
 })
 
@@ -1492,6 +1854,7 @@ test('analysis total daily range reserves 24 hourly chart positions', () => {
   const page = loadPageDefinition('miniprogram/pages/analysis/index.ts', {
     getDefaultDateRange: () => ({ startDate: '2026-08-20', endDate: '2026-08-26' }),
     getDateRangeLimits: () => ({ minDate: '2026-06-26', maxDate: '2026-08-26' }),
+    ...trendPageDeps,
   })
   const calls = []
   const context = {
@@ -1503,9 +1866,113 @@ test('analysis total daily range reserves 24 hourly chart positions', () => {
   page.onTotalPeriodTap.call(context, { detail: { id: 'day', index: 0 } })
 
   assert.equal(context.data.activeTotalPeriod, 'day')
-  assert.equal(context.data.activeAnalysisReadRange, 'week')
+  assert.equal(context.data.activeAnalysisReadRange, 'day')
   assert.equal(context.data.analysisTrendSlotCount, 24)
+  assert.equal(context.data.chartAxisScale, 'hour')
   assert.deepEqual(calls, ['day'])
+})
+
+test('analysis total weekly range uses weekday axis 1 to 7', () => {
+  const page = loadPageDefinition('miniprogram/pages/analysis/index.ts', {
+    getDefaultDateRange: () => ({ startDate: '2026-08-20', endDate: '2026-08-26' }),
+    getDateRangeLimits: () => ({ minDate: '2026-06-26', maxDate: '2026-08-26' }),
+    ...trendPageDeps,
+  })
+  const calls = []
+  const context = {
+    data: {},
+    setData(update) { Object.assign(this.data, update) },
+    loadAnalysis(period) { calls.push(period) },
+  }
+
+  page.onTotalPeriodTap.call(context, { detail: { id: 'week', index: 1 } })
+
+  assert.equal(context.data.activeTotalPeriod, 'week')
+  assert.equal(context.data.activeAnalysisReadRange, 'week')
+  assert.equal(context.data.analysisTrendSlotCount, 7)
+  assert.equal(context.data.chartAxisScale, 'weekday')
+  assert.deepEqual(calls, ['week'])
+})
+
+test('analysis total monthly range uses calendar-month axis 1 to last day', () => {
+  const page = loadPageDefinition('miniprogram/pages/analysis/index.ts', {
+    getDefaultDateRange: () => ({ startDate: '2026-08-20', endDate: '2026-08-26' }),
+    getDateRangeLimits: () => ({ minDate: '2026-06-26', maxDate: '2026-08-26' }),
+    ...trendPageDeps,
+  })
+  const calls = []
+  const context = {
+    data: {},
+    setData(update) { Object.assign(this.data, update) },
+    loadAnalysis(period) { calls.push(period) },
+  }
+
+  page.onTotalPeriodTap.call(context, { detail: { id: 'month', index: 2 } })
+
+  assert.equal(context.data.activeTotalPeriod, 'month')
+  assert.equal(context.data.activeAnalysisReadRange, 'month')
+  assert.equal(context.data.analysisTrendSlotCount, currentMonthDays)
+  assert.equal(context.data.chartAxisScale, 'month')
+  assert.deepEqual(calls, ['month'])
+})
+
+test('analysis total all-time range uses weekly axis for the latest two months', () => {
+  const page = loadPageDefinition('miniprogram/pages/analysis/index.ts', {
+    getDefaultDateRange: () => ({ startDate: '2026-08-20', endDate: '2026-08-26' }),
+    getDateRangeLimits: () => ({ minDate: '2026-06-26', maxDate: '2026-08-26' }),
+    ...trendPageDeps,
+  })
+  const calls = []
+  const context = {
+    data: {},
+    setData(update) { Object.assign(this.data, update) },
+    loadAnalysis(period) { calls.push(period) },
+  }
+
+  page.onTotalPeriodTap.call(context, { detail: { id: 'total', index: 3 } })
+
+  assert.equal(context.data.activeTotalPeriod, 'total')
+  assert.equal(context.data.activeAnalysisReadRange, 'total')
+  assert.equal(context.data.analysisTrendSlotCount, totalTrendWeeks)
+  assert.equal(context.data.chartAxisScale, 'week')
+  assert.deepEqual(calls, ['total'])
+})
+
+test('day peak chart axis scales with view volume', async () => {
+  const { buildChartAxisMax, buildChartAxisTicks, buildTotalTrendState } = await import('../miniprogram/utils/analysis-trend.ts')
+
+  assert.equal(buildChartAxisMax([]), 3)
+  assert.equal(buildChartAxisMax([0]), 3)
+  assert.equal(buildChartAxisMax([7]), 9)
+  assert.equal(buildChartAxisMax([1500]), 1500)
+  assert.deepEqual(buildChartAxisTicks(9).map((tick) => tick.value), ['9', '6', '3', '0'])
+
+  const dayState = buildTotalTrendState('day', [
+    { id: 'h0', label: '0', value: '1' },
+    { id: 'h12', label: '12', value: '7' },
+  ])
+  assert.equal(dayState.chartAxisScale, 'hour')
+  assert.equal(dayState.chartAxisMax, 9)
+  assert.equal(dayState.analysisTrendSlotCount, 24)
+
+  const weekState = buildTotalTrendState('week', [
+    { id: 'd1', label: '1', value: '0' },
+    { id: 'd3', label: '3', value: '7' },
+  ])
+  assert.equal(weekState.chartAxisScale, 'weekday')
+  assert.equal(weekState.chartAxisMax, 9)
+  assert.equal(weekState.analysisTrendSlotCount, 7)
+
+  const monthState = buildTotalTrendState('month', [{ id: 'd1', label: '1', value: '20' }])
+  assert.equal(monthState.chartAxisScale, 'month')
+  assert.equal(monthState.chartAxisMax, 30)
+  assert.equal(monthState.analysisTrendSlotCount, currentMonthDays)
+
+  const totalState = buildTotalTrendState('total', [{ id: 'w1', label: '1', value: '7' }])
+  assert.equal(totalState.chartAxisScale, 'week')
+  assert.equal(totalState.chartAxisMax, 9)
+  assert.equal(totalState.activeAnalysisReadRange, 'total')
+  assert.equal(totalState.analysisTrendSlotCount, 6)
 })
 
 test('home today data card follows Figma 478:1262', async () => {
