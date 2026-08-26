@@ -26,10 +26,11 @@ import {
   formatMonthDay,
   formatSeconds,
 } from '../utils/format'
+import type { DateRange } from '../utils/date-range'
 import { request, resolveMediaUrl, runRequestQueue } from './request'
 
 /** 分析页时间筛选：日/周/月对应后端 today/week/month；「总」受后端 custom 上限约束取最近 62 天（待后端确认全量口径） */
-export type AnalysisTimeRange = 'day' | 'week' | 'month' | 'total'
+export type AnalysisTimeRange = 'day' | 'week' | 'month' | 'total' | 'custom'
 
 const MAX_QUERY_RANGE_DAYS = 62
 
@@ -48,17 +49,17 @@ const intentLevelLabels: Record<AnalysisIntentLevel, string> = {
   low: '低意向',
 }
 
-const fileTypeLabels: Record<string, string> = {
-  PDF: 'PDF',
-  IMAGE: '图片',
-  VIDEO: '视频',
-  TABLE: '表格',
-}
-
-function buildPeriodQuery(period: AnalysisTimeRange): Record<string, string> {
+function buildPeriodQuery(period: AnalysisTimeRange, customRange?: DateRange): Record<string, string> {
   if (period === 'day') return { timeRange: 'today' }
   if (period === 'week') return { timeRange: 'week' }
   if (period === 'month') return { timeRange: 'month' }
+  if (period === 'custom' && customRange) {
+    return {
+      timeRange: 'custom',
+      startDate: `${customRange.startDate} 00:00:00`,
+      endDate: `${customRange.endDate} 23:59:59`,
+    }
+  }
   return { ...buildCustomRangeQuery(MAX_QUERY_RANGE_DAYS) }
 }
 
@@ -99,7 +100,7 @@ function buildCardMetrics(viewCount: number | null | undefined, forwardCount: nu
       { label: '观看人数', value: formatCount(viewerCount) },
     ],
     compact: [
-      { label: '浏览', value: formatCount(viewCount) },
+      { label: '浏览次数', value: formatCount(viewCount) },
       { label: '转发', value: formatCount(forwardCount) },
       { label: '完播', value: formatCount(completeCount) },
     ],
@@ -120,7 +121,7 @@ interface DailyViewCount {
 
 let readTrendsCache: { expiresAt: number; value: Record<AnalysisReadRange, AnalysisChartPoint[]> } | null = null
 
-/** 后端无按日趋势接口，按天聚合 dashboard 阅读数得到趋势；单日失败按 0 降级 */
+/** 后端无按日趋势接口，按天聚合 dashboard 浏览数得到趋势；单日失败按 0 降级 */
 function fetchDailyViewCounts(days: number): Promise<DailyViewCount[]> {
   const now = new Date()
   const tasks: Array<() => Promise<DailyViewCount>> = []
@@ -173,10 +174,10 @@ function getReadTrends(): Promise<Record<AnalysisReadRange, AnalysisChartPoint[]
   })
 }
 
-export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<AnalysisViewModel> {
+export function getAnalysisOverview(period: AnalysisTimeRange = 'day', customRange?: DateRange): Promise<AnalysisViewModel> {
   if (ANALYSIS_DATA_SOURCE === 'mock') return Promise.resolve(getAnalysisStyleMock())
 
-  const periodQuery = buildPeriodQuery(period)
+  const periodQuery = buildPeriodQuery(period, customRange)
   const totalQuery = buildPeriodQuery('total')
 
   return Promise.all([
@@ -192,7 +193,7 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
       return {
         summary: [
           { label: '总发布', value: formatCount(dashboard.totalPublishCount) },
-          { label: '总阅读次数', value: formatCount(dashboard.totalViewCount) },
+          { label: '总浏览次数', value: formatCount(dashboard.totalViewCount) },
           { label: '总转发', value: formatCount(dashboard.totalForwardCount) },
         ],
         cards: contents.map(mapContentCard),
@@ -219,8 +220,8 @@ export function getAnalysisOverview(period: AnalysisTimeRange = 'day'): Promise<
         }),
         totalData: {
           heroMetrics: [
-            { label: '阅读总次数', value: formatCount(totalDashboard.totalViewCount), delta: '+0' },
-            { label: '阅读总人数', value: formatCount(totalDashboard.totalViewerCount), delta: '+0' },
+            { label: '浏览总次数', value: formatCount(totalDashboard.totalViewCount), delta: '+0' },
+            { label: '浏览总人数', value: formatCount(totalDashboard.totalViewerCount), delta: '+0' },
           ],
           overview: [
             { label: '总发布', value: formatCount(totalDashboard.totalPublishCount) },
@@ -329,6 +330,8 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
         completionCount: formatCount(customer?.completeCount ?? intent?.completed),
         shareCount: intent?.hasForwarded === 1 ? '1' : '0',
         viewDuration: formatSeconds(customer?.totalDuration),
+        // TODO(API): 后端确认用户对单个作品的意向标签后，映射高意向作品数。
+        highIntentContentCount: undefined,
       },
       // 后端观看历史暂不含单条转发数，shareCount 固定为 0（「转发」筛选相应为空）
       records: history.map((record, index) => ({
@@ -337,9 +340,9 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
         thumbnailUrl: coverByMaterial.get(String(record.materialId)) ?? '',
         title: record.title ?? '',
         date: formatMonthDay(record.viewTime),
-        type: fileTypeLabels[record.fileType ?? ''] ?? '内容',
         progress: `${record.progress ?? 0}%`,
         viewDuration: formatSeconds(record.duration),
+        readCount: '1',
         completionCount: record.completed === 1 ? '1' : '0',
         shareCount: '0',
       })),

@@ -22,13 +22,13 @@ const intentLabels: Record<HomeIntentLevel, string> = {
 
 const actionLabels = {
   forward: '“转发”了你的作品',
-  reading: '“阅读”了你的作品',
+  reading: '“浏览”了你的作品',
 } as const
 
 function buildNotificationStatus(item: ApiIntentCustomer): string {
   if (item.hasForwarded === 1) return '该用户转发了你的作品'
-  if (item.completed === 1) return '该用户已完成阅读'
-  return '该用户尚未完成阅读'
+  if (item.completed === 1) return '该用户已完成浏览'
+  return '该用户尚未完成浏览'
 }
 
 function mapNotification(

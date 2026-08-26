@@ -53,8 +53,8 @@ export function getNotificationsMock(): NotificationsViewModel {
         label: '8月20日',
         items: [
           createCard('mock-notification-lin-xiaoman', 'mock-user-lin-xiaoman', 'high', 'forward', '“转发”了你的作品', '/assets/home-new/action-forward.svg', '/assets/analysis/user-avatar-01.jpg', '/assets/home-new/today-most-01.jpg', '该用户转发了你的作品', '林小满', '8月20日 14:30'),
-          createCard('mock-notification-zhou-zhixing', 'mock-user-zhou-zhixing', 'medium', 'reading', '“阅读”了你的作品', '/assets/home-new/action-reading.svg', '/assets/analysis/user-avatar-03.jpg', '/assets/home-new/today-most-02.jpg', '该用户已完成阅读', '周知行', '8月20日 13:18'),
-          createCard('mock-notification-gu-nanxing', 'mock-user-gu-nanxing', 'low', 'reading', '“阅读”了你的作品', '/assets/home-new/action-reading.svg', '/assets/analysis/user-avatar-05.jpg', '/assets/home-new/today-most-02.jpg', '该用户尚未完成阅读', '顾南星', '8月20日 11:42'),
+          createCard('mock-notification-zhou-zhixing', 'mock-user-zhou-zhixing', 'medium', 'reading', '“浏览”了你的作品', '/assets/home-new/action-reading.svg', '/assets/analysis/user-avatar-03.jpg', '/assets/home-new/today-most-02.jpg', '该用户已完成浏览', '周知行', '8月20日 13:18'),
+          createCard('mock-notification-gu-nanxing', 'mock-user-gu-nanxing', 'low', 'reading', '“浏览”了你的作品', '/assets/home-new/action-reading.svg', '/assets/analysis/user-avatar-05.jpg', '/assets/home-new/today-most-02.jpg', '该用户尚未完成浏览', '顾南星', '8月20日 11:42'),
         ],
       },
       {
@@ -62,8 +62,8 @@ export function getNotificationsMock(): NotificationsViewModel {
         label: '8月17日',
         items: [
           createCard('mock-notification-low-1', 'mock-notification-user-01', 'low', 'forward', '“转发”了你的作品', '/assets/notifications/action-forward.svg', duck, river, '未滑动看完所有图片'),
-          createCard('mock-notification-medium-1', 'mock-notification-user-02', 'medium', 'reading', '“阅读”了你的作品', '/assets/notifications/action-forward.svg', duck, river, '该用户浏览进度80%'),
-          createCard('mock-notification-high-1', 'mock-notification-user-03', 'high', 'reading', '“阅读”了你的AI', '/assets/notifications/action-reading.svg', cat, aquatic, '该用户转发了你的作品，查看2次以上'),
+          createCard('mock-notification-medium-1', 'mock-notification-user-02', 'medium', 'reading', '“浏览”了你的作品', '/assets/notifications/action-forward.svg', duck, river, '该用户浏览进度80%'),
+          createCard('mock-notification-high-1', 'mock-notification-user-03', 'high', 'reading', '“浏览”了你的AI', '/assets/notifications/action-reading.svg', cat, aquatic, '该用户转发了你的作品，查看2次以上'),
         ],
       },
       {
@@ -71,7 +71,7 @@ export function getNotificationsMock(): NotificationsViewModel {
         label: '8月17日',
         items: [
           createCard('mock-notification-low-2', 'mock-notification-user-04', 'low', 'forward', '“转发”了你的作品', '/assets/notifications/action-forward.svg', duck, river, '未滑动看完所有图片'),
-          createCard('mock-notification-medium-2', 'mock-notification-user-05', 'medium', 'reading', '“阅读”了你的作品', '/assets/notifications/action-forward.svg', duck, river, '该用户浏览进度80%'),
+          createCard('mock-notification-medium-2', 'mock-notification-user-05', 'medium', 'reading', '“浏览”了你的作品', '/assets/notifications/action-forward.svg', duck, river, '该用户浏览进度80%'),
         ],
       },
     ],

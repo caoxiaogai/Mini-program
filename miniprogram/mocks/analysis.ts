@@ -41,7 +41,7 @@ function createCard(
       { label: '观看人数', value: '1,231' },
     ],
     compactMetrics: [
-      { label: '浏览', value: '1,231' },
+      { label: '浏览次数', value: '1,231' },
       { label: '转发', value: forwardCount },
       { label: '完播', value: completionCount },
     ],
@@ -94,6 +94,7 @@ function createUserRecord(
   thumbnailUrl: string,
   title: string,
   progress = '10%',
+  overrides: Partial<AnalysisUserDetailViewModel['records'][number]> = {},
 ): AnalysisUserDetailViewModel['records'][number] {
   return {
     id,
@@ -101,11 +102,12 @@ function createUserRecord(
     thumbnailUrl,
     title,
     date: '8 月20日',
-    type: '视频',
     progress,
     viewDuration: '11s',
+    readCount: '1',
     completionCount: '0',
     shareCount: '1',
+    ...overrides,
   }
 }
 
@@ -122,13 +124,14 @@ export function getAnalysisUserDetailStyleMock(userId: string): AnalysisUserDeta
       completionCount: '23',
       shareCount: '23',
       viewDuration: '11s',
+      highIntentContentCount: 4,
     },
     records: [
-      createUserRecord('mock-user-record-01', 'mock-analysis-content-01', '/assets/analysis/content-01.jpg', 'AI Native 产品学习'),
-      createUserRecord('mock-user-record-02', 'mock-analysis-content-02', '/assets/materials/material-02.jpg', '资深AI-Native 全栈产品教程，一人...'),
-      createUserRecord('mock-user-record-03', 'mock-analysis-content-03', '/assets/home-new/today-most-01.jpg', '明日方舟，这个夏天很美好'),
-      createUserRecord('mock-user-record-04', 'mock-analysis-content-04', '/assets/notifications/thumb-river.png', '绿水青山就是金山银山'),
-      createUserRecord('mock-user-record-05', 'mock-analysis-content-05', '/assets/notifications/thumb-river.png', 'AI Native 产品学习'),
+      createUserRecord('mock-user-record-01', 'mock-analysis-content-01', '/assets/analysis/content-01.jpg', 'AI Native 产品学习', '10%', { readCount: '56', completionCount: '23', shareCount: '23', intentLevel: 'high', intentLabel: '高意向' }),
+      createUserRecord('mock-user-record-02', 'mock-analysis-content-02', '/assets/materials/material-02.jpg', '资深AI-Native 全栈产品教程，一人...', '30%', { readCount: '34', completionCount: '12', shareCount: '8', intentLevel: 'medium', intentLabel: '中意向' }),
+      createUserRecord('mock-user-record-03', 'mock-analysis-content-03', '/assets/home-new/today-most-01.jpg', '明日方舟，这个夏天很美好', '100%', { readCount: '21', completionCount: '18', shareCount: '16', intentLevel: 'high', intentLabel: '高意向' }),
+      createUserRecord('mock-user-record-04', 'mock-analysis-content-04', '/assets/notifications/thumb-river.png', '绿水青山就是金山银山', '10%', { readCount: '8', completionCount: '3', shareCount: '1', intentLevel: 'low', intentLabel: '低意向' }),
+      createUserRecord('mock-user-record-05', 'mock-analysis-content-05', '/assets/notifications/thumb-river.png', 'AI Native 产品学习', '60%', { readCount: '13', completionCount: '9', shareCount: '5', intentLevel: 'high', intentLabel: '高意向' }),
     ],
   }
 }
@@ -169,7 +172,7 @@ export function getAnalysisStyleMock(): AnalysisViewModel {
   return {
     summary: [
       { label: '总发布', value: '3' },
-      { label: '总阅读次数', value: '24,234' },
+      { label: '总浏览次数', value: '24,234' },
       { label: '总转发', value: '1,223' },
     ],
     cards: [
@@ -212,8 +215,8 @@ export function getAnalysisStyleMock(): AnalysisViewModel {
     audienceUsers,
     totalData: {
       heroMetrics: [
-        { label: '阅读总次数', value: '122,100次', delta: '+30' },
-        { label: '阅读总人数', value: '920人', delta: '+30' },
+        { label: '浏览总次数', value: '122,100次', delta: '+30' },
+        { label: '浏览总人数', value: '920人', delta: '+30' },
       ],
       overview: [
         { label: '总发布', value: '5' },

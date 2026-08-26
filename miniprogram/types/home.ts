@@ -37,6 +37,10 @@ export interface HomeIntentSummaryViewModel {
 
 export interface HomeTodayViewModel {
   viewCount: string
+  comparison?: {
+    label: string
+    value: string
+  }
   completeRate: string
   forwardCount: string
   viewerCount: string

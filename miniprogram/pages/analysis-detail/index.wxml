@@ -34,7 +34,7 @@
                   <text class="detail-user__tag detail-user__tag--{{item.level}}">#{{item.levelLabel}}</text>
                 </view>
                 <view class="detail-user__stats">
-                  <view class="detail-user__stat"><text>阅读</text><text>{{item.readCount}}</text></view>
+                  <view class="detail-user__stat"><text>浏览</text><text>{{item.readCount}}</text></view>
                   <view class="detail-user__divider"></view>
                   <view class="detail-user__stat"><text>完播</text><text>{{item.completionCount}}</text></view>
                   <view class="detail-user__divider"></view>
