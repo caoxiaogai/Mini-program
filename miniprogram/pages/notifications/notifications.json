@@ -2,5 +2,7 @@
   "usingComponents": {
     "notification-header": "/components/notification-header/index",
     "bottom-tab-bar": "/components/bottom-tab-bar/bottom-tab-bar"
-  }
+  },
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
 }

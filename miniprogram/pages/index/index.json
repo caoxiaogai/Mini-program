@@ -11,6 +11,7 @@
     "publish-success-modal": "/components/publish-success-modal/index",
     "date-range-picker": "/components/date-range-picker/index"
   },
+  "disableScroll": true,
   "enableShareAppMessage": true,
   "enableShareTimeline": true
 }

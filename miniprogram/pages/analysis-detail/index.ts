@@ -1,5 +1,6 @@
 import { getAnalysisDetail } from '../../services/analysis'
 import type { AnalysisDetailViewModel, AnalysisIntentLevel, AnalysisIntentUser } from '../../types/analysis'
+import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 type IntentFilter = 'all' | AnalysisIntentLevel
 
@@ -26,12 +27,21 @@ Page({
     visibleIntentUsers: [] as AnalysisIntentUser[],
     hasVisibleIntentUsers: false,
   },
+  cardId: '',
   onLoad(options: Record<string, string | undefined>) {
-    const cardId = options.id
-    if (!cardId) return
+    this.cardId = options.id ?? ''
+    if (!this.cardId) return
 
-    getAnalysisDetail(cardId).then((detail) => {
-      const visibleUsers = detail ? detail.intentUsers : []
+    this.loadDetail()
+  },
+  onPullDownRefresh() {
+    runPagePullRefresh(this.loadDetail())
+  },
+  loadDetail() {
+    if (!this.cardId) return Promise.resolve()
+
+    return getAnalysisDetail(this.cardId).then((detail) => {
+      const visibleUsers = getVisibleIntentUsers(detail ? detail.intentUsers : [], this.data.activeIntentLevel)
 
       this.setData({
         detail,

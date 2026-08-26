@@ -193,6 +193,8 @@ page {
   align-items: center;
   justify-content: center;
   gap: 20rpx;
+  margin: 0;
+  padding: 0;
   border-radius: 110rpx;
   box-sizing: border-box;
   font-size: 28rpx;
@@ -201,9 +203,14 @@ page {
   transition: opacity 120ms ease-out, transform 120ms ease-out;
 }
 
+.material-detail__share-button::after {
+  display: none;
+}
+
 .material-detail__share-button--friend {
   border: 2rpx solid #f0f0f0;
   background: #ffffff;
+  color: #000000;
 }
 
 .material-detail__share-button--moments {

@@ -1,6 +1,7 @@
 import { getDocumentPageCount, prepareDocumentPageImage } from '../../services/document'
 import type { DocumentReaderPage } from '../../types/document'
 import { pickCurrentDocumentPageByScroll } from '../../utils/document-page'
+import { runPullRefresh } from '../../utils/pull-refresh'
 
 const PRELOAD_AHEAD = 2
 
@@ -30,6 +31,7 @@ Page({
     status: 'loading' as 'loading' | 'success' | 'error',
     errorMessage: '文档加载失败',
     pages: [] as DocumentReaderPage[],
+    pullRefreshing: false,
   },
 
   materialId: '',
@@ -66,14 +68,19 @@ Page({
     this.loadDocument()
   },
 
-  loadDocument() {
-    this.resetPagingState()
-    this.setData({ status: 'loading', navTitle: '文档预览', pages: [] })
+  onPullRefresh() {
+    this.setData({ pullRefreshing: true })
+    runPullRefresh(this.loadDocument(true), () => this.setData({ pullRefreshing: false }))
+  },
 
-    getDocumentPageCount(this.materialId)
+  loadDocument(silent = false) {
+    this.resetPagingState()
+    if (!silent) this.setData({ status: 'loading', navTitle: '文档预览', pages: [] })
+
+    return getDocumentPageCount(this.materialId)
       .then((totalPages) => {
         if (totalPages <= 0) {
-          this.setData({ status: 'error', errorMessage: '文档没有可预览的页' })
+          if (!silent) this.setData({ status: 'error', errorMessage: '文档没有可预览的页' })
           return
         }
 
@@ -89,6 +96,7 @@ Page({
         )
       })
       .catch(() => {
+        if (silent) return
         this.setData({
           status: 'error',
           errorMessage: '无法加载文档，请稍后重试',

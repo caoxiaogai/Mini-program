@@ -2,6 +2,7 @@ import { getMaterialDetail, getMaterials } from '../../services/materials'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 import { takePendingPublishReturn } from '../../utils/publish-return'
+import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, showMomentsShareGuide } from '../../utils/share-material'
 
 type MaterialsTabId = 'home' | 'notifications' | 'analysis' | 'profile'
@@ -54,6 +55,7 @@ Page({
     shareMaterialId: '',
     shareTitle: '',
     shareImageUrl: '',
+    pullRefreshing: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     const { platform } = wx.getSystemInfoSync()
@@ -72,7 +74,7 @@ Page({
     this.applyPendingPublishReturn()
   },
   loadMaterials() {
-    getMaterials().then((materials) => {
+    return getMaterials().then((materials) => {
       const visibleMaterials = getVisibleMaterials(materials.items, this.data.activeFilter)
 
       this.setData({
@@ -81,6 +83,10 @@ Page({
         hasVisibleMaterials: visibleMaterials.length > 0,
       })
     })
+  },
+  onPullRefresh() {
+    this.setData({ pullRefreshing: true })
+    runPullRefresh(this.loadMaterials(), () => this.setData({ pullRefreshing: false }))
   },
   onMaterialsScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
     const materialsHeaderOpacity = calculateRankingHeaderOpacity(event.detail.scrollTop)

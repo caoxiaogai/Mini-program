@@ -125,7 +125,7 @@ test('viewing a home notification does not change the notification tab data sour
   const logic = read('miniprogram/pages/index/index.ts')
 
   assert.match(logic, /markHomeNotificationViewed/)
-  assert.match(logic, /loadNotifications\(\) \{\s*getNotifications\(\)/)
+  assert.match(logic, /loadNotifications\(\) \{\s*return getNotifications\(\)/)
 })
 
 test('home greeting follows the device local time', async () => {
@@ -332,7 +332,7 @@ test('home navigation title and background fade in over 100px of scroll', async 
   const styles = read('miniprogram/pages/index/index.less')
   const { getHomeHeaderOpacity } = await import('../miniprogram/utils/home-header.ts')
 
-  assert.match(page, /<scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll">/)
+  assert.match(page, /<scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll"/)
   assert.match(page, /<navigation-bar back="\{\{false\}\}" title="首页" color="rgba\(0,0,0, \{\{homeHeaderOpacity\}\}\)"/)
   assert.match(page, /background="rgba\(255,255,255, \{\{homeHeaderOpacity\}\}\)"/)
   assert.match(logic, /homeHeaderOpacity: 0/)
@@ -941,6 +941,27 @@ test('material detail opens image preview, video player and PDF reader', () => {
   assert.match(documentLogic, /onDocumentScroll/)
 })
 
+test('material detail shares to friends and guides moments sharing', () => {
+  const markup = read('miniprogram/pages/material-detail/index.wxml')
+  const logic = read('miniprogram/pages/material-detail/index.ts')
+  const styles = read('miniprogram/pages/material-detail/index.less')
+  const pageConfig = JSON.parse(read('miniprogram/pages/material-detail/index.json'))
+  const shareUtil = read('miniprogram/utils/share-material.ts')
+
+  assert.match(markup, /open-type="share"/)
+  assert.match(markup, /bindtap="onShareMomentsTap"/)
+  assert.match(logic, /onShareAppMessage\(\)/)
+  assert.match(logic, /onShareTimeline\(\)/)
+  assert.match(logic, /buildMaterialSharePath\(detail\.id\)/)
+  assert.match(logic, /showMomentsShareGuide/)
+  assert.match(logic, /enableMaterialShareMenu/)
+  assert.match(shareUtil, /请点击右上角「···」，选择「分享到朋友圈」/)
+  assert.doesNotMatch(shareUtil, /wx\.showShareImageMenu\(/)
+  assert.equal(pageConfig.enableShareAppMessage, true)
+  assert.equal(pageConfig.enableShareTimeline, true)
+  assert.match(styles, /\.material-detail__share-button::after \{[\s\S]*display: none;/)
+})
+
 test('document reader current page follows the top of the reading area', async () => {
   const { pickCurrentDocumentPageByScroll, getDocumentPageBlockHeight } = await import('../miniprogram/utils/document-page.ts')
   const windowWidth = 393
@@ -1197,7 +1218,7 @@ test('home analysis keeps the total period control above its scroll view', () =>
   const componentMarkup = read('miniprogram/components/home-analysis/index.wxml')
   const homeStyles = read('miniprogram/pages/index/index.less')
 
-  assert.match(homeMarkup, /<analysis-header[\s\S]*home-page__analysis-total-filter[\s\S]*<segmented-filter items="\{\{totalAnalysisPeriods\}\}" active-id="\{\{activeTotalPeriod\}\}" bind:change="onTotalAnalysisPeriodTap" \/>[\s\S]*<scroll-view scroll-y class="home-page__tab-scroll home-page__analysis-scroll">/)
+  assert.match(homeMarkup, /<analysis-header[\s\S]*home-page__analysis-total-filter[\s\S]*<segmented-filter items="\{\{totalAnalysisPeriods\}\}" active-id="\{\{activeTotalPeriod\}\}" bind:change="onTotalAnalysisPeriodTap" \/>[\s\S]*<scroll-view scroll-y class="home-page__tab-scroll home-page__analysis-scroll"/)
   assert.match(componentMarkup, /<segmented-filter wx:if="\{\{!embedded\}\}" items="\{\{totalAnalysisPeriods\}\}" active-id="\{\{activeTotalPeriod\}\}" bind:change="onTotalPeriodTap" \/>/)
   assert.match(homeStyles, /\.home-page__analysis-total-filter \{[\s\S]*padding: 32rpx 40rpx 0;/)
 })
@@ -1393,6 +1414,65 @@ test('date range picker uses the same entrance motion and backdrop opacity as th
   assert.match(pickerStyles, /\.date-range-picker__panel \{[\s\S]*animation: date-range-picker-panel-in 300ms ease-out both;/)
   assert.match(pickerStyles, /@keyframes date-range-picker-mask-in \{[\s\S]*from \{ background: rgba\(0, 0, 0, 0\); \}[\s\S]*to \{ background: rgba\(0, 0, 0, 0\.8\); \}/)
   assert.match(pickerStyles, /@keyframes date-range-picker-panel-in \{[\s\S]*from \{ transform: translateY\(100%\); \}[\s\S]*to \{ transform: translateY\(0\); \}/)
+})
+
+test('pull refresh always settles the refresher after success or failure', async () => {
+  const { runPullRefresh } = await import('../miniprogram/utils/pull-refresh.ts')
+  const settled = []
+
+  await new Promise((resolve) => {
+    runPullRefresh(Promise.resolve('ok'), () => {
+      settled.push('ok')
+      resolve()
+    })
+  })
+  await new Promise((resolve) => {
+    runPullRefresh(Promise.reject(new Error('fail')), () => {
+      settled.push('fail')
+      resolve()
+    })
+  })
+
+  assert.deepEqual(settled, ['ok', 'fail'])
+})
+
+test('every page can pull from the top to refresh', () => {
+  const app = JSON.parse(read('miniprogram/app.json'))
+  const scrollViewPages = [
+    'pages/index/index',
+    'pages/materials/index',
+    'pages/document-reader/index',
+    'pages/logs/logs',
+  ]
+  const pageRefreshPages = [
+    'pages/material-detail/index',
+    'pages/materials/publish/index',
+    'pages/ranking/index',
+    'pages/notifications/notifications',
+    'pages/analysis/index',
+    'pages/analysis-detail/index',
+    'pages/analysis-user-detail/index',
+  ]
+
+  assert.deepEqual([...app.pages].sort(), [...scrollViewPages, ...pageRefreshPages].sort())
+
+  for (const page of scrollViewPages) {
+    const markup = read(`miniprogram/${page}.wxml`)
+    const logic = read(`miniprogram/${page}.ts`)
+    assert.match(markup, /refresher-enabled="\{\{true\}\}"/, `${page} should enable scroll-view refresher`)
+    assert.match(markup, /bindrefresherrefresh="onPullRefresh"/, `${page} should bind refresher`)
+    assert.match(logic, /onPullRefresh\(\)/, `${page} should handle refresher`)
+  }
+
+  for (const page of pageRefreshPages) {
+    const config = JSON.parse(read(`miniprogram/${page}.json`))
+    const logic = read(`miniprogram/${page}.ts`)
+    assert.equal(config.enablePullDownRefresh, true, `${page} should enable page pull-down refresh`)
+    assert.match(logic, /onPullDownRefresh\(\)/, `${page} should handle pull-down refresh`)
+  }
+
+  const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
+  assert.match(publishLogic, /onPullDownRefresh\(\) \{\s*wx\.stopPullDownRefresh\(\)/)
 })
 
 test('wechat preview source stays under the 2MB upload limit', () => {

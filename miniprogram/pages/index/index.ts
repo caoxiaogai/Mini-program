@@ -15,6 +15,7 @@ import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
 import { takePendingPublishReturn } from '../../utils/publish-return'
+import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, showMomentsShareGuide } from '../../utils/share-material'
 import { markHomeNotificationViewed } from './home-notification-preview'
 
@@ -126,6 +127,7 @@ Page({
     activeAnalysisReadRange: 'week' as AnalysisReadRange,
     visibleAnalysisReadTrend: [] as AnalysisViewModel['totalData']['readTrends']['week'],
     profileData: null as ProfilePageViewModel | null,
+    pullRefreshing: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     const { platform } = wx.getSystemInfoSync()
@@ -153,23 +155,25 @@ Page({
     if (homeHeaderOpacity === this.data.homeHeaderOpacity) return
     this.setData({ homeHeaderOpacity })
   },
-  loadHomeData() {
-    this.setData({ isLoading: true, loadError: false })
-    getHomePageData()
+  loadHomeData(silent = false) {
+    if (!silent) this.setData({ isLoading: true, loadError: false })
+    return getHomePageData()
       .then((homeData) => {
         const tabItemsWithBadge = this.data.tabItems.map((item) => item.id === 'notifications' ? { ...item, badgeCount: homeData.unreadNotificationCount } : item)
-        this.setData({ homeData, hasNewIntentUsers: homeData.intentSummary.total !== '0', tabItems: tabItemsWithBadge, isLoading: false })
+        this.setData({ homeData, hasNewIntentUsers: homeData.intentSummary.total !== '0', tabItems: tabItemsWithBadge, isLoading: false, loadError: false })
       })
-      .catch(() => this.setData({ isLoading: false, loadError: true }))
+      .catch(() => {
+        if (!silent) this.setData({ isLoading: false, loadError: true })
+      })
   },
   loadNotifications() {
-    getNotifications().then((notifications) => {
+    return getNotifications().then((notifications) => {
       const visibleNotificationGroups = getVisibleNotificationGroups(notifications.groups, this.data.activeNotificationFilter)
       this.setData({ notifications, visibleNotificationGroups, hasVisibleNotificationGroups: visibleNotificationGroups.length > 0 })
     })
   },
   loadMaterials() {
-    getMaterials().then((materials) => {
+    return getMaterials().then((materials) => {
       const visibleMaterials = getVisibleMaterials(materials.items, this.data.activeMaterialFilter)
       this.setData({ materials, visibleMaterials, hasVisibleMaterials: visibleMaterials.length > 0 })
     })
@@ -201,19 +205,19 @@ Page({
     return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
   },
   loadAnalysis(period: AnalysisPeriodId = this.data.activePeriod) {
-    getAnalysisOverview(period, undefined, this.data.activeAnalysisSort).then((analysisData) => {
+    return getAnalysisOverview(period, undefined, this.data.activeAnalysisSort).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
       this.setData({ analysisData, visibleAnalysisUsers, workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary, visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards, hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards, hasAnalysisUsers: visibleAnalysisUsers.length > 0, visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange] })
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
-    getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards }) => {
+    return getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards }) => {
       this.setData({ workSummary: summary, visibleAnalysisCards: cards, hasAnalysisCards: cards.length > 0 })
     })
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
-    getAnalysisOverview(period, dateRange).then((analysisData) => {
+    return getAnalysisOverview(period, dateRange).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const currentAnalysisData = this.data.analysisData ?? analysisData
       this.setData({
@@ -224,9 +228,27 @@ Page({
     })
   },
   loadProfileData() {
-    getProfilePageData()
+    return getProfilePageData()
       .then((profileData) => this.setData({ profileData }))
       .catch(() => this.setData({ profileData: null }))
+  },
+  refreshActiveTab() {
+    const tab = rootTabIds[this.data.activeTabIndex]
+    if (tab === 'notifications') return this.loadNotifications()
+    if (tab === 'materials') return this.loadMaterials()
+    if (tab === 'analysis') {
+      if (this.data.activeAnalysisTab === 'user') {
+        return this.loadAudienceUsers(this.data.activePeriod, this.resolveWorkDateRange(this.data.activePeriod))
+      }
+      if (this.data.activeAnalysisTab === 'total') return this.loadAnalysis(this.data.activeTotalPeriod)
+      return this.loadWorkCards(this.data.activePeriod)
+    }
+    if (tab === 'profile') return this.loadProfileData()
+    return this.loadHomeData(true)
+  },
+  onPullRefresh() {
+    this.setData({ pullRefreshing: true })
+    runPullRefresh(this.refreshActiveTab(), () => this.setData({ pullRefreshing: false }))
   },
   setActiveTab(index: number) {
     if (!Number.isInteger(index) || index < 0 || index >= rootTabIds.length) return

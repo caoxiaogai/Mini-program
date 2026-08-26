@@ -18,6 +18,9 @@
     type="list"
     scroll-y
     show-scrollbar="{{false}}"
+    refresher-enabled="{{true}}"
+    refresher-triggered="{{pullRefreshing}}"
+    bindrefresherrefresh="onPullRefresh"
     bindscroll="onDocumentScroll"
   >
     <view

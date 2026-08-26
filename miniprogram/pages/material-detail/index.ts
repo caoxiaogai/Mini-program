@@ -1,5 +1,13 @@
 import { getMaterialDetail } from '../../services/materials'
 import type { MaterialDetailViewModel } from '../../types/materials'
+import { runPagePullRefresh } from '../../utils/pull-refresh'
+import {
+  buildMaterialSharePath,
+  buildMaterialShareQuery,
+  buildMaterialShareTitle,
+  enableMaterialShareMenu,
+  showMomentsShareGuide,
+} from '../../utils/share-material'
 
 const VIDEO_SEEK_STEP_SEC = 10
 const VIDEO_SWIPE_THRESHOLD_PX = 48
@@ -18,25 +26,37 @@ Page({
   videoDurationSec: 0,
   videoTouchStartX: 0,
   videoTouchStartY: 0,
+  materialId: '',
 
   onLoad(options: Record<string, string | undefined>) {
-    const materialId = options.id ?? ''
-    if (!materialId) return
+    this.materialId = options.id ?? ''
+    if (!this.materialId) return
 
     this.videoCurrentTimeSec = 0
     this.videoDurationSec = 0
     this.videoTouchStartX = 0
     this.videoTouchStartY = 0
 
-    getMaterialDetail(materialId).then((detail) => {
+    this.loadDetail()
+  },
+  onPullDownRefresh() {
+    runPagePullRefresh(this.loadDetail())
+  },
+  loadDetail() {
+    if (!this.materialId) return Promise.resolve()
+
+    return getMaterialDetail(this.materialId).then((detail) => {
       if (!detail) return
 
       this.videoDurationSec = detail.duration
       this.setData({
         detail,
-        activeImageIndex: 0,
       })
     })
+  },
+
+  onShow() {
+    enableMaterialShareMenu()
   },
 
   onHide() {
@@ -121,5 +141,31 @@ Page({
 
   onSwiperChange(event: WechatMiniprogram.CustomEvent<{ current: number }>) {
     this.setData({ activeImageIndex: event.detail.current })
+  },
+
+  onShareAppMessage() {
+    const detail = this.data.detail
+    if (!detail) return
+
+    return {
+      title: buildMaterialShareTitle(detail.descriptionLines),
+      path: buildMaterialSharePath(detail.id),
+      imageUrl: detail.previewUrl || undefined,
+    }
+  },
+
+  onShareTimeline() {
+    const detail = this.data.detail
+    if (!detail) return
+
+    return {
+      title: buildMaterialShareTitle(detail.descriptionLines),
+      query: buildMaterialShareQuery(detail.id),
+      imageUrl: detail.previewUrl || undefined,
+    }
+  },
+
+  onShareMomentsTap() {
+    showMomentsShareGuide()
   },
 })

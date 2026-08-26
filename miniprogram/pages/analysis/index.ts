@@ -3,6 +3,7 @@ import type { AnalysisAudienceUser, AnalysisReadRange, AnalysisViewModel } from 
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
+import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
 
@@ -96,12 +97,24 @@ Page({
 
     this.loadAnalysis(this.data.activePeriod)
   },
+  onPullDownRefresh() {
+    runPagePullRefresh(this.refreshCurrentView())
+  },
+  refreshCurrentView() {
+    if (this.data.activeAnalysisTab === 'user') {
+      return this.loadAudienceUsers(this.data.activePeriod, this.resolveWorkDateRange(this.data.activePeriod))
+    }
+    if (this.data.activeAnalysisTab === 'total') {
+      return this.loadAnalysis(this.data.activeTotalPeriod)
+    }
+    return this.loadWorkCards(this.data.activePeriod)
+  },
   resolveWorkDateRange(period: AnalysisPeriodId, dateRange?: DateRange): DateRange | undefined {
     if (period !== 'custom') return dateRange
     return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
   },
   loadAnalysis(period: AnalysisPeriodId) {
-    getAnalysisOverview(period, undefined, this.data.activeAnalysisSort).then((analysisData) => {
+    return getAnalysisOverview(period, undefined, this.data.activeAnalysisSort).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
 
@@ -117,12 +130,12 @@ Page({
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
-    getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards }) => {
+    return getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards }) => {
       this.setData({ workSummary: summary, visibleAnalysisCards: cards, hasAnalysisCards: cards.length > 0 })
     })
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
-    getAnalysisOverview(period, dateRange).then((analysisData) => {
+    return getAnalysisOverview(period, dateRange).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const currentAnalysisData = this.data.analysisData ?? analysisData
       this.setData({

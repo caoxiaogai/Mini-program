@@ -1,5 +1,6 @@
 import { getAnalysisUserDetail } from '../../services/analysis'
 import type { AnalysisUserDetailViewModel, AnalysisUserRecord } from '../../types/analysis'
+import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 type RecordSortId = 'views' | 'completion' | 'shares'
 
@@ -32,11 +33,20 @@ Page({
     visibleUserRecords: [] as AnalysisUserRecord[],
     noticeVisible: false,
   },
+  userId: '',
   onLoad(options: Record<string, string | undefined>) {
-    const userId = options.id
-    if (!userId) return
+    this.userId = options.id ?? ''
+    if (!this.userId) return
 
-    getAnalysisUserDetail(userId).then((detail) => this.setData({
+    this.loadDetail()
+  },
+  onPullDownRefresh() {
+    runPagePullRefresh(this.loadDetail())
+  },
+  loadDetail() {
+    if (!this.userId) return Promise.resolve()
+
+    return getAnalysisUserDetail(this.userId).then((detail) => this.setData({
       detail,
       visibleUserRecords: detail ? sortUserRecords(detail.records, this.data.activeRecordSort) : [],
     }))

@@ -1,5 +1,6 @@
 import { getNotifications } from '../../services/notifications'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
+import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 type NotificationTabId = 'home' | 'notifications' | 'analysis' | 'profile'
 
@@ -28,7 +29,13 @@ Page({
     hasVisibleGroups: false,
   },
   onLoad() {
-    getNotifications().then((notifications) => {
+    this.loadNotifications()
+  },
+  onPullDownRefresh() {
+    runPagePullRefresh(this.loadNotifications())
+  },
+  loadNotifications() {
+    return getNotifications().then((notifications) => {
       const visibleGroups = getVisibleNotificationGroups(notifications.groups, this.data.activeFilter)
 
       this.setData({ notifications, visibleGroups, hasVisibleGroups: visibleGroups.length > 0 })

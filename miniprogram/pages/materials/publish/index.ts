@@ -48,6 +48,9 @@ Page({
       })
     })
   },
+  onPullDownRefresh() {
+    wx.stopPullDownRefresh()
+  },
   buildSubmitInput(): MaterialSubmitInput {
     return {
       draftId: this.draftMaterialId,

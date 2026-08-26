@@ -215,6 +215,7 @@ miniprogram/
 | 首页像素级与真机适配验收 | pending | 新版首页已实现，等待开发者工具或真机进行视觉核对 |
 | 首页改版（重新开始） | in_progress | 已按新版 Figma `478:1234` 重写首页结构、数据层、底部导航和本地资源 |
 | 实现「我的」页视觉切片 | done | 已按 Figma `519:5031` 接入首页第五个 tab；头像/昵称来自登录接口，余额/会员为视觉占位 |
+| 所有页面下拉刷新 | done | 滑到顶部再下拉刷新当前页数据；发布页只收起动画，不覆盖未保存编辑 |
 | 其他页面视觉与真机适配验收 | pending | 后续页面实现后执行 |
 
 ## 验收基线
@@ -240,6 +241,18 @@ miniprogram/
 - 不在文档中记录密钥、AppSecret、用户隐私数据或生产接口凭证。
 
 ## 最近变更
+
+### 2026-08-26：所有页面支持下拉刷新
+
+- 滑到页面最顶部再往下拉会刷新当前页数据。内层 `scroll-view` 页面用 refresher，其余页面用 `enablePullDownRefresh`。
+- 刷新走现有 service，不把页面打回全屏 loading；发布页下拉只收起动画，避免覆盖未保存的表单。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（85 tests passed）。当前环境无微信开发者工具 GUI，真机下拉手势待确认。
+
+### 2026-08-26：素材详情页接入分享给好友和朋友圈
+
+- 「分享给好友」改为原生 `button open-type="share"`，把当前素材详情页发给微信好友。
+- 「分享到朋友圈」弹出引导，让用户点右上角「···」再选「分享到朋友圈」；页面开启 `shareAppMessage` / `shareTimeline`。微信不允许按钮直接拉起朋友圈小程序卡片。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（83 tests passed）。微信好友分享与朋友圈菜单需在真机确认。
 
 ### 2026-08-26：体验版改接本机局域网后端
 

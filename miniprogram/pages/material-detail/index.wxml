@@ -81,15 +81,15 @@
   </view>
 
   <view wx:if="{{detail}}" class="material-detail__share-bar">
-    <view class="material-detail__share-button material-detail__share-button--friend" hover-class="material-detail__share-button--pressed" hover-stay-time="80" role="button">
+    <button class="material-detail__share-button material-detail__share-button--friend" open-type="share" hover-class="material-detail__share-button--pressed" hover-stay-time="80">
       <text>分享给好友</text>
       <image class="material-detail__share-icon" src="/assets/materials/detail-share.svg" mode="aspectFit" />
-    </view>
-    <view class="material-detail__share-button material-detail__share-button--moments" hover-class="material-detail__share-button--pressed" hover-stay-time="80" role="button">
+    </button>
+    <button class="material-detail__share-button material-detail__share-button--moments" bindtap="onShareMomentsTap" hover-class="material-detail__share-button--pressed" hover-stay-time="80">
       <text>分享到朋友圈</text>
       <view class="material-detail__moments-icon">
         <image src="/assets/materials/detail-moments.png" mode="aspectFit" />
       </view>
-    </view>
+    </button>
   </view>
 </view>
