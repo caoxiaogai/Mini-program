@@ -29,7 +29,7 @@
       <text class="user-detail__title">阅读记录</text>
       <view class="user-detail__records-card">
         <view class="user-detail__records">
-          <view wx:for="{{visibleUserRecords}}" wx:key="id" class="user-detail__record">
+          <view wx:for="{{visibleUserRecords}}" wx:key="id" class="user-detail__record" bindtap="onUserRecordTap" data-content-id="{{item.contentId}}" hover-class="user-detail__record--pressed">
             <image class="user-detail__record-thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
             <view class="user-detail__record-body">
               <view class="user-detail__record-head">

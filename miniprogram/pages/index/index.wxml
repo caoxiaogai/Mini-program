@@ -5,7 +5,10 @@
         <view class="home-page__hero-background" />
         <navigation-bar back="{{false}}" title="首页" color="rgba(0,0,0, {{homeHeaderOpacity}})" background="rgba(255,255,255, {{homeHeaderOpacity}})" />
         <view class="home-page__content">
-          <view class="home-hero"><view class="home-hero__copy"><text class="home-hero__headline">{{greetingHeadline}}</text><text class="home-hero__subtitle">{{greetingSubtitle}}</text></view><view class="home-hero__image-frame"><image class="home-hero__image" src="/assets/home-new/hero-lounge.png" mode="scaleToFill" /></view></view>
+          <view class="home-hero">
+            <image class="home-hero__glow" src="/assets/home-new/home-hero-glow.svg" mode="aspectFit" />
+            <view class="home-hero__copy"><text class="home-hero__headline">{{greetingHeadline}}</text><text class="home-hero__subtitle">{{greetingSubtitle}}</text></view>
+          </view>
           <view wx:if="{{isLoading}}" class="home-state home-state--loading"><text>正在加载首页数据</text></view>
           <view wx:elif="{{loadError}}" class="home-state"><text class="home-state__title">首页数据暂时不可用</text><text class="home-state__description">请检查网络后重试</text><button class="home-state__retry" bindtap="onRetryTap">重新加载</button></view>
           <block wx:else>
@@ -89,6 +92,12 @@
       </scroll-view>
     </view>
     <view class="home-page__tab-panel home-page__profile-panel" hidden="{{activeTabIndex !== 4}}"><home-profile profile="{{profileData}}" /></view>
+  </view>
+  <view wx:if="{{analysisSortSheetVisible}}" class="analysis-sort-sheet">
+    <view class="analysis-sort-sheet__mask" catchtap="onAnalysisSortMaskTap"></view>
+    <view class="analysis-sort-sheet__panel">
+      <view wx:for="{{analysisSortOptions}}" wx:key="id" class="analysis-sort-sheet__option" bindtap="onHomeAnalysisSortOptionTap" data-id="{{item.id}}">{{item.label}}</view>
+    </view>
   </view>
   <bottom-tab-bar wx:if="{{!analysisSortSheetVisible}}" items="{{tabItems}}" plus-active="{{plusActive}}" bind:tabtap="onTabTap" bind:plus="onPlusTap" />
   <publish-success-modal
