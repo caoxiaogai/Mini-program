@@ -53,7 +53,7 @@ test('data access goes through the unified request layer', () => {
   assert.doesNotMatch(requestLayer, /envVersion/)
   assert.match(requestLayer, /\/api\/files\/sales-materials\//)
   assert.match(config, /DEVTOOLS_ORIGIN = 'http:\/\/127\.0\.0\.1:8080'/)
-  assert.match(config, /DEV_LAN_ORIGIN = 'http:\/\/10\.136\.153\.188:8080'/)
+  assert.match(config, /DEV_LAN_ORIGIN = 'http:\/\/192\.168\.31\.225:8080'/)
   assert.doesNotMatch(config, /PROD_API_ORIGIN/)
   assert.match(requestLayer, /export function request</)
   assert.match(requestLayer, /export function ensureLogin/)
@@ -1296,6 +1296,9 @@ test('analysis total tab follows Figma 587:8623 overview and peak layout', () =>
     assert.match(markup, /数据总览/)
     assert.match(markup, /analysisData\.totalData\.heroMetrics/)
     assert.match(markup, /浏览峰值/)
+    assert.match(markup, /<analysis-trend-chart host-class="analysis-total__trend-chart" points="\{\{visibleAnalysisReadTrend\}\}" slot-count="\{\{analysisTrendSlotCount\}\}" \/>/)
+    assert.doesNotMatch(markup, /class="analysis-total__chart-labels"|class="analysis-total__chart-label"/)
+    assert.doesNotMatch(markup, /analysis-total__chart-bars|analysis-total__chart-bar|analysis-total__chart-line-dot|read-trend-line\.svg/)
     assert.doesNotMatch(markup, /阅读数据/)
     assert.doesNotMatch(markup, /analysis-total__range-tabs/)
   }
@@ -1304,6 +1307,7 @@ test('analysis total tab follows Figma 587:8623 overview and peak layout', () =>
   assert.match(pageLogic, /onTotalPeriodTap/)
   assert.match(pageStyles, /\.analysis-total__overview-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid @content-box-border;[\s\S]*?border-radius: 40rpx;/)
   assert.match(pageStyles, /\.analysis-total__chart-card\s*\{[\s\S]*?padding: 40rpx;[\s\S]*?border: 2rpx solid @content-box-border;[\s\S]*?border-radius: 40rpx;/)
+  assert.match(pageStyles, /\.analysis-total__trend-chart\s*\{[\s\S]*?position: relative;[\s\S]*?height: 304rpx;/)
   assert.match(types, /heroMetrics: AnalysisTotalHeroMetric\[\]/)
   assert.match(service, /heroMetrics:/)
 })
@@ -1321,6 +1325,80 @@ test('analysis total hero metrics are direct flex items', () => {
   }
 
   assert.match(styles, /\.analysis-total__hero-metric--secondary \{[\s\S]*border-left: 2rpx solid #f0f0f0;/)
+})
+
+test('analysis trend chart renders in the scrolling content layer without horizontal time labels', () => {
+  const componentMarkup = read('miniprogram/components/analysis-trend-chart/index.wxml')
+  const componentLogic = read('miniprogram/components/analysis-trend-chart/index.ts')
+  const componentStyles = read('miniprogram/components/analysis-trend-chart/index.less')
+  const componentConfig = read('miniprogram/components/analysis-trend-chart/index.json')
+
+  assert.match(componentMarkup, /<image wx:if="\{\{chartSource\}\}" class="analysis-trend-chart__image" src="\{\{chartSource\}\}" mode="scaleToFill" \/>/)
+  assert.doesNotMatch(componentMarkup, /<canvas|analysis-trend-chart__labels|analysis-trend-chart__label/)
+  assert.doesNotMatch(componentLogic, /createSelectorQuery|getContext\(['"]2d['"]\)|bezierCurveTo/)
+  assert.match(componentLogic, /externalClasses:\s*\['host-class'\]/)
+  assert.doesNotMatch(componentLogic, /showLabels/)
+  assert.match(componentStyles, /\.analysis-trend-chart__image\s*\{[\s\S]*?width: 100%;[\s\S]*?height: 304rpx;/)
+  assert.match(componentConfig, /"component":\s*true/)
+})
+
+test('analysis trend chart converts supplied values into a smooth Figma-sized SVG path', async () => {
+  const originalComponent = globalThis.Component
+  let componentDefinition = null
+  globalThis.Component = (definition) => { componentDefinition = definition }
+
+  try {
+    const chartModule = await import('../miniprogram/components/analysis-trend-chart/index.ts?svg-source')
+    assert.equal(typeof chartModule.buildAnalysisTrendSvgSource, 'function')
+
+    const source = chartModule.buildAnalysisTrendSvgSource([
+      { id: 'low', label: '低', value: '0' },
+      { id: 'middle', label: '中', value: '750' },
+      { id: 'high', label: '高', value: '1,500' },
+    ])
+    const svg = decodeURIComponent(source.slice(source.indexOf(',') + 1))
+
+    assert.match(source, /^data:image\/svg\+xml;charset=utf-8,/)
+    assert.match(svg, /viewBox="0 0 270 151"/)
+    assert.match(svg, /<path d="M0 150\.5 C22\.5 138 90 100\.5 135 75\.5 C180 50\.5 247\.5 13 270 0\.5"/)
+    assert.match(svg, /stroke="#0EC8D9" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/)
+    assert.doesNotMatch(svg, /<circle|<text/)
+
+    const halfDaySource = chartModule.buildAnalysisTrendSvgSource(
+      Array.from({ length: 12 }, (_, index) => ({ id: `hour-${index}`, label: String(index), value: '750' })),
+      24,
+    )
+    const halfDaySvg = decodeURIComponent(halfDaySource.slice(halfDaySource.indexOf(',') + 1))
+    const halfDayPath = halfDaySvg.match(/<path d="([^"]+)"/)?.[1] ?? ''
+
+    assert.match(halfDayPath, /135 75\.5$/)
+
+    const overflowSource = chartModule.buildAnalysisTrendSvgSource(
+      Array.from({ length: 25 }, (_, index) => ({ id: `overflow-${index}`, label: String(index), value: '750' })),
+      24,
+    )
+    const overflowSvg = decodeURIComponent(overflowSource.slice(overflowSource.indexOf(',') + 1))
+    const overflowPath = overflowSvg.match(/<path d="([^"]+)"/)?.[1] ?? ''
+
+    assert.match(overflowPath, /270 75\.5$/)
+
+    assert.ok(componentDefinition.properties.slotCount)
+    assert.equal(componentDefinition.properties.slotCount.value, 0)
+    assert.equal(typeof componentDefinition.observers['points, slotCount'], 'function')
+
+    const updates = []
+    componentDefinition.observers['points, slotCount'].call(
+      { setData(update) { updates.push(update) } },
+      Array.from({ length: 12 }, (_, index) => ({ id: `component-hour-${index}`, label: String(index), value: '750' })),
+      24,
+    )
+    const componentSvg = decodeURIComponent(updates[0].chartSource.slice(updates[0].chartSource.indexOf(',') + 1))
+    const componentPath = componentSvg.match(/<path d="([^"]+)"/)?.[1] ?? ''
+
+    assert.match(componentPath, /135 75\.5$/)
+  } finally {
+    globalThis.Component = originalComponent
+  }
 })
 
 test('home analysis keeps the total period control above its scroll view', () => {
@@ -1373,7 +1451,28 @@ test('home today data opens total analysis with the day period selected', () => 
 
   assert.equal(context.data.activeTotalPeriod, 'day')
   assert.equal(context.data.activeAnalysisReadRange, 'week')
+  assert.equal(context.data.analysisTrendSlotCount, 24)
   assert.deepEqual(calls, [['tab', 3], ['analysis', 2], ['period', 'day']])
+})
+
+test('analysis total daily range reserves 24 hourly chart positions', () => {
+  const page = loadPageDefinition('miniprogram/pages/analysis/index.ts', {
+    getDefaultDateRange: () => ({ startDate: '2026-08-20', endDate: '2026-08-26' }),
+    getDateRangeLimits: () => ({ minDate: '2026-06-26', maxDate: '2026-08-26' }),
+  })
+  const calls = []
+  const context = {
+    data: {},
+    setData(update) { Object.assign(this.data, update) },
+    loadAnalysis(period) { calls.push(period) },
+  }
+
+  page.onTotalPeriodTap.call(context, { detail: { id: 'day', index: 0 } })
+
+  assert.equal(context.data.activeTotalPeriod, 'day')
+  assert.equal(context.data.activeAnalysisReadRange, 'week')
+  assert.equal(context.data.analysisTrendSlotCount, 24)
+  assert.deepEqual(calls, ['day'])
 })
 
 test('home today data card follows Figma 478:1262', async () => {

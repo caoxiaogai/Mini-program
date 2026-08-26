@@ -8,7 +8,6 @@ export type AnalysisChartPoint = {
   id: string
   label: string
   value: string
-  height: number
 }
 
 export type AnalysisReadRange = 'week' | 'month'

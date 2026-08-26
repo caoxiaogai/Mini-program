@@ -81,9 +81,7 @@
           <view class="analysis-total__chart-gridline analysis-total__chart-gridline--upper"><text>1000</text></view>
           <view class="analysis-total__chart-gridline analysis-total__chart-gridline--lower"><text>500</text></view>
           <view class="analysis-total__chart-gridline analysis-total__chart-gridline--bottom"><text>0</text></view>
-          <view class="analysis-total__chart-bars">
-            <view wx:for="{{visibleAnalysisReadTrend}}" wx:key="id" class="analysis-total__chart-point"><view class="analysis-total__chart-bar" style="height: {{item.height}}rpx;"></view><text class="analysis-total__chart-label">{{item.label}}</text></view>
-          </view>
+          <analysis-trend-chart host-class="analysis-total__trend-chart" points="{{visibleAnalysisReadTrend}}" slot-count="{{analysisTrendSlotCount}}" />
         </view>
       </view>
     </view>

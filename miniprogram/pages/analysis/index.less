@@ -94,13 +94,7 @@ page { min-height: 100vh; background: #e8edf5; }
 .analysis-total__chart-gridline--upper { top: 112rpx; }
 .analysis-total__chart-gridline--lower { top: 212rpx; }
 .analysis-total__chart-gridline--bottom { top: 312rpx; }
-.analysis-total__chart-bars { position: absolute; right: 68rpx; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(7, 40rpx); justify-content: space-between; height: 330rpx; }
-.analysis-total__chart-point { display: flex; height: 330rpx; flex-direction: column; align-items: center; justify-content: flex-end; }
-.analysis-total__chart-bar { width: 40rpx; flex: none; border-radius: 8rpx; background: linear-gradient(180deg, #0ec8d9 0%, #24cddc 100%); }
-.analysis-total__chart-label { margin-top: 12rpx; color: #cccccc; font-size: 18rpx; line-height: normal; }
-.analysis-total__chart--month .analysis-total__chart-bars { grid-template-columns: repeat(30, 1fr); column-gap: 4rpx; }
-.analysis-total__chart--month .analysis-total__chart-bar { width: 8rpx; border-radius: 4rpx; }
-.analysis-total__chart--month .analysis-total__chart-label { margin-top: 0; font-size: 0; }
+.analysis-total__trend-chart { position: relative; z-index: 1; display: block; width: 100%; height: 304rpx; }
 
 /* Figma 497:4859 — revised work analysis layout. */
 .analysis-page__content--work { min-height: calc(100vh - @notification-header-height); padding-top: calc(@notification-header-height + 40rpx); padding-bottom: 200rpx; background: #ffffff; }

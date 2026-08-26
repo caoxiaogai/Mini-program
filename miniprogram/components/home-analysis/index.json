@@ -3,6 +3,7 @@
   "styleIsolation": "shared",
   "usingComponents": {
     "navigation-bar": "/components/navigation-bar/navigation-bar",
-    "segmented-filter": "/components/segmented-filter/index"
+    "segmented-filter": "/components/segmented-filter/index",
+    "analysis-trend-chart": "/components/analysis-trend-chart/index"
   }
 }

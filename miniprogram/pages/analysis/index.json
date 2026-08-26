@@ -1,6 +1,7 @@
 {
   "usingComponents": {
     "analysis-header": "/components/analysis-header/index",
+    "analysis-trend-chart": "/components/analysis-trend-chart/index",
     "segmented-filter": "/components/segmented-filter/index",
     "date-range-picker": "/components/date-range-picker/index"
   },

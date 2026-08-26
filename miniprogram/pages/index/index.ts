@@ -62,6 +62,13 @@ const totalAnalysisPeriods = [
   { id: 'total' as AnalysisPeriodId, label: '总' },
 ]
 
+function getAnalysisTrendSlotCount(period: AnalysisPeriodId): number {
+  if (period === 'day') return 24
+  if (period === 'week') return 7
+  if (period === 'month') return 30
+  return 0
+}
+
 const analysisSwipeThreshold = 40
 
 function getVisibleNotificationGroups(groups: NotificationGroupViewModel[], filterId: NotificationFilterId) {
@@ -127,6 +134,7 @@ Page({
     activeTotalPeriod: 'total' as AnalysisPeriodId,
     activeAnalysisReadRange: 'week' as AnalysisReadRange,
     visibleAnalysisReadTrend: [] as AnalysisViewModel['totalData']['readTrends']['week'],
+    analysisTrendSlotCount: getAnalysisTrendSlotCount('total'),
     profileData: null as ProfilePageViewModel | null,
     pullRefreshing: false,
   },
@@ -295,7 +303,7 @@ Page({
   },
   onTodayDataTap() {
     const hasAnalysisData = Boolean(this.data.analysisData)
-    this.setData({ activeTotalPeriod: 'day', activeAnalysisReadRange: 'week' })
+    this.setData({ activeTotalPeriod: 'day', activeAnalysisReadRange: 'week', analysisTrendSlotCount: getAnalysisTrendSlotCount('day') })
     this.setActiveTab(3)
     this.setAnalysisTab(2)
     if (hasAnalysisData) this.loadAnalysis('day')
@@ -360,6 +368,7 @@ Page({
     this.setData({
       activeTotalPeriod: event.detail.id,
       activeAnalysisReadRange: readRange,
+      analysisTrendSlotCount: getAnalysisTrendSlotCount(event.detail.id),
     })
     this.loadAnalysis(event.detail.id)
   },
