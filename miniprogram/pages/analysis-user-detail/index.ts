@@ -1,10 +1,34 @@
 import { getAnalysisUserDetail } from '../../services/analysis'
 import type { AnalysisUserDetailViewModel, AnalysisUserRecord } from '../../types/analysis'
 
+type RecordSortId = 'views' | 'completion' | 'shares'
+
+const recordSortOptions: Array<{ id: RecordSortId; label: string }> = [
+  { id: 'views', label: '浏览次数' },
+  { id: 'completion', label: '完播' },
+  { id: 'shares', label: '转发' },
+]
+
+const getRecordSortValue = (record: AnalysisUserRecord, sortId: RecordSortId) => {
+  const valueBySort: Record<RecordSortId, string> = {
+    views: record.readCount,
+    completion: record.completionCount,
+    shares: record.shareCount,
+  }
+
+  return Number(valueBySort[sortId].replace(/[^\d.-]/g, '')) || 0
+}
+
+const sortUserRecords = (records: AnalysisUserRecord[], sortId: RecordSortId) => {
+  return [...records].sort((left, right) => getRecordSortValue(right, sortId) - getRecordSortValue(left, sortId))
+}
+
 Page({
   noticeTimer: null as number | null,
   data: {
     detail: null as AnalysisUserDetailViewModel | null,
+    recordSortOptions,
+    activeRecordSort: 'views' as RecordSortId,
     visibleUserRecords: [] as AnalysisUserRecord[],
     noticeVisible: false,
   },
@@ -12,7 +36,10 @@ Page({
     const userId = options.id
     if (!userId) return
 
-    getAnalysisUserDetail(userId).then((detail) => this.setData({ detail, visibleUserRecords: detail?.records ?? [] }))
+    getAnalysisUserDetail(userId).then((detail) => this.setData({
+      detail,
+      visibleUserRecords: detail ? sortUserRecords(detail.records, this.data.activeRecordSort) : [],
+    }))
   },
   onCopyUsername() {
     const username = this.data.detail?.profile.name
@@ -28,6 +55,16 @@ Page({
   },
   onContactTap() {
     this.showNotice()
+  },
+  onRecordSortChange(event: WechatMiniprogram.CustomEvent<{ id: RecordSortId }>) {
+    const sortId = event.detail.id
+    const detail = this.data.detail
+    if (!detail || !recordSortOptions.some((option) => option.id === sortId)) return
+
+    this.setData({
+      activeRecordSort: sortId,
+      visibleUserRecords: sortUserRecords(detail.records, sortId),
+    })
   },
   onUserRecordTap(event: WechatMiniprogram.TouchEvent) {
     const contentId = event.currentTarget.dataset.contentId as string | undefined

@@ -182,13 +182,25 @@ test('home summary cards open the matching analysis tabs', () => {
   assert.match(logic, /onTodayDataTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(2\)/)
 })
 
-test('home populated today-most card opens work analysis', () => {
+test('home today-most records open their content analysis details', () => {
   const page = read('miniprogram/pages/index/index.wxml')
-  const logic = read('miniprogram/pages/index/index.ts')
+  const navigatedUrls = []
+  const homePage = loadPageDefinition('miniprogram/pages/index/index.ts', {
+    getHomeGreeting: () => '',
+    getDefaultDateRange: () => ({ startDate: '2026-08-20', endDate: '2026-08-26' }),
+    getDateRangeLimits: () => ({ minDate: '2026-06-26', maxDate: '2026-08-26' }),
+    wx: {
+      navigateTo: ({ url }) => navigatedUrls.push(url),
+    },
+  })
 
-  assert.match(page, /class="home-content-list"[\s\S]*class="home-content-card" bindtap="onTodayMostTap"/)
-  assert.doesNotMatch(page, /class="home-content-card__item"[\s\S]*bindtap="onContentTap"/)
-  assert.match(logic, /onTodayMostTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(0\)/)
+  assert.match(page, /class="home-section__more" bindtap="onTabTap" data-id="analysis">查看更多/)
+  assert.match(page, /class="home-content-card__item" data-id="\{\{item\.id\}\}" bindtap="onTodayMostItemTap"/)
+  assert.doesNotMatch(page, /class="home-content-card" bindtap="onTodayMostTap"/)
+
+  homePage.onTodayMostItemTap({ currentTarget: { dataset: { id: 'mock-material-ai-full-stack' } } })
+
+  assert.deepEqual(navigatedUrls, ['/pages/analysis-detail/index?id=mock-material-ai-full-stack'])
 })
 
 test('home empty state follows Figma 486:2569', () => {
@@ -225,11 +237,11 @@ test('home page wires the intended navigation actions', () => {
   assert.match(page, /bindtap="onNotificationTap"/)
   assert.match(page, /class="home-notification-card" data-id="\{\{item\.id\}\}" data-user-id="\{\{item\.userId\}\}" bindtap="onNotificationTap"/)
   assert.match(page, /class="home-section__more" bindtap="onTabTap" data-id="notifications">查看更多/)
-  assert.match(page, /bindtap="onTodayMostTap"/)
+  assert.match(page, /bindtap="onTodayMostItemTap"/)
   assert.match(page, /bind:plus="onPlusTap"/)
   assert.match(logic, /pages\/analysis-user-detail\/index\?id=/)
   assert.match(logic, /const id = event\.detail\?\.id \?\? \(event\.currentTarget\.dataset\.id as HomeTabId \| undefined\)/)
-  assert.doesNotMatch(page, /class="home-content-card__item"[\s\S]*bindtap="onContentTap"/)
+  assert.doesNotMatch(page, /class="home-content-card" bindtap="onTodayMostTap"/)
   assert.match(logic, /getMaterials\(\)/)
   assert.match(logic, /getNotifications\(\)/)
   assert.match(logic, /getAnalysisOverview\(/)
@@ -351,7 +363,7 @@ test('home page places a high-resolution ranking entry between notifications and
 
   const notificationsIndex = page.indexOf('home-section--notifications')
   const rankingIndex = page.indexOf('home-section--ranking')
-  const todayMostIndex = page.indexOf('今日最多')
+  const todayMostIndex = page.indexOf('今日浏览最多')
 
   assert.ok(notificationsIndex >= 0)
   assert.ok(rankingIndex > notificationsIndex)
@@ -641,7 +653,7 @@ test('home page uses the 20px content inset and scroll-safe bottom space', () =>
   assert.match(styles, /background: linear-gradient\(180deg, #b5ebfe 0%, @home-page-background 100%\);/)
   assert.match(styles, /border-radius: 40rpx;/)
   assert.match(page, /class="home-content-card__divider"/)
-  assert.match(page, />阅读<\/text>/)
+  assert.match(page, />浏览次数<\/text>/)
   assert.match(styles, /\.home-content-card \{[\s\S]*padding: 30rpx 40rpx;/)
 })
 
@@ -656,7 +668,7 @@ test('intent summary card follows Figma 478:1568 layout tokens', () => {
   const page = read('miniprogram/pages/index/index.wxml')
   const styles = read('miniprogram/pages/index/index.less')
 
-  assert.match(page, /今日有 <text class="home-accent">\{\{homeData\.intentSummary\.total\}\}<\/text> 个新增用户/)
+  assert.match(page, /今日新增 <text class="home-accent">\{\{homeData\.intentSummary\.total\}\}<\/text> 个客户/)
   assert.match(styles, /\.home-intent-card__headline \{[\s\S]*font-size: 32rpx;[\s\S]*font-weight: 500;/)
   assert.match(styles, /\.home-intent-card__avatar \{[\s\S]*width: 48rpx;[\s\S]*height: 48rpx;[\s\S]*margin-right: -24rpx;/)
   assert.match(styles, /\.home-intent-card__metrics \{[\s\S]*margin-top: 40rpx;/)
@@ -699,16 +711,16 @@ test('user detail page follows Figma 497:4640', () => {
   assert.match(markup, /class="user-detail__records-section"/)
   assert.match(markup, /class="user-detail__records"/)
   assert.match(markup, /class="user-detail__record" bindtap="onUserRecordTap" data-content-id="\{\{item\.contentId\}\}"/)
-  assert.match(markup, /阅读记录/)
+  assert.match(markup, /浏览记录/)
   assert.doesNotMatch(markup, /user-detail__record-tabs/)
   assert.match(markup, /微信名称复制成功，/)
   assert.match(markup, /关闭小程序后，前往微信联系用户。/)
   assert.match(markup, /wx:if="\{\{noticeVisible\}\}" class="user-detail__copy-feedback"/)
   assert.match(styles, /\.user-detail-page \{[\s\S]*background: #ffffff;/)
   assert.match(styles, /\.user-detail-page__content \{[\s\S]*padding: 40rpx 40rpx 40rpx;/)
-  assert.match(styles, /\.user-detail__profile-card \{[\s\S]*min-height: 370rpx;[\s\S]*border-radius: 40rpx;/)
+  assert.match(styles, /\.user-detail__profile-card \{[\s\S]*gap: 20rpx;[\s\S]*padding: 40rpx;[\s\S]*border-radius: 40rpx;/)
   assert.match(styles, /\.user-detail__contact \{[\s\S]*height: 72rpx;[\s\S]*background: #0ec8d9;/)
-  assert.match(styles, /\.user-detail__record \{[\s\S]*height: 176rpx;[\s\S]*background: #f5f5f5;/)
+  assert.match(styles, /\.user-detail__record \{[\s\S]*min-height: 176rpx;[\s\S]*background: #f5f5f5;/)
   assert.match(styles, /\.user-detail__record--pressed \{[\s\S]*opacity: 0\.72;/)
   assert.match(styles, /\.user-detail__records-section \{[\s\S]*margin-top: 40rpx;[\s\S]*gap: 10rpx;/)
   assert.match(styles, /\.user-detail__records-card \{[\s\S]*padding: 30rpx;[\s\S]*border: 2rpx solid @content-box-border;[\s\S]*border-radius: 40rpx;/)
@@ -977,15 +989,13 @@ test('analysis work tab matches the revised Figma compact work list', () => {
   assert.match(markup, /\{\{item\.publishedAt\}\}/)
   assert.match(markup, /\{\{item\.compactMetrics\}\}/)
   assert.match(styles, /\.analysis-page__content--work\s*\{[\s\S]*?background: #ffffff;/)
-  assert.match(styles, /\.analysis-work-list\s*\{[\s\S]*?border-radius: 32rpx;[\s\S]*?background: #ffffff;/)
+  assert.match(styles, /\.analysis-work-list\s*\{[\s\S]*?border-radius: 40rpx;[\s\S]*?background: #ffffff;/)
   assert.match(styles, /\.analysis-work-row__thumbnail\s*\{[\s\S]*?width: 100rpx;[\s\S]*?height: 136rpx;/)
   assert.match(styles, /\.analysis-work-row__metrics\s*\{[\s\S]*?justify-content: space-between;/)
   assert.match(types, /publishedAt: string/)
   assert.match(types, /compactMetrics: AnalysisMetric\[\]/)
   assert.match(service, /compactMetrics:/)
-  assert.match(service, /export function sortAnalysisCards/)
-  assert.match(homeLogic, /activeAnalysisSortLabel: '浏览量'/)
-  assert.match(homeLogic, /sortAnalysisCards\(analysisData\.cards, this\.data\.activeAnalysisSort\)/)
+  assert.match(homeLogic, /activeAnalysisSortLabel: '浏览次数'/)
   assert.match(markup, /\{\{visibleAnalysisCards\}\}/)
 })
 
@@ -995,8 +1005,8 @@ test('analysis work list re-sorts when the sort option changes', () => {
   const homeMarkup = read('miniprogram/pages/index/index.wxml')
   const analysisMarkup = read('miniprogram/pages/analysis/index.wxml')
 
-  assert.match(homeLogic, /visibleAnalysisCards: sortAnalysisCards\(this\.data\.analysisData\?\.cards \?\? \[\], option\.id\)/)
-  assert.match(analysisLogic, /visibleAnalysisCards: sortAnalysisCards\(this\.data\.analysisData\?\.cards \?\? \[\], sortOption\.id\)/)
+  assert.match(homeLogic, /sortAnalysisUsers\(this\.data\.analysisData\?\.audienceUsers \?\? \[\], option\.id\)/)
+  assert.match(analysisLogic, /sortAnalysisUsers\(this\.data\.analysisData\?\.audienceUsers \?\? \[\], sortOption\.id\)/)
   assert.match(homeMarkup, /visible-analysis-cards="\{\{visibleAnalysisCards\}\}"/)
   assert.match(analysisMarkup, /\{\{visibleAnalysisCards\}\}/)
 })
@@ -1031,7 +1041,7 @@ test('analysis user tab follows the Figma 507:1682 list hierarchy', () => {
   const styles = read('miniprogram/pages/analysis/index.less')
 
   for (const markup of [standalone, embedded]) {
-    assert.match(markup, /class="analysis-user__summary"[\s\S]*class="analysis-user__title">意向用户<[\s\S]*class="analysis-user__list-panel"[\s\S]*<segmented-filter items="\{\{analysisIntentTabs\}\}" active-id="\{\{activeAnalysisIntent\}\}"/)
+    assert.match(markup, /class="analysis-user__summary"[\s\S]*class="analysis-user__title">意向用户<[\s\S]*class="analysis-user__list-panel"/)
     assert.match(markup, />完播<\/text>/)
     assert.doesNotMatch(markup, />观看作品<\/text>/)
   }
@@ -1052,9 +1062,8 @@ test('analysis user intent tabs stay visible when the current filter is empty', 
   const embedded = read('miniprogram/components/home-analysis/index.wxml')
 
   for (const markup of [standalone, embedded]) {
-    assert.match(markup, /<view class="analysis-user__list-panel">[\s\S]*<segmented-filter items="\{\{analysisIntentTabs\}\}"/)
-    assert.match(markup, /wx:if="\{\{hasAnalysisUsers\}\}" class="analysis-user__list"/)
-    assert.doesNotMatch(markup, /wx:if="\{\{hasAnalysisUsers\}\}" class="analysis-user__list-panel"/)
+    assert.match(markup, /<view wx:if="\{\{hasAnalysisUsers\}\}" class="analysis-user__list-panel">/)
+    assert.match(markup, /wx:if="\{\{hasAnalysisUsers\}\}" class="analysis-user__list-panel"[\s\S]*<segmented-filter items="\{\{analysisPeriods\}\}"/)
   }
 })
 
@@ -1143,7 +1152,7 @@ test('analysis total tab follows Figma 587:8623 overview and peak layout', () =>
     assert.match(markup, /<segmented-filter[^>]*items="\{\{totalAnalysisPeriods\}\}" active-id="\{\{activeTotalPeriod\}\}" bind:change="onTotalPeriodTap"/)
     assert.match(markup, /数据总览/)
     assert.match(markup, /analysisData\.totalData\.heroMetrics/)
-    assert.match(markup, /阅读峰值/)
+    assert.match(markup, /浏览峰值/)
     assert.doesNotMatch(markup, /阅读数据/)
     assert.doesNotMatch(markup, /analysis-total__range-tabs/)
   }
@@ -1200,6 +1209,178 @@ test('navigation titles use one explicit Chinese typography token', () => {
 test('static assets stay below the preview package budget', () => {
   const bytes = getFileBytes(new URL('../miniprogram/assets/', import.meta.url))
   assert.ok(bytes < 20 * 1024 * 1024, `static assets are ${Math.round(bytes / 1024)}KB`)
+})
+
+test('home today data opens total analysis with the day period selected', () => {
+  const page = loadPageDefinition('miniprogram/pages/index/index.ts', {
+    getHomeGreeting: () => '',
+    getDefaultDateRange: () => ({ startDate: '2026-08-20', endDate: '2026-08-26' }),
+    getDateRangeLimits: () => ({ minDate: '2026-06-26', maxDate: '2026-08-26' }),
+  })
+  const calls = []
+  const context = {
+    data: { analysisData: {} },
+    setData(update) { Object.assign(this.data, update) },
+    setActiveTab(index) { calls.push(['tab', index]) },
+    setAnalysisTab(index) { calls.push(['analysis', index]) },
+    loadAnalysis(period) { calls.push(['period', period]) },
+  }
+
+  page.onTodayDataTap.call(context)
+
+  assert.equal(context.data.activeTotalPeriod, 'day')
+  assert.equal(context.data.activeAnalysisReadRange, 'week')
+  assert.deepEqual(calls, [['tab', 3], ['analysis', 2], ['period', 'day']])
+})
+
+test('home today data card follows Figma 478:1262', async () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+  assert.equal(existsSync(new URL('../miniprogram/assets/analysis/total-metric-divider.svg', import.meta.url)), true)
+  assert.match(page, /class="home-today-card__metadata"/)
+  assert.match(page, /<text>完播数<\/text>/)
+  assert.match(page, /wx:if="\{\{homeData\.today\.comparison\}\}" class="home-today-card__comparison"/)
+  assert.match(page, /class="home-today-card__comparison-divider" src="\/assets\/analysis\/total-metric-divider\.svg"/)
+  assert.match(styles, /\.home-today-card__primary \{[\s\S]*gap: 8rpx;/)
+  assert.match(styles, /\.home-today-card__comparison \{[\s\S]*gap: 0;[\s\S]*color: @home-muted-light;[\s\S]*font-size: 24rpx;/)
+  assert.match(styles, /\.home-today-card__comparison-divider \{[\s\S]*width: 2rpx;[\s\S]*height: 14rpx;/)
+  assert.match(styles, /\.home-today-card__comparison-value \{[\s\S]*color: @home-accent;/)
+  assert.match(styles, /\.home-today-card__metrics \{[\s\S]*margin-top: 40rpx;/)
+  assert.match(styles, /\.home-today-metric \{[\s\S]*gap: 8rpx;[\s\S]*width: 187rpx;/)
+})
+
+test('user detail record sorting updates the visible list only', () => {
+  const page = loadPageDefinition('miniprogram/pages/analysis-user-detail/index.ts', {
+    getAnalysisUserDetail: () => Promise.resolve(null),
+  })
+  const records = [
+    { id: 'first', readCount: '4', completionCount: '1', shareCount: '2' },
+    { id: 'second', readCount: '8', completionCount: '3', shareCount: '1' },
+  ]
+  const context = {
+    data: { detail: { records }, activeRecordSort: 'views' },
+    setData(update) { Object.assign(this.data, update) },
+  }
+
+  page.onRecordSortChange.call(context, { detail: { id: 'shares' } })
+
+  assert.equal(context.data.activeRecordSort, 'shares')
+  assert.deepEqual(context.data.visibleUserRecords.map((record) => record.id), ['first', 'second'])
+})
+
+test('analysis work period filter sits inside and filters only the work list', () => {
+  const standaloneMarkup = read('miniprogram/pages/analysis/index.wxml')
+  const embeddedMarkup = read('miniprogram/components/home-analysis/index.wxml')
+  const standaloneLogic = read('miniprogram/pages/analysis/index.ts')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const componentLogic = read('miniprogram/components/home-analysis/index.ts')
+  const styles = read('miniprogram/pages/analysis/index.less')
+
+  for (const markup of [standaloneMarkup, embeddedMarkup]) {
+    assert.ok(markup.indexOf('analysis-summary analysis-summary--redesign') < markup.indexOf('analysis-work-list'))
+    assert.match(markup, /class="analysis-work-list">[\s\S]*class="analysis-filters analysis-filters--redesign[^"]*"[\s\S]*<segmented-filter items="\{\{analysisPeriods\}\}"[\s\S]*class="analysis-work-list__inner"/)
+    assert.match(markup, /wx:for="\{\{visibleAnalysisCards\}\}"/)
+    assert.doesNotMatch(markup, /wx:for="\{\{analysisData\.cards\}\}"/)
+  }
+
+  assert.match(homeMarkup, /visible-analysis-cards="\{\{visibleAnalysisCards\}\}"/)
+  assert.match(componentLogic, /visibleAnalysisCards: \{ type: Array, value: \[\] \}/)
+  assert.match(standaloneLogic, /this\.loadWorkCards\(periodId\)/)
+  assert.match(homeLogic, /this\.loadWorkCards\(event\.detail\.id\)/)
+  assert.match(styles, /\.analysis-work-list \{[\s\S]*display: flex;[\s\S]*flex-direction: column;[\s\S]*gap: 40rpx;[\s\S]*margin-top: 40rpx;[\s\S]*padding: 40rpx;/)
+  assert.doesNotMatch(styles, /\.analysis-work-list__inner\s*\{[^}]*margin-top:/)
+})
+
+test('analysis user tab follows the Figma 581:8521 user-list rhythm', () => {
+  const standalone = read('miniprogram/pages/analysis/index.wxml')
+  const embedded = read('miniprogram/components/home-analysis/index.wxml')
+  const styles = read('miniprogram/pages/analysis/index.less')
+
+  for (const markup of [standalone, embedded]) {
+    assert.match(markup, /class="analysis-user__stat-label">浏览次数<\/text>/)
+    assert.match(markup, /class="analysis-user__stat-label">完播<\/text>[\s\S]*class="analysis-user__stat-label">转发<\/text>/)
+  }
+
+  assert.match(styles, /\.analysis-user__summary-label \{[\s\S]*color: #8a8e94;[\s\S]*font-size: 28rpx;/)
+  assert.match(styles, /\.analysis-user__list-panel \{[\s\S]*gap: 40rpx;/)
+  assert.match(styles, /\.analysis-user__list \{[\s\S]*margin-top: 0;/)
+})
+
+test('user analysis reuses the work time and metric filters', async () => {
+  const standalone = read('miniprogram/pages/analysis/index.wxml')
+  const embedded = read('miniprogram/components/home-analysis/index.wxml')
+  const standaloneLogic = read('miniprogram/pages/analysis/index.ts')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const { sortAnalysisUsers } = await import('../miniprogram/utils/analysis-users.ts')
+  const users = [
+    { id: 'first', readCount: '4', completionCount: '8', shareCount: '1' },
+    { id: 'second', readCount: '12', completionCount: '2', shareCount: '5' },
+  ]
+
+  for (const markup of [standalone, embedded]) {
+    assert.match(markup, /class="analysis-user__list-panel"[\s\S]*<segmented-filter items="\{\{analysisPeriods\}\}" active-id="\{\{activePeriod\}\}" item-width="68" bind:change="onPeriodTap" \/>[\s\S]*class="analysis-sort" bindtap="onAnalysisSortTap"/)
+    assert.doesNotMatch(markup, /analysisIntentTabs|onAnalysisIntentTap/)
+  }
+
+  for (const logic of [standaloneLogic, homeLogic]) {
+    assert.match(logic, /if \(this\.data\.activeAnalysisTab === 'user'\) \{[\s\S]*this\.loadAudienceUsers\(/)
+    assert.doesNotMatch(logic, /analysisIntentTabs|setAnalysisIntentFilter/)
+  }
+
+  assert.deepEqual(sortAnalysisUsers(users, 'view').map((user) => user.id), ['second', 'first'])
+  assert.deepEqual(sortAnalysisUsers(users, 'completion').map((user) => user.id), ['first', 'second'])
+  assert.deepEqual(sortAnalysisUsers(users, 'share').map((user) => user.id), ['second', 'first'])
+})
+
+test('work analysis calendar filter collects and applies a custom date range', () => {
+  const standaloneLogic = read('miniprogram/pages/analysis/index.ts')
+  const standaloneMarkup = read('miniprogram/pages/analysis/index.wxml')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const filterMarkup = read('miniprogram/components/segmented-filter/index.wxml')
+
+  for (const logic of [standaloneLogic, homeLogic]) {
+    assert.match(logic, /\{ id: 'custom'(?: as AnalysisPeriodId)?, label: '', iconPath: '\/assets\/analysis\/calendar-filter\.svg' \}/)
+    assert.match(logic, /onDateRangeConfirm\(event: WechatMiniprogram\.CustomEvent<\{ startDate: string; endDate: string \}>\)[\s\S]*activePeriod: 'custom'[\s\S]*loadWorkCards\('custom', dateRange\)/)
+  }
+
+  assert.match(standaloneLogic, /if \(periodId === 'custom'\) \{[\s\S]*dateRangePickerVisible: true/)
+  assert.match(homeLogic, /if \(event\.detail\.id === 'custom'\) \{[\s\S]*dateRangePickerVisible: true/)
+
+  for (const markup of [standaloneMarkup, homeMarkup]) {
+    assert.match(markup, /<date-range-picker[\s\S]*visible="\{\{dateRangePickerVisible\}\}"[\s\S]*min-date="\{\{twoMonthsAgoDate\}\}"[\s\S]*max-date="\{\{todayDate\}\}"[\s\S]*bind:confirm="onDateRangeConfirm"/)
+  }
+
+  assert.match(filterMarkup, /wx:if="\{\{item\.iconPath\}\}"[\s\S]*src="\{\{item\.iconPath\}\}"/)
+})
+
+test('custom date wheel only renders dates within the latest two months', async () => {
+  const { getDatePickerState, getDateRangeLimits } = await import('../miniprogram/utils/date-range.ts')
+  const pickerMarkup = read('miniprogram/components/date-range-picker/index.wxml')
+  const pickerStyles = read('miniprogram/components/date-range-picker/index.less')
+  const pickerState = getDatePickerState('2026-08-26', '2026-08-26', '2026-06-26')
+  const earliestPickerState = getDatePickerState('2026-06-26', '2026-08-26', '2026-06-26')
+
+  assert.deepEqual(getDateRangeLimits(new Date(2026, 7, 26)), { minDate: '2026-06-26', maxDate: '2026-08-26' })
+  assert.deepEqual(pickerState.range[0], ['2026年'])
+  assert.deepEqual(pickerState.range[1].slice(-3), ['06月', '07月', '08月'])
+  assert.deepEqual(pickerState.range[2].slice(-3), ['24日', '25日', '26日'])
+  assert.deepEqual(earliestPickerState.range[2].slice(0, 3), ['26日', '27日', '28日'])
+  assert.match(pickerMarkup, /mode="multiSelector"[\s\S]*range="\{\{startPickerRange\}\}"/)
+  assert.match(pickerMarkup, /mode="multiSelector"[\s\S]*range="\{\{endPickerRange\}\}"/)
+  assert.match(pickerMarkup, /最长可查询时间2个月/)
+  assert.match(pickerStyles, /\.date-range-picker__hint \{[\s\S]*color: #999999;[\s\S]*font-size: 24rpx;/)
+  assert.doesNotMatch(pickerMarkup, /mode="date"/)
+})
+
+test('date range picker uses the same entrance motion and backdrop opacity as the analysis sort sheet', () => {
+  const pickerStyles = read('miniprogram/components/date-range-picker/index.less')
+
+  assert.match(pickerStyles, /\.date-range-picker__mask \{[\s\S]*background: rgba\(0, 0, 0, 0\.8\);[\s\S]*animation: date-range-picker-mask-in 300ms ease-out both;/)
+  assert.match(pickerStyles, /\.date-range-picker__panel \{[\s\S]*animation: date-range-picker-panel-in 300ms ease-out both;/)
+  assert.match(pickerStyles, /@keyframes date-range-picker-mask-in \{[\s\S]*from \{ background: rgba\(0, 0, 0, 0\); \}[\s\S]*to \{ background: rgba\(0, 0, 0, 0\.8\); \}/)
+  assert.match(pickerStyles, /@keyframes date-range-picker-panel-in \{[\s\S]*from \{ transform: translateY\(100%\); \}[\s\S]*to \{ transform: translateY\(0\); \}/)
 })
 
 test('wechat preview source stays under the 2MB upload limit', () => {

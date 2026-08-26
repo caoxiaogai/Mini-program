@@ -1,6 +1,7 @@
 interface SegmentedFilterItem {
   id: string
   label: string
+  iconPath?: string
 }
 
 const getValidItems = (items: unknown): SegmentedFilterItem[] => {
@@ -11,6 +12,7 @@ const getValidItems = (items: unknown): SegmentedFilterItem[] => {
     && item !== null
     && typeof (item as SegmentedFilterItem).id === 'string'
     && typeof (item as SegmentedFilterItem).label === 'string'
+    && ((item as SegmentedFilterItem).iconPath === undefined || typeof (item as SegmentedFilterItem).iconPath === 'string')
   ))
 }
 

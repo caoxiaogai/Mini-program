@@ -27,7 +27,7 @@ const intentLabels: Record<NotificationIntent, string> = {
 
 function buildNotificationStatus(item: ApiIntentCustomer): string {
   if (item.hasForwarded === 1) return '该用户转发了你的作品，查看2次以上'
-  if (item.completed === 1) return '该用户已完成阅读'
+  if (item.completed === 1) return '该用户已完成浏览'
   return '未滑动看完所有图片'
 }
 
@@ -66,7 +66,7 @@ export function getNotifications(): Promise<NotificationsViewModel> {
         intent,
         intentLabel: intentLabels[intent],
         action: isForward ? 'forward' : 'reading',
-        actionLabel: isForward ? '“转发”了你的作品' : '“阅读”了你的作品',
+        actionLabel: isForward ? '“转发”了你的作品' : '“浏览”了你的作品',
         actionDate: formatMonthDayTime(item.lastViewTime),
         actionIconPath: isForward ? '/assets/notifications/action-forward.svg' : '/assets/notifications/action-reading.svg',
         avatarUrl: avatarUrls[index] ?? '',

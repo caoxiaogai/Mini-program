@@ -29,8 +29,7 @@ page {
 }
 
 .user-detail__profile-card {
-  min-height: 370rpx;
-  gap: 32rpx;
+  gap: 20rpx;
   padding: 40rpx;
   border: 2rpx solid @content-box-border;
   border-radius: 40rpx;
@@ -40,7 +39,7 @@ page {
 
 .user-detail__profile-main {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
   gap: 22rpx;
 }
@@ -59,7 +58,8 @@ page {
 
 .user-detail__identity {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   min-width: 0;
   gap: 16rpx;
 }
@@ -73,7 +73,8 @@ page {
   white-space: nowrap;
 }
 
-.user-detail__tag {
+.user-detail__high-intent,
+.user-detail__record-intent {
   display: flex;
   height: 40rpx;
   flex: none;
@@ -86,17 +87,22 @@ page {
   white-space: nowrap;
 }
 
-.user-detail__tag--high {
+.user-detail__record-intent {
+  align-self: flex-start;
+}
+
+.user-detail__high-intent,
+.user-detail__record-intent--high {
   color: #ff4343;
   background: #ffd7ce;
 }
 
-.user-detail__tag--medium {
+.user-detail__record-intent--medium {
   color: #ffa602;
   background: #f5ead5;
 }
 
-.user-detail__tag--low {
+.user-detail__record-intent--low {
   color: #707e80;
   background: #ededed;
 }
@@ -169,8 +175,9 @@ page {
 
 .user-detail__record {
   display: flex;
-  height: 176rpx;
-  align-items: center;
+  min-height: 176rpx;
+  flex-direction: column;
+  align-items: stretch;
   gap: 20rpx;
   padding: 20rpx;
   border-radius: 20rpx;
@@ -201,8 +208,8 @@ page {
 .user-detail__record-head {
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  gap: 8rpx;
+  align-items: flex-start;
+  gap: 20rpx;
 }
 
 .user-detail__record-title {
@@ -215,19 +222,11 @@ page {
 }
 
 .user-detail__record-meta {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
+  display: block;
   color: #8a8e94;
   font-size: 22rpx;
   line-height: normal;
   white-space: nowrap;
-}
-
-.user-detail__meta-divider {
-  width: 2rpx;
-  height: 20rpx;
-  background: #b0b0b0;
 }
 
 .user-detail__record-stats {

@@ -1,15 +1,21 @@
-import { getAnalysisOverview, sortAnalysisCards } from '../../services/analysis'
-import type { AnalysisAudienceUser, AnalysisCard, AnalysisIntentLevel, AnalysisReadRange, AnalysisViewModel, AnalysisWorkSortId } from '../../types/analysis'
+import { getAnalysisOverview } from '../../services/analysis'
+import type { AnalysisAudienceUser, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
+import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
+import type { DateRange } from '../../utils/date-range'
+import { sortAnalysisUsers } from '../../utils/analysis-users'
 
-type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
+type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
+
+type AnalysisSortId = 'completion' | 'share' | 'view'
 
 interface AnalysisPeriodOption {
   id: AnalysisPeriodId
   label: string
+  iconPath?: string
 }
 
 interface AnalysisSortOption {
-  id: AnalysisWorkSortId
+  id: AnalysisSortId
   label: string
 }
 
@@ -17,8 +23,11 @@ const analysisPeriods: AnalysisPeriodOption[] = [
   { id: 'day', label: '日' },
   { id: 'week', label: '周' },
   { id: 'month', label: '月' },
-  { id: 'total', label: '总' },
+  { id: 'custom', label: '', iconPath: '/assets/analysis/calendar-filter.svg' },
 ]
+
+const defaultDateRange = getDefaultDateRange()
+const dateRangeLimits = getDateRangeLimits()
 
 const totalAnalysisPeriods: AnalysisPeriodOption[] = [
   { id: 'day', label: '日' },
@@ -30,19 +39,12 @@ const totalAnalysisPeriods: AnalysisPeriodOption[] = [
 const analysisSortOptions: AnalysisSortOption[] = [
   { id: 'completion', label: '完播数' },
   { id: 'share', label: '转发数' },
-  { id: 'view', label: '浏览量' },
+  { id: 'view', label: '浏览次数' },
 ]
 
 type AnalysisTabId = 'work' | 'user' | 'total'
-type AnalysisIntentFilter = 'all' | AnalysisIntentLevel
-
 interface AnalysisTabOption {
   id: AnalysisTabId
-  label: string
-}
-
-interface AnalysisIntentTabOption {
-  id: AnalysisIntentFilter
   label: string
 }
 
@@ -52,19 +54,7 @@ const analysisTabs: AnalysisTabOption[] = [
   { id: 'total', label: '总数据' },
 ]
 
-const analysisIntentTabs: AnalysisIntentTabOption[] = [
-  { id: 'all', label: '全部' },
-  { id: 'high', label: '高意向' },
-  { id: 'medium', label: '中意向' },
-  { id: 'low', label: '低意向' },
-]
-
 const analysisSwipeThreshold = 40
-
-const getVisibleAnalysisUsers = (users: AnalysisAudienceUser[], filter: AnalysisIntentFilter) => {
-  if (filter === 'all') return users
-  return users.filter((user) => user.level === filter)
-}
 
 Page({
   data: {
@@ -76,16 +66,18 @@ Page({
     analysisSwipeStartX: 0,
     analysisPeriods,
     activePeriod: 'day' as AnalysisPeriodId,
+    dateRangePickerVisible: false,
+    customStartDate: defaultDateRange.startDate,
+    customEndDate: defaultDateRange.endDate,
+    todayDate: dateRangeLimits.maxDate,
+    twoMonthsAgoDate: dateRangeLimits.minDate,
     analysisSortOptions,
-    activeAnalysisSort: 'view' as AnalysisWorkSortId,
-    activeAnalysisSortLabel: '浏览量',
+    activeAnalysisSort: 'view' as AnalysisSortId,
+    activeAnalysisSortLabel: '浏览次数',
     analysisSortSheetVisible: false,
-    visibleAnalysisCards: [] as AnalysisCard[],
-    analysisIntentTabs,
-    activeAnalysisIntent: 'all' as AnalysisIntentFilter,
-    analysisIntentIndex: 0,
-    analysisIntentSwipeStartX: 0,
     visibleAnalysisUsers: [] as AnalysisAudienceUser[],
+    workSummary: [] as AnalysisViewModel['summary'],
+    visibleAnalysisCards: [] as AnalysisViewModel['cards'],
     hasAnalysisCards: false,
     hasAnalysisUsers: false,
     totalAnalysisPeriods,
@@ -106,17 +98,33 @@ Page({
   },
   loadAnalysis(period: AnalysisPeriodId) {
     getAnalysisOverview(period).then((analysisData) => {
-      const activeIntent = analysisIntentTabs[this.data.analysisIntentIndex]?.id ?? 'all'
-      const visibleAnalysisUsers = getVisibleAnalysisUsers(analysisData.audienceUsers, activeIntent)
-      const visibleAnalysisCards = sortAnalysisCards(analysisData.cards, this.data.activeAnalysisSort)
+      const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
+      const initializeWorkData = !this.data.analysisData
 
       this.setData({
         analysisData,
-        visibleAnalysisCards,
         visibleAnalysisUsers,
-        hasAnalysisCards: visibleAnalysisCards.length > 0,
+        workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary,
+        visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards,
+        hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards,
         hasAnalysisUsers: visibleAnalysisUsers.length > 0,
         visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange],
+      })
+    })
+  },
+  loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
+    getAnalysisOverview(period, dateRange).then((analysisData) => {
+      this.setData({ visibleAnalysisCards: analysisData.cards, hasAnalysisCards: analysisData.cards.length > 0 })
+    })
+  },
+  loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
+    getAnalysisOverview(period, dateRange).then((analysisData) => {
+      const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
+      const currentAnalysisData = this.data.analysisData ?? analysisData
+      this.setData({
+        analysisData: { ...currentAnalysisData, userSummary: analysisData.userSummary, audienceUsers: analysisData.audienceUsers },
+        visibleAnalysisUsers,
+        hasAnalysisUsers: visibleAnalysisUsers.length > 0,
       })
     })
   },
@@ -143,35 +151,6 @@ Page({
       analysisTabOffset: index * 100,
     })
   },
-  onAnalysisIntentTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) {
-    this.setAnalysisIntentFilter(event.detail.index)
-  },
-  onAnalysisIntentTouchStart(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
-    this.setData({ analysisIntentSwipeStartX: event.detail.clientX })
-  },
-  onAnalysisIntentTouchEnd(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
-    const startX = this.data.analysisIntentSwipeStartX
-    const endX = event.detail.clientX
-    const distance = endX - startX
-
-    if (Math.abs(distance) < analysisSwipeThreshold) return
-    this.setAnalysisIntentFilter(this.data.analysisIntentIndex + (distance < 0 ? 1 : -1))
-  },
-  setAnalysisIntentFilter(index: number) {
-    const selectedTab = analysisIntentTabs[index]
-    const users = this.data.analysisData?.audienceUsers ?? []
-
-    if (!selectedTab) return
-
-    const visibleUsers = getVisibleAnalysisUsers(users, selectedTab.id)
-
-    this.setData({
-      activeAnalysisIntent: selectedTab.id,
-      analysisIntentIndex: index,
-      visibleAnalysisUsers: visibleUsers,
-      hasAnalysisUsers: visibleUsers.length > 0,
-    })
-  },
   onTotalPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
     const { id: periodId, index: periodIndex } = event.detail
     const readRange: AnalysisReadRange = periodId === 'month' ? 'month' : 'week'
@@ -188,18 +167,46 @@ Page({
     const { id: periodId, index: periodIndex } = event.detail
 
     if (!Number.isInteger(periodIndex) || periodIndex < 0 || periodIndex >= analysisPeriods.length) return
+    if (periodId === 'custom') {
+      this.setData({ dateRangePickerVisible: true })
+      return
+    }
 
     this.setData({
       activePeriod: periodId,
     })
 
-    this.loadAnalysis(periodId)
+    if (this.data.activeAnalysisTab === 'user') {
+      this.loadAudienceUsers(periodId)
+      return
+    }
+
+    this.loadWorkCards(periodId)
+  },
+  onDateRangeConfirm(event: WechatMiniprogram.CustomEvent<{ startDate: string; endDate: string }>) {
+    const dateRange = event.detail
+
+    this.setData({
+      activePeriod: 'custom',
+      customStartDate: dateRange.startDate,
+      customEndDate: dateRange.endDate,
+      dateRangePickerVisible: false,
+    })
+    if (this.data.activeAnalysisTab === 'user') {
+      this.loadAudienceUsers('custom', dateRange)
+      return
+    }
+
+    this.loadWorkCards('custom', dateRange)
+  },
+  onDateRangeCancel() {
+    this.setData({ dateRangePickerVisible: false })
   },
   onAnalysisSortTap() {
     this.setData({ analysisSortSheetVisible: !this.data.analysisSortSheetVisible })
   },
   onAnalysisSortOptionTap(event: WechatMiniprogram.TouchEvent) {
-    const sortId = event.currentTarget.dataset.id as AnalysisWorkSortId
+    const sortId = event.currentTarget.dataset.id as AnalysisSortId
     const sortOption = analysisSortOptions.find((option) => option.id === sortId)
 
     if (!sortOption) return
@@ -208,7 +215,9 @@ Page({
       activeAnalysisSort: sortOption.id,
       activeAnalysisSortLabel: sortOption.label,
       analysisSortSheetVisible: false,
-      visibleAnalysisCards: sortAnalysisCards(this.data.analysisData?.cards ?? [], sortOption.id),
+      visibleAnalysisUsers: this.data.activeAnalysisTab === 'user'
+        ? sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], sortOption.id)
+        : this.data.visibleAnalysisUsers,
     })
   },
   onAnalysisSortMaskTap() {

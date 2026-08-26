@@ -1,0 +1,17 @@
+<view wx:if="{{visible}}" class="date-range-picker">
+  <view class="date-range-picker__mask" catchtap="onCancelTap"></view>
+  <view class="date-range-picker__panel" catchtap="stopPropagation">
+    <text class="date-range-picker__title">选择时间段</text>
+    <text class="date-range-picker__hint">最长可查询时间2个月</text>
+    <picker mode="multiSelector" range="{{startPickerRange}}" value="{{startPickerValue}}" bindcolumnchange="onStartPickerColumnChange" bindchange="onStartPickerChange">
+      <view class="date-range-picker__field"><text>开始日期</text><text>{{draftStartDate}}</text></view>
+    </picker>
+    <picker mode="multiSelector" range="{{endPickerRange}}" value="{{endPickerValue}}" bindcolumnchange="onEndPickerColumnChange" bindchange="onEndPickerChange">
+      <view class="date-range-picker__field"><text>结束日期</text><text>{{draftEndDate}}</text></view>
+    </picker>
+    <view class="date-range-picker__actions">
+      <view class="date-range-picker__action" bindtap="onCancelTap" hover-class="date-range-picker__action--pressed">取消</view>
+      <view class="date-range-picker__action date-range-picker__action--confirm" bindtap="onConfirmTap" hover-class="date-range-picker__action--pressed">确认</view>
+    </view>
+  </view>
+</view>

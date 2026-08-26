@@ -55,11 +55,13 @@ export type AnalysisUserRecord = {
   thumbnailUrl: string
   title: string
   date: string
-  type: string
   progress: string
   viewDuration: string
+  readCount: string
   completionCount: string
   shareCount: string
+  intentLevel?: AnalysisIntentLevel
+  intentLabel?: string
 }
 
 export type AnalysisUserProfile = {
@@ -72,6 +74,7 @@ export type AnalysisUserProfile = {
   completionCount: string
   shareCount: string
   viewDuration: string
+  highIntentContentCount?: number
 }
 
 export type AnalysisUserDetailViewModel = {
