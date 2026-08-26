@@ -43,12 +43,12 @@
         <view wx:for="{{analysisData.userSummary}}" wx:key="label" class="analysis-user__summary-card"><text class="analysis-user__summary-label">{{item.label}}</text><text class="analysis-user__summary-value">{{item.value}}</text></view>
       </view>
       <text class="analysis-user__title">意向用户</text>
-      <view wx:if="{{hasAnalysisUsers}}" class="analysis-user__list-panel">
+      <view class="analysis-user__list-panel">
         <view class="analysis-filters analysis-filters--redesign home-analysis__filters">
           <segmented-filter items="{{analysisPeriods}}" active-id="{{activePeriod}}" item-width="68" bind:change="onPeriodTap" />
           <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
         </view>
-        <view class="analysis-user__list">
+        <view wx:if="{{hasAnalysisUsers}}" class="analysis-user__list">
           <view wx:for="{{visibleAnalysisUsers}}" wx:key="id" class="analysis-user" bindtap="onAnalysisUserTap" data-id="{{item.id}}" hover-class="analysis-user--pressed">
             <image class="analysis-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
             <view class="analysis-user__body">
@@ -60,10 +60,10 @@
             </view>
           </view>
         </view>
-      </view>
-      <view wx:else class="analysis-empty-state analysis-empty-state--user">
-        <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
-        <text>还没用户，快去发布作品吧</text>
+        <view wx:else class="analysis-empty-state analysis-empty-state--user">
+          <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+          <text>还没用户，快去发布作品吧</text>
+        </view>
       </view>
     </view>
   </view>

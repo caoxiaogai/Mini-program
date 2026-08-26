@@ -12,9 +12,11 @@ import type {
   AnalysisChartPoint,
   AnalysisDetailViewModel,
   AnalysisIntentLevel,
+  AnalysisMetric,
   AnalysisReadRange,
   AnalysisUserDetailViewModel,
   AnalysisViewModel,
+  AnalysisWorkListViewModel,
   AnalysisWorkSortId,
 } from '../types/analysis'
 import {
@@ -84,6 +86,12 @@ function resolveIntentLevel(
   return 'low'
 }
 
+const workSortOrderBy: Record<AnalysisWorkSortId, string> = {
+  view: 'view_count',
+  share: 'forward_count',
+  completion: 'complete_count',
+}
+
 function mapContentCard(item: ApiContentListItem): AnalysisCard {
   const metrics = buildCardMetrics(item.viewCount, item.forwardCount, item.completeCount, item.viewerCount)
 
@@ -97,6 +105,43 @@ function mapContentCard(item: ApiContentListItem): AnalysisCard {
     compactMetrics: metrics.compact,
     sortCounts: buildCardSortCounts(item.viewCount, item.forwardCount, item.completeCount),
   }
+}
+
+function buildWorkSummary(dashboard: ApiDashboard): AnalysisMetric[] {
+  return [
+    { label: '总发布', value: formatCount(dashboard.totalPublishCount) },
+    { label: '总浏览次数', value: formatCount(dashboard.totalViewCount) },
+    { label: '总转发', value: formatCount(dashboard.totalForwardCount) },
+  ]
+}
+
+async function mapContentCards(contents: ApiContentListItem[] | null | undefined, sortId: AnalysisWorkSortId): Promise<AnalysisCard[]> {
+  const cards = sortAnalysisCards((contents ?? []).map(mapContentCard), sortId)
+  const thumbs = await prepareMediaUrls(cards.map((card) => card.thumbnailUrl))
+  cards.forEach((card, index) => {
+    card.thumbnailUrl = thumbs[index] ?? ''
+  })
+  return cards
+}
+
+/** 作品分析列表：走 GET /analysis/content/list 的浏览/转发/完播，并按当前排序字段请求 */
+export function getAnalysisWorkList(
+  period: AnalysisTimeRange = 'day',
+  customRange?: DateRange,
+  sortId: AnalysisWorkSortId = 'view',
+): Promise<AnalysisWorkListViewModel> {
+  const query = {
+    ...buildPeriodQuery(period, customRange),
+    orderBy: workSortOrderBy[sortId],
+  }
+
+  return Promise.all([
+    request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query }),
+    request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query }),
+  ]).then(async ([dashboard, contents]) => ({
+    summary: buildWorkSummary(dashboard),
+    cards: await mapContentCards(contents, sortId),
+  }))
 }
 
 function buildCardSortCounts(
@@ -198,34 +243,31 @@ function getReadTrends(): Promise<Record<AnalysisReadRange, AnalysisChartPoint[]
   })
 }
 
-export function getAnalysisOverview(period: AnalysisTimeRange = 'day', customRange?: DateRange): Promise<AnalysisViewModel> {
+export function getAnalysisOverview(
+  period: AnalysisTimeRange = 'day',
+  customRange?: DateRange,
+  sortId: AnalysisWorkSortId = 'view',
+): Promise<AnalysisViewModel> {
   const periodQuery = buildPeriodQuery(period, customRange)
+  const contentQuery = { ...periodQuery, orderBy: workSortOrderBy[sortId] }
   const totalQuery = buildPeriodQuery('total')
 
   return Promise.all([
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: periodQuery }),
-    request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query: periodQuery }),
+    request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query: contentQuery }),
     request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: periodQuery }),
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: periodQuery }),
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: totalQuery }),
     getReadTrends(),
   ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) => {
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
-    const cards = contents.map(mapContentCard)
-    const [cardThumbs, avatarUrls] = await Promise.all([
-      prepareMediaUrls(cards.map((card) => card.thumbnailUrl)),
+    const [cards, avatarUrls] = await Promise.all([
+      mapContentCards(contents, sortId),
       prepareMediaUrls(customers.map((customer) => customer.avatar)),
     ])
-    cards.forEach((card, index) => {
-      card.thumbnailUrl = cardThumbs[index] ?? ''
-    })
 
     return {
-      summary: [
-        { label: '总发布', value: formatCount(dashboard.totalPublishCount) },
-        { label: '总浏览次数', value: formatCount(dashboard.totalViewCount) },
-        { label: '总转发', value: formatCount(dashboard.totalForwardCount) },
-      ],
+      summary: buildWorkSummary(dashboard),
       cards,
       userSummary: [
         { label: '高意向', value: formatCount(dashboard.highIntentCount) },

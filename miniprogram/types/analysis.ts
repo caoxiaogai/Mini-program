@@ -105,3 +105,8 @@ export type AnalysisViewModel = {
   audienceUsers: AnalysisAudienceUser[]
   totalData: AnalysisTotalViewModel
 }
+
+export type AnalysisWorkListViewModel = {
+  summary: AnalysisMetric[]
+  cards: AnalysisCard[]
+}

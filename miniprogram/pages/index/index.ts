@@ -1,4 +1,4 @@
-import { getAnalysisOverview } from '../../services/analysis'
+import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
 import { getHomePageData } from '../../services/home'
 import { getMaterialDetail, getMaterials } from '../../services/materials'
 import { getNotifications } from '../../services/notifications'
@@ -196,16 +196,20 @@ Page({
     this.loadMaterials()
     if (pending.showSuccessModal && pending.materialId) this.loadShareMaterial(pending.materialId)
   },
+  resolveWorkDateRange(period: AnalysisPeriodId, dateRange?: DateRange): DateRange | undefined {
+    if (period !== 'custom') return dateRange
+    return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
+  },
   loadAnalysis(period: AnalysisPeriodId = this.data.activePeriod) {
-    getAnalysisOverview(period).then((analysisData) => {
+    getAnalysisOverview(period, undefined, this.data.activeAnalysisSort).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
       this.setData({ analysisData, visibleAnalysisUsers, workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary, visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards, hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards, hasAnalysisUsers: visibleAnalysisUsers.length > 0, visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange] })
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
-    getAnalysisOverview(period, dateRange).then((analysisData) => {
-      this.setData({ visibleAnalysisCards: analysisData.cards, hasAnalysisCards: analysisData.cards.length > 0 })
+    getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards }) => {
+      this.setData({ workSummary: summary, visibleAnalysisCards: cards, hasAnalysisCards: cards.length > 0 })
     })
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
@@ -342,6 +346,9 @@ Page({
       activeAnalysisSort: option.id,
       activeAnalysisSortLabel: option.label,
       analysisSortSheetVisible: false,
+      visibleAnalysisCards: this.data.activeAnalysisTab === 'work'
+        ? sortAnalysisCards(this.data.visibleAnalysisCards, option.id)
+        : this.data.visibleAnalysisCards,
       visibleAnalysisUsers: this.data.activeAnalysisTab === 'user'
         ? sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], option.id)
         : this.data.visibleAnalysisUsers,
@@ -353,6 +360,9 @@ Page({
       activeAnalysisSort: option.id,
       activeAnalysisSortLabel: option.label,
       analysisSortSheetVisible: false,
+      visibleAnalysisCards: this.data.activeAnalysisTab === 'work'
+        ? sortAnalysisCards(this.data.visibleAnalysisCards, option.id)
+        : this.data.visibleAnalysisCards,
       visibleAnalysisUsers: this.data.activeAnalysisTab === 'user'
         ? sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], option.id)
         : this.data.visibleAnalysisUsers,

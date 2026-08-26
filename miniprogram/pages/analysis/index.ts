@@ -1,4 +1,4 @@
-import { getAnalysisOverview } from '../../services/analysis'
+import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
 import type { AnalysisAudienceUser, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
@@ -96,8 +96,12 @@ Page({
 
     this.loadAnalysis(this.data.activePeriod)
   },
+  resolveWorkDateRange(period: AnalysisPeriodId, dateRange?: DateRange): DateRange | undefined {
+    if (period !== 'custom') return dateRange
+    return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
+  },
   loadAnalysis(period: AnalysisPeriodId) {
-    getAnalysisOverview(period).then((analysisData) => {
+    getAnalysisOverview(period, undefined, this.data.activeAnalysisSort).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
 
@@ -113,8 +117,8 @@ Page({
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
-    getAnalysisOverview(period, dateRange).then((analysisData) => {
-      this.setData({ visibleAnalysisCards: analysisData.cards, hasAnalysisCards: analysisData.cards.length > 0 })
+    getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards }) => {
+      this.setData({ workSummary: summary, visibleAnalysisCards: cards, hasAnalysisCards: cards.length > 0 })
     })
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
@@ -215,6 +219,9 @@ Page({
       activeAnalysisSort: sortOption.id,
       activeAnalysisSortLabel: sortOption.label,
       analysisSortSheetVisible: false,
+      visibleAnalysisCards: this.data.activeAnalysisTab === 'work'
+        ? sortAnalysisCards(this.data.visibleAnalysisCards, sortOption.id)
+        : this.data.visibleAnalysisCards,
       visibleAnalysisUsers: this.data.activeAnalysisTab === 'user'
         ? sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], sortOption.id)
         : this.data.visibleAnalysisUsers,

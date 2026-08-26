@@ -6,7 +6,7 @@
  *
  * 查看本机 IP：Windows 运行 ipconfig，找当前 Wi-Fi 的 IPv4 地址。
  */
-export const DEV_LAN_ORIGIN = 'http://192.168.31.225:8080'
+export const DEV_LAN_ORIGIN = 'http://10.136.153.188:8080'
 
 /**
  * 微信开发者工具与后端同机时走本机回环。

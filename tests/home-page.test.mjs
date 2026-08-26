@@ -53,7 +53,7 @@ test('data access goes through the unified request layer', () => {
   assert.doesNotMatch(requestLayer, /envVersion/)
   assert.match(requestLayer, /\/api\/files\/sales-materials\//)
   assert.match(config, /DEVTOOLS_ORIGIN = 'http:\/\/127\.0\.0\.1:8080'/)
-  assert.match(config, /DEV_LAN_ORIGIN = 'http:\/\/192\.168\.31\.225:8080'/)
+  assert.match(config, /DEV_LAN_ORIGIN = 'http:\/\/10\.136\.153\.188:8080'/)
   assert.doesNotMatch(config, /PROD_API_ORIGIN/)
   assert.match(requestLayer, /export function request</)
   assert.match(requestLayer, /export function ensureLogin/)
@@ -1007,6 +1007,8 @@ test('analysis work list re-sorts when the sort option changes', () => {
 
   assert.match(homeLogic, /sortAnalysisUsers\(this\.data\.analysisData\?\.audienceUsers \?\? \[\], option\.id\)/)
   assert.match(analysisLogic, /sortAnalysisUsers\(this\.data\.analysisData\?\.audienceUsers \?\? \[\], sortOption\.id\)/)
+  assert.match(homeLogic, /sortAnalysisCards\(this\.data\.visibleAnalysisCards, option\.id\)/)
+  assert.match(analysisLogic, /sortAnalysisCards\(this\.data\.visibleAnalysisCards, sortOption\.id\)/)
   assert.match(homeMarkup, /visible-analysis-cards="\{\{visibleAnalysisCards\}\}"/)
   assert.match(analysisMarkup, /\{\{visibleAnalysisCards\}\}/)
 })
@@ -1015,11 +1017,20 @@ test('analysis work data comes from backend analysis APIs', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/analysis.ts')
   const componentStylesPath = new URL('../miniprogram/components/home-analysis/index.less', import.meta.url)
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const analysisLogic = read('miniprogram/pages/analysis/index.ts')
 
   assert.equal(existsSync(componentStylesPath), true)
   assert.doesNotMatch(config, /ANALYSIS_DATA_SOURCE/)
   assert.match(service, /path: '\/analysis\/dashboard'/)
   assert.match(service, /path: '\/analysis\/content\/list'/)
+  assert.match(service, /orderBy: workSortOrderBy\[sortId\]/)
+  assert.match(service, /label: '浏览次数', value: formatCount\(viewCount\)/)
+  assert.match(service, /label: '转发', value: formatCount\(forwardCount\)/)
+  assert.match(service, /label: '完播', value: formatCount\(completeCount\)/)
+  assert.match(service, /export function getAnalysisWorkList/)
+  assert.match(homeLogic, /getAnalysisWorkList\(period, this\.resolveWorkDateRange\(period, dateRange\), this\.data\.activeAnalysisSort\)/)
+  assert.match(analysisLogic, /getAnalysisWorkList\(period, this\.resolveWorkDateRange\(period, dateRange\), this\.data\.activeAnalysisSort\)/)
   assert.doesNotMatch(service, /from '\.\.\/mocks\//)
   assert.match(read('miniprogram/components/home-analysis/index.less'), /@import ['"]\.\.\/\.\.\/pages\/analysis\/index\.less['"]/)
 })
@@ -1057,13 +1068,14 @@ test('analysis user list stacks its filter above the rows', () => {
   assert.match(styles, /\.analysis-user__list-panel \{[^}]*display: flex;[^}]*flex-direction: column;/)
 })
 
-test('analysis user intent tabs stay visible when the current filter is empty', () => {
+test('analysis user filters stay visible when the current filter is empty', () => {
   const standalone = read('miniprogram/pages/analysis/index.wxml')
   const embedded = read('miniprogram/components/home-analysis/index.wxml')
 
   for (const markup of [standalone, embedded]) {
-    assert.match(markup, /<view wx:if="\{\{hasAnalysisUsers\}\}" class="analysis-user__list-panel">/)
-    assert.match(markup, /wx:if="\{\{hasAnalysisUsers\}\}" class="analysis-user__list-panel"[\s\S]*<segmented-filter items="\{\{analysisPeriods\}\}"/)
+    assert.match(markup, /<view class="analysis-user__list-panel">/)
+    assert.doesNotMatch(markup, /wx:if="\{\{hasAnalysisUsers\}\}" class="analysis-user__list-panel"/)
+    assert.match(markup, /class="analysis-user__list-panel">[\s\S]*<segmented-filter items="\{\{analysisPeriods\}\}"[\s\S]*class="analysis-sort"[\s\S]*wx:if="\{\{hasAnalysisUsers\}\}" class="analysis-user__list"[\s\S]*analysis-empty-state--user/)
   }
 })
 

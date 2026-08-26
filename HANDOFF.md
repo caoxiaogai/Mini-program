@@ -241,6 +241,24 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-26：体验版改接本机局域网后端
+
+- 真机 / 体验版请求基址从旧 IP `192.168.31.225` 改为当前 WLAN `http://10.136.153.188:8080`，开发者工具仍走 `127.0.0.1`，不走公网域名。
+- 同步 aisales `application-dev.yml` 的 `minio.public-base-url`。后端需重启后文件代理才用新地址。
+
+### 2026-08-26：用户分析空状态保留筛选和排序
+
+- 没有意向用户时，日/周/月/日历筛选和浏览次数排序仍留在白色列表卡顶部；空提示只替换用户列表，不再把整块面板换成空状态。
+- 独立分析页与首页内嵌分析同步。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（82 tests passed）。当前环境无微信开发者工具 GUI，空状态视觉待确认。
+
+### 2026-08-26：作品分析列表接入真实浏览/转发/完播
+
+- 作品分析每条作品的「浏览次数 / 转发 / 完播」来自 `GET /analysis/content/list` 的 `viewCount` / `forwardCount` / `completeCount`，随日/周/月/自定义时间范围变化。
+- 列表请求带上后端已支持的 `orderBy`（`view_count` / `forward_count` / `complete_count`）；切换排序时按接口返回的真实计数重排，不再只改按钮文案。
+- 切换作品周期时只拉 dashboard + content/list，并同步刷新顶部「总发布 / 总浏览次数 / 总转发」。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（82 tests passed）。当前环境无微信开发者工具 GUI，真机/模拟器视觉待确认。
+
 ### 2026-08-26：合并 origin/developer-v2 到 main-v2
 
 - 收下日历自定义时间范围、用户分析周期/排序、首页今日数据进总数据日视图、今日浏览最多单条进详情等交互。
