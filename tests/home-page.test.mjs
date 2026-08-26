@@ -56,7 +56,7 @@ test('data access goes through the unified request layer', () => {
   for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking']) {
     const service = read(`miniprogram/services/${name}.ts`)
     assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
-    if (!['home', 'analysis', 'notifications', 'materials'].includes(name)) {
+    if (!['home', 'analysis', 'notifications', 'materials', 'ranking'].includes(name)) {
       assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
     }
   }
@@ -176,6 +176,8 @@ test('home page declares the new Figma sections and state branches', () => {
   assert.match(page, /class="home-page"/)
   assert.match(page, /class="home-hero"/)
   assert.match(page, /class="home-notification-card"/)
+  assert.match(page, /class="home-section home-section--notifications"[\s\S]*<text class="home-section__title">互动消息<\/text>/)
+  assert.doesNotMatch(page, /class="home-section home-section--notifications"[\s\S]*<text class="home-section__title">实时通知<\/text>/)
   assert.match(page, /class="home-content-card"/)
   assert.match(page, /class="home-intent-card"/)
   assert.match(page, /class="home-today-card"/)
@@ -246,6 +248,19 @@ test('home today data card follows Figma 478:1262', async () => {
   assert.match(styles, /\.home-today-card__comparison-value \{[\s\S]*color: @home-accent;/)
   assert.match(styles, /\.home-today-card__metrics \{[\s\S]*margin-top: 40rpx;/)
   assert.match(styles, /\.home-today-metric \{[\s\S]*gap: 8rpx;[\s\S]*width: 187rpx;/)
+})
+
+test('home today data includes high, medium and low intent metrics', async () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+  const { getHomeStyleMock } = await import('../miniprogram/mocks/home.ts')
+
+  assert.match(page, /class="home-today-card__metrics home-today-card__intent-metrics"[\s\S]*class="home-today-metric__value">\{\{homeData\.intentSummary\.highCount\}\}<\/text><text>高意向[\s\S]*class="home-today-metric__value">\{\{homeData\.intentSummary\.mediumCount\}\}<\/text><text>中意向[\s\S]*class="home-today-metric__value">\{\{homeData\.intentSummary\.lowCount\}\}<\/text><text>低意向/)
+  assert.match(styles, /\.home-today-card__intent-metrics \{[\s\S]*margin-top: 40rpx;/)
+  assert.deepEqual(
+    [getHomeStyleMock().intentSummary.highCount, getHomeStyleMock().intentSummary.mediumCount, getHomeStyleMock().intentSummary.lowCount],
+    ['12', '18', '20'],
+  )
 })
 
 test('home today-most records open their content analysis details', () => {
@@ -499,6 +514,37 @@ test('ranking and analysis periods use the shared segmented filter control', () 
   assert.match(componentStyles, /padding: @segmented-filter-vertical-inset;/)
   assert.match(componentStyles, /top: @segmented-filter-vertical-inset;/)
   assert.match(componentStyles, /bottom: @segmented-filter-vertical-inset;/)
+})
+
+test('ranking preview uses the fixed Figma leaderboard mock and sorts each metric', async () => {
+  const { getRankingStyleMock } = await import('../miniprogram/mocks/ranking.ts')
+  const service = read('miniprogram/services/ranking.ts')
+
+  const ranking = getRankingStyleMock()
+
+  assert.match(service, /from '\.\.\/mocks\/ranking'/)
+  assert.match(service, /return Promise\.resolve\(getRankingStyleMock\(\)\)/)
+  assert.equal(ranking.entries.length, 8)
+  assert.deepEqual(ranking.entries.map((entry) => [entry.name, entry.views]), [
+    ['快乐小鹅', 20984],
+    ['来财来财', 18930],
+    ['金钱豹到', 18032],
+    ['恭喜暴富', 16098],
+    ['给个生活比个耶', 15093],
+    ['你瞅啥', 14093],
+    ['橘里橘气', 12938],
+    ['黑色幽默', 11098],
+  ])
+  assert.deepEqual([...ranking.entries].sort((left, right) => right.shares - left.shares).slice(0, 3).map((entry) => [entry.name, entry.shares]), [
+    ['黑色幽默', 1120],
+    ['快乐小鹅', 980],
+    ['给个生活比个耶', 860],
+  ])
+  assert.deepEqual([...ranking.entries].sort((left, right) => right.completions - left.completions).slice(0, 3).map((entry) => [entry.name, entry.completions]), [
+    ['来财来财', 920],
+    ['恭喜暴富', 880],
+    ['快乐小鹅', 840],
+  ])
 })
 
 test('new homepage assets are local and sized for the target frame', () => {
