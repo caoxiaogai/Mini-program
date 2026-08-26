@@ -93,7 +93,7 @@ export interface RequestOptions {
   data?: Record<string, unknown>
   /** 跳过登录态（仅登录接口本身使用） */
   skipAuth?: boolean
-  /** 静默模式：失败时不弹提示，用于可降级的聚合子请求 */
+  /** 静默模式：不弹 loading、失败不弹提示；用于可降级的子请求和埋点上报 */
   silent?: boolean
   /** 覆盖默认超时（毫秒），文档页数等慢请求使用 */
   timeout?: number
@@ -143,11 +143,12 @@ function buildAuthHeader(): Record<string, string> {
 }
 
 function rawRequest<T>(options: RequestOptions): Promise<T> {
-  beginLoading()
+  const showLoading = !options.silent
+  if (showLoading) beginLoading()
 
   return new Promise<T>((resolve, reject) => {
     const finish = (error: ApiError | null, value?: T): void => {
-      endLoading()
+      if (showLoading) endLoading()
       if (!error) {
         resolve(value as T)
         return

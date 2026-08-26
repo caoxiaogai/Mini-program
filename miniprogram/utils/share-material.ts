@@ -2,12 +2,14 @@ const MATERIAL_DETAIL_PATH = '/pages/material-detail/index'
 const MATERIAL_ID_QUERY_KEY = 'id'
 const DEFAULT_SHARE_TITLE = '图文素材'
 
-export function buildMaterialSharePath(materialId: string): string {
-  return `${MATERIAL_DETAIL_PATH}?${MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`
+export function buildMaterialSharePath(materialId: string, trackingId?: string): string {
+  return `${MATERIAL_DETAIL_PATH}?${buildMaterialShareQuery(materialId, trackingId)}`
 }
 
-export function buildMaterialShareQuery(materialId: string): string {
-  return `${MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`
+export function buildMaterialShareQuery(materialId: string, trackingId?: string): string {
+  const query = `${MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`
+  if (!trackingId) return query
+  return `${query}&trackingId=${encodeURIComponent(trackingId)}`
 }
 
 export function buildMaterialShareTitle(lines: string[]): string {

@@ -128,6 +128,7 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
 
       return {
         id: String(material.id),
+        trackingId: material.trackingId ?? '',
         title: '作品',
         fileType,
         images: images.filter((url) => url !== ''),

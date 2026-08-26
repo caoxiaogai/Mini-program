@@ -216,6 +216,7 @@ miniprogram/
 | 首页改版（重新开始） | in_progress | 已按新版 Figma `478:1234` 重写首页结构、数据层、底部导航和本地资源 |
 | 实现「我的」页视觉切片 | done | 已按 Figma `519:5031` 接入首页第五个 tab；头像/昵称来自登录接口，余额/会员为视觉占位 |
 | 所有页面下拉刷新 | done | 滑到顶部再下拉刷新当前页数据；发布页只收起动画，不覆盖未保存编辑 |
+| 分享素材浏览埋点 | done | 朋友打开素材详情/文档阅读页上报 `POST /tracking/event`，转发上报 `POST /tracking/forward`；浏览次数与意向由后端统计 |
 | 其他页面视觉与真机适配验收 | pending | 后续页面实现后执行 |
 
 ## 验收基线
@@ -241,6 +242,13 @@ miniprogram/
 - 不在文档中记录密钥、AppSecret、用户隐私数据或生产接口凭证。
 
 ## 最近变更
+
+### 2026-08-26：朋友打开分享素材后上报浏览与转发
+
+- 根因：素材详情和文档阅读页此前只展示内容，没有调用 `POST /tracking/event`，后端因此不会增加浏览次数，也不会更新高/中/低意向。
+- 新增 `services/tracking.ts`：登录后用当前用户 openid 作为 `visitorId`，静默上报 `play` / `end` / `forward`。图片打开即记一次浏览；单图按停留时长刷新 duration（超过 10 秒才到高意向）；多图/PDF 按已看页数；视频在播放、进度和结束时上报。
+- 分享路径带上 `trackingId`。发布者本人浏览由后端跳过，不会把自己算进浏览次数。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（90 tests passed）。当前环境无微信开发者工具 GUI，朋友打开分享卡片的真机链路待确认。
 
 ### 2026-08-26：合并 origin/developer-v2 到 main-v2
 

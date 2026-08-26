@@ -16,6 +16,8 @@ export interface MaterialCardViewModel {
 
 export interface MaterialDetailViewModel {
   id: string
+  /** 分享追踪 ID；后端按此关联浏览事件。未生成分享链接时可能为空 */
+  trackingId: string
   title: string
   fileType: string
   /** 图片素材轮播图；视频/PDF 可为空 */

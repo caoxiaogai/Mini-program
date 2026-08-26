@@ -1,4 +1,9 @@
 import { getDocumentPageCount, prepareDocumentPageImage } from '../../services/document'
+import {
+  calcImageViewProgress,
+  createTrackingSessionId,
+  reportTrackingEvent,
+} from '../../services/tracking'
 import type { DocumentReaderPage } from '../../types/document'
 import { pickCurrentDocumentPageByScroll } from '../../utils/document-page'
 import { runPullRefresh } from '../../utils/pull-refresh'
@@ -35,6 +40,8 @@ Page({
   },
 
   materialId: '',
+  trackingId: '',
+  sessionId: '',
   totalPages: 0,
   loadedUntil: -1,
   loadingPageIndices: [] as number[],
@@ -42,9 +49,16 @@ Page({
   lastScrollTop: 0,
   windowWidth: 375,
   pageHeightsPx: [] as Array<number | undefined>,
+  viewedPageIndices: [] as number[],
+  maxViewedIndex: -1,
+  lastReportedProgress: -1,
+  hasReportedComplete: false,
+  viewStartedAt: 0,
 
   onLoad(options: Record<string, string | undefined>) {
     this.materialId = options.materialId ?? ''
+    this.trackingId = options.trackingId ?? ''
+    this.sessionId = createTrackingSessionId()
     this.windowWidth = getWindowWidth()
     this.resetPagingState()
 
@@ -62,6 +76,10 @@ Page({
     this.currentPageIndex = 0
     this.lastScrollTop = 0
     this.pageHeightsPx = []
+    this.viewedPageIndices = []
+    this.maxViewedIndex = -1
+    this.lastReportedProgress = -1
+    this.hasReportedComplete = false
   },
 
   onRetryTap() {
@@ -92,7 +110,10 @@ Page({
             navTitle: `1 / ${totalPages}`,
             pages: buildPages(totalPages),
           },
-          () => this.ensurePagesLoaded(0),
+          () => {
+            this.ensurePagesLoaded(0)
+            this.markPageViewed(0)
+          },
         )
       })
       .catch(() => {
@@ -132,6 +153,7 @@ Page({
     if (current !== this.currentPageIndex) {
       this.currentPageIndex = current
       this.setData({ navTitle: `${current + 1} / ${this.totalPages}` })
+      this.markPageViewed(current)
     }
 
     this.ensurePagesLoaded(current)
@@ -162,6 +184,65 @@ Page({
       .catch(() => {
         this.loadingPageIndices = this.loadingPageIndices.filter((index) => index !== pageIndex)
       })
+  },
+
+  onUnload() {
+    this.reportProgress(true)
+    this.sessionId = ''
+    this.trackingId = ''
+    this.materialId = ''
+  },
+
+  markPageViewed(pageIndex: number) {
+    if (pageIndex < 0 || pageIndex >= this.totalPages) return
+
+    if (this.viewStartedAt <= 0) {
+      this.viewStartedAt = Date.now()
+    }
+
+    if (!this.viewedPageIndices.includes(pageIndex)) {
+      this.viewedPageIndices.push(pageIndex)
+    }
+
+    if (pageIndex > this.maxViewedIndex) {
+      this.maxViewedIndex = pageIndex
+    }
+
+    this.ensurePagesLoaded(this.maxViewedIndex)
+    this.reportProgress(false)
+  },
+
+  getViewDurationSec(): number {
+    if (this.viewStartedAt <= 0) return 0
+    return Math.max(0, Math.floor((Date.now() - this.viewStartedAt) / 1000))
+  },
+
+  canTrack(): boolean {
+    if (!this.materialId) return false
+    return this.trackingId !== '' || this.materialId !== ''
+  },
+
+  reportProgress(isFinal: boolean) {
+    if (!this.canTrack() || this.totalPages <= 0 || this.maxViewedIndex < 0) return
+    if (this.hasReportedComplete) return
+
+    const viewedCount = this.maxViewedIndex + 1
+    const progress = calcImageViewProgress(viewedCount, this.totalPages)
+    const isComplete = viewedCount >= this.totalPages
+
+    if (!isFinal && progress <= this.lastReportedProgress && !isComplete) return
+
+    this.lastReportedProgress = Math.max(this.lastReportedProgress, progress)
+    if (isComplete) this.hasReportedComplete = true
+
+    reportTrackingEvent({
+      trackingId: this.trackingId,
+      materialId: this.materialId,
+      actionType: isComplete ? 'end' : 'play',
+      progress,
+      duration: this.getViewDurationSec(),
+      sessionId: this.sessionId,
+    })
   },
 
   onPageTap(event: WechatMiniprogram.TouchEvent) {

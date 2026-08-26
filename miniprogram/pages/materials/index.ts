@@ -53,6 +53,7 @@ Page({
     isAndroid: false,
     showPublishSuccessModal: false,
     shareMaterialId: '',
+    shareTrackingId: '',
     shareTitle: '',
     shareImageUrl: '',
     pullRefreshing: false,
@@ -149,6 +150,7 @@ Page({
       if (!detail) return
       this.setData({
         shareMaterialId: detail.id,
+        shareTrackingId: detail.trackingId,
         shareTitle: buildMaterialShareTitle(detail.descriptionLines),
         shareImageUrl: detail.previewUrl,
       })
@@ -169,6 +171,7 @@ Page({
     this.setData({
       showPublishSuccessModal: false,
       shareMaterialId: '',
+      shareTrackingId: '',
       shareTitle: '',
       shareImageUrl: '',
     })
@@ -178,7 +181,7 @@ Page({
 
     return {
       title: this.data.shareTitle,
-      path: buildMaterialSharePath(this.data.shareMaterialId),
+      path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl: this.data.shareImageUrl || undefined,
     }
   },
@@ -187,7 +190,7 @@ Page({
 
     return {
       title: this.data.shareTitle,
-      query: buildMaterialShareQuery(this.data.shareMaterialId),
+      query: buildMaterialShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl: this.data.shareImageUrl || undefined,
     }
   },

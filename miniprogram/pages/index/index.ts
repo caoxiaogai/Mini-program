@@ -98,6 +98,7 @@ Page({
     materialsHeaderOpacity: 0,
     showPublishSuccessModal: false,
     shareMaterialId: '',
+    shareTrackingId: '',
     shareTitle: '',
     shareImageUrl: '',
     analysisData: null as AnalysisViewModel | null,
@@ -183,6 +184,7 @@ Page({
       if (!detail) return
       this.setData({
         shareMaterialId: detail.id,
+        shareTrackingId: detail.trackingId,
         shareTitle: buildMaterialShareTitle(detail.descriptionLines),
         shareImageUrl: detail.previewUrl,
       })
@@ -429,6 +431,7 @@ Page({
     this.setData({
       showPublishSuccessModal: false,
       shareMaterialId: '',
+      shareTrackingId: '',
       shareTitle: '',
       shareImageUrl: '',
     })
@@ -438,7 +441,7 @@ Page({
 
     return {
       title: this.data.shareTitle,
-      path: buildMaterialSharePath(this.data.shareMaterialId),
+      path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl: this.data.shareImageUrl || undefined,
     }
   },
@@ -447,7 +450,7 @@ Page({
 
     return {
       title: this.data.shareTitle,
-      query: buildMaterialShareQuery(this.data.shareMaterialId),
+      query: buildMaterialShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl: this.data.shareImageUrl || undefined,
     }
   },

@@ -24,6 +24,9 @@
           enable-play-gesture
           enable-progress-gesture
           object-fit="contain"
+          bindplay="onVideoPlay"
+          bindpause="onVideoPause"
+          bindended="onVideoEnded"
           bindtimeupdate="onVideoTimeUpdate"
         />
       </view>

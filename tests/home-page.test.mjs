@@ -59,7 +59,7 @@ test('data access goes through the unified request layer', () => {
   assert.match(requestLayer, /export function ensureLogin/)
   assert.match(requestLayer, /\/wechat\/login/)
 
-  for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile']) {
+  for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile', 'tracking']) {
     const service = read(`miniprogram/services/${name}.ts`)
     assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
     if (name !== 'ranking') {
@@ -995,13 +995,60 @@ test('material detail opens image preview, video player and PDF reader', () => {
   assert.match(markup, /class="material-detail__pdf-preview" src="\{\{detail\.previewUrl\}\}"/)
   assert.match(markup, /bindtap="onImageTap"/)
   assert.match(logic, /wx\.previewImage/)
-  assert.match(logic, /\/pages\/document-reader\/index\?materialId=/)
+  assert.match(logic, /\/pages\/document-reader\/index\?/)
+  assert.match(logic, /materialId=\$\{encodeURIComponent\(detail\.id\)\}/)
   assert.match(documentService, /path: `\/material\/\$\{materialId\}\/page-count`/)
   assert.match(documentService, /\/material\/\$\{materialId\}\/page\/\$\{pageIndex\}\/image/)
   assert.match(documentLogic, /getDocumentPageCount/)
   assert.match(documentLogic, /prepareDocumentPageImage/)
   assert.match(documentLogic, /pickCurrentDocumentPageByScroll/)
   assert.match(documentLogic, /onDocumentScroll/)
+})
+
+test('friend material views report play and forward tracking events', () => {
+  const tracking = read('miniprogram/services/tracking.ts')
+  const requestLayer = read('miniprogram/services/request.ts')
+  const types = read('miniprogram/types/materials.ts')
+  const materials = read('miniprogram/services/materials.ts')
+  const shareUtil = read('miniprogram/utils/share-material.ts')
+  const detailLogic = read('miniprogram/pages/material-detail/index.ts')
+  const detailMarkup = read('miniprogram/pages/material-detail/index.wxml')
+  const documentLogic = read('miniprogram/pages/document-reader/index.ts')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+
+  assert.match(tracking, /\/tracking\/event/)
+  assert.match(tracking, /\/tracking\/forward/)
+  assert.match(tracking, /ensureLogin/)
+  assert.match(tracking, /visitorId: user\.openid/)
+  assert.match(tracking, /silent: true/)
+  assert.match(tracking, /skipAuth: true/)
+  assert.doesNotMatch(tracking, /wx\.request\(/)
+  assert.doesNotMatch(tracking, /from '\.\.\/mocks\//)
+
+  assert.match(requestLayer, /const showLoading = !options\.silent/)
+  assert.match(types, /trackingId: string/)
+  assert.match(materials, /trackingId: material\.trackingId \?\? ''/)
+  assert.match(shareUtil, /trackingId=\$\{encodeURIComponent\(trackingId\)\}/)
+
+  assert.match(detailLogic, /createTrackingSessionId/)
+  assert.match(detailLogic, /reportTrackingEvent/)
+  assert.match(detailLogic, /markImageViewed/)
+  assert.match(detailLogic, /actionType: 'play'/)
+  assert.match(detailLogic, /actionType: 'forward'/)
+  assert.match(detailLogic, /options\.trackingId/)
+  assert.match(detailMarkup, /bindplay="onVideoPlay"/)
+  assert.match(detailMarkup, /bindpause="onVideoPause"/)
+  assert.match(detailMarkup, /bindended="onVideoEnded"/)
+
+  assert.match(documentLogic, /createTrackingSessionId/)
+  assert.match(documentLogic, /reportTrackingEvent/)
+  assert.match(documentLogic, /markPageViewed/)
+  assert.match(documentLogic, /options\.trackingId/)
+  assert.doesNotMatch(detailLogic, /from '\.\.\/mocks\//)
+  assert.doesNotMatch(documentLogic, /from '\.\.\/mocks\//)
+
+  assert.match(homeLogic, /shareTrackingId/)
+  assert.match(homeLogic, /buildMaterialSharePath\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
 })
 
 test('material detail shares to friends and guides moments sharing', () => {
@@ -1015,7 +1062,7 @@ test('material detail shares to friends and guides moments sharing', () => {
   assert.match(markup, /bindtap="onShareMomentsTap"/)
   assert.match(logic, /onShareAppMessage\(\)/)
   assert.match(logic, /onShareTimeline\(\)/)
-  assert.match(logic, /buildMaterialSharePath\(detail\.id\)/)
+  assert.match(logic, /buildMaterialSharePath\(detail\.id, detail\.trackingId/)
   assert.match(logic, /showMomentsShareGuide/)
   assert.match(logic, /enableMaterialShareMenu/)
   assert.match(shareUtil, /请点击右上角「···」，选择「分享到朋友圈」/)
