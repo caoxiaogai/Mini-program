@@ -62,7 +62,9 @@ test('data access goes through the unified request layer', () => {
   for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile']) {
     const service = read(`miniprogram/services/${name}.ts`)
     assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
-    assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
+    if (name !== 'ranking') {
+      assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
+    }
   }
 })
 
@@ -151,6 +153,8 @@ test('home page declares the new Figma sections and state branches', () => {
   assert.match(page, /class="home-page"/)
   assert.match(page, /class="home-hero"/)
   assert.match(page, /class="home-notification-card"/)
+  assert.match(page, /class="home-section home-section--notifications"[\s\S]*<text class="home-section__title">互动消息<\/text>/)
+  assert.doesNotMatch(page, /class="home-section home-section--notifications"[\s\S]*<text class="home-section__title">实时通知<\/text>/)
   assert.match(page, /class="home-content-card"/)
   assert.match(page, /class="home-intent-card"/)
   assert.match(page, /class="home-today-card"/)
@@ -180,6 +184,14 @@ test('home summary cards open the matching analysis tabs', () => {
   assert.match(page, /class="home-today-card" bindtap="onTodayDataTap"/)
   assert.match(logic, /onIntentSummaryTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(1\)/)
   assert.match(logic, /onTodayDataTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(2\)/)
+})
+
+test('home today data includes high, medium and low intent metrics', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(page, /class="home-today-card__metrics home-today-card__intent-metrics"[\s\S]*class="home-today-metric__value">\{\{homeData\.intentSummary\.highCount\}\}<\/text><text>高意向[\s\S]*class="home-today-metric__value">\{\{homeData\.intentSummary\.mediumCount\}\}<\/text><text>中意向[\s\S]*class="home-today-metric__value">\{\{homeData\.intentSummary\.lowCount\}\}<\/text><text>低意向/)
+  assert.match(styles, /\.home-today-card__intent-metrics \{[\s\S]*margin-top: 40rpx;/)
 })
 
 test('home today-most records open their content analysis details', () => {
@@ -442,6 +454,37 @@ test('ranking and analysis periods use the shared segmented filter control', () 
   assert.match(componentStyles, /bottom: @segmented-filter-vertical-inset;/)
 })
 
+test('ranking preview uses the fixed Figma leaderboard mock and sorts each metric', async () => {
+  const { getRankingStyleMock } = await import('../miniprogram/mocks/ranking.ts')
+  const service = read('miniprogram/services/ranking.ts')
+
+  const ranking = getRankingStyleMock()
+
+  assert.match(service, /from '\.\.\/mocks\/ranking'/)
+  assert.match(service, /return Promise\.resolve\(getRankingStyleMock\(\)\)/)
+  assert.equal(ranking.entries.length, 8)
+  assert.deepEqual(ranking.entries.map((entry) => [entry.name, entry.views]), [
+    ['快乐小鹅', 20984],
+    ['来财来财', 18930],
+    ['金钱豹到', 18032],
+    ['恭喜暴富', 16098],
+    ['给个生活比个耶', 15093],
+    ['你瞅啥', 14093],
+    ['橘里橘气', 12938],
+    ['黑色幽默', 11098],
+  ])
+  assert.deepEqual([...ranking.entries].sort((left, right) => right.shares - left.shares).slice(0, 3).map((entry) => [entry.name, entry.shares]), [
+    ['黑色幽默', 1120],
+    ['快乐小鹅', 980],
+    ['给个生活比个耶', 860],
+  ])
+  assert.deepEqual([...ranking.entries].sort((left, right) => right.completions - left.completions).slice(0, 3).map((entry) => [entry.name, entry.completions]), [
+    ['来财来财', 920],
+    ['恭喜暴富', 880],
+    ['快乐小鹅', 840],
+  ])
+})
+
 test('new homepage assets are local and sized for the target frame', () => {
   const assets = [
     'miniprogram/assets/home-new/home-hero-glow.svg',
@@ -524,11 +567,31 @@ test('bottom navigation uses selected cyan states and the supplied publish icon'
   assert.match(logic, /activeIconPath: '\/assets\/home-new\/tab-profile-active\.svg'/)
   assert.match(styles, /\.bottom-tab-bar__create \{[\s\S]*flex-direction: column;[\s\S]*gap: 2rpx;/)
   assert.match(styles, /\.bottom-tab-bar__create-icon \{[\s\S]*width: 48rpx;[\s\S]*height: 48rpx;/)
-  assert.match(styles, /\.bottom-tab-bar__item--active \{[\s\S]*background: #e0e0e0;/)
+  assert.doesNotMatch(styles, /\.bottom-tab-bar__item--active \{[\s\S]*background: #e0e0e0;/)
   assert.match(styles, /\.bottom-tab-bar__label \{[\s\S]*color: #666666;/)
   assert.match(styles, /\.bottom-tab-bar__item--active \.bottom-tab-bar__label \{[\s\S]*color: #0ec8d9;/)
   assert.match(publishIcon, /width="20" height="20"/)
   assert.match(publishIcon, /fill="#666666"/)
+})
+
+test('bottom navigation slides one shared selection surface to the tapped destination', () => {
+  const component = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.wxml')
+  const logic = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.ts')
+  const styles = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.less')
+
+  assert.match(component, /class="bottom-tab-bar__selection" style="transform: translateX\(\{\{activeIndicatorOffset\}\}\);"/)
+  assert.match(logic, /activeIndicatorIndex: 0/)
+  assert.match(logic, /activeIndicatorOffset: '0%'/)
+  assert.match(logic, /activeIndicatorIndex[\s\S]*plusActive[\s\S]*findIndex/)
+  assert.match(styles, /\.bottom-tab-bar__selection \{[\s\S]*position: absolute;[\s\S]*width: calc\(\(100% - 16rpx\) \/ 5\);[\s\S]*background: #e0e0e0;[\s\S]*transition: transform 220ms ease-out;/)
+  assert.match(styles, /\.bottom-tab-bar__item,\s*\.bottom-tab-bar__create \{[\s\S]*position: relative;/)
+})
+
+test('bottom navigation provides light haptic feedback for tab and publish taps', () => {
+  const logic = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.ts')
+
+  assert.match(logic, /onTabTap\(event[\s\S]*wx\.vibrateShort\(\{ type: 'light' \}\)[\s\S]*triggerEvent\('tabtap'/)
+  assert.match(logic, /onPlusTap\(\)[\s\S]*wx\.vibrateShort\(\{ type: 'light' \}\)[\s\S]*triggerEvent\('plus'/)
 })
 
 test('publish navigation receives the same selected state as the other root tabs', () => {
@@ -541,7 +604,7 @@ test('publish navigation receives the same selected state as the other root tabs
   assert.match(component, /plusActive/)
   assert.match(component, /bottom-tab-bar__create--active/)
   assert.match(component, /tab-publish-active\.svg/)
-  assert.match(styles, /\.bottom-tab-bar__create--active\s*\{[\s\S]*background: #e0e0e0;/)
+  assert.doesNotMatch(styles, /\.bottom-tab-bar__create--active\s*\{[\s\S]*background: #e0e0e0;/)
   assert.match(styles, /\.bottom-tab-bar__create--active \.bottom-tab-bar__label\s*\{[\s\S]*color: #0ec8d9;/)
   assert.doesNotMatch(styles, /\.bottom-tab-bar__create--active \.bottom-tab-bar__create-icon\s*\{[\s\S]*filter:/)
   assert.match(page, /plus-active="\{\{true\}\}"/)
