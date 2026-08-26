@@ -1,5 +1,6 @@
 import { getAnalysisDetail } from '../../services/analysis'
 import type { AnalysisDetailViewModel, AnalysisIntentLevel, AnalysisIntentUser } from '../../types/analysis'
+import { fromDatasetId } from '../../utils/dataset-id'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 type IntentFilter = 'all' | AnalysisIntentLevel
@@ -78,7 +79,8 @@ Page({
     })
   },
   onDetailUserTap(event: WechatMiniprogram.TouchEvent) {
-    const userId = event.currentTarget.dataset.id as string
+    const userId = fromDatasetId(event.currentTarget.dataset.id)
+    if (!userId) return
 
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
   },

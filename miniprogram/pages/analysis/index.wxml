@@ -41,7 +41,7 @@
           <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
         </view>
         <view wx:if="{{hasAnalysisUsers}}" class="analysis-user__list">
-          <view wx:for="{{visibleAnalysisUsers}}" wx:key="id" class="analysis-user" bindtap="onAnalysisUserTap" data-id="{{item.id}}" hover-class="analysis-user--pressed">
+          <view wx:for="{{visibleAnalysisUsers}}" wx:key="id" class="analysis-user" bindtap="onAnalysisUserTap" data-id="id:{{item.id}}" hover-class="analysis-user--pressed">
             <image class="analysis-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
             <view class="analysis-user__body">
               <view class="analysis-user__summary-line">

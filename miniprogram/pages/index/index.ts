@@ -19,6 +19,7 @@ import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildHomeShareQuery, buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, showMomentsShareGuide } from '../../utils/share-material'
 import { persistViewedNotification } from '../../utils/notification-viewed'
+import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed } from './home-notification-preview'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
@@ -79,6 +80,7 @@ function getVisibleMaterials(items: MaterialCardViewModel[], filterId: Materials
 }
 
 Page({
+  publishSuccessShared: false,
   data: {
     greetingHeadline: getHomeGreeting(),
     greetingSubtitle: '今日阳光明媚，祝你好运☀️',
@@ -155,6 +157,11 @@ Page({
     this.setData({ greetingHeadline: getHomeGreeting() })
     enableMaterialShareMenu()
     this.applyPendingPublishReturn()
+    this.closePublishSuccessModalAfterShareReturn()
+    this.loadHomeData(true)
+    if (rootTabIds[this.data.activeTabIndex] === 'notifications') {
+      this.loadNotifications()
+    }
   },
   onHomeScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
     const homeHeaderOpacity = getHomeHeaderOpacity(event.detail.scrollTop)
@@ -199,6 +206,7 @@ Page({
     const pending = takePendingPublishReturn()
     if (!pending) return
 
+    this.publishSuccessShared = false
     this.setData({
       showPublishSuccessModal: pending.showSuccessModal,
       shareMaterialId: pending.materialId,
@@ -267,7 +275,7 @@ Page({
     const id = rootTabIds[index]
     const activeItems = this.data.tabItems.map((item) => ({ ...item, active: item.id === id }))
     this.setData({ activeTabIndex: nextIndex, tabItems: activeItems, plusActive: id === 'materials' })
-    if (id === 'notifications' && !this.data.notifications) this.loadNotifications()
+    if (id === 'notifications') this.loadNotifications()
     if (id === 'materials' && !this.data.materials) this.loadMaterials()
     if (id === 'analysis' && !this.data.analysisData) this.loadAnalysis()
   },
@@ -281,14 +289,16 @@ Page({
   },
   onNotificationTap(event: WechatMiniprogram.TouchEvent) {
     const notificationId = event.currentTarget.dataset.id as string | undefined
-    const userId = event.currentTarget.dataset.userId as string | undefined
+    const userId = fromDatasetId(event.currentTarget.dataset.userId)
 
     if (notificationId && this.data.homeData) {
       const notification = this.data.homeData.notifications.find((item) => item.id === notificationId)
-      if (notification) persistViewedNotification(notification.userId, notification.lastViewTime)
-      const homeData = markHomeNotificationViewed(this.data.homeData, notificationId)
-      const tabItems = this.data.tabItems.map((item) => item.id === 'notifications' ? { ...item, badgeCount: homeData.unreadNotificationCount } : item)
-      this.setData({ homeData, tabItems })
+      const eventId = notification?.eventId
+      if (eventId && persistViewedNotification(eventId)) {
+        const homeData = markHomeNotificationViewed(this.data.homeData, eventId)
+        const tabItems = this.data.tabItems.map((item) => item.id === 'notifications' ? { ...item, badgeCount: homeData.unreadNotificationCount } : item)
+        this.setData({ homeData, tabItems })
+      }
     }
 
     if (userId) wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
@@ -317,13 +327,13 @@ Page({
     const visibleNotificationGroups = getVisibleNotificationGroups(this.data.notifications?.groups ?? [], filterId)
     this.setData({ activeNotificationFilter: filterId, visibleNotificationGroups, hasVisibleNotificationGroups: visibleNotificationGroups.length > 0 })
   },
-  onNotificationCardTap(event: WechatMiniprogram.CustomEvent<{ userId: string; lastViewTime?: string }>) {
+  onNotificationCardTap(event: WechatMiniprogram.CustomEvent<{ userId: string; eventId?: string }>) {
     const userId = event.detail.userId
+    const eventId = event.detail.eventId
     if (!userId) return
 
-    persistViewedNotification(userId, event.detail.lastViewTime)
-    if (this.data.homeData) {
-      const homeData = markHomeNotificationViewed(this.data.homeData, `home-notification-${userId}`)
+    if (eventId && persistViewedNotification(eventId) && this.data.homeData) {
+      const homeData = markHomeNotificationViewed(this.data.homeData, eventId)
       const tabItems = this.data.tabItems.map((item) => item.id === 'notifications' ? { ...item, badgeCount: homeData.unreadNotificationCount } : item)
       this.setData({ homeData, tabItems })
     }
@@ -457,23 +467,39 @@ Page({
       shareImageUrl: '',
     })
   },
+  closePublishSuccessModalAfterShare() {
+    if (!this.data.showPublishSuccessModal) return
+
+    this.publishSuccessShared = true
+    this.setData({ showPublishSuccessModal: false })
+  },
+  closePublishSuccessModalAfterShareReturn() {
+    if (!this.publishSuccessShared) return
+
+    this.publishSuccessShared = false
+    this.onPublishSuccessClose()
+  },
   onShareAppMessage() {
     if (!this.data.shareMaterialId) return
 
-    return {
+    const shareMessage = {
       title: this.data.shareTitle,
       path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl: this.data.shareImageUrl || undefined,
     }
+    this.closePublishSuccessModalAfterShare()
+    return shareMessage
   },
   onShareTimeline() {
     if (!this.data.shareMaterialId) return
 
-    return {
+    const shareTimeline = {
       title: this.data.shareTitle,
       query: buildHomeShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl: this.data.shareImageUrl || undefined,
     }
+    this.closePublishSuccessModalAfterShare()
+    return shareTimeline
   },
   onShareMomentsTap() {
     showMomentsShareGuide()

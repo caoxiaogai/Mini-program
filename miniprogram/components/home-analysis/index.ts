@@ -1,4 +1,5 @@
 import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
+import { fromDatasetId } from '../../utils/dataset-id'
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
 type AnalysisSortId = 'completion' | 'share' | 'view'
@@ -38,6 +39,6 @@ Component({
     onAnalysisSortOptionTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysissortoptiontap', { id: event.currentTarget.dataset.id as AnalysisSortId }) },
     onAnalysisSortMaskTap() { this.triggerEvent('analysissortmasktap') },
     onCardTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('cardtap', { id: event.currentTarget.dataset.id as string }) },
-    onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('usertap', { id: event.currentTarget.dataset.id as string }) },
+    onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('usertap', { id: fromDatasetId(event.currentTarget.dataset.id) }) },
   },
 })

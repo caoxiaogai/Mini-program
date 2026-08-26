@@ -4,6 +4,7 @@ export type HomeNotificationAction = 'forward' | 'reading'
 
 export interface HomeNotificationViewModel {
   id: string
+  eventId: string
   userId: string
   visitorName: string
   intent: HomeIntentLevel
@@ -42,7 +43,7 @@ export interface HomeTodayViewModel {
     label: string
     value: string
   }
-  completeRate: string
+  completeCount: string
   forwardCount: string
   viewerCount: string
 }

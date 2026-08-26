@@ -10,7 +10,7 @@
         <view class="user-detail__profile-body">
           <view class="user-detail__identity">
             <text class="user-detail__name" bindtap="onCopyUsername">{{detail.profile.name}}</text>
-            <text wx:if="{{detail.profile.highIntentContentCount}}" class="user-detail__high-intent">#对{{detail.profile.highIntentContentCount}}个高意向</text>
+            <text wx:if="{{detail.profile.highIntentContentCount}}" class="user-detail__high-intent">#对{{detail.profile.highIntentContentCount}}个作品高意向</text>
           </view>
         </view>
       </view>
@@ -42,6 +42,7 @@
             <view class="user-detail__record-stats">
               <view><text>进度</text><text>{{item.progress}}</text></view>
               <view><text>观看时长</text><text>{{item.viewDuration}}</text></view>
+              <view><text>完播数</text><text>{{item.completionCount}}</text></view>
               <view><text>浏览次数</text><text>{{item.readCount}}</text></view>
               <view><text>转发</text><text>{{item.shareCount}}</text></view>
             </view>

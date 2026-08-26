@@ -25,7 +25,7 @@
       <view class="detail-intent__panel">
         <segmented-filter items="{{intentTabs}}" active-id="{{activeIntentLevel}}" bind:change="onIntentTabTap" bind:touchstart="onIntentTouchStart" bind:touchend="onIntentTouchEnd" />
         <view wx:if="{{hasVisibleIntentUsers}}" class="detail-users">
-          <view wx:for="{{visibleIntentUsers}}" wx:key="id" class="detail-user" bindtap="onDetailUserTap" data-id="{{item.id}}">
+          <view wx:for="{{visibleIntentUsers}}" wx:key="id" class="detail-user" bindtap="onDetailUserTap" data-id="id:{{item.id}}">
             <image class="detail-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
             <view class="detail-user__body">
               <view class="detail-user__summary">

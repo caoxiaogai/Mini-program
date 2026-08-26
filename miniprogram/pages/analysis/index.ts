@@ -1,5 +1,6 @@
 import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
 import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
+import { fromDatasetId } from '../../utils/dataset-id'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
@@ -251,7 +252,8 @@ Page({
     wx.navigateTo({ url: `/pages/analysis-detail/index?id=${cardId}` })
   },
   onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) {
-    const userId = event.currentTarget.dataset.id as string
+    const userId = fromDatasetId(event.currentTarget.dataset.id)
+    if (!userId) return
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
   },
 })

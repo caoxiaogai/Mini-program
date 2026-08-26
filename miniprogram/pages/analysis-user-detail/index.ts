@@ -1,4 +1,4 @@
-import { getAnalysisUserDetail } from '../../services/analysis'
+import { enrichAnalysisUserDetailThumbnails, getAnalysisUserDetail } from '../../services/analysis'
 import type { AnalysisUserDetailViewModel, AnalysisUserRecord } from '../../types/analysis'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
@@ -46,10 +46,24 @@ Page({
   loadDetail() {
     if (!this.userId) return Promise.resolve()
 
-    return getAnalysisUserDetail(this.userId).then((detail) => this.setData({
-      detail,
-      visibleUserRecords: detail ? sortUserRecords(detail.records, this.data.activeRecordSort) : [],
-    }))
+    return getAnalysisUserDetail(this.userId)
+      .then((detail) => {
+        this.setData({
+          detail,
+          visibleUserRecords: detail ? sortUserRecords(detail.records, this.data.activeRecordSort) : [],
+        })
+        if (!detail) return
+
+        return enrichAnalysisUserDetailThumbnails(detail).then((next) => {
+          this.setData({
+            detail: next,
+            visibleUserRecords: sortUserRecords(next.records, this.data.activeRecordSort),
+          })
+        })
+      })
+      .catch((error) => {
+        console.warn('[analysis-user-detail] load failed', error)
+      })
   },
   onCopyUsername() {
     this.copyUsername()

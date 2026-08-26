@@ -67,6 +67,7 @@ Page({
 
     if (!this.materialId) return
 
+    this.reportOpenedPlay()
     this.loadDetail()
   },
   onPullDownRefresh() {
@@ -85,6 +86,10 @@ Page({
 
       if (detail.fileType === 'IMAGE' && detail.images.length > 0) {
         this.markImageViewed(0, detail)
+      } else if (detail.fileType === 'VIDEO') {
+        this.reportVideoProgress(false, detail)
+      } else if (isDocumentMaterial(detail)) {
+        this.reportDocumentView(detail)
       }
     })
   },
@@ -98,6 +103,7 @@ Page({
     this.clearVideoProgressTimer()
     this.reportImageViewProgress(true)
     this.reportVideoProgress(true)
+    this.reportDocumentView()
     this.getVideoContext()?.pause()
   },
 
@@ -106,6 +112,7 @@ Page({
     this.clearVideoProgressTimer()
     this.reportImageViewProgress(true)
     this.reportVideoProgress(true)
+    this.reportDocumentView()
     this.getVideoContext()?.pause()
     this.trackingSessionId = ''
     this.viewedImageIndices = []
@@ -122,8 +129,22 @@ Page({
     const target = detail ?? this.data.detail
     return {
       trackingId: (target?.trackingId || this.pageTrackingId) ?? '',
-      materialId: target?.id ?? '',
+      materialId: target?.id || this.materialId || '',
     }
+  },
+
+  reportOpenedPlay(detail?: MaterialDetailViewModel) {
+    if (!this.canTrackMaterial(detail)) return
+
+    const target = this.resolveTrackingTarget(detail)
+    reportTrackingEvent({
+      trackingId: target.trackingId,
+      materialId: target.materialId,
+      actionType: 'play',
+      progress: 0,
+      duration: 0,
+      sessionId: this.trackingSessionId,
+    })
   },
 
   canTrackMaterial(detail?: MaterialDetailViewModel): boolean {
@@ -143,6 +164,9 @@ Page({
     const query = [`materialId=${encodeURIComponent(detail.id)}`]
     if (target.trackingId) {
       query.push(`trackingId=${encodeURIComponent(target.trackingId)}`)
+    }
+    if (this.trackingSessionId) {
+      query.push(`sessionId=${encodeURIComponent(this.trackingSessionId)}`)
     }
 
     wx.navigateTo({ url: `/pages/document-reader/index?${query.join('&')}` })
@@ -252,18 +276,32 @@ Page({
     }, VIDEO_PROGRESS_INTERVAL_MS) as unknown as number
   },
 
-  reportVideoProgress(isFinal = false) {
-    const detail = this.data.detail
-    if (!detail || detail.fileType !== 'VIDEO' || !this.canTrackMaterial(detail)) return
-    if (!isFinal && this.lastVideoProgress < 1) return
+  reportVideoProgress(_isFinal = false, detail?: MaterialDetailViewModel) {
+    const current = detail ?? this.data.detail
+    if (!current || current.fileType !== 'VIDEO' || !this.canTrackMaterial(current)) return
 
-    const target = this.resolveTrackingTarget(detail)
+    const target = this.resolveTrackingTarget(current)
     reportTrackingEvent({
       trackingId: target.trackingId,
       materialId: target.materialId,
       actionType: this.lastVideoProgress >= 100 ? 'end' : 'play',
       progress: this.lastVideoProgress,
       duration: Math.max(0, Math.floor(this.videoCurrentTimeSec)),
+      sessionId: this.trackingSessionId,
+    })
+  },
+
+  reportDocumentView(detail?: MaterialDetailViewModel) {
+    const current = detail ?? this.data.detail
+    if (!current || !isDocumentMaterial(current) || !this.canTrackMaterial(current)) return
+
+    const target = this.resolveTrackingTarget(current)
+    reportTrackingEvent({
+      trackingId: target.trackingId,
+      materialId: target.materialId,
+      actionType: 'play',
+      progress: 0,
+      duration: 0,
       sessionId: this.trackingSessionId,
     })
   },
@@ -403,6 +441,7 @@ Page({
 
   onShareTimeline() {
     const detail = this.data.detail
+    this.reportForwardTracking()
     if (!detail) return
 
     return {
@@ -413,7 +452,6 @@ Page({
   },
 
   onShareMomentsTap() {
-    this.reportForwardTracking()
     showMomentsShareGuide()
   },
 })

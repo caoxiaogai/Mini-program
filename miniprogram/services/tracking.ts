@@ -16,7 +16,7 @@ export function createTrackingSessionId(): string {
 /**
  * 上报素材浏览或转发。
  * POST /tracking/event（play / end）或 POST /tracking/forward。
- * /tracking/** 已放行；body 携带 visitorId（当前用户 openid），失败静默忽略。
+ * body 携带 visitorId（当前用户 openid），并走登录请求头；失败静默忽略。
  */
 export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
   const path = input.actionType === 'forward' ? '/tracking/forward' : '/tracking/event'
@@ -26,7 +26,6 @@ export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
       request<void>({
         method: 'POST',
         path,
-        skipAuth: true,
         silent: true,
         data: {
           trackingId: input.trackingId || undefined,
@@ -34,7 +33,7 @@ export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
           actionType: input.actionType,
           progress: input.progress ?? 0,
           duration: input.duration ?? 0,
-          visitorId: user.openid,
+          visitorId: user.openid || undefined,
           sessionId: input.sessionId,
           nickname: user.nickname ?? '',
           avatar: user.avatar ?? '',

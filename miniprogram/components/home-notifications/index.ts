@@ -1,3 +1,5 @@
+import { fromDatasetId } from '../../utils/dataset-id'
+
 Component({
   properties: {
     notifications: { type: Object, value: null },
@@ -8,8 +10,8 @@ Component({
   methods: {
     onNotificationCardTap(event: WechatMiniprogram.TouchEvent) {
       this.triggerEvent('cardtap', {
-        userId: event.currentTarget.dataset.id as string,
-        lastViewTime: event.currentTarget.dataset.lastViewTime as string | undefined,
+        userId: fromDatasetId(event.currentTarget.dataset.id),
+        eventId: event.currentTarget.dataset.eventId as string | undefined,
       })
     },
   },

@@ -11,6 +11,7 @@ export interface NotificationFilterViewModel {
 
 export interface NotificationCardViewModel {
   id: string
+  eventId: string
   userId: string
   visitorName: string
   intent: NotificationIntent

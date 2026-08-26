@@ -58,7 +58,7 @@ Page({
   onLoad(options: Record<string, string | undefined>) {
     this.materialId = options.materialId ?? ''
     this.trackingId = options.trackingId ?? ''
-    this.sessionId = createTrackingSessionId()
+    this.sessionId = options.sessionId || createTrackingSessionId()
     this.windowWidth = getWindowWidth()
     this.resetPagingState()
 
@@ -67,6 +67,7 @@ Page({
       return
     }
 
+    this.reportOpenedPlay()
     this.loadDocument()
   },
 
@@ -186,6 +187,10 @@ Page({
       })
   },
 
+  onHide() {
+    this.reportProgress(true)
+  },
+
   onUnload() {
     this.reportProgress(true)
     this.sessionId = ''
@@ -222,13 +227,26 @@ Page({
     return this.trackingId !== '' || this.materialId !== ''
   },
 
+  reportOpenedPlay() {
+    if (!this.canTrack()) return
+    reportTrackingEvent({
+      trackingId: this.trackingId,
+      materialId: this.materialId,
+      actionType: 'play',
+      progress: 0,
+      duration: 0,
+      sessionId: this.sessionId,
+    })
+  },
+
   reportProgress(isFinal: boolean) {
     if (!this.canTrack() || this.totalPages <= 0 || this.maxViewedIndex < 0) return
-    if (this.hasReportedComplete) return
+    if (this.hasReportedComplete && !isFinal) return
 
     const viewedCount = this.maxViewedIndex + 1
     const progress = calcImageViewProgress(viewedCount, this.totalPages)
     const isComplete = viewedCount >= this.totalPages
+    const hasSentPlay = this.lastReportedProgress >= 0
 
     if (!isFinal && progress <= this.lastReportedProgress && !isComplete) return
 
@@ -238,7 +256,7 @@ Page({
     reportTrackingEvent({
       trackingId: this.trackingId,
       materialId: this.materialId,
-      actionType: isComplete ? 'end' : 'play',
+      actionType: isComplete && hasSentPlay ? 'end' : 'play',
       progress,
       duration: this.getViewDurationSec(),
       sessionId: this.sessionId,

@@ -1,4 +1,5 @@
 import { getNotifications } from '../../services/notifications'
+import { fromDatasetId } from '../../utils/dataset-id'
 import { persistViewedNotification } from '../../utils/notification-viewed'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
@@ -32,6 +33,9 @@ Page({
   onLoad() {
     this.loadNotifications()
   },
+  onShow() {
+    this.loadNotifications()
+  },
   onPullDownRefresh() {
     runPagePullRefresh(this.loadNotifications())
   },
@@ -53,10 +57,11 @@ Page({
     this.setData({ activeFilter: filterId, visibleGroups, hasVisibleGroups: visibleGroups.length > 0 })
   },
   onNotificationCardTap(event: WechatMiniprogram.TouchEvent) {
-    const userId = event.currentTarget.dataset.id as string
+    const userId = fromDatasetId(event.currentTarget.dataset.id)
+    const eventId = event.currentTarget.dataset.eventId as string | undefined
     if (!userId) return
 
-    persistViewedNotification(userId, event.currentTarget.dataset.lastViewTime as string | undefined)
+    persistViewedNotification(eventId)
 
     wx.navigateTo({
       url: `/pages/analysis-user-detail/index?id=${userId}`,

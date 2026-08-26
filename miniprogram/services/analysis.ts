@@ -7,6 +7,7 @@ import type {
   ApiDashboard,
   ApiIntentCustomer,
   ApiMaterial,
+  ApiNotificationEvent,
 } from '../types/api'
 import type {
   AnalysisCard,
@@ -30,8 +31,9 @@ import {
 } from '../utils/format'
 import type { DateRange } from '../utils/date-range'
 import { getTotalRangeStart, startOfWeekMonday } from '../utils/date-range'
-import { aggregateCustomerHistoryByMaterial } from '../utils/analysis-users'
+import { aggregateCustomerHistoryByMaterial, resolveIntentLevelFromCounts } from '../utils/analysis-users'
 import { prepareMediaUrls } from '../utils/media'
+import { prepareMaterialThumbnail, prepareMaterialThumbnailMap } from './materials'
 import { request, resolveMediaUrl } from './request'
 
 /** 分析页时间筛选：日/周/月对应后端 today/week/month；日历自定义走 custom；「总」受后端 custom 上限约束取最近 62 天（待后端确认全量口径） */
@@ -53,6 +55,10 @@ const fileTypeLabels: Record<string, string> = {
   IMAGE: '图片',
   VIDEO: '视频',
   TABLE: '表格',
+}
+
+function asList<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : []
 }
 
 function buildPeriodQuery(period: AnalysisTimeRange, customRange?: DateRange): Record<string, string> {
@@ -78,9 +84,17 @@ function resolveIntentLevel(
 ): AnalysisIntentLevel {
   const intent = intentByCustomer.get(customerId)
   if (intent) return intent.intentLevel
-  if (viewCount >= 2) return 'high'
-  if (completed > 0) return 'medium'
-  return 'low'
+  return resolveIntentLevelFromCounts(viewCount, completed)
+}
+
+function buildMaterialIntentMap(intentCustomers: ApiIntentCustomer[], customerId: string): Map<string, AnalysisIntentLevel> {
+  const map = new Map<string, AnalysisIntentLevel>()
+  for (const item of intentCustomers) {
+    if (String(item.customerId) !== customerId) continue
+    if (item.materialId == null || String(item.materialId) === '') continue
+    map.set(String(item.materialId), item.intentLevel)
+  }
+  return map
 }
 
 const workSortOrderBy: Record<AnalysisWorkSortId, string> = {
@@ -89,12 +103,12 @@ const workSortOrderBy: Record<AnalysisWorkSortId, string> = {
   completion: 'complete_count',
 }
 
-function mapContentCard(item: ApiContentListItem): AnalysisCard {
+function mapContentCard(item: ApiContentListItem, thumbnailUrl: string): AnalysisCard {
   const metrics = buildCardMetrics(item.viewCount, item.forwardCount, item.completeCount, item.viewerCount)
 
   return {
     id: String(item.materialId),
-    thumbnailUrl: resolveMediaUrl(item.coverUrl),
+    thumbnailUrl,
     title: item.title ?? '',
     date: formatDateKey(item.createTime),
     publishedAt: formatPublishedAt(item.createTime),
@@ -113,12 +127,17 @@ function buildWorkSummary(dashboard: ApiDashboard): AnalysisMetric[] {
 }
 
 async function mapContentCards(contents: ApiContentListItem[] | null | undefined, sortId: AnalysisWorkSortId): Promise<AnalysisCard[]> {
-  const cards = sortAnalysisCards((contents ?? []).map(mapContentCard), sortId)
-  const thumbs = await prepareMediaUrls(cards.map((card) => card.thumbnailUrl))
-  cards.forEach((card, index) => {
-    card.thumbnailUrl = thumbs[index] ?? ''
-  })
-  return cards
+  const items = contents ?? []
+  const thumbnailByMaterialId = await prepareMaterialThumbnailMap(items.map((item) => ({
+    id: String(item.materialId),
+    fileType: item.fileType,
+    coverUrl: item.coverUrl,
+  })))
+
+  return sortAnalysisCards(
+    items.map((item) => mapContentCard(item, thumbnailByMaterialId.get(String(item.materialId)) ?? '')),
+    sortId,
+  )
 }
 
 /** 作品分析列表：走 GET /analysis/content/list 的浏览/转发/完播，并按当前排序字段请求 */
@@ -469,7 +488,12 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
     const audienceList = detail?.audienceList ?? []
     const metrics = buildCardMetrics(detail?.viewCount, detail?.forwardCount, detail?.completeCount, detail?.viewerCount)
     const [thumbnailUrl, avatarUrls] = await Promise.all([
-      prepareMediaUrls([resolveMediaUrl(material?.coverUrl)]).then((urls) => urls[0] ?? ''),
+      prepareMaterialThumbnail({
+        id: String(material?.id ?? detail?.materialId ?? cardId),
+        fileType: material?.fileType ?? detail?.fileType,
+        coverUrl: material?.coverUrl,
+        fileUrl: material?.fileUrl,
+      }),
       prepareMediaUrls(audienceList.map((audience) => audience.avatar)),
     ])
 
@@ -505,39 +529,67 @@ export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewMod
 }
 
 export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetailViewModel | null> {
-  const rangeQuery = buildPeriodQuery('total')
+  const allRangeQuery = { timeRange: 'all' }
 
   return Promise.all([
-    request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: rangeQuery }),
+    request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: allRangeQuery }).catch(
+      () => [] as ApiCustomerListItem[],
+    ),
     request<ApiCustomerViewHistory[]>({
       method: 'GET',
       path: '/analysis/customer/history',
-      query: { ...rangeQuery, customerId: userId },
-    }),
-    request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: rangeQuery, silent: true }).catch(
+      query: { ...allRangeQuery, customerId: userId },
+    }).catch(() => [] as ApiCustomerViewHistory[]),
+    request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: allRangeQuery, silent: true }).catch(
       () => [] as ApiIntentCustomer[],
     ),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
-  ]).then(async ([customers, history, intentCustomers, materials]) => {
+  ]).then(async ([customersRaw, historyRaw, intentRaw, materialsRaw]) => {
+    const customers = asList(customersRaw)
+    const history = asList(historyRaw)
+    const intentCustomers = asList(intentRaw)
+    const materials = asList(materialsRaw)
     const customer = customers.find((item) => String(item.customerId) === userId) ?? null
     const intent = intentCustomers.find((item) => String(item.customerId) === userId) ?? null
-    if (!customer && !intent) return null
+    const aggregated = aggregateCustomerHistoryByMaterial(history)
+    if (!customer && !intent && aggregated.length === 0) return null
 
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
-    const coverByMaterial = new Map(
-      materials.map((material) => [String(material.id), resolveMediaUrl(material.coverUrl)]),
-    )
+    const materialById = new Map(materials.map((material) => [String(material.id), material]))
     const level = resolveIntentLevel(
       intentByCustomer,
       userId,
       customer?.viewCount ?? intent?.viewCount ?? 0,
       customer?.completeCount ?? intent?.completed ?? 0,
     )
-    const aggregated = aggregateCustomerHistoryByMaterial(history ?? [])
+    const intentByMaterial = buildMaterialIntentMap(intentCustomers, userId)
     const [avatarUrl, recordThumbs] = await Promise.all([
-      prepareMediaUrls([customer?.avatar ?? intent?.avatar]).then((urls) => urls[0] ?? ''),
-      prepareMediaUrls(aggregated.map((record) => coverByMaterial.get(record.materialId) ?? '')),
+      prepareMediaUrls([customer?.avatar ?? intent?.avatar]).then((urls) => urls[0] ?? '').catch(() => ''),
+      prepareMediaUrls(aggregated.map((record) => resolveMediaUrl(materialById.get(record.materialId)?.coverUrl ?? ''))).catch(
+        () => aggregated.map(() => ''),
+      ),
     ])
+    const records = aggregated.map((record, index) => {
+      const recordLevel = intentByMaterial.get(record.materialId)
+        ?? resolveIntentLevelFromCounts(record.viewCount, record.completeCount)
+
+      return {
+        id: record.materialId,
+        contentId: record.materialId,
+        thumbnailUrl: recordThumbs[index] ?? '',
+        title: record.title,
+        date: formatMonthDay(record.viewTime),
+        type: fileTypeLabels[record.fileType ?? ''] ?? '内容',
+        fileType: record.fileType ?? '',
+        progress: `${record.progress}%`,
+        viewDuration: formatSeconds(record.duration),
+        readCount: formatCount(record.viewCount),
+        completionCount: formatCount(record.completeCount),
+        shareCount: formatCount(record.shareCount),
+        intentLevel: recordLevel,
+        intentLabel: intentLevelLabels[recordLevel],
+      }
+    })
 
     return {
       profile: {
@@ -550,20 +602,34 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
         completionCount: formatCount(customer?.completeCount ?? intent?.completed),
         shareCount: intent?.hasForwarded === 1 ? '1' : '0',
         viewDuration: formatSeconds(customer?.totalDuration),
+        highIntentContentCount: records.filter((record) => record.intentLevel === 'high').length,
       },
-      records: aggregated.map((record, index) => ({
-        id: record.materialId,
-        contentId: record.materialId,
-        thumbnailUrl: recordThumbs[index] ?? '',
-        title: record.title,
-        date: formatMonthDay(record.viewTime),
-        type: fileTypeLabels[record.fileType ?? ''] ?? '内容',
-        progress: `${record.progress}%`,
-        viewDuration: formatSeconds(record.duration),
-        readCount: formatCount(record.viewCount),
-        completionCount: formatCount(record.completeCount),
-        shareCount: formatCount(record.shareCount),
-      })),
+      records,
     }
   })
+}
+
+/** 浏览记录先用封面尽快展示；PDF/表格无封面时再补第一页，失败不影响已有列表 */
+export function enrichAnalysisUserDetailThumbnails(
+  detail: AnalysisUserDetailViewModel,
+): Promise<AnalysisUserDetailViewModel> {
+  const sources = detail.records
+    .filter((record) => (record.fileType === 'PDF' || record.fileType === 'TABLE') && !record.thumbnailUrl)
+    .map((record) => ({
+      id: record.contentId,
+      fileType: record.fileType,
+      coverUrl: null,
+    }))
+
+  if (sources.length === 0) return Promise.resolve(detail)
+
+  return prepareMaterialThumbnailMap(sources)
+    .then((thumbnailByMaterial) => ({
+      ...detail,
+      records: detail.records.map((record) => ({
+        ...record,
+        thumbnailUrl: thumbnailByMaterial.get(record.contentId) || record.thumbnailUrl,
+      })),
+    }))
+    .catch(() => detail)
 }

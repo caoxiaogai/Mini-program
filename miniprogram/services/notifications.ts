@@ -3,10 +3,11 @@ import type { NotificationFilterViewModel, NotificationsViewModel } from '../typ
 import { buildCustomRangeQuery } from '../utils/format'
 import { prepareMediaUrls } from '../utils/media'
 import { groupNotificationCards, mapNotificationEvent } from '../utils/notifications'
-import { request, resolveMediaUrl } from './request'
+import { prepareMaterialThumbnailMap } from './materials'
+import { request } from './request'
 
 /** 后端查询时间范围上限（custom 最长 62 天） */
-const NOTIFICATION_RANGE_DAYS = 62
+export const NOTIFICATION_RANGE_DAYS = 62
 
 const notificationFilters: NotificationFilterViewModel[] = [
   { id: 'all', label: '全部' },
@@ -17,6 +18,7 @@ const notificationFilters: NotificationFilterViewModel[] = [
 
 /**
  * 通知列表：每一次浏览或转发各一条，按发生日期倒序分组。
+ * 发布者本人浏览由后端 `/analysis/notify/list` 排除，不在通知和首页互动消息展示。
  */
 export function getNotifications(): Promise<NotificationsViewModel> {
   const rangeQuery = buildCustomRangeQuery(NOTIFICATION_RANGE_DAYS)
@@ -25,18 +27,29 @@ export function getNotifications(): Promise<NotificationsViewModel> {
     request<ApiNotificationEvent[]>({ method: 'GET', path: '/analysis/notify/list', query: { ...rangeQuery } }),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
   ]).then(async ([events, materials]) => {
-    const coverByMaterial = new Map(
-      materials.map((material) => [String(material.id), resolveMediaUrl(material.coverUrl)]),
-    )
-    const visibleEvents = events.filter((event) => Boolean(event.viewTime))
-    const [avatarUrls, thumbnailUrls] = await Promise.all([
-      prepareMediaUrls(visibleEvents.map((event) => event.avatar)),
-      prepareMediaUrls(
-        visibleEvents.map((event) => (event.materialId ? coverByMaterial.get(String(event.materialId)) ?? '' : '')),
-      ),
-    ])
+    const visibleEvents = (events ?? []).filter((event) => event != null)
+    const materialById = new Map((materials ?? []).map((material) => [String(material.id), material]))
+    const neededIds = [...new Set(visibleEvents
+      .map((event) => (event.materialId ? String(event.materialId) : ''))
+      .filter((id) => id !== ''))]
+    const thumbnailByMaterial = await prepareMaterialThumbnailMap(neededIds.map((id) => {
+      const material = materialById.get(id)
+      return material
+        ? {
+          id,
+          fileType: material.fileType,
+          coverUrl: material.coverUrl,
+          fileUrl: material.fileUrl,
+        }
+        : { id }
+    }))
+    const avatarUrls = await prepareMediaUrls(visibleEvents.map((event) => event.avatar))
     const cards = visibleEvents.map((event, index) => (
-      mapNotificationEvent(event, thumbnailUrls[index] ?? '', avatarUrls[index] ?? '')
+      mapNotificationEvent(
+        event,
+        event.materialId ? thumbnailByMaterial.get(String(event.materialId)) ?? '' : '',
+        avatarUrls[index] ?? '',
+      )
     ))
 
     return {

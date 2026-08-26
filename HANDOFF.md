@@ -222,7 +222,9 @@ miniprogram/
 | 总数据按周浏览峰值坐标轴 | done | 横轴周一到周日用 1–7，纵轴随浏览量取整；数据走 `GET /analysis/trend?timeRange=week` |
 | 总数据按月浏览峰值坐标轴 | done | 横轴 1 号到本月最后一天，数字隔 5 天显示；纵轴随阅读量取整；数据走 `GET /analysis/trend?timeRange=month` |
 | 总数据按总浏览峰值坐标轴 | done | 横轴近两月最近 6 周用 1–6 表示第几周，纵轴随阅读量取整；数据走 `GET /analysis/trend?timeRange=all` |
-| 用户详情同一作品浏览合并 | done | 同一作品只展示一条：进度取最大，观看时长/浏览次数/转发取合计 |
+| 用户详情同一作品浏览合并 | done | 同一作品只展示一条：进度取最大，观看时长/完播数/浏览次数/转发取合计 |
+| 用户详情浏览记录完播数 | done | 每条浏览记录在观看时长和浏览次数之间展示完播数 |
+| 用户详情作品意向展示 | done | 用户名下展示「#对N个作品高意向」；每条浏览记录展示该作品高/中/低意向 |
 | 首页已看通知刷新后不再出现 | done | 看过的互动消息写入本地已读；刷新后同一条不再回到首页预览和未读角标 |
 | 通知页按每次浏览拆条 | done | 同一用户每次浏览/转发各一条通知，数据走 `GET /analysis/notify/list` |
 | 用户详情联系用户复制用户名 | done | 「联系用户」写入剪贴板后再显示复制成功提示 |
@@ -230,6 +232,7 @@ miniprogram/
 | 今日浏览最多进入作品分析 | done | 首页「今日浏览最多」查看更多和单条作品都切换到分析页的「作品分析」 |
 | 无浏览作品内容分析空白 | done | 从未被浏览/转发的作品打开内容分析时仍展示作品卡片和空意向用户，不再整页空白 |
 | PDF 点击预览图查看 | done | 素材详情 PDF 去掉「点击查看」按钮，点击预览图进入阅读页 |
+| PDF 与视频查看记浏览 | done | 打开 PDF/视频详情即上报 play；单页文档先 play 再 end；后端 end 补建也会计入浏览 |
 | 其他页面视觉与真机适配验收 | pending | 后续页面实现后执行 |
 
 ## 验收基线
@@ -255,6 +258,93 @@ miniprogram/
 - 不在文档中记录密钥、AppSecret、用户隐私数据或生产接口凭证。
 
 ## 最近变更
+
+### 2026-08-27：通知和互动消息不再展示自己看自己的素材
+
+- `GET /analysis/notify/list` 增加与统计相同的排除：`visitor_id` 等于发布者 `openid` 的浏览/转发不返回。
+- 通知 Tab 和首页「互动消息」共用该接口，自己打开自己的作品不再出现在这两处。埋点仍会写入，微信模板推送仍跳过自己。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。需重启 aisales。当前环境无微信开发者工具 GUI，真机打开自己的作品后看通知待确认。
+
+### 2026-08-27：用户详情浏览记录取数修复
+
+- 历史接口不再跟分析页「总」一样只查 62 天，改为 `timeRange=all`；客户列表或历史单路失败也不会把整页打空。
+- 合并记录时 `end` 也会留下一条浏览（有 `play` 时仍不重复计浏览次数）。后端统计本身把 `play`/`end` 都算浏览。
+- 进入用户详情的 `data-id` 加 `id:` 前缀，避免微信把雪花客户 ID 转成 Number 丢精度后查不到记录。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，请重新编译后再打开用户详情确认浏览记录。
+
+### 2026-08-27：用户详情浏览记录不再等 PDF 预览
+
+- 用户详情先按封面展示浏览记录，不再等所有 PDF 第一页渲染完才出列表；渲染失败或超时也不会把整页记录打空。
+- PDF/表格无封面时，列表出来后再补第一页预览。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（106 tests passed）。当前环境无微信开发者工具 GUI，用户详情真机打开待确认。
+
+### 2026-08-27：PDF 预览图覆盖所有缩略图位置
+
+- 无 `coverUrl` 的 PDF/表格不再只在素材列表和详情显示第一页；首页互动消息、今日浏览最多、通知、作品分析、内容分析详情和用户浏览记录共用 `prepareMaterialThumbnail`。
+- 仍走 `GET /material/{id}/page/0/image`，有封面时继续用封面；只为当前要展示的素材拉预览，避免首页把全部 PDF 都渲染一遍。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（106 tests passed）。当前环境无微信开发者工具 GUI，各页 PDF 缩略图待真机确认。
+
+### 2026-08-27：Redis 旧转发缓冲补齐 tracking_id 后再落库
+
+- 定时任务把 Redis 里缺 `tracking_id` 的旧转发直接 insert，MySQL 报 `Field 'tracking_id' doesn't have a default value`，每 3 秒回写 Redis 死循环。
+- 落库前按 `materialId` 从素材表补追踪码；补不上或仍违反约束的记录丢弃，不再回写。
+- 验证：需重启 aisales；新转发仍走立刻 insert。当前环境无微信开发者工具 GUI。
+
+### 2026-08-26：别人转发后立刻出现在通知和互动消息
+
+- 转发原先只写入 Redis 缓冲，批量落库又没有生成主键，`tracking_record` 里没有 `forward` 行，通知 Tab 和首页互动消息都读不到。
+- 后端 `POST /tracking/forward` 改为立刻 insert，和浏览一样；Redis 队列改为逐条 insert，把卡住的旧转发补进库。
+- 作品详情分享给好友、分享到朋友圈都会上报转发。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。需重启 aisales 后再让别人转发一次；当前环境无微信开发者工具 GUI，真机转发待确认。
+
+### 2026-08-26：首页今日数据完播数展示次数
+
+- 首页「今日数据」的「完播数」原先误用看板完播率，显示成百分比。
+- 改为今日 `GET /analysis/dashboard?timeRange=today` 的 `totalCompleteCount` 完播次数。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，首页今日数据待真机确认。
+
+### 2026-08-26：用户详情展示每条作品意向与高意向作品数
+
+- 用户名下方展示「#对 N 个作品高意向」，N 为浏览记录中高意向作品数；没有高意向作品时不显示该标签。
+- 每条浏览记录展示该作品的高/中/低意向胶囊。优先用 `/analysis/intent/list` 的客户×作品意向，没有对应行时按该作品浏览次数/完播数本地推导（浏览 ≥2 为高，完播过为中，否则低）。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，用户详情页真机打开待确认。
+
+### 2026-08-26：首页互动消息只展示未读通知
+
+- 首页「互动消息」和角标只统计尚未点开的浏览/转发。已读按每条通知 ID 写入本地，点过后再刷新不会回到预览里。
+- 同一人之后的新浏览仍会作为新通知出现。通知 Tab 仍展示完整列表。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，点开后刷新首页待真机确认。
+
+### 2026-08-26：发布成功弹窗分享后回到列表即关闭
+
+- 在「发布成功」弹窗里点「分享给好友」后，弹窗立即关闭；从微信分享面板或会话回到素材列表时也不会再弹出。
+- 首页素材 Tab 与独立素材页共用同一关闭时机：先生成分享卡片，再隐藏弹窗，避免清空分享字段后卡片没有路径。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（104 tests passed）。当前环境无微信开发者工具 GUI，真机分享返回待确认。
+
+### 2026-08-26：用户详情浏览记录增加完播数
+
+- 每条浏览记录指标顺序改为：进度、观看时长、完播数、浏览次数、转发。完播数使用已有的 `completionCount`（按作品合计 `completeCount`）。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，用户详情页真机打开待确认。
+
+### 2026-08-26：首页互动消息与通知 Tab 使用同一份浏览记录
+
+- 首页「互动消息」不再用意向客户摘要（`/analysis/intent/list`、每人一条、只查今天），改为与通知 Tab 相同的 `/analysis/notify/list`，每一次浏览或转发一条，预览最近 3 条未读。
+- 意向用户卡和今日浏览最多仍走原分析接口，不受影响。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，首页互动消息待真机确认。
+
+### 2026-08-26：打开作品后通知 Tab 能看到浏览消息
+
+- 通知空着通常有三层原因：本人打开自己的作品原先被后端丢掉；通知 Tab 第一次加载后不再刷新；`viewTime` 对不上时前端把整条丢掉。
+- 本人浏览现在也会写入通知和首页互动消息，只跳过微信模板推送到自己。进入通知 Tab、从详情返回，都会重新拉列表。
+- 埋点接口读取登录头补 visitorId，素材 ID 兼容字符串，通知时间用 `DATE_FORMAT` 输出，避免列表查到了却画不出来。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启。当前环境无微信开发者工具 GUI，打开 PDF/视频后回通知 Tab 待真机确认。
+
+### 2026-08-26：PDF 和视频查看会计入浏览
+
+- 打开视频或 PDF 详情即上报 `play`，不再等播放进度到 1% 或把单页文档第一次上报成 `end`。
+- 点 PDF 预览进入阅读页时带上同一 `sessionId`，进度续在同一次浏览上，不拆成两次。
+- 后端若只收到 `end`、没有对应 `play`，补建记录时也会加上浏览次数。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启。当前环境无微信开发者工具 GUI，打开 PDF/视频后的埋点待真机确认。本人浏览会进入通知，不发微信模板给自己。
 
 ### 2026-08-26：PDF 点击预览图即可查看
 
@@ -301,7 +391,7 @@ miniprogram/
 
 ### 2026-08-26：用户详情同一作品只展示一条浏览记录
 
-- 用户详情浏览记录按作品（`materialId`）合并：进度取各次浏览的最大值，观看时长、浏览次数、转发取合计。
+- 用户详情浏览记录按作品（`materialId`）合并：进度取各次浏览的最大值，观看时长、完播数、浏览次数、转发取合计。
 - `GET /analysis/customer/history` 现有响应补 `actionType`（`play` / `forward` 等）。`play` 计为浏览，`forward` 计为转发，不把转发行当成一次浏览。
 - 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启后历史接口才带 `actionType`。当前环境无微信开发者工具 GUI，详情页真机打开待确认。
 
@@ -376,7 +466,7 @@ miniprogram/
 
 - 根因：素材详情和文档阅读页此前只展示内容，没有调用 `POST /tracking/event`，后端因此不会增加浏览次数，也不会更新高/中/低意向。
 - 新增 `services/tracking.ts`：登录后用当前用户 openid 作为 `visitorId`，静默上报 `play` / `end` / `forward`。图片打开即记一次浏览；单图按停留时长刷新 duration（超过 10 秒才到高意向）；多图/PDF 按已看页数；视频在播放、进度和结束时上报。
-- 分享路径带上 `trackingId`。发布者本人浏览由后端跳过，不会把自己算进浏览次数。
+- 分享路径带上 `trackingId`。本人浏览会写入通知；微信模板推送仍跳过自己。
 - 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（90 tests passed）。当前环境无微信开发者工具 GUI，朋友打开分享卡片的真机链路待确认。
 
 ### 2026-08-26：合并 origin/developer-v2 到 main-v2
@@ -1091,10 +1181,10 @@ miniprogram/
 - 新增 `services/request.ts` 统一请求层：基址集中配置、15s 超时、登录态复用与失败重试、`Result` 解包、加载中提示（引用计数）、错误归一化为稳定用户文案（网络异常 / 请求失败），并提供 `uploadFile` 与固定并发任务队列。真机预览需将 `API_BASE_URL` 改为电脑局域网 IP，开发者工具需勾选「不校验合法域名」。
 - 新增 `types/api.ts`（后端 VO/Entity 响应类型，Long ID 为字符串）和 `utils/format.ts`（千分位、后端日期时间解析与展示格式、custom 时间范围参数）。
 - 各 service 映射（页面与 ViewModel 均未改动）：
-  - 首页：`/analysis/dashboard` + `/analysis/customer/list` + `/analysis/content/list`（today）组合；通知角标取今日意向客户数（后端无未读通知概念）。
+  - 首页：`/analysis/dashboard` + `/analysis/customer/list` + `/analysis/content/list`（today）组合；互动消息与角标来自 `/analysis/notify/list` 未读浏览/转发。
   - 分析页：dashboard / content list / customer list / intent list 并行；「观看作品数」由各内容详情受众列表聚合（后端列表无该字段）；阅读趋势图由按日 dashboard 聚合（后端无趋势接口，30 天数据带 60s 缓存）；周期筛选「日/周/月」映射 today/week/month，「总」受后端 custom 上限限制取最近 62 天（标记待确认）；点击周期后按所选范围重新加载。
-  - 分析详情 / 用户详情：`/analysis/content/detail`、`/analysis/customer/history` + `/material/mine` 补封面；用户详情按作品合并浏览记录（进度取最大，时长/浏览次数/转发取合计），历史项含 `actionType`。
-  - 通知页：`/analysis/notify/list` 每一次浏览或转发一条，按日期分组；意向标签取该客户峰值。首页互动消息仍用 `/analysis/intent/list`（每客户一条）。
+  - 分析详情 / 用户详情：`/analysis/content/detail`、`/analysis/customer/history` + `/material/mine` 补封面；用户详情按作品合并浏览记录（进度取最大，时长/完播数/浏览次数/转发取合计），历史项含 `actionType`。
+  - 通知页与首页互动消息：`/analysis/notify/list` 每一次浏览或转发一条，排除发布者本人；通知页按日期分组，首页预览最近 3 条未读。意向标签取该客户峰值。
   - 素材：`/material/mine` 列表（`publishStatus=0` 为草稿，TABLE 类型暂归入 PDF 筛选）、`/material/{id}` 详情/草稿（多图 `fileUrl` 为 JSON 数组）；发表 = 上传文件 `/material/upload-file` → `POST /material`（`IMAGE` 多图 JSON / `VIDEO` / `PDF`）→ `POST /material/{id}/share`；存草稿同前两步；编辑草稿仅改文案时走 `PUT /material/{id}`，改文件时新建素材（后端无更新文件与删除素材接口，旧草稿会保留）。
   - 排行榜：后端无对应接口，service 返回空榜单并保留 `TODO(API)` 占位，页面展示既有空状态。
 - `app.ts` 启动时执行真实登录；首页底部导航角标初始值由写死的 2 改为 0，由接口数据驱动。删除 `miniprogram/mocks/` 全部文件与目录。

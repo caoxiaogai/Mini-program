@@ -52,9 +52,12 @@ test('home data layer exposes the new typed service seam', () => {
   assert.match(types, /export interface HomePageViewModel/)
   assert.match(types, /export interface HomeNotificationViewModel/)
   assert.match(types, /export interface HomeContentViewModel/)
+  assert.match(types, /completeCount: string/)
+  assert.doesNotMatch(types, /completeRate/)
   assert.match(service, /export function getHomePageData\(\): Promise<HomePageViewModel>/)
   assert.match(service, /\/analysis\/dashboard/)
   assert.match(service, /\/analysis\/intent\/list/)
+  assert.match(service, /\/analysis\/notify\/list/)
   assert.match(service, /\/analysis\/content\/list/)
   assert.doesNotMatch(service, /from '\.\.\/mocks\//)
   assert.doesNotMatch(service, /TODO\(API\)/)
@@ -112,6 +115,9 @@ test('home page data comes from backend analysis APIs', () => {
   assert.match(service, /path: '\/analysis\/customer\/list'/)
   assert.match(service, /path: '\/analysis\/content\/list'/)
   assert.match(service, /path: '\/analysis\/intent\/list'/)
+  assert.match(service, /path: '\/analysis\/notify\/list'/)
+  assert.match(service, /completeCount: formatCount\(dashboard\.totalCompleteCount\)/)
+  assert.doesNotMatch(service, /completeRate/)
   assert.doesNotMatch(config, /HOME_DATA_SOURCE/)
   assert.doesNotMatch(service, /from '\.\.\/mocks\//)
 })
@@ -122,20 +128,20 @@ test('viewing a home notification removes only that preview card and decrements 
   const homeData = {
     unreadNotificationCount: 10,
     notifications: [
-      { id: 'n1', userId: 'u1' },
-      { id: 'n2', userId: 'u2' },
-      { id: 'n3', userId: 'u3' },
+      { id: 'home-notification-n1', eventId: 'n1', userId: 'u1' },
+      { id: 'home-notification-n2', eventId: 'n2', userId: 'u2' },
+      { id: 'home-notification-n3', eventId: 'n3', userId: 'u3' },
     ],
     contents: [],
     intentSummary: { total: '0', highCount: '0', mediumCount: '0', lowCount: '0', previewAvatars: [] },
-    today: { viewCount: '0', completeRate: '0', forwardCount: '0', viewerCount: '0' },
+    today: { viewCount: '0', completeCount: '0', forwardCount: '0', viewerCount: '0' },
   }
 
   const nextHomeData = markHomeNotificationViewed(homeData, 'n1')
 
   assert.equal(nextHomeData.unreadNotificationCount, 9)
   assert.equal(nextHomeData.notifications.length, 2)
-  assert.equal(nextHomeData.notifications.some((notification) => notification.id === 'n1'), false)
+  assert.equal(nextHomeData.notifications.some((notification) => notification.eventId === 'n1'), false)
   assert.equal(homeData.unreadNotificationCount, 10)
   assert.equal(homeData.notifications.length, 3)
 })
@@ -144,28 +150,26 @@ test('viewed home notifications stay hidden after reload', async () => {
   const {
     isViewedNotification,
     rememberViewedNotification,
-    selectUnviewedIntentCustomers,
+    selectUnviewedNotificationEvents,
   } = await import('../miniprogram/utils/notification-viewed.ts')
   const home = read('miniprogram/services/home.ts')
   const logic = read('miniprogram/pages/index/index.ts')
 
-  const viewed = rememberViewedNotification({}, 'c1', '2026-08-26 12:00:00')
-  const unread = selectUnviewedIntentCustomers([
-    { customerId: 'c1', lastViewTime: '2026-08-26 12:00:00' },
-    { customerId: 'c2', lastViewTime: '2026-08-26 11:00:00' },
-    { customerId: 'c1', lastViewTime: '2026-08-26 13:00:00' },
+  const viewed = rememberViewedNotification({}, '101')
+  const unread = selectUnviewedNotificationEvents([
+    { id: '101', viewTime: '2026-08-26 12:00:00' },
+    { id: '102', viewTime: '2026-08-26 11:00:00' },
+    { id: '103', viewTime: '2026-08-26 13:00:00' },
   ], viewed)
 
-  assert.equal(isViewedNotification('c1', '2026-08-26 12:00:00', viewed), true)
-  assert.equal(isViewedNotification('c1', '2026-08-26 13:00:00', viewed), false)
-  assert.deepEqual(unread.map((item) => `${item.customerId}:${item.lastViewTime}`), [
-    'c2:2026-08-26 11:00:00',
-    'c1:2026-08-26 13:00:00',
-  ])
-  assert.match(home, /selectUnviewedIntentCustomers\(intentCustomers, readViewedNotificationMap\(\)\)/)
-  assert.match(home, /id: `home-notification-\$\{item\.customerId\}`/)
-  assert.doesNotMatch(home, /home-notification-\$\{item\.customerId\}-\$\{index\}/)
-  assert.match(logic, /persistViewedNotification\(notification\.userId, notification\.lastViewTime\)/)
+  assert.equal(isViewedNotification('101', viewed), true)
+  assert.equal(isViewedNotification('103', viewed), false)
+  assert.deepEqual(unread.map((item) => item.id), ['102', '103'])
+  assert.match(home, /selectUnviewedNotificationEvents\(/)
+  assert.match(home, /unreadNotificationCount: unreadEvents\.length/)
+  assert.match(home, /id: `home-notification-\$\{event\.id\}`/)
+  assert.match(logic, /persistViewedNotification\(eventId\)/)
+  assert.match(logic, /markHomeNotificationViewed\(this\.data\.homeData, eventId\)/)
 })
 
 test('viewing a home notification does not change the notification tab data source', () => {
@@ -300,7 +304,7 @@ test('home page wires the intended navigation actions', () => {
   const logic = read('miniprogram/pages/index/index.ts')
 
   assert.match(page, /bindtap="onNotificationTap"/)
-  assert.match(page, /class="home-notification-card" data-id="\{\{item\.id\}\}" data-user-id="\{\{item\.userId\}\}" bindtap="onNotificationTap"/)
+  assert.match(page, /class="home-notification-card" data-id="\{\{item\.id\}\}" data-user-id="id:\{\{item\.userId\}\}" bindtap="onNotificationTap"/)
   assert.match(page, /class="home-section__more" bindtap="onTabTap" data-id="notifications">查看更多/)
   assert.match(page, /bindtap="onTodayMostTap"/)
   assert.match(page, /bind:plus="onPlusTap"/)
@@ -739,11 +743,20 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
 test('notifications map each browse from the notify list API', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/notifications.ts')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const pageLogic = read('miniprogram/pages/notifications/notifications.ts')
 
   assert.doesNotMatch(config, /NOTIFICATION_DATA_SOURCE/)
   assert.match(service, /path: '\/analysis\/notify\/list'/)
+  assert.match(service, /发布者本人浏览由后端/)
   assert.doesNotMatch(service, /path: '\/analysis\/intent\/list'/)
   assert.doesNotMatch(service, /from '\.\.\/mocks\//)
+  assert.match(service, /\(events \?\? \[\]\)\.filter\(\(event\) => event != null\)/)
+  assert.doesNotMatch(service, /Boolean\(event\.viewTime\)/)
+  assert.match(homeLogic, /if \(id === 'notifications'\) this\.loadNotifications\(\)/)
+  assert.match(homeLogic, /if \(rootTabIds\[this\.data\.activeTabIndex\] === 'notifications'\)/)
+  assert.match(homeLogic, /this\.loadHomeData\(true\)/)
+  assert.match(pageLogic, /onShow\(\) \{\s*this\.loadNotifications\(\)/)
 })
 
 test('notification page keeps one card for each browse of the same user', async () => {
@@ -793,6 +806,8 @@ test('notification page keeps one card for each browse of the same user', async 
   const groups = groupNotificationCards([first, second, forward])
 
   assert.equal(first.userId, second.userId)
+  assert.equal(first.eventId, '101')
+  assert.equal(second.eventId, '102')
   assert.notEqual(first.id, second.id)
   assert.equal(first.action, 'reading')
   assert.equal(second.statusLabel, '该用户已完成浏览')
@@ -812,6 +827,8 @@ test('notification header and filters stay fixed while the card list scrolls', (
   const homeStyles = read('miniprogram/pages/index/index.less')
 
   assert.match(page, /<notification-header filters="\{\{notifications\.filters\}\}"/)
+  assert.match(page, /data-event-id="\{\{notification\.eventId\}\}"/)
+  assert.match(component, /data-event-id="\{\{notification\.eventId\}\}"/)
   assert.match(homePage, /<notification-header embedded="\{\{true\}\}"[\s\S]*<scroll-view[^>]*class="home-page__tab-scroll home-page__notification-scroll"/)
   assert.match(header, /class="notification-page__header \{\{embedded \? 'notification-page__header--embedded' : ''\}\}"/)
   assert.doesNotMatch(component, /notification-page__header/)
@@ -938,11 +955,23 @@ test('user detail page follows Figma 497:4640', () => {
   assert.match(logic, /copyUsername\(\)/)
   assert.match(logic, /noticeVisible: false/)
   assert.match(markup, /微信名称复制成功/)
+  assert.match(markup, /#对\{\{detail\.profile\.highIntentContentCount\}\}个作品高意向/)
+  assert.match(markup, /user-detail__record-intent user-detail__record-intent--\{\{item\.intentLevel\}\}">#\{\{item\.intentLabel\}\}/)
   assert.match(service, /getAnalysisUserDetail/)
   assert.match(service, /\/analysis\/customer\/history/)
+  assert.match(service, /const allRangeQuery = \{ timeRange: 'all' \}/)
+  assert.match(service, /asList\(historyRaw\)/)
+  assert.match(service, /if \(!customer && !intent && aggregated\.length === 0\) return null/)
   assert.match(service, /aggregateCustomerHistoryByMaterial/)
+  assert.match(service, /highIntentContentCount: records\.filter\(\(record\) => record\.intentLevel === 'high'\)\.length/)
+  assert.match(service, /intentLevel: recordLevel/)
   assert.match(service, /readCount: formatCount\(record\.viewCount\)/)
+  assert.match(service, /completionCount: formatCount\(record\.completeCount\)/)
   assert.match(service, /shareCount: formatCount\(record\.shareCount\)/)
+  assert.match(service, /prepareMediaUrls\(aggregated\.map/)
+  assert.match(service, /export function enrichAnalysisUserDetailThumbnails/)
+  assert.match(logic, /enrichAnalysisUserDetailThumbnails/)
+  assert.match(markup, /class="user-detail__record-stats">[\s\S]*观看时长[\s\S]*完播数[\s\S]*浏览次数[\s\S]*转发/)
 })
 
 test('user detail contact copies the username', () => {
@@ -1001,6 +1030,40 @@ test('user detail history merges the same work into one record', async () => {
   assert.equal(missingAction[0].viewCount, 2)
   assert.equal(missingAction[0].duration, 7)
   assert.equal(missingAction[0].progress, 20)
+
+  const endOnly = aggregateCustomerHistoryByMaterial([
+    { materialId: 12, title: '作品C', fileType: 'VIDEO', duration: 8, progress: 90, completed: 1, viewTime: '2026-08-23 12:00:00', actionType: 'end' },
+  ])
+  assert.equal(endOnly.length, 1)
+  assert.equal(endOnly[0].viewCount, 1)
+  assert.equal(endOnly[0].completeCount, 1)
+  assert.equal(endOnly[0].duration, 8)
+  assert.equal(endOnly[0].progress, 90)
+})
+
+test('dataset ids keep snowflake customer ids as strings', async () => {
+  const { fromDatasetId } = await import('../miniprogram/utils/dataset-id.ts')
+  const analysisMarkup = read('miniprogram/pages/analysis/index.wxml')
+  const detailMarkup = read('miniprogram/pages/analysis-detail/index.wxml')
+  const notificationsMarkup = read('miniprogram/pages/notifications/notifications.wxml')
+  const userDetailLogic = read('miniprogram/pages/analysis-user-detail/index.ts')
+
+  assert.equal(fromDatasetId('id:1991234567890123456'), '1991234567890123456')
+  assert.equal(fromDatasetId('1991234567890123456'), '1991234567890123456')
+  assert.equal(fromDatasetId(''), '')
+  assert.match(analysisMarkup, /data-id="id:\{\{item\.id\}\}"/)
+  assert.match(detailMarkup, /data-id="id:\{\{item\.id\}\}"/)
+  assert.match(notificationsMarkup, /data-id="id:\{\{notification\.userId\}\}"/)
+  assert.match(userDetailLogic, /\[analysis-user-detail\] load failed/)
+})
+
+test('user detail records resolve per-work intent and high-intent work count', async () => {
+  const { resolveIntentLevelFromCounts } = await import('../miniprogram/utils/analysis-users.ts')
+
+  assert.equal(resolveIntentLevelFromCounts(2, 0), 'high')
+  assert.equal(resolveIntentLevelFromCounts(1, 1), 'medium')
+  assert.equal(resolveIntentLevelFromCounts(1, 0), 'low')
+  assert.equal(resolveIntentLevelFromCounts(3, 2), 'high')
 })
 
 test('tapping a user reading record navigates to that content analysis detail', () => {
@@ -1089,6 +1152,18 @@ test('publish success modal shares to friends and moments', () => {
   assert.equal(homeConfig.enableShareTimeline, true)
   assert.doesNotMatch(homeLogic, /分享功能待接入/)
   assert.doesNotMatch(shareUtil, /wx\.showShareImageMenu\(/)
+})
+
+test('publish success modal closes after sharing with friends', () => {
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const materialsLogic = read('miniprogram/pages/materials/index.ts')
+
+  for (const logic of [homeLogic, materialsLogic]) {
+    assert.match(logic, /closePublishSuccessModalAfterShare\(\)/)
+    assert.match(logic, /closePublishSuccessModalAfterShareReturn\(\)/)
+    assert.match(logic, /onShareAppMessage\(\)[\s\S]*?closePublishSuccessModalAfterShare\(\)/)
+    assert.match(logic, /onShow\(\)[\s\S]*?closePublishSuccessModalAfterShareReturn\(\)/)
+  }
 })
 
 test('materials home uses the Figma publish navigation and reserves space above it', () => {
@@ -1213,6 +1288,26 @@ test('material detail opens image preview, video player and PDF reader', () => {
   assert.match(documentLogic, /onDocumentScroll/)
 })
 
+test('pdf first-page previews are used wherever thumbnails are shown', () => {
+  const materials = read('miniprogram/services/materials.ts')
+  const home = read('miniprogram/services/home.ts')
+  const notifications = read('miniprogram/services/notifications.ts')
+  const analysis = read('miniprogram/services/analysis.ts')
+
+  assert.match(materials, /export function prepareMaterialThumbnail/)
+  assert.match(materials, /prepareDocumentPageImage\(String\(material\.id\), 0\)/)
+  assert.match(home, /prepareMaterialThumbnailMap/)
+  assert.match(notifications, /prepareMaterialThumbnailMap/)
+  assert.match(analysis, /prepareMaterialThumbnailMap/)
+  assert.match(analysis, /prepareMaterialThumbnail\(/)
+  assert.match(analysis, /enrichAnalysisUserDetailThumbnails/)
+  assert.doesNotMatch(home, /resolveMediaUrl\(item\.coverUrl\)/)
+  assert.doesNotMatch(home, /resolveMediaUrl\(material\.coverUrl\)/)
+  assert.doesNotMatch(notifications, /resolveMediaUrl\(material\.coverUrl\)/)
+  assert.doesNotMatch(analysis, /resolveMediaUrl\(item\.coverUrl\)/)
+  assert.doesNotMatch(analysis, /resolveMediaUrl\(material\?\.coverUrl\)/)
+})
+
 test('friend material views report play and forward tracking events', () => {
   const tracking = read('miniprogram/services/tracking.ts')
   const requestLayer = read('miniprogram/services/request.ts')
@@ -1227,9 +1322,9 @@ test('friend material views report play and forward tracking events', () => {
   assert.match(tracking, /\/tracking\/event/)
   assert.match(tracking, /\/tracking\/forward/)
   assert.match(tracking, /ensureLogin/)
-  assert.match(tracking, /visitorId: user\.openid/)
+  assert.match(tracking, /visitorId: user\.openid \|\| undefined/)
   assert.match(tracking, /silent: true/)
-  assert.match(tracking, /skipAuth: true/)
+  assert.doesNotMatch(tracking, /skipAuth:\s*true/)
   assert.doesNotMatch(tracking, /wx\.request\(/)
   assert.doesNotMatch(tracking, /from '\.\.\/mocks\//)
 
@@ -1241,9 +1336,15 @@ test('friend material views report play and forward tracking events', () => {
   assert.match(detailLogic, /createTrackingSessionId/)
   assert.match(detailLogic, /reportTrackingEvent/)
   assert.match(detailLogic, /markImageViewed/)
+  assert.match(detailLogic, /reportDocumentView/)
+  assert.match(detailLogic, /fileType === 'VIDEO'/)
+  assert.match(detailLogic, /reportVideoProgress\(false, detail\)/)
   assert.match(detailLogic, /actionType: 'play'/)
   assert.match(detailLogic, /actionType: 'forward'/)
+  assert.match(detailLogic, /onShareAppMessage\(\)[\s\S]*?reportForwardTracking\(\)/)
+  assert.match(detailLogic, /onShareTimeline\(\)[\s\S]*?reportForwardTracking\(\)/)
   assert.match(detailLogic, /options\.trackingId/)
+  assert.match(detailLogic, /sessionId=\$\{encodeURIComponent\(this\.trackingSessionId\)\}/)
   assert.match(detailMarkup, /bindplay="onVideoPlay"/)
   assert.match(detailMarkup, /bindpause="onVideoPause"/)
   assert.match(detailMarkup, /bindended="onVideoEnded"/)
@@ -1252,6 +1353,8 @@ test('friend material views report play and forward tracking events', () => {
   assert.match(documentLogic, /reportTrackingEvent/)
   assert.match(documentLogic, /markPageViewed/)
   assert.match(documentLogic, /options\.trackingId/)
+  assert.match(documentLogic, /options\.sessionId/)
+  assert.match(documentLogic, /isComplete && hasSentPlay \? 'end' : 'play'/)
   assert.doesNotMatch(detailLogic, /from '\.\.\/mocks\//)
   assert.doesNotMatch(documentLogic, /from '\.\.\/mocks\//)
 
@@ -1297,8 +1400,8 @@ test('material detail shares to friends and guides moments sharing', () => {
 
   assert.match(markup, /open-type="share"/)
   assert.match(markup, /bindtap="onShareMomentsTap"/)
-  assert.match(logic, /onShareAppMessage\(\)/)
-  assert.match(logic, /onShareTimeline\(\)/)
+  assert.match(logic, /onShareAppMessage\(\)[\s\S]*?reportForwardTracking\(\)/)
+  assert.match(logic, /onShareTimeline\(\)[\s\S]*?reportForwardTracking\(\)/)
   assert.match(logic, /buildMaterialSharePath\(detail\.id, detail\.trackingId/)
   assert.match(logic, /showMomentsShareGuide/)
   assert.match(logic, /enableMaterialShareMenu/)
@@ -1981,6 +2084,8 @@ test('home today data card follows Figma 478:1262', async () => {
   assert.equal(existsSync(new URL('../miniprogram/assets/analysis/total-metric-divider.svg', import.meta.url)), true)
   assert.match(page, /class="home-today-card__metadata"/)
   assert.match(page, /<text>完播数<\/text>/)
+  assert.match(page, /homeData\.today\.completeCount/)
+  assert.doesNotMatch(page, /homeData\.today\.completeRate/)
   assert.match(page, /wx:if="\{\{homeData\.today\.comparison\}\}" class="home-today-card__comparison"/)
   assert.match(page, /class="home-today-card__comparison-divider" src="\/assets\/analysis\/total-metric-divider\.svg"/)
   assert.match(styles, /\.home-today-card__primary \{[\s\S]*gap: 8rpx;/)

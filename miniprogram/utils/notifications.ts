@@ -14,7 +14,9 @@ const intentLabels: Record<NotificationIntent, string> = {
 const pad2 = (value: number): string => String(value).padStart(2, '0')
 
 function formatDateKey(value: string | null | undefined): string {
-  return value ? value.slice(0, 10) : ''
+  if (value) return value.slice(0, 10)
+  const now = new Date()
+  return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`
 }
 
 function formatMonthDayTime(value: string | null | undefined): string {
@@ -51,6 +53,7 @@ export function mapNotificationEvent(
 
   return {
     id: `notification-${event.id}`,
+    eventId: String(event.id),
     userId: String(event.customerId),
     visitorName: event.nickname ?? '微信用户',
     intent,

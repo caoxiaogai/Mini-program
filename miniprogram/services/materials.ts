@@ -57,21 +57,54 @@ function parseImageUrls(fileUrl: string | null): string[] {
   return [fileUrl].map(resolveMediaUrl)
 }
 
-function isDocumentFileType(fileType: string): boolean {
+export interface MaterialThumbnailSource {
+  id: string
+  fileType?: string | null
+  coverUrl?: string | null
+  fileUrl?: string | null
+}
+
+function isDocumentFileType(fileType: string | null | undefined): boolean {
   return fileType === 'PDF' || fileType === 'TABLE'
 }
 
-function resolveThumbnail(material: ApiMaterial): string {
+function resolveThumbnail(material: MaterialThumbnailSource): string {
   if (material.coverUrl) return resolveMediaUrl(material.coverUrl)
-  return material.fileType === 'IMAGE' ? parseImageUrls(material.fileUrl)[0] ?? '' : ''
+  return material.fileType === 'IMAGE' ? parseImageUrls(material.fileUrl ?? null)[0] ?? '' : ''
 }
 
 /** 图片/视频用封面；PDF/表格无封面时取第一页渲染图 */
-function prepareMaterialThumbnail(material: ApiMaterial): Promise<string> {
-  if (!material.coverUrl && isDocumentFileType(material.fileType)) {
-    return prepareDocumentPageImage(String(material.id), 0)
+export function prepareMaterialThumbnail(material: MaterialThumbnailSource): Promise<string> {
+  if (!material.id) return Promise.resolve('')
+
+  const load = !material.coverUrl && isDocumentFileType(material.fileType)
+    ? prepareDocumentPageImage(String(material.id), 0)
+    : prepareMediaUrl(resolveThumbnail(material))
+
+  return load.catch(() => '')
+}
+
+export function prepareMaterialThumbnails(sources: MaterialThumbnailSource[]): Promise<string[]> {
+  return runRequestQueue(
+    sources.map((material) => () => prepareMaterialThumbnail(material).catch(() => '')),
+    THUMBNAIL_CONCURRENCY,
+  )
+}
+
+export function prepareMaterialThumbnailMap(sources: MaterialThumbnailSource[]): Promise<Map<string, string>> {
+  const unique: MaterialThumbnailSource[] = []
+  const seen = new Set<string>()
+
+  for (const source of sources) {
+    const id = String(source.id ?? '')
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    unique.push({ ...source, id })
   }
-  return prepareMediaUrl(resolveThumbnail(material))
+
+  return prepareMaterialThumbnails(unique).then((urls) => (
+    new Map(unique.map((source, index) => [source.id, urls[index] ?? '']))
+  ))
 }
 
 /** 列表展示用户填写的文案；content 为空时回退 title（兼容旧数据 / 仅有文件名的素材） */
@@ -87,10 +120,12 @@ function splitMaterialCopy(copy: string): string[] {
 
 export function getMaterials(): Promise<MaterialsViewModel> {
   return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }).then(async (materials) => {
-    const thumbnailUrls = await runRequestQueue(
-      materials.map((material) => () => prepareMaterialThumbnail(material)),
-      THUMBNAIL_CONCURRENCY,
-    )
+    const thumbnailUrls = await prepareMaterialThumbnails(materials.map((material) => ({
+      id: String(material.id),
+      fileType: material.fileType,
+      coverUrl: material.coverUrl,
+      fileUrl: material.fileUrl,
+    })))
 
     return {
       filters: materialsFilters,

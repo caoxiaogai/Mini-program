@@ -43,6 +43,7 @@ function getVisibleMaterials(items: MaterialCardViewModel[], filterId: Materials
 }
 
 Page({
+  publishSuccessShared: false,
   data: {
     materials: null as MaterialsViewModel | null,
     tabItems: materialsTabItems,
@@ -73,6 +74,7 @@ Page({
   onShow() {
     enableMaterialShareMenu()
     this.applyPendingPublishReturn()
+    this.closePublishSuccessModalAfterShareReturn()
   },
   loadMaterials() {
     return getMaterials().then((materials) => {
@@ -160,6 +162,7 @@ Page({
     const pending = takePendingPublishReturn()
     if (!pending) return
 
+    this.publishSuccessShared = false
     this.setData({
       showPublishSuccessModal: pending.showSuccessModal,
       shareMaterialId: pending.materialId,
@@ -176,23 +179,39 @@ Page({
       shareImageUrl: '',
     })
   },
+  closePublishSuccessModalAfterShare() {
+    if (!this.data.showPublishSuccessModal) return
+
+    this.publishSuccessShared = true
+    this.setData({ showPublishSuccessModal: false })
+  },
+  closePublishSuccessModalAfterShareReturn() {
+    if (!this.publishSuccessShared) return
+
+    this.publishSuccessShared = false
+    this.onPublishSuccessClose()
+  },
   onShareAppMessage() {
     if (!this.data.shareMaterialId) return
 
-    return {
+    const shareMessage = {
       title: this.data.shareTitle,
       path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl: this.data.shareImageUrl || undefined,
     }
+    this.closePublishSuccessModalAfterShare()
+    return shareMessage
   },
   onShareTimeline() {
     if (!this.data.shareMaterialId) return
 
-    return {
+    const shareTimeline = {
       title: this.data.shareTitle,
       query: buildMaterialShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl: this.data.shareImageUrl || undefined,
     }
+    this.closePublishSuccessModalAfterShare()
+    return shareTimeline
   },
   onShareMomentsTap() {
     showMomentsShareGuide()

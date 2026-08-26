@@ -1,11 +1,10 @@
 const STORAGE_KEY_AUTH_USER_ID = 'auth.userId'
-const STORAGE_KEY_VIEWED_NOTIFICATIONS = 'notifications.viewedCustomers'
+const STORAGE_KEY_VIEWED_NOTIFICATIONS = 'notifications.viewedEvents'
 
-export type ViewedNotificationMap = Record<string, string>
+export type ViewedNotificationMap = Record<string, true>
 
-export type IntentCustomerViewKey = {
-  customerId: string | number | null | undefined
-  lastViewTime: string | null | undefined
+export type NotificationEventViewKey = {
+  id: string | number | null | undefined
 }
 
 function viewedNotificationStorageKey(): string {
@@ -25,28 +24,22 @@ function isViewedNotificationMap(value: unknown): value is ViewedNotificationMap
 
 export function rememberViewedNotification(
   viewed: ViewedNotificationMap,
-  customerId: string,
-  lastViewTime: string,
+  eventId: string,
 ): ViewedNotificationMap {
-  if (!customerId) return viewed
-  if (viewed[customerId] === lastViewTime) return viewed
-  return { ...viewed, [customerId]: lastViewTime }
+  if (!eventId || viewed[eventId]) return viewed
+  return { ...viewed, [eventId]: true }
 }
 
-export function isViewedNotification(
-  customerId: string,
-  lastViewTime: string | null | undefined,
-  viewed: ViewedNotificationMap,
-): boolean {
-  if (!customerId) return false
-  return viewed[customerId] === (lastViewTime ?? '')
+export function isViewedNotification(eventId: string, viewed: ViewedNotificationMap): boolean {
+  if (!eventId) return false
+  return viewed[eventId] === true
 }
 
-export function selectUnviewedIntentCustomers<T extends IntentCustomerViewKey>(
-  customers: T[],
+export function selectUnviewedNotificationEvents<T extends NotificationEventViewKey>(
+  events: T[],
   viewed: ViewedNotificationMap,
 ): T[] {
-  return customers.filter((item) => !isViewedNotification(String(item.customerId ?? ''), item.lastViewTime, viewed))
+  return events.filter((item) => !isViewedNotification(String(item.id ?? ''), viewed))
 }
 
 export function readViewedNotificationMap(): ViewedNotificationMap {
@@ -63,12 +56,19 @@ export function readViewedNotificationMap(): ViewedNotificationMap {
   }
 }
 
-export function persistViewedNotification(customerId: string, lastViewTime: string | null | undefined): void {
-  if (!customerId) return
-  const next = rememberViewedNotification(readViewedNotificationMap(), customerId, lastViewTime ?? '')
+/** 将一条浏览/转发通知记为已读。返回是否新写入（已读过则 false）。 */
+export function persistViewedNotification(eventId: string | null | undefined): boolean {
+  const id = String(eventId ?? '')
+  if (!id) return false
+
+  const current = readViewedNotificationMap()
+  const next = rememberViewedNotification(current, id)
+  if (next === current) return false
+
   try {
     wx.setStorageSync(viewedNotificationStorageKey(), next)
   } catch {
     // 存储失败时仍以本次会话的本地移除为准，下次启动可能再次出现
   }
+  return true
 }
