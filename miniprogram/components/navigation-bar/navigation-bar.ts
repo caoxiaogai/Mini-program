@@ -1,4 +1,5 @@
 import { HOME_PAGE_PATH } from '../../utils/share-material'
+import { getNavigationBarLayout, isMenuButtonRectValid, toNavigationBarStyle } from '../../utils/navigation-layout'
 
 Component({
   options: {
@@ -65,25 +66,19 @@ Component({
   },
   lifetimes: {
     attached() {
-      const rect = wx.getMenuButtonBoundingClientRect()
-      wx.getSystemInfo({
-        success: (res) => {
-          const isAndroid = res.platform === 'android'
-          const isDevtools = res.platform === 'devtools'
-          this.setData({
-            ios: !isAndroid,
-            innerPaddingRight: `padding-right: ${res.windowWidth - rect.left}px`,
-            leftWidth: `width: ${res.windowWidth - rect.left }px`,
-            safeAreaTop: isDevtools || isAndroid ? `height: calc(var(--height) + ${res.safeArea.top}px); padding-top: ${res.safeArea.top}px` : ``
-          })
-        }
-      })
+      this.applyLayout()
+      if (!isMenuButtonRectValid(wx.getMenuButtonBoundingClientRect())) {
+        wx.nextTick(() => this.applyLayout())
+      }
     },
   },
   /**
    * 组件的方法列表
    */
   methods: {
+    applyLayout() {
+      this.setData(toNavigationBarStyle(getNavigationBarLayout()))
+    },
     _showChange(show: boolean) {
       const animated = this.data.animated
       let displayStyle = ''

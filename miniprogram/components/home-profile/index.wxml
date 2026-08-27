@@ -1,13 +1,20 @@
 <view class="home-profile">
   <view class="home-profile__stripes" />
-  <navigation-bar class="home-profile__navigation" back="{{false}}" title="" color="#000000" background="transparent" />
+  <navigation-bar class="home-profile__navigation" back="{{false}}" title="" color="#000000" background="transparent">
+    <view
+      slot="right"
+      class="home-profile__settings"
+      bindtap="onSettingsTap"
+      hover-class="home-profile__settings--pressed"
+      hover-stay-time="80"
+    >
+      <text>设置</text>
+    </view>
+  </navigation-bar>
   <view wx:if="{{profile}}" class="home-profile__content">
     <view class="home-profile__identity">
       <image class="home-profile__avatar" src="{{profile.avatarUrl}}" mode="aspectFill" />
       <text class="home-profile__nickname">{{profile.nickname}}</text>
-      <view class="home-profile__settings" bindtap="onSettingsTap" hover-class="home-profile__settings--pressed" hover-stay-time="80">
-        <text>设置</text>
-      </view>
     </view>
 
     <view class="home-profile__balance">

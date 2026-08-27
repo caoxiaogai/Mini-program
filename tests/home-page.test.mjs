@@ -415,6 +415,7 @@ test('profile tab exposes the Figma 519:5031 structure through a typed service s
   assert.match(logic, /runAuthed\(buildReturnPath\(HOME_PAGE_PATH, options\)/)
   assert.match(page, /<home-profile profile="\{\{profileData\}\}" bind:settingstap="onProfileSettingsTap" \/>/)
   assert.match(component, /bindtap="onSettingsTap"/)
+  assert.match(component, /slot="right"/)
   assert.match(logic, /onProfileSettingsTap\(\)/)
   assert.match(logic, /\/pages\/settings\/index/)
 })
@@ -2049,6 +2050,51 @@ test('home analysis sort sheet is rendered above the fixed analysis header', () 
   assert.match(homeMarkup, /<view wx:if="\{\{analysisSortSheetVisible\}\}" class="analysis-sort-sheet">[\s\S]*catchtap="onAnalysisSortMaskTap"[\s\S]*bindtap="onHomeAnalysisSortOptionTap"/)
   assert.match(homeLogic, /onHomeAnalysisSortOptionTap\(event: WechatMiniprogram\.TouchEvent\)/)
   assert.match(componentMarkup, /wx:if="\{\{analysisSortSheetVisible && !embedded\}\}" class="analysis-sort-sheet"/)
+})
+
+test('navigation bar clears the status bar and WeChat capsule on every platform', async () => {
+  const { resolveNavigationBarLayout, isMenuButtonRectValid, toNavigationBarStyle } = await import('../miniprogram/utils/navigation-layout.ts')
+  const logic = read('miniprogram/components/navigation-bar/navigation-bar.ts')
+  const styles = read('miniprogram/components/navigation-bar/navigation-bar.less')
+  const appStyles = read('miniprogram/app.less')
+
+  const iphone = resolveNavigationBarLayout({
+    windowWidth: 393,
+    statusBarHeight: 54,
+    safeAreaTop: 54,
+    platform: 'ios',
+    menuButton: { top: 58, left: 296, width: 87, height: 32 },
+  })
+  const android = resolveNavigationBarLayout({
+    windowWidth: 360,
+    statusBarHeight: 28,
+    safeAreaTop: 28,
+    platform: 'android',
+    menuButton: { top: 32, left: 263, width: 87, height: 32 },
+  })
+  const missingCapsule = resolveNavigationBarLayout({
+    windowWidth: 375,
+    statusBarHeight: 47,
+    safeAreaTop: 47,
+    platform: 'ios',
+    menuButton: { top: 0, left: 0, width: 0, height: 0 },
+  })
+
+  assert.equal(iphone.statusBarHeight, 54)
+  assert.equal(iphone.totalHeight, 94)
+  assert.equal(iphone.capsuleOffset, 97)
+  assert.equal(iphone.ios, true)
+  assert.equal(android.ios, false)
+  assert.equal(android.totalHeight, 68)
+  assert.equal(isMenuButtonRectValid({ top: 0, left: 0, width: 0, height: 0 }), false)
+  assert.equal(missingCapsule.capsuleOffset, 94)
+  assert.match(toNavigationBarStyle(iphone).safeAreaTop, /padding-top: 54px/)
+  assert.match(toNavigationBarStyle(iphone).innerPaddingRight, /padding-right: 97px/)
+
+  assert.match(logic, /getNavigationBarLayout\(\)/)
+  assert.doesNotMatch(logic, /isDevtools \|\| isAndroid/)
+  assert.match(styles, /align-items: center;/)
+  assert.match(appStyles, /@notification-header-height: calc\(env\(safe-area-inset-top, 47px\) \+ 44px \+ @page-top-tab-height\);/)
 })
 
 test('navigation titles use one explicit Chinese typography token', () => {

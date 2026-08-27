@@ -20,12 +20,12 @@
   position: relative;
   top: 0;
   left: 0;
-  height: calc(var(--height) + env(safe-area-inset-top));
+  height: calc(var(--height) + env(safe-area-inset-top, 47px));
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  padding-top: env(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top, 47px);
   width: 100%;
   box-sizing: border-box;
 }
@@ -35,7 +35,7 @@
   padding-left: var(--left);
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   height: 100%;
   box-sizing: border-box;
 }
@@ -90,6 +90,14 @@
   background-size: 100%;
   margin-left: 0;
   animation: loading linear infinite 1s;
+}
+
+.weui-navigation-bar__right {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 100%;
 }
 
 @keyframes loading {

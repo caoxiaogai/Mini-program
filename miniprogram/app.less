@@ -6,7 +6,7 @@
 
 // Notification and analysis share the same 32px top-tab height.
 @page-top-tab-height: 64rpx;
-@notification-header-height: 264rpx;
+@notification-header-height: calc(env(safe-area-inset-top, 47px) + 44px + @page-top-tab-height);
 
 page {
   color: #000000;
