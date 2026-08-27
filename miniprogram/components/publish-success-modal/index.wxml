@@ -6,6 +6,7 @@
   aria-label="发布成功"
 >
   <view class="publish-success-modal__card" catchtap="onCardTap">
+    <image wx:if="{{shareImageUrl}}" class="publish-success-modal__share-preview" src="{{shareImageUrl}}" mode="aspectFill" />
     <view class="publish-success-modal__content">
       <view class="publish-success-modal__title-group">
         <view class="publish-success-modal__title-row">
@@ -18,9 +19,10 @@
       <view class="publish-success-modal__share-actions">
         <button
           class="publish-success-modal__share-button publish-success-modal__share-button--secondary"
-          open-type="share"
+          open-type="{{shareReady ? 'share' : ''}}"
           hover-class="publish-success-modal__share-button--pressed"
           hover-stay-time="80"
+          bindtap="onShareFriendsTap"
         >
           <text>分享给好友</text>
           <image class="publish-success-modal__share-icon" src="/assets/materials/detail-share.svg" mode="aspectFit" />

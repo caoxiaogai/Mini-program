@@ -4,7 +4,7 @@ import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } fro
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
-import { buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
 
 type MaterialsTabId = 'home' | 'notifications' | 'analysis' | 'profile'
@@ -168,7 +168,7 @@ Page({
         shareMaterialId: detail.id,
         shareTrackingId: detail.trackingId,
         shareTitle: buildMaterialShareTitle(detail.descriptionLines),
-        shareImageUrl: detail.previewUrl,
+        shareImageUrl: detail.previewUrl || this.data.shareImageUrl,
       })
     })
   },
@@ -180,6 +180,9 @@ Page({
     this.setData({
       showPublishSuccessModal: pending.showSuccessModal,
       shareMaterialId: pending.materialId,
+      shareTitle: pending.shareTitle || this.data.shareTitle,
+      shareImageUrl: pending.shareImageUrl || this.data.shareImageUrl,
+      shareTrackingId: pending.shareTrackingId || this.data.shareTrackingId,
     })
     this.loadMaterials()
     if (pending.showSuccessModal && pending.materialId) this.loadShareMaterial(pending.materialId)
@@ -195,9 +198,7 @@ Page({
   },
   closePublishSuccessModalAfterShare() {
     if (!this.data.showPublishSuccessModal) return
-
     this.publishSuccessShared = true
-    this.setData({ showPublishSuccessModal: false })
   },
   closePublishSuccessModalAfterShareReturn() {
     if (!this.publishSuccessShared) return
@@ -206,26 +207,26 @@ Page({
     this.onPublishSuccessClose()
   },
   onShareAppMessage() {
-    if (!this.data.shareMaterialId) return
+    const imageUrl = pickShareImageUrl(this.data.shareImageUrl, this.data.visibleMaterials, this.data.shareMaterialId)
+    if (!this.data.shareMaterialId || !imageUrl) return
 
-    const shareMessage = {
-      title: this.data.shareTitle,
-      path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId),
-      imageUrl: this.data.shareImageUrl || undefined,
-    }
     this.closePublishSuccessModalAfterShare()
-    return shareMessage
+    return {
+      title: this.data.shareTitle || buildMaterialShareTitle([]),
+      path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId),
+      imageUrl,
+    }
   },
   onShareTimeline() {
-    if (!this.data.shareMaterialId) return
+    const imageUrl = pickShareImageUrl(this.data.shareImageUrl, this.data.visibleMaterials, this.data.shareMaterialId)
+    if (!this.data.shareMaterialId || !imageUrl) return
 
-    const shareTimeline = {
-      title: this.data.shareTitle,
-      query: buildMaterialShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
-      imageUrl: this.data.shareImageUrl || undefined,
-    }
     this.closePublishSuccessModalAfterShare()
-    return shareTimeline
+    return {
+      title: this.data.shareTitle || buildMaterialShareTitle([]),
+      query: buildMaterialShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
+      imageUrl,
+    }
   },
   onShareMomentsTap() {
     showMomentsShareGuide()

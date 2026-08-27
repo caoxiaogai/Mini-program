@@ -1233,6 +1233,14 @@ test('publish copy keeps colorful emoji presentation', async () => {
   assert.equal(ensureEmojiPresentation(''), '')
 
   assert.match(markup, /class="publish-page__copy"/)
+  assert.match(markup, /class="publish-page__copy-area" bindtap="onCopyAreaTap"/)
+  assert.match(logic, /onCopyAreaTap\(\)/)
+  assert.match(logic, /copyFocused: true/)
+  assert.match(logic, /onCopyBlur\(\)/)
+  assert.match(styles, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)
+  assert.match(styles, /aspect-ratio: 1 \/ 1/)
+  assert.match(styles, /\.publish-page__content \{[\s\S]*padding: 10rpx 40rpx 180rpx/)
+  assert.doesNotMatch(styles, /width: 140rpx/)
   assert.match(logic, /ensureEmojiPresentation\(event\.detail\.value\)/)
   assert.match(logic, /ensureEmojiPresentation\(this\.data\.copy\)/)
   assert.match(styles, /Apple Color Emoji/)
@@ -1268,14 +1276,21 @@ test('publish success modal shares to friends and moments', () => {
   const modalMarkup = read('miniprogram/components/publish-success-modal/index.wxml')
   const modalLogic = read('miniprogram/components/publish-success-modal/index.ts')
   const homeLogic = read('miniprogram/pages/index/index.ts')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
   const homeConfig = JSON.parse(read('miniprogram/pages/index/index.json'))
   const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
   const shareUtil = read('miniprogram/utils/share-material.ts')
 
-  assert.match(modalMarkup, /open-type="share"/)
+  assert.match(modalMarkup, /open-type="\{\{shareReady \? 'share' : ''\}\}"/)
+  assert.match(modalMarkup, /publish-success-modal__share-preview/)
   assert.match(modalMarkup, /bindtap="onShareMomentsTap"/)
   assert.doesNotMatch(modalLogic, /sharefriends/)
-  assert.match(publishLogic, /returnToMaterialsList\(\{ materialId, showSuccessModal: true \}\)/)
+  assert.match(publishLogic, /returnToMaterialsList\(\{[\s\S]*showSuccessModal: true/)
+  assert.match(publishLogic, /getMaterialShareCard\(/)
+  assert.match(publishLogic, /shareTitle: card\.shareTitle/)
+  assert.match(publishLogic, /shareImageUrl: card\.shareImageUrl/)
+  assert.match(homeMarkup, /share-ready="\{\{shareImageUrl \? true : false\}\}"/)
+  assert.match(homeMarkup, /share-image-url="\{\{shareImageUrl\}\}"/)
   assert.match(homeLogic, /applyPendingPublishReturn/)
   assert.match(homeLogic, /onShareAppMessage\(\)/)
   assert.match(homeLogic, /buildMaterialSharePath/)
@@ -1287,6 +1302,25 @@ test('publish success modal shares to friends and moments', () => {
   assert.equal(homeConfig.enableShareTimeline, true)
   assert.doesNotMatch(homeLogic, /分享功能待接入/)
   assert.doesNotMatch(shareUtil, /wx\.showShareImageMenu\(/)
+})
+
+test('publish success share card uses the material preview instead of a page screenshot', async () => {
+  const { getPublishShareImageUrl, pickShareImageUrl } = await import('../miniprogram/utils/share-material.ts')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const materialsLogic = read('miniprogram/pages/materials/index.ts')
+
+  assert.equal(getPublishShareImageUrl([{ kind: 'image', path: 'wxfile://tmp/a.jpg', previewPath: '' }]), 'wxfile://tmp/a.jpg')
+  assert.equal(getPublishShareImageUrl([{ kind: 'video', path: 'wxfile://tmp/a.mp4', previewPath: 'wxfile://tmp/cover.jpg' }]), 'wxfile://tmp/cover.jpg')
+  assert.equal(pickShareImageUrl('wxfile://tmp/a.jpg', [], '1'), 'wxfile://tmp/a.jpg')
+  assert.equal(pickShareImageUrl('', [{ id: '1', thumbnailUrl: 'wxfile://tmp/list.jpg' }], '1'), 'wxfile://tmp/list.jpg')
+
+  for (const logic of [homeLogic, materialsLogic]) {
+    assert.match(logic, /pending\.shareTitle \|\| this\.data\.shareTitle/)
+    assert.match(logic, /pending\.shareImageUrl \|\| this\.data\.shareImageUrl/)
+    assert.match(logic, /onShareAppMessage\(\)[\s\S]*?pickShareImageUrl/)
+    assert.match(logic, /if \(!this\.data\.shareMaterialId \|\| !imageUrl\) return/)
+    assert.doesNotMatch(logic, /closePublishSuccessModalAfterShare\(\) \{[\s\S]*?showPublishSuccessModal: false/)
+  }
 })
 
 test('publish success modal closes after sharing with friends', () => {

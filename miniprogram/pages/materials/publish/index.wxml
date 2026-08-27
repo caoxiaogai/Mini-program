@@ -49,15 +49,19 @@
       </view>
     </view>
 
-    <textarea
-      class="publish-page__copy"
-      value="{{copy}}"
-      maxlength="-1"
-      auto-height="true"
-      placeholder="添加文案"
-      placeholder-class="publish-page__copy-placeholder"
-      bindinput="onCopyInput"
-    />
+    <view class="publish-page__copy-area" bindtap="onCopyAreaTap">
+      <textarea
+        class="publish-page__copy"
+        value="{{copy}}"
+        maxlength="-1"
+        auto-height="true"
+        focus="{{copyFocused}}"
+        placeholder="添加文案"
+        placeholder-class="publish-page__copy-placeholder"
+        bindinput="onCopyInput"
+        bindblur="onCopyBlur"
+      />
+    </view>
   </view>
 
   <view class="publish-page__actions">

@@ -1,7 +1,8 @@
-import { getMaterialDraft, publishMaterial, saveMaterialDraft } from '../../../services/materials'
+import { getMaterialDraft, getMaterialShareCard, publishMaterial, saveMaterialDraft } from '../../../services/materials'
 import { runAuthed } from '../../../services/auth'
 import { ensureEmojiPresentation } from '../../../utils/emoji'
 import { returnToMaterialsList } from '../../../utils/publish-return'
+import { getPublishShareImageUrl } from '../../../utils/share-material'
 import type { MaterialSubmitInput, PublishMediaViewModel } from '../../../types/materials'
 import {
   canAddPublishMedia,
@@ -31,6 +32,7 @@ Page({
     media: initialMedia,
     canAddMedia: canAddPublishMedia(initialMedia),
     copy: '',
+    copyFocused: false,
     typeSheetVisible: false,
     sourceSheetVisible: false,
     typeOptions: getPublishTypeOptions(initialMedia),
@@ -178,6 +180,13 @@ Page({
       typeOptions: getPublishTypeOptions(media),
     })
   },
+  onCopyAreaTap() {
+    if (this.data.copyFocused) return
+    this.setData({ copyFocused: true })
+  },
+  onCopyBlur() {
+    this.setData({ copyFocused: false })
+  },
   onCopyInput(event: WechatMiniprogram.TextareaInput): string | void {
     const copy = ensureEmojiPresentation(event.detail.value)
     if (copy !== this.data.copy) this.setData({ copy })
@@ -207,7 +216,15 @@ Page({
       .then((materialId) => {
         this.draftMaterialId = materialId
         this.draftMediaPaths = this.data.media.map((item) => item.path)
-        returnToMaterialsList({ materialId, showSuccessModal: true })
+        return getMaterialShareCard(materialId, this.data.copy, getPublishShareImageUrl(this.data.media)).then((card) => {
+          returnToMaterialsList({
+            materialId,
+            showSuccessModal: true,
+            shareTitle: card.shareTitle,
+            shareImageUrl: card.shareImageUrl,
+            shareTrackingId: card.shareTrackingId,
+          })
+        })
       })
       .catch(() => undefined)
       .then(() => {

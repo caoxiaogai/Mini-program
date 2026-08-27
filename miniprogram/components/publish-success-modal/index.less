@@ -16,6 +16,7 @@
 }
 
 .publish-success-modal__card {
+  position: relative;
   width: 706rpx;
   max-width: 100%;
   padding: 80rpx 40rpx;
@@ -64,6 +65,14 @@
   color: @publish-success-muted;
   font-size: 28rpx;
   line-height: 1.2;
+}
+
+.publish-success-modal__share-preview {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .publish-success-modal__share-actions {

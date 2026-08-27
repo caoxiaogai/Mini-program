@@ -33,6 +33,24 @@ export function buildMaterialShareTitle(lines: string[]): string {
   return title || DEFAULT_SHARE_TITLE
 }
 
+/** 刚发布的本地文件：图片用原图，视频/PDF 用预览图。 */
+export function getPublishShareImageUrl(media: Array<{ kind: string; path: string; previewPath: string }>): string {
+  const first = media[0]
+  if (!first) return ''
+  if (first.kind === 'image') return first.path
+  return first.previewPath || ''
+}
+
+export function pickShareImageUrl(
+  preferred: string,
+  items: Array<{ id: string; thumbnailUrl: string }>,
+  materialId: string,
+): string | undefined {
+  if (preferred) return preferred
+  const thumbnail = items.find((item) => item.id === materialId)?.thumbnailUrl
+  return thumbnail || undefined
+}
+
 export function isRootPageStack(): boolean {
   try {
     return getCurrentPages().length <= 1

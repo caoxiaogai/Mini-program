@@ -11,6 +11,7 @@ import type {
 } from '../types/materials'
 import { formatDateKey } from '../utils/format'
 import { prepareMediaUrl, prepareMediaUrls } from '../utils/media'
+import { buildMaterialShareTitle } from '../utils/share-material'
 import { prepareDocumentPageImage } from './document'
 import { request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
 
@@ -176,6 +177,30 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
       }
     })
     .catch(() => null)
+}
+
+/** 分享卡片用的标题和预览图，与详情页分享同一数据来源。 */
+export function getMaterialShareCard(
+  materialId: string,
+  fallbackCopy: string,
+  fallbackImageUrl = '',
+): Promise<{ shareTitle: string; shareImageUrl: string; shareTrackingId: string }> {
+  const fallbackTitle = buildMaterialShareTitle(fallbackCopy.split(/\r?\n/))
+
+  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
+    .then(async (material) => {
+      const previewUrl = await prepareMaterialThumbnail(material)
+      return {
+        shareTitle: buildMaterialShareTitle(splitMaterialCopy(resolveMaterialCopy(material))) || fallbackTitle,
+        shareImageUrl: previewUrl || fallbackImageUrl,
+        shareTrackingId: material.trackingId ?? '',
+      }
+    })
+    .catch(() => ({
+      shareTitle: fallbackTitle,
+      shareImageUrl: fallbackImageUrl,
+      shareTrackingId: '',
+    }))
 }
 
 function kindFromFileType(fileType: string): PublishMediaKind {

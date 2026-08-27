@@ -64,6 +64,8 @@
 
   <publish-success-modal
     visible="{{showPublishSuccessModal}}"
+    share-ready="{{shareImageUrl ? true : false}}"
+    share-image-url="{{shareImageUrl}}"
     bind:close="onPublishSuccessClose"
     bind:sharemoments="onShareMomentsTap"
   />
