@@ -1,4 +1,5 @@
 import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
+import { runAuthed } from '../../services/auth'
 import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
@@ -6,6 +7,7 @@ import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
+import { buildReturnPath } from '../../utils/auth'
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
 
@@ -90,15 +92,17 @@ Page({
     ...defaultTrendState,
   },
   onLoad(options: Record<string, string | undefined>) {
-    const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
+    runAuthed(buildReturnPath('/pages/analysis/index', options), () => {
+      const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
 
-    this.setData({
-      activeAnalysisTab: analysisTabs[analysisTabIndex].id,
-      activeAnalysisTabIndex: analysisTabIndex,
-      analysisTabOffset: analysisTabIndex * 100,
+      this.setData({
+        activeAnalysisTab: analysisTabs[analysisTabIndex].id,
+        activeAnalysisTabIndex: analysisTabIndex,
+        analysisTabOffset: analysisTabIndex * 100,
+      })
+
+      this.loadAnalysis(this.data.activePeriod)
     })
-
-    this.loadAnalysis(this.data.activePeriod)
   },
   onPullDownRefresh() {
     runPagePullRefresh(this.refreshCurrentView())

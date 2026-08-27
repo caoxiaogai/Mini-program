@@ -1,16 +1,20 @@
 import { getMaterialDraft, publishMaterial, saveMaterialDraft } from '../../../services/materials'
+import { runAuthed } from '../../../services/auth'
+import { ensureEmojiPresentation } from '../../../utils/emoji'
 import { returnToMaterialsList } from '../../../utils/publish-return'
 import type { MaterialSubmitInput, PublishMediaViewModel } from '../../../types/materials'
 import {
   canAddPublishMedia,
+  getPublishTypeOptions,
   isPdfFileName,
   MAX_IMAGE_COUNT,
   MAX_VIDEO_DURATION_SECONDS,
   mediaFilesToPublishItems,
   mergePublishMedia,
   PUBLISH_SOURCE_OPTIONS,
-  PUBLISH_TYPE_OPTIONS,
 } from '../../../utils/publish-media'
+import type { PublishTypeOptionId } from '../../../utils/publish-media'
+import { buildReturnPath } from '../../../utils/auth'
 
 const initialMedia: PublishMediaViewModel[] = []
 
@@ -22,29 +26,33 @@ Page({
   draftMaterialId: null as string | null,
   draftMediaPaths: [] as string[],
   submitting: false,
+  pendingMediaType: 'image' as Exclude<PublishTypeOptionId, 'pdf'>,
   data: {
     media: initialMedia,
     canAddMedia: canAddPublishMedia(initialMedia),
     copy: '',
     typeSheetVisible: false,
     sourceSheetVisible: false,
-    typeOptions: PUBLISH_TYPE_OPTIONS,
+    typeOptions: getPublishTypeOptions(initialMedia),
     sourceOptions: PUBLISH_SOURCE_OPTIONS,
   },
   onLoad(options: Record<string, string | undefined>) {
-    const materialId = options.id
-    if (!materialId) return
+    runAuthed(buildReturnPath('/pages/materials/publish/index', options), () => {
+      const materialId = options.id
+      if (!materialId) return
 
-    getMaterialDraft(materialId).then((draft) => {
-      if (!draft) return
+      getMaterialDraft(materialId).then((draft) => {
+        if (!draft) return
 
-      this.draftMaterialId = draft.id
-      this.draftMediaPaths = draft.media.map((item) => item.path)
+        this.draftMaterialId = draft.id
+        this.draftMediaPaths = draft.media.map((item) => item.path)
 
-      this.setData({
-        media: draft.media,
-        canAddMedia: canAddPublishMedia(draft.media),
-        copy: draft.copy,
+        this.setData({
+          media: draft.media,
+          canAddMedia: canAddPublishMedia(draft.media),
+          typeOptions: getPublishTypeOptions(draft.media),
+          copy: ensureEmojiPresentation(draft.copy),
+        })
       })
     })
   },
@@ -56,17 +64,25 @@ Page({
       draftId: this.draftMaterialId,
       originalMediaPaths: this.draftMediaPaths,
       media: this.data.media,
-      copy: this.data.copy,
+      copy: ensureEmojiPresentation(this.data.copy),
     }
   },
   applySelectedMedia(incoming: PublishMediaViewModel[]) {
     const { items, message } = mergePublishMedia(this.data.media, incoming)
     if (message) wx.showToast({ title: message, icon: 'none' })
-    this.setData({ media: items, canAddMedia: canAddPublishMedia(items) })
+    this.setData({
+      media: items,
+      canAddMedia: canAddPublishMedia(items),
+      typeOptions: getPublishTypeOptions(items),
+    })
   },
   onAddMediaTap() {
     if (!this.data.canAddMedia) return
-    this.setData({ typeSheetVisible: true, sourceSheetVisible: false })
+    this.setData({
+      typeOptions: getPublishTypeOptions(this.data.media),
+      typeSheetVisible: true,
+      sourceSheetVisible: false,
+    })
   },
   onTypeSheetMaskTap() {
     this.setData({ typeSheetVisible: false })
@@ -75,22 +91,17 @@ Page({
     this.setData({ sourceSheetVisible: false })
   },
   onTypeOptionTap(event: WechatMiniprogram.TouchEvent) {
-    const optionId = event.currentTarget.dataset.id as string
-    if (optionId === 'media') {
-      this.setData({ typeSheetVisible: false, sourceSheetVisible: true })
+    const optionId = event.currentTarget.dataset.id as PublishTypeOptionId
+    if (optionId === 'pdf') {
+      this.setData({ typeSheetVisible: false }, () => {
+        this.choosePdfFromChat()
+      })
       return
     }
-    if (optionId !== 'pdf') return
+    if (optionId !== 'image' && optionId !== 'video') return
 
-    if (this.data.media.length > 0) {
-      this.setData({ typeSheetVisible: false })
-      wx.showToast({ title: '已添加图片，不能同时选择 PDF', icon: 'none' })
-      return
-    }
-
-    this.setData({ typeSheetVisible: false }, () => {
-      this.choosePdfFromChat()
-    })
+    this.pendingMediaType = optionId
+    this.setData({ typeSheetVisible: false, sourceSheetVisible: true })
   },
   onSourceOptionTap(event: WechatMiniprogram.TouchEvent) {
     const optionId = event.currentTarget.dataset.id as string
@@ -107,12 +118,15 @@ Page({
     })
   },
   chooseImageOrVideo(sourceType: Array<'album' | 'camera'>) {
+    const mediaType = this.pendingMediaType === 'video' ? ['video'] : ['image']
     const imageCount = this.data.media.filter((item) => item.kind === 'image').length
-    const remaining = this.data.media.length === 0 ? MAX_IMAGE_COUNT : MAX_IMAGE_COUNT - imageCount
+    const remaining = this.pendingMediaType === 'video'
+      ? 1
+      : this.data.media.length === 0 ? MAX_IMAGE_COUNT : MAX_IMAGE_COUNT - imageCount
 
     wx.chooseMedia({
       count: Math.max(remaining, 1),
-      mediaType: ['image', 'video'],
+      mediaType,
       sourceType,
       maxDuration: MAX_VIDEO_DURATION_SECONDS,
       camera: 'back',
@@ -158,10 +172,16 @@ Page({
     const mediaId = event.currentTarget.dataset.id as string
     const media = this.data.media.filter((item) => item.id !== mediaId)
 
-    this.setData({ media, canAddMedia: canAddPublishMedia(media) })
+    this.setData({
+      media,
+      canAddMedia: canAddPublishMedia(media),
+      typeOptions: getPublishTypeOptions(media),
+    })
   },
-  onCopyInput(event: WechatMiniprogram.TextareaInput) {
-    this.setData({ copy: event.detail.value })
+  onCopyInput(event: WechatMiniprogram.TextareaInput): string | void {
+    const copy = ensureEmojiPresentation(event.detail.value)
+    if (copy !== this.data.copy) this.setData({ copy })
+    if (copy !== event.detail.value) return copy
   },
   onDraftTap() {
     if (this.submitting) return

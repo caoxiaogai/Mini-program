@@ -1,4 +1,5 @@
 import { getRankingOverview, sortRankingEntries } from '../../services/ranking'
+import { runAuthed } from '../../services/auth'
 import type { RankingEntryViewModel, RankingMetric, RankingTab, RankingViewModel } from '../../types/ranking'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
@@ -19,7 +20,7 @@ Page({
     rankingHeaderOpacity: 0,
   },
   onLoad() {
-    this.loadRanking()
+    runAuthed('/pages/ranking/index', () => this.loadRanking())
   },
   onPullDownRefresh() {
     runPagePullRefresh(this.loadRanking())

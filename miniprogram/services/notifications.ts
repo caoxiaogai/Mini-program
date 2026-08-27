@@ -18,7 +18,7 @@ const notificationFilters: NotificationFilterViewModel[] = [
 
 /**
  * 通知列表：每一次浏览或转发各一条，按发生日期倒序分组。
- * 发布者本人浏览由后端 `/analysis/notify/list` 排除，不在通知和首页互动消息展示。
+ * 发布者本人浏览由后端 `/analysis/notify/list` 排除；本人打开自己的素材也不会写入浏览/转发/完播统计。
  */
 export function getNotifications(): Promise<NotificationsViewModel> {
   const rangeQuery = buildCustomRangeQuery(NOTIFICATION_RANGE_DAYS)

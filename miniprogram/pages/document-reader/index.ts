@@ -1,4 +1,5 @@
 import { getDocumentPageCount, prepareDocumentPageImage } from '../../services/document'
+import { runAuthed } from '../../services/auth'
 import {
   calcImageViewProgress,
   createTrackingSessionId,
@@ -7,6 +8,7 @@ import {
 import type { DocumentReaderPage } from '../../types/document'
 import { pickCurrentDocumentPageByScroll } from '../../utils/document-page'
 import { runPullRefresh } from '../../utils/pull-refresh'
+import { buildReturnPath } from '../../utils/auth'
 
 const PRELOAD_AHEAD = 2
 
@@ -56,6 +58,9 @@ Page({
   viewStartedAt: 0,
 
   onLoad(options: Record<string, string | undefined>) {
+    runAuthed(buildReturnPath('/pages/document-reader/index', options), () => this.startReader(options))
+  },
+  startReader(options: Record<string, string | undefined>) {
     this.materialId = options.materialId ?? ''
     this.trackingId = options.trackingId ?? ''
     this.sessionId = options.sessionId || createTrackingSessionId()

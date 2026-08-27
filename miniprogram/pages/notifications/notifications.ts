@@ -1,4 +1,5 @@
 import { getNotifications } from '../../services/notifications'
+import { runAuthed } from '../../services/auth'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { persistViewedNotification } from '../../utils/notification-viewed'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
@@ -30,10 +31,15 @@ Page({
     visibleGroups: [] as NotificationGroupViewModel[],
     hasVisibleGroups: false,
   },
+  authReady: false,
   onLoad() {
-    this.loadNotifications()
+    runAuthed('/pages/notifications/notifications', () => {
+      this.authReady = true
+      this.loadNotifications()
+    })
   },
   onShow() {
+    if (!this.authReady) return
     this.loadNotifications()
   },
   onPullDownRefresh() {

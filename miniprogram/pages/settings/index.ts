@@ -3,6 +3,7 @@ import {
   notifyIntentLevelOptions,
   updateNotifySettings,
 } from '../../services/user'
+import { runAuthed } from '../../services/auth'
 import type { NotifyIntentLevel } from '../../types/settings'
 import { DEFAULT_NOTIFY_INTENT_LEVEL } from '../../types/settings'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
@@ -15,7 +16,7 @@ Page({
   },
 
   onLoad() {
-    this.loadSettings()
+    runAuthed('/pages/settings/index', () => this.loadSettings())
   },
 
   onPullDownRefresh() {

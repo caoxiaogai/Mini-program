@@ -1,6 +1,6 @@
 // app.ts
 import { getProfilePageData } from './services/profile'
-import { ensureLogin } from './services/request'
+import { ensureLogin, hasAuthorizedLogin } from './services/request'
 
 App<IAppOption>({
   globalData: {},
@@ -10,7 +10,8 @@ App<IAppOption>({
     logs.unshift(Date.now())
     wx.setStorageSync('logs', logs)
 
-    // 登录：wx.login code 换取 userId，登录态由统一请求层携带；失败时页面请求会自动重试登录
+    // 已授权用户预热登录态；未授权时由页面引导授权登录，不在启动时静默建号
+    if (!hasAuthorizedLogin()) return
     ensureLogin()
       .then(() => getProfilePageData())
       .catch(() => undefined)

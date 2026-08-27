@@ -1,9 +1,11 @@
 import { getMaterialDetail, getMaterials } from '../../services/materials'
+import { runAuthed } from '../../services/auth'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, showMomentsShareGuide } from '../../utils/share-material'
+import { buildReturnPath } from '../../utils/auth'
 
 type MaterialsTabId = 'home' | 'notifications' | 'analysis' | 'profile'
 
@@ -59,10 +61,17 @@ Page({
     shareImageUrl: '',
     pullRefreshing: false,
   },
+  authReady: false,
   onLoad(options: Record<string, string | undefined>) {
     const { platform } = wx.getSystemInfoSync()
     this.setData({
       isAndroid: platform === 'android' || platform === 'devtools',
+    })
+    runAuthed(buildReturnPath('/pages/materials/index', options), () => this.startMaterials(options))
+  },
+  startMaterials(options: Record<string, string | undefined>) {
+    this.authReady = true
+    this.setData({
       showPublishSuccessModal: options.publishSuccess === '1',
       shareMaterialId: options.id ?? '',
     })
@@ -70,8 +79,13 @@ Page({
     if (options.id) this.loadShareMaterial(options.id)
 
     this.loadMaterials()
+    this.refreshAuthenticatedMaterials()
   },
   onShow() {
+    if (!this.authReady) return
+    this.refreshAuthenticatedMaterials()
+  },
+  refreshAuthenticatedMaterials() {
     enableMaterialShareMenu()
     this.applyPendingPublishReturn()
     this.closePublishSuccessModalAfterShareReturn()

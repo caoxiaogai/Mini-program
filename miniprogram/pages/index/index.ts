@@ -1,3 +1,4 @@
+import { runAuthed } from '../../services/auth'
 import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
 import { getHomePageData } from '../../services/home'
 import { getMaterialDetail, getMaterials } from '../../services/materials'
@@ -17,10 +18,11 @@ import { sortAnalysisUsers } from '../../utils/analysis-users'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
-import { buildHomeShareQuery, buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, showMomentsShareGuide } from '../../utils/share-material'
+import { buildHomeShareQuery, buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, showMomentsShareGuide } from '../../utils/share-material'
 import { persistViewedNotification } from '../../utils/notification-viewed'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed } from './home-notification-preview'
+import { buildReturnPath } from '../../utils/auth'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
@@ -81,6 +83,7 @@ function getVisibleMaterials(items: MaterialCardViewModel[], filterId: Materials
 
 Page({
   publishSuccessShared: false,
+  authReady: false,
   data: {
     greetingHeadline: getHomeGreeting(),
     greetingSubtitle: '今日阳光明媚，祝你好运☀️',
@@ -138,6 +141,10 @@ Page({
   onLoad(options: Record<string, string | undefined>) {
     const { platform } = wx.getSystemInfoSync()
     this.setData({ isAndroid: platform === 'android' || platform === 'devtools' })
+    runAuthed(buildReturnPath(HOME_PAGE_PATH, options), () => this.startHome(options))
+  },
+  startHome(options: Record<string, string | undefined>) {
+    this.authReady = true
 
     if (options.tab === 'materials') {
       const shareMaterialId = options.id ?? ''
@@ -152,8 +159,13 @@ Page({
     }
     this.loadHomeData()
     this.loadProfileData()
+    this.refreshAuthenticatedHome()
   },
   onShow() {
+    if (!this.authReady) return
+    this.refreshAuthenticatedHome()
+  },
+  refreshAuthenticatedHome() {
     this.setData({ greetingHeadline: getHomeGreeting() })
     enableMaterialShareMenu()
     this.applyPendingPublishReturn()

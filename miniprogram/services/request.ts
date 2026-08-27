@@ -31,6 +31,9 @@ const UPLOAD_TIMEOUT_MS = 60000
 
 const STORAGE_KEY_USER_ID = 'auth.userId'
 const STORAGE_KEY_OPENID = 'auth.openid'
+const STORAGE_KEY_AUTHORIZED = 'auth.authorized'
+const STORAGE_KEY_NICKNAME = 'auth.nickname'
+const STORAGE_KEY_AVATAR = 'auth.avatar'
 
 /** 当前 API 基址的 origin（不含 /api） */
 export function getApiOrigin(): string {
@@ -116,6 +119,7 @@ function endLoading(): void {
 }
 
 function showErrorToast(error: ApiError): void {
+  if (error.code === 401) return
   const title = error.code === -1 ? '网络异常，请稍后重试' : '请求失败，请稍后重试'
   wx.showToast({ title, icon: 'none' })
 }
@@ -182,6 +186,16 @@ function rawRequest<T>(options: RequestOptions): Promise<T> {
 }
 
 let loginPromise: Promise<ApiLoginData> | null = null
+let cachedUser: ApiLoginData | null = null
+
+function persistLogin(data: ApiLoginData): ApiLoginData {
+  cachedUser = data
+  wx.setStorageSync(STORAGE_KEY_USER_ID, data.userId)
+  wx.setStorageSync(STORAGE_KEY_OPENID, data.openid)
+  wx.setStorageSync(STORAGE_KEY_NICKNAME, data.nickname ?? '')
+  wx.setStorageSync(STORAGE_KEY_AVATAR, data.avatar ?? '')
+  return data
+}
 
 function requestLogin(): Promise<ApiLoginData> {
   return new Promise<ApiLoginData>((resolve, reject) => {
@@ -193,11 +207,7 @@ function requestLogin(): Promise<ApiLoginData> {
           query: { code: loginResult.code },
           skipAuth: true,
         })
-          .then((data) => {
-            wx.setStorageSync(STORAGE_KEY_USER_ID, data.userId)
-            wx.setStorageSync(STORAGE_KEY_OPENID, data.openid)
-            resolve(data)
-          })
+          .then((data) => resolve(persistLogin(data)))
           .catch(reject)
       },
       fail: (error) => {
@@ -208,25 +218,66 @@ function requestLogin(): Promise<ApiLoginData> {
   })
 }
 
+export function hasAuthorizedLogin(): boolean {
+  return wx.getStorageSync(STORAGE_KEY_AUTHORIZED) === '1'
+}
+
+export function authorizeLogin(): Promise<ApiLoginData> {
+  wx.setStorageSync(STORAGE_KEY_AUTHORIZED, '1')
+  loginPromise = null
+  cachedUser = null
+  return ensureLogin()
+}
+
+export function patchCachedLogin(patch: Partial<Pick<ApiLoginData, 'nickname' | 'avatar'>>): void {
+  const next: ApiLoginData = {
+    userId: cachedUser?.userId ?? String(wx.getStorageSync(STORAGE_KEY_USER_ID) ?? ''),
+    openid: cachedUser?.openid ?? String(wx.getStorageSync(STORAGE_KEY_OPENID) ?? ''),
+    phone: cachedUser?.phone ?? null,
+    nickname: patch.nickname !== undefined ? patch.nickname : cachedUser?.nickname ?? null,
+    avatar: patch.avatar !== undefined ? patch.avatar : cachedUser?.avatar ?? null,
+  }
+  persistLogin(next)
+  loginPromise = Promise.resolve(next)
+}
+
 /** 登录（code 换 userId），应用生命周期内复用同一登录态；失败后下次调用会重试 */
 export function ensureLogin(): Promise<ApiLoginData> {
+  if (cachedUser && loginPromise) return loginPromise
   if (!loginPromise) {
     loginPromise = requestLogin().catch((error: ApiError) => {
       loginPromise = null
+      cachedUser = null
       throw error
     })
   }
   return loginPromise
 }
 
+function rejectUnauthorized<T>(): Promise<T> {
+  return Promise.reject(new ApiError(401, '请先登录'))
+}
+
 /** 统一请求入口：默认先确保登录，再携带登录态请求头发起请求 */
 export function request<T>(options: RequestOptions): Promise<T> {
   if (options.skipAuth) return rawRequest<T>(options)
+  if (!hasAuthorizedLogin()) return rejectUnauthorized<T>()
   return ensureLogin().then(() => rawRequest<T>(options))
+}
+
+function readUploadedUrl(data: unknown): string {
+  if (typeof data === 'string' && data.trim() !== '') return data
+  if (data && typeof data === 'object') {
+    const record = data as { url?: string; avatar?: string; fileUrl?: string }
+    const url = record.avatar ?? record.url ?? record.fileUrl
+    if (typeof url === 'string' && url.trim() !== '') return url
+  }
+  return ''
 }
 
 /** 上传单个文件，返回后端存储 URL（对应 POST /material/upload-file 一类接口） */
 export function uploadFile(path: string, filePath: string): Promise<string> {
+  if (!hasAuthorizedLogin()) return rejectUnauthorized<string>()
   return ensureLogin().then(
     () =>
       new Promise<string>((resolve, reject) => {
@@ -250,12 +301,13 @@ export function uploadFile(path: string, filePath: string): Promise<string> {
           timeout: UPLOAD_TIMEOUT_MS,
           success: (response) => {
             try {
-              const result = JSON.parse(response.data) as ApiResponse<string>
-              if (result.code === 200) {
-                finish(null, result.data)
+              const result = JSON.parse(response.data) as ApiResponse<unknown>
+              const uploadedUrl = result.code === 200 ? readUploadedUrl(result.data) : ''
+              if (uploadedUrl) {
+                finish(null, uploadedUrl)
                 return
               }
-              finish(new ApiError(result.code, result.message))
+              finish(new ApiError(result.code, result.message || '上传失败'))
             } catch {
               finish(new ApiError(-1, '上传响应解析失败'))
             }

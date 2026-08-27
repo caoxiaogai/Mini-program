@@ -1,6 +1,8 @@
 import { enrichAnalysisUserDetailThumbnails, getAnalysisUserDetail } from '../../services/analysis'
+import { runAuthed } from '../../services/auth'
 import type { AnalysisUserDetailViewModel, AnalysisUserRecord } from '../../types/analysis'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
+import { buildReturnPath } from '../../utils/auth'
 
 type RecordSortId = 'views' | 'completion' | 'shares'
 
@@ -35,10 +37,12 @@ Page({
   },
   userId: '',
   onLoad(options: Record<string, string | undefined>) {
-    this.userId = options.id ?? ''
-    if (!this.userId) return
+    runAuthed(buildReturnPath('/pages/analysis-user-detail/index', options), () => {
+      this.userId = options.id ?? ''
+      if (!this.userId) return
 
-    this.loadDetail()
+      this.loadDetail()
+    })
   },
   onPullDownRefresh() {
     runPagePullRefresh(this.loadDetail())

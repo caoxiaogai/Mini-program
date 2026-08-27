@@ -4,14 +4,25 @@ export const MAX_IMAGE_COUNT = 9
 export const MAX_VIDEO_DURATION_SECONDS = 30
 
 export const PUBLISH_TYPE_OPTIONS = [
-  { id: 'media', label: '图片/视频' },
+  { id: 'image', label: '图片' },
+  { id: 'video', label: '视频' },
   { id: 'pdf', label: 'PDF' },
 ] as const
+
+export type PublishTypeOptionId = (typeof PUBLISH_TYPE_OPTIONS)[number]['id']
 
 export const PUBLISH_SOURCE_OPTIONS = [
   { id: 'camera', label: '拍摄' },
   { id: 'album', label: '从相册选择' },
 ] as const
+
+export function getPublishTypeOptions(
+  items: Array<{ kind: PublishMediaKind }>,
+): Array<(typeof PUBLISH_TYPE_OPTIONS)[number]> {
+  const kind = items[0]?.kind
+  if (!kind) return [...PUBLISH_TYPE_OPTIONS]
+  return PUBLISH_TYPE_OPTIONS.filter((option) => option.id === kind)
+}
 
 export function canAddPublishMedia(items: Array<{ kind: PublishMediaKind }>): boolean {
   if (items.length === 0) return true

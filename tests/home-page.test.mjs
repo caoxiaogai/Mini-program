@@ -77,6 +77,9 @@ test('data access goes through the unified request layer', () => {
   assert.doesNotMatch(config, /PROD_API_ORIGIN/)
   assert.match(requestLayer, /export function request</)
   assert.match(requestLayer, /export function ensureLogin/)
+  assert.match(requestLayer, /export function hasAuthorizedLogin/)
+  assert.match(requestLayer, /export function authorizeLogin/)
+  assert.match(requestLayer, /export function patchCachedLogin/)
   assert.match(requestLayer, /\/wechat\/login/)
 
   for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile', 'tracking', 'user']) {
@@ -86,6 +89,47 @@ test('data access goes through the unified request layer', () => {
       assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
     }
   }
+})
+
+test('entry pages require authorized login and first-time profile setup', async () => {
+  const { isLoginProfileComplete, isLocalAvatarFile, safeReturnPath, buildAuthPath, buildReturnPath } = await import('../miniprogram/utils/auth.ts')
+  const app = JSON.parse(read('miniprogram/app.json'))
+  const requestLayer = read('miniprogram/services/request.ts')
+  const userService = read('miniprogram/services/user.ts')
+  const authService = read('miniprogram/services/auth.ts')
+  const authPage = read('miniprogram/pages/auth/index.ts')
+  const authMarkup = read('miniprogram/pages/auth/index.wxml')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const detailLogic = read('miniprogram/pages/material-detail/index.ts')
+  const documentLogic = read('miniprogram/pages/document-reader/index.ts')
+
+  assert.ok(app.pages.includes('pages/auth/index'))
+  assert.equal(isLoginProfileComplete({ nickname: '阿乐', avatar: 'https://example.com/a.png' }), true)
+  assert.equal(isLoginProfileComplete({ nickname: '微信用户', avatar: 'https://example.com/a.png' }), false)
+  assert.equal(isLoginProfileComplete({ nickname: '阿乐', avatar: '' }), false)
+  assert.equal(isLocalAvatarFile('wxfile://tmp_avatar.png'), true)
+  assert.equal(isLocalAvatarFile('https://cdn.example/a.png'), false)
+  assert.equal(safeReturnPath('/pages/index/index?materialId=12'), '/pages/index/index?materialId=12')
+  assert.equal(safeReturnPath('https://evil.example'), '/pages/index/index')
+  assert.match(buildAuthPath('/pages/index/index?materialId=12', 'profile'), /step=profile/)
+  assert.equal(buildReturnPath('/pages/material-detail/index', { id: '12', trackingId: 't1' }), '/pages/material-detail/index?id=12&trackingId=t1')
+
+  assert.match(requestLayer, /if \(!hasAuthorizedLogin\(\)\) return rejectUnauthorized/)
+  assert.match(authService, /export function requireAuth/)
+  assert.match(authService, /export function runAuthed/)
+  assert.match(userService, /path: '\/user\/profile'/)
+  assert.match(userService, /uploadFile\('\/user\/avatar'/)
+  assert.match(authMarkup, /授权登录/)
+  assert.match(authMarkup, /open-type="chooseAvatar"/)
+  assert.match(authMarkup, /type="nickname"/)
+  assert.match(authMarkup, /使用微信头像和昵称/)
+  assert.match(authPage, /onAuthorizeTap\(\)/)
+  assert.match(authPage, /onUseWechatProfile\(/)
+  assert.match(authPage, /updateUserProfile/)
+  assert.match(homeLogic, /runAuthed\(buildReturnPath\(HOME_PAGE_PATH, options\)/)
+  assert.match(detailLogic, /runAuthed\(returnPath/)
+  assert.match(documentLogic, /runAuthed\(buildReturnPath\('\/pages\/document-reader\/index', options\)/)
+  assert.match(read('miniprogram/app.ts'), /if \(!hasAuthorizedLogin\(\)\) return/)
 })
 
 test('media urls go through the file proxy and are downloaded on device', () => {
@@ -367,6 +411,8 @@ test('profile tab exposes the Figma 519:5031 structure through a typed service s
   assert.match(component, /class="home-profile__membership"/)
   assert.match(logic, /getProfilePageData\(\)/)
   assert.match(read('miniprogram/app.ts'), /from '\.\/services\/profile'/)
+  assert.match(read('miniprogram/app.ts'), /hasAuthorizedLogin\(\)/)
+  assert.match(logic, /runAuthed\(buildReturnPath\(HOME_PAGE_PATH, options\)/)
   assert.match(page, /<home-profile profile="\{\{profileData\}\}" bind:settingstap="onProfileSettingsTap" \/>/)
   assert.match(component, /bindtap="onSettingsTap"/)
   assert.match(logic, /onProfileSettingsTap\(\)/)
@@ -756,7 +802,8 @@ test('notifications map each browse from the notify list API', () => {
   assert.match(homeLogic, /if \(id === 'notifications'\) this\.loadNotifications\(\)/)
   assert.match(homeLogic, /if \(rootTabIds\[this\.data\.activeTabIndex\] === 'notifications'\)/)
   assert.match(homeLogic, /this\.loadHomeData\(true\)/)
-  assert.match(pageLogic, /onShow\(\) \{\s*this\.loadNotifications\(\)/)
+  assert.match(pageLogic, /onShow\(\) \{[\s\S]*this\.loadNotifications\(\)/)
+  assert.match(pageLogic, /authReady/)
 })
 
 test('backend datetime strings display as China wall-clock hours', async () => {
@@ -1148,14 +1195,18 @@ test('publish page picks image/video from camera or album and PDF from chat file
   assert.match(markup, /bindtap="onAddMediaTap"/)
   assert.match(markup, /typeSheetVisible/)
   assert.match(markup, /sourceSheetVisible/)
-  assert.match(picker, /label: '图片\/视频'/)
+  assert.match(picker, /label: '图片'/)
+  assert.match(picker, /label: '视频'/)
   assert.match(picker, /label: 'PDF'/)
   assert.match(picker, /label: '拍摄'/)
   assert.match(picker, /label: '从相册选择'/)
+  assert.match(picker, /export function getPublishTypeOptions/)
+  assert.match(logic, /getPublishTypeOptions\(this\.data\.media\)/)
   assert.match(logic, /wx\.chooseMedia\(/)
   assert.match(logic, /chooseImageOrVideo\(\['camera'\]\)/)
   assert.match(logic, /chooseImageOrVideo\(\['album'\]\)/)
-  assert.match(logic, /mediaType: \['image', 'video'\]/)
+  assert.match(logic, /this\.pendingMediaType === 'video' \? \['video'\] : \['image'\]/)
+  assert.doesNotMatch(logic, /mediaType: \['image', 'video'\]/)
   assert.match(logic, /wx\.chooseMessageFile\(/)
   assert.match(logic, /type: 'file'/)
   assert.match(logic, /extension: \['pdf'\]/)
@@ -1164,6 +1215,52 @@ test('publish page picks image/video from camera or album and PDF from chat file
   assert.match(service, /fileType: 'VIDEO'/)
   assert.match(service, /fileType: 'PDF'/)
   assert.equal(app.permission['scope.camera'].desc, '用于拍摄照片或视频并发布素材')
+})
+
+test('publish copy keeps colorful emoji presentation', async () => {
+  const { ensureEmojiPresentation } = await import('../miniprogram/utils/emoji.ts')
+  const markup = read('miniprogram/pages/materials/publish/index.wxml')
+  const logic = read('miniprogram/pages/materials/publish/index.ts')
+  const styles = read('miniprogram/pages/materials/publish/index.less')
+  const config = JSON.parse(read('miniprogram/pages/materials/publish/index.json'))
+
+  assert.equal(ensureEmojiPresentation('\u263A'), '\u263A\uFE0F')
+  assert.equal(ensureEmojiPresentation('\u263A\uFE0F'), '\u263A\uFE0F')
+  assert.equal(ensureEmojiPresentation('\u2639'), '\u2639\uFE0F')
+  assert.equal(ensureEmojiPresentation('\uD83D\uDE0A'), '\uD83D\uDE0A')
+  assert.equal(ensureEmojiPresentation('卖100份'), '卖100份')
+  assert.equal(ensureEmojiPresentation(''), '')
+
+  assert.match(markup, /class="publish-page__copy"/)
+  assert.match(logic, /ensureEmojiPresentation\(event\.detail\.value\)/)
+  assert.match(logic, /ensureEmojiPresentation\(this\.data\.copy\)/)
+  assert.match(styles, /Apple Color Emoji/)
+  assert.match(styles, /Segoe UI Emoji/)
+  assert.equal(config.renderer, 'webview')
+})
+
+test('publish type sheet only offers the current media kind', async () => {
+  const {
+    canAddPublishMedia,
+    getPublishTypeOptions,
+    mergePublishMedia,
+  } = await import('../miniprogram/utils/publish-media.ts')
+  const image = { id: '1', path: 'a.jpg', kind: 'image', previewPath: '', name: '', duration: 0 }
+  const video = { id: '2', path: 'a.mp4', kind: 'video', previewPath: 't.jpg', name: '', duration: 8 }
+  const pdf = { id: '3', path: 'a.pdf', kind: 'pdf', previewPath: '', name: 'a.pdf', duration: 0 }
+
+  const nineImages = Array.from({ length: 9 }, (_, index) => ({ ...image, id: String(index) }))
+
+  assert.deepEqual(getPublishTypeOptions([]).map((option) => option.id), ['image', 'video', 'pdf'])
+  assert.deepEqual(getPublishTypeOptions([image]).map((option) => option.id), ['image'])
+  assert.deepEqual(getPublishTypeOptions([video]).map((option) => option.id), ['video'])
+  assert.deepEqual(getPublishTypeOptions([pdf]).map((option) => option.id), ['pdf'])
+  assert.equal(canAddPublishMedia([image]), true)
+  assert.equal(canAddPublishMedia(nineImages), false)
+  assert.equal(canAddPublishMedia([video]), false)
+  assert.equal(canAddPublishMedia([pdf]), false)
+  assert.equal(mergePublishMedia([video], [{ ...video, id: '2b' }]).items[0].id, '2')
+  assert.equal(mergePublishMedia([pdf], [{ ...pdf, id: '3b' }]).items[0].id, '3')
 })
 
 test('publish success modal shares to friends and moments', () => {
@@ -2318,8 +2415,11 @@ test('every page can pull from the top to refresh', () => {
     'pages/analysis-user-detail/index',
     'pages/settings/index',
   ]
+  const ungatedPages = [
+    'pages/auth/index',
+  ]
 
-  assert.deepEqual([...app.pages].sort(), [...scrollViewPages, ...pageRefreshPages].sort())
+  assert.deepEqual([...app.pages].sort(), [...scrollViewPages, ...pageRefreshPages, ...ungatedPages].sort())
 
   for (const page of scrollViewPages) {
     const markup = read(`miniprogram/${page}.wxml`)

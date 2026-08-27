@@ -1,4 +1,5 @@
 import { getMaterialDetail } from '../../services/materials'
+import { runAuthed } from '../../services/auth'
 import {
   calcImageViewProgress,
   calcVideoViewProgress,
@@ -8,6 +9,7 @@ import {
 import type { MaterialDetailViewModel } from '../../types/materials'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import {
+  buildMaterialDetailPath,
   buildMaterialSharePath,
   buildMaterialShareQuery,
   buildMaterialShareTitle,
@@ -48,13 +50,21 @@ Page({
   onLoad(options: Record<string, string | undefined>) {
     const materialId = options.id ?? ''
     const trackingId = options.trackingId ?? ''
-    if (materialId && isRootPageStack()) {
-      wx.reLaunch({ url: buildMaterialSharePath(materialId, trackingId) })
-      return
-    }
+    const returnPath = isRootPageStack()
+      ? buildMaterialSharePath(materialId, trackingId)
+      : buildMaterialDetailPath(materialId, trackingId)
 
-    this.materialId = materialId
-    this.pageTrackingId = trackingId
+    runAuthed(returnPath, () => {
+      if (materialId && isRootPageStack()) {
+        wx.reLaunch({ url: buildMaterialSharePath(materialId, trackingId) })
+        return
+      }
+      this.startDetail(options)
+    })
+  },
+  startDetail(options: Record<string, string | undefined>) {
+    this.materialId = options.id ?? ''
+    this.pageTrackingId = options.trackingId ?? ''
     this.trackingSessionId = createTrackingSessionId()
     this.viewedImageIndices = []
     this.hasReportedComplete = false

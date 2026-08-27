@@ -1,7 +1,9 @@
 import { getAnalysisDetail } from '../../services/analysis'
+import { runAuthed } from '../../services/auth'
 import type { AnalysisDetailViewModel, AnalysisIntentLevel, AnalysisIntentUser } from '../../types/analysis'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
+import { buildReturnPath } from '../../utils/auth'
 
 type IntentFilter = 'all' | AnalysisIntentLevel
 
@@ -30,10 +32,12 @@ Page({
   },
   cardId: '',
   onLoad(options: Record<string, string | undefined>) {
-    this.cardId = options.id ?? ''
-    if (!this.cardId) return
+    runAuthed(buildReturnPath('/pages/analysis-detail/index', options), () => {
+      this.cardId = options.id ?? ''
+      if (!this.cardId) return
 
-    this.loadDetail()
+      this.loadDetail()
+    })
   },
   onPullDownRefresh() {
     runPagePullRefresh(this.loadDetail())
