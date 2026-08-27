@@ -19,17 +19,31 @@ function formatDateKey(value: string | null | undefined): string {
   return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`
 }
 
+/** 按墙上时间拆 yyyy-MM-dd HH:mm:ss，避免无时区 ISO 被当成 UTC */
+function parseWallClock(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(value.trim())
+  if (!match) return null
+  return new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4]),
+    Number(match[5]),
+    Number(match[6]),
+  )
+}
+
 function formatMonthDayTime(value: string | null | undefined): string {
   if (!value) return ''
-  const date = new Date(value.replace(' ', 'T'))
-  if (Number.isNaN(date.getTime())) return ''
+  const date = parseWallClock(value)
+  if (!date) return ''
   return `${date.getMonth() + 1}月${date.getDate()}日 ${pad2(date.getHours())}:${pad2(date.getMinutes())}`
 }
 
 function formatMonthDayLabel(dateKey: string): string {
-  const date = new Date(`${dateKey}T00:00:00`)
-  if (Number.isNaN(date.getTime())) return ''
-  return `${date.getMonth() + 1}月${date.getDate()}日`
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateKey)
+  if (!match) return ''
+  return `${Number(match[2])}月${Number(match[3])}日`
 }
 
 export function resolveNotificationIntent(level: string | null | undefined): NotificationIntent {

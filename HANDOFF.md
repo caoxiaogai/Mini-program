@@ -259,6 +259,20 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-27：多图发布不再因 file_url 超长失败
+
+- 9 张图片的 URL JSON 超过 `material.file_url` 的 `VARCHAR(512)`，插入时报 Data too long。
+- 列改为 `TEXT`。已有库执行 `sql/widen_material_file_url.sql`（`ALTER TABLE material MODIFY file_url TEXT`），无需重启应用。
+- 验证：改完库后再发 9 张图。当前环境无微信开发者工具 GUI。
+
+### 2026-08-27：服务器部署后浏览时间不再慢 8 小时
+
+- 原因：Linux 服务器 JVM 默认 UTC，`LocalDateTime.now()` 把北京时间 14:00 写成 06:00；本机 Windows 是东八区所以看起来正常。
+- 后端统一按 GMT+8 取当前时间；Docker 镜像补 `tzdata` 并设置 `TZ` / `-Duser.timezone=GMT+08:00`。
+- 小程序把 `yyyy-MM-dd HH:mm:ss` 按墙上时间拆开解析，避免无时区 ISO 被当成 UTC。
+- 已经写进服务器库的旧记录仍是 UTC 墙上时间，新浏览会是北京时间。如需纠正历史数据，把对应 `create_time` 加 8 小时。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。需重新构建并部署 aisales。当前环境无微信开发者工具 GUI。
+
 ### 2026-08-27：通知和互动消息不再展示自己看自己的素材
 
 - `GET /analysis/notify/list` 增加与统计相同的排除：`visitor_id` 等于发布者 `openid` 的浏览/转发不返回。

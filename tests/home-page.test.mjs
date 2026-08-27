@@ -759,6 +759,43 @@ test('notifications map each browse from the notify list API', () => {
   assert.match(pageLogic, /onShow\(\) \{\s*this\.loadNotifications\(\)/)
 })
 
+test('backend datetime strings display as China wall-clock hours', async () => {
+  const formatSource = read('miniprogram/utils/format.ts')
+  const notificationSource = read('miniprogram/utils/notifications.ts')
+  const { formatMonthDayTime, parseDateTime } = await import('../miniprogram/utils/format.ts')
+  const { mapNotificationEvent } = await import('../miniprogram/utils/notifications.ts')
+  const parsed = parseDateTime('2026-08-27 14:05:00')
+
+  assert.match(formatSource, /Number\(match\[1\]\)/)
+  assert.doesNotMatch(formatSource, /replace\(' ', 'T'\)/)
+  assert.match(notificationSource, /parseWallClock/)
+  assert.doesNotMatch(notificationSource, /replace\(' ', 'T'\)/)
+  assert.equal(parsed?.getFullYear(), 2026)
+  assert.equal(parsed?.getMonth(), 7)
+  assert.equal(parsed?.getDate(), 27)
+  assert.equal(parsed?.getHours(), 14)
+  assert.equal(parsed?.getMinutes(), 5)
+  assert.equal(formatMonthDayTime('2026-08-27 14:05:00'), '8月27日 14:05')
+  assert.equal(formatMonthDayTime('2026-08-27T06:00:00'), '8月27日 06:00')
+  assert.equal(
+    mapNotificationEvent({
+      id: '1',
+      customerId: 'c1',
+      nickname: '用户甲',
+      avatar: null,
+      materialId: '10',
+      materialTitle: '作品A',
+      actionType: 'play',
+      duration: 8,
+      progress: 40,
+      completed: 0,
+      intentLevel: 'low',
+      viewTime: '2026-08-27 14:05:00',
+    }, '', '').actionDate,
+    '8月27日 14:05',
+  )
+})
+
 test('notification page keeps one card for each browse of the same user', async () => {
   const { groupNotificationCards, mapNotificationEvent } = await import('../miniprogram/utils/notifications.ts')
   const first = mapNotificationEvent({

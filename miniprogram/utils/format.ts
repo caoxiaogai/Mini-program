@@ -13,11 +13,19 @@ export function formatSeconds(value: number | null | undefined): string {
   return `${value ?? 0}s`
 }
 
-/** 解析后端 'yyyy-MM-dd HH:mm:ss' 字符串；无法解析时返回 null */
+/** 解析后端 'yyyy-MM-dd HH:mm:ss' 为本地墙上时间，不把无时区字符串当 UTC */
 export function parseDateTime(value: string | null | undefined): Date | null {
   if (!value) return null
-  const date = new Date(value.replace(' ', 'T'))
-  return Number.isNaN(date.getTime()) ? null : date
+  const match = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(value.trim())
+  if (!match) return null
+  return new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4]),
+    Number(match[5]),
+    Number(match[6]),
+  )
 }
 
 /** Date 转后端要求的 'yyyy-MM-dd HH:mm:ss' */
