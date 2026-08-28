@@ -78,10 +78,14 @@ page { min-height: 100vh; background: #e8edf5; }
 .analysis-total__hero-metrics { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .analysis-total__hero-metric { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 8rpx; }
 .analysis-total__hero-value { color: #000000; font-size: 40rpx; font-weight: 600; line-height: normal; white-space: nowrap; }
-.analysis-total__hero-meta { display: flex; align-items: center; gap: 16rpx; color: #999999; font-size: 24rpx; line-height: normal; white-space: nowrap; }
+.analysis-total__hero-meta { display: flex; align-items: center; gap: 16rpx; font-size: 24rpx; line-height: normal; white-space: nowrap; }
+.analysis-total__hero-caption { color: #999999; }
 .analysis-total__hero-divider { width: 2rpx; height: 14rpx; flex: none; }
 .analysis-total__hero-comparison { display: flex; gap: 0; align-items: center; }
-.analysis-total__hero-delta { color: #0ec8d9; }
+.analysis-total__hero-delta--up,
+.analysis-total__hero-delta--up text { color: #0ec8d9; }
+.analysis-total__hero-delta--down,
+.analysis-total__hero-delta--down text { color: #ff4343; }
 .analysis-total__hero-metric--secondary { margin-left: 32rpx; padding-left: 32rpx; border-left: 2rpx solid #f0f0f0; }
 .analysis-total__overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20rpx; width: 100%; }
 .analysis-total__overview-item { display: flex; min-height: 0; height: 130rpx; flex-direction: column; align-items: flex-start; justify-content: center; gap: 16rpx; padding: 20rpx; border: 2rpx solid @content-box-border; border-radius: 24rpx; box-sizing: border-box; }

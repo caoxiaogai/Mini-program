@@ -8,6 +8,13 @@ export function formatCount(value: number | null | undefined): string {
   return String(count).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
+/** 环比差值：增加带 +，减少带 -，例如 6 -> '+6'，-3 -> '-3' */
+export function formatSignedCountDelta(value: number | null | undefined): string {
+  const delta = Math.trunc(Number(value) || 0)
+  if (delta < 0) return `-${formatCount(-delta)}`
+  return `+${formatCount(delta)}`
+}
+
 /** 秒数转展示时长，例如 56 -> '56s' */
 export function formatSeconds(value: number | null | undefined): string {
   return `${value ?? 0}s`

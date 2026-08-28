@@ -74,9 +74,9 @@
       <view class="analysis-total__overview-card">
         <text class="analysis-total__title">数据总览</text>
         <view class="analysis-total__hero-metrics">
-          <view wx:for="{{analysisData.totalData.heroMetrics}}" wx:key="label" class="analysis-total__hero-metric {{index === 0 ? '' : 'analysis-total__hero-metric--secondary'}}">
+          <view wx:for="{{analysisData.totalData.heroMetrics}}" wx:key="renderKey" class="analysis-total__hero-metric {{index === 0 ? '' : 'analysis-total__hero-metric--secondary'}}">
             <text class="analysis-total__hero-value">{{item.value}}</text>
-            <view class="analysis-total__hero-meta"><text>{{item.label}}</text><image class="analysis-total__hero-divider" src="/assets/analysis/total-metric-divider.svg" mode="aspectFit" /><view class="analysis-total__hero-comparison"><text>较昨日</text><text class="analysis-total__hero-delta">{{item.delta}}</text></view></view>
+            <view class="analysis-total__hero-meta"><text class="analysis-total__hero-caption">{{item.label}}</text><image class="analysis-total__hero-divider" src="/assets/analysis/total-metric-divider.svg" mode="aspectFit" /><view class="analysis-total__hero-comparison"><text class="analysis-total__hero-caption">{{item.comparisonLabel}}</text><view wx:if="{{item.deltaTone === 'down'}}" class="analysis-total__hero-delta--down"><text class="analysis-total__hero-delta--down">{{item.delta}}</text></view><view wx:else class="analysis-total__hero-delta--up"><text class="analysis-total__hero-delta--up">{{item.delta}}</text></view></view></view>
           </view>
         </view>
         <view class="analysis-total__overview-grid">

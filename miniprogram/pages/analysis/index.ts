@@ -121,7 +121,7 @@ Page({
     return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
   },
   loadAnalysis(period: AnalysisPeriodId, trendPeriod: AnalysisPeriodId = this.data.activeTotalPeriod) {
-    return getAnalysisOverview(period, undefined, this.data.activeAnalysisSort).then((analysisData) => {
+    return getAnalysisOverview(period, undefined, this.data.activeAnalysisSort, trendPeriod).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
       const trendState = buildTotalTrendState(trendPeriod, analysisData.totalData.readTrends[getAnalysisReadRange(trendPeriod)])

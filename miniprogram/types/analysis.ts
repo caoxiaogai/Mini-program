@@ -12,10 +12,16 @@ export type AnalysisChartPoint = {
 
 export type AnalysisReadRange = 'day' | 'week' | 'month' | 'total'
 
+export type AnalysisDeltaTone = 'up' | 'down'
+
 export type AnalysisTotalHeroMetric = {
+  id: string
+  renderKey: string
   label: string
   value: string
+  comparisonLabel: string
   delta: string
+  deltaTone: AnalysisDeltaTone
 }
 
 export type AnalysisTotalViewModel = {

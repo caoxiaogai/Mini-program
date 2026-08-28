@@ -31,6 +31,10 @@ export interface ApiDashboard {
   highIntentCount: number | null
   mediumIntentCount: number | null
   lowIntentCount: number | null
+  /** 浏览次数较上期差值（日=较昨日，周/月=等长上一段，总=较上两月） */
+  totalViewCountDelta: number | null
+  /** 浏览人数较上期差值 */
+  totalViewerCountDelta: number | null
 }
 
 /** GET /analysis/content/list 响应项（ContentListVO） */

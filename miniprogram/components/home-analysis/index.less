@@ -1,7 +1,11 @@
 @import '../../pages/analysis/index.less';
 
-/* Figma 517:3836 — local overrides force this component's Less to recompile. */
+/* Local overrides keep this component stylesheet compiling independently of the analysis page. */
 .home-analysis__filters { margin-top: 0; justify-content: flex-start; gap: 40rpx; }
 .home-analysis__filters .analysis-period { width: 68rpx; height: 56rpx; font-size: 26rpx; line-height: normal; }
 .home-analysis__filters .analysis-sort { height: 64rpx; padding: @segmented-filter-vertical-inset; border: 0; border-radius: 20rpx; background: #e0e0e0; }
 .home-analysis__filters .analysis-sort__inner { gap: 8rpx; padding: 0 20rpx; border-radius: 16rpx; font-size: 26rpx; line-height: normal; }
+.analysis-total__hero-delta--up,
+.analysis-total__hero-delta--up text { color: #0ec8d9; }
+.analysis-total__hero-delta--down,
+.analysis-total__hero-delta--down text { color: #ff4343; }

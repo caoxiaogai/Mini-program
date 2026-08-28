@@ -28,6 +28,7 @@ import {
   formatDateTime,
   formatMonthDay,
   formatSeconds,
+  formatSignedCountDelta,
 } from '../utils/format'
 import type { DateRange } from '../utils/date-range'
 import { getTotalRangeStart, startOfWeekMonday } from '../utils/date-range'
@@ -295,6 +296,41 @@ function emptyReadTrends(): Record<AnalysisReadRange, AnalysisChartPoint[]> {
   return { day: [], week: [], month: [], total: [] }
 }
 
+export function getTotalComparisonLabel(period: AnalysisTimeRange): string {
+  if (period === 'day') return '较昨日'
+  if (period === 'week') return '较上周'
+  if (period === 'month') return '较上月'
+  return '较上两月'
+}
+
+function buildHeroMetric(
+  id: string,
+  label: string,
+  value: number | null | undefined,
+  delta: number | null | undefined,
+  comparisonLabel: string,
+): AnalysisViewModel['totalData']['heroMetrics'][number] {
+  const signedDelta = Math.trunc(Number(delta) || 0)
+  const deltaTone = signedDelta < 0 ? 'down' : 'up'
+  return {
+    id,
+    renderKey: `${id}-${deltaTone}-${signedDelta}`,
+    label,
+    value: formatCount(value),
+    comparisonLabel,
+    delta: formatSignedCountDelta(signedDelta),
+    deltaTone,
+  }
+}
+
+function buildHeroMetrics(dashboard: ApiDashboard, period: AnalysisTimeRange): AnalysisViewModel['totalData']['heroMetrics'] {
+  const comparisonLabel = getTotalComparisonLabel(period)
+  return [
+    buildHeroMetric('views', '浏览总次数', dashboard.totalViewCount, dashboard.totalViewCountDelta, comparisonLabel),
+    buildHeroMetric('viewers', '浏览总人数', dashboard.totalViewerCount, dashboard.totalViewerCountDelta, comparisonLabel),
+  ]
+}
+
 function getDayReadTrend(): Promise<AnalysisChartPoint[]> {
   const now = new Date()
   const dateKey = formatDateTime(now).slice(0, 10)
@@ -406,17 +442,22 @@ export function getAnalysisOverview(
   period: AnalysisTimeRange = 'day',
   customRange?: DateRange,
   sortId: AnalysisWorkSortId = 'view',
+  totalPeriod: AnalysisTimeRange = 'total',
 ): Promise<AnalysisViewModel> {
   const periodQuery = buildPeriodQuery(period, customRange)
   const contentQuery = { ...periodQuery, orderBy: workSortOrderBy[sortId] }
-  const totalQuery = buildPeriodQuery('total')
+  const resolvedTotalPeriod = totalPeriod === 'custom' ? 'total' : totalPeriod
+  const totalQuery = buildPeriodQuery(resolvedTotalPeriod)
+  const reusePeriodDashboard = period === resolvedTotalPeriod && period !== 'custom'
 
   return Promise.all([
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: periodQuery }),
     request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query: contentQuery }),
     request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: periodQuery }),
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: periodQuery }),
-    request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: totalQuery }),
+    reusePeriodDashboard
+      ? Promise.resolve(null)
+      : request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: totalQuery }),
     getReadTrends(),
   ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) => {
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
@@ -424,6 +465,7 @@ export function getAnalysisOverview(
       mapContentCards(contents, sortId),
       prepareMediaUrls(customers.map((customer) => customer.avatar)),
     ])
+    const heroDashboard = totalDashboard ?? dashboard
 
     return {
       summary: buildWorkSummary(dashboard),
@@ -450,17 +492,14 @@ export function getAnalysisOverview(
         }
       }),
       totalData: {
-        heroMetrics: [
-          { label: '浏览总次数', value: formatCount(totalDashboard.totalViewCount), delta: '+0' },
-          { label: '浏览总人数', value: formatCount(totalDashboard.totalViewerCount), delta: '+0' },
-        ],
+        heroMetrics: buildHeroMetrics(heroDashboard, resolvedTotalPeriod),
         overview: [
-          { label: '总发布', value: formatCount(totalDashboard.totalPublishCount) },
-          { label: '总转发', value: formatCount(totalDashboard.totalForwardCount) },
-          { label: '总完播', value: formatCount(totalDashboard.totalCompleteCount) },
-          { label: '高意向', value: formatCount(totalDashboard.highIntentCount) },
-          { label: '中意向', value: formatCount(totalDashboard.mediumIntentCount) },
-          { label: '低意向', value: formatCount(totalDashboard.lowIntentCount) },
+          { label: '总发布', value: formatCount(heroDashboard.totalPublishCount) },
+          { label: '总转发', value: formatCount(heroDashboard.totalForwardCount) },
+          { label: '总完播', value: formatCount(heroDashboard.totalCompleteCount) },
+          { label: '高意向', value: formatCount(heroDashboard.highIntentCount) },
+          { label: '中意向', value: formatCount(heroDashboard.mediumIntentCount) },
+          { label: '低意向', value: formatCount(heroDashboard.lowIntentCount) },
         ],
         readTrends,
       },

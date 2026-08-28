@@ -66,6 +66,13 @@ export function getAnalysisReadRange(period: AnalysisTrendPeriod): AnalysisReadR
   return 'week'
 }
 
+export function getTotalComparisonLabel(period: AnalysisTrendPeriod): string {
+  if (period === 'day') return '较昨日'
+  if (period === 'week') return '较上周'
+  if (period === 'month') return '较上月'
+  return '较上两月'
+}
+
 export function getDaysInMonth(now = new Date()): number {
   return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
 }
