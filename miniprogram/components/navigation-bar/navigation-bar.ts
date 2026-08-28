@@ -1,4 +1,3 @@
-import { HOME_PAGE_PATH } from '../../utils/share-material'
 import { getNavigationBarLayout, isMenuButtonRectValid, toNavigationBarStyle } from '../../utils/navigation-layout'
 
 Component({
@@ -99,7 +98,7 @@ Component({
         wx.navigateBack({
           delta: data.delta,
           fail: () => {
-            wx.reLaunch({ url: HOME_PAGE_PATH })
+            wx.exitMiniProgram({ fail: () => undefined })
           },
         })
       }

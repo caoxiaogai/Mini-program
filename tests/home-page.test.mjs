@@ -127,7 +127,7 @@ test('entry pages require authorized login and first-time profile setup', async 
   assert.match(authPage, /onUseWechatProfile\(/)
   assert.match(authPage, /updateUserProfile/)
   assert.match(homeLogic, /runAuthed\(buildReturnPath\(HOME_PAGE_PATH, options\)/)
-  assert.match(detailLogic, /runAuthed\(returnPath/)
+  assert.match(detailLogic, /runAuthed\(buildReturnPath\(MATERIAL_DETAIL_PATH, options\)/)
   assert.match(documentLogic, /runAuthed\(buildReturnPath\('\/pages\/document-reader\/index', options\)/)
   assert.match(read('miniprogram/app.ts'), /if \(!hasAuthorizedLogin\(\)\) return/)
 })
@@ -1543,9 +1543,8 @@ test('friend material views report play and forward tracking events', () => {
   assert.match(homeLogic, /buildMaterialSharePath\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
 })
 
-test('shared material opens home first so back does not leave the mini program', async () => {
+test('shared material opens the detail page so back returns to the share origin', async () => {
   const {
-    buildHomeShareQuery,
     buildMaterialDetailPath,
     buildMaterialSharePath,
     buildMaterialShareQuery,
@@ -1558,18 +1557,19 @@ test('shared material opens home first so back does not leave the mini program',
 
   assert.equal(HOME_PAGE_PATH, '/pages/index/index')
   assert.equal(MATERIAL_DETAIL_PATH, '/pages/material-detail/index')
-  assert.equal(buildMaterialSharePath('abc', 't1'), '/pages/index/index?materialId=abc&trackingId=t1')
-  assert.equal(buildHomeShareQuery('abc', 't1'), 'materialId=abc&trackingId=t1')
+  assert.equal(buildMaterialSharePath('abc', 't1'), '/pages/material-detail/index?id=abc&trackingId=t1')
   assert.equal(buildMaterialDetailPath('abc', 't1'), '/pages/material-detail/index?id=abc&trackingId=t1')
   assert.equal(buildMaterialShareQuery('abc', 't1'), 'id=abc&trackingId=t1')
+  assert.equal(buildMaterialSharePath('abc', 't1'), buildMaterialDetailPath('abc', 't1'))
 
-  assert.match(homeLogic, /options\.materialId/)
-  assert.match(homeLogic, /buildMaterialDetailPath\(options\.materialId, options\.trackingId\)/)
-  assert.match(homeLogic, /buildHomeShareQuery\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
-  assert.match(detailLogic, /isRootPageStack\(\)/)
-  assert.match(detailLogic, /wx\.reLaunch\(\{ url: buildMaterialSharePath\(materialId, trackingId\) \}\)/)
+  assert.doesNotMatch(homeLogic, /options\.materialId/)
+  assert.doesNotMatch(homeLogic, /buildHomeShareQuery/)
+  assert.match(homeLogic, /buildMaterialShareQuery\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
+  assert.doesNotMatch(detailLogic, /isRootPageStack/)
+  assert.doesNotMatch(detailLogic, /wx\.reLaunch/)
   assert.match(navigationLogic, /fail: \(\) => \{/)
-  assert.match(navigationLogic, /wx\.reLaunch\(\{ url: HOME_PAGE_PATH \}\)/)
+  assert.match(navigationLogic, /wx\.exitMiniProgram\(/)
+  assert.doesNotMatch(navigationLogic, /wx\.reLaunch/)
 })
 
 test('material detail shares to friends and guides moments sharing', () => {

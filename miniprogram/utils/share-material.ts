@@ -3,7 +3,6 @@ export const MATERIAL_DETAIL_PATH = '/pages/material-detail/index'
 export const MATERIAL_PUBLISH_PATH = '/pages/materials/publish/index'
 
 const MATERIAL_ID_QUERY_KEY = 'id'
-const SHARE_MATERIAL_ID_QUERY_KEY = 'materialId'
 const PUBLISH_REMIX_QUERY_KEY = 'remix'
 const DEFAULT_SHARE_TITLE = '图文素材'
 
@@ -12,13 +11,9 @@ function withTrackingId(query: string, trackingId?: string): string {
   return `${query}&trackingId=${encodeURIComponent(trackingId)}`
 }
 
-/** 分享卡片落地到首页，再打开详情，返回时先回到小程序首页 */
+/** 分享卡片直接打开作品详情，返回回到分享来源 */
 export function buildMaterialSharePath(materialId: string, trackingId?: string): string {
-  return `${HOME_PAGE_PATH}?${buildHomeShareQuery(materialId, trackingId)}`
-}
-
-export function buildHomeShareQuery(materialId: string, trackingId?: string): string {
-  return withTrackingId(`${SHARE_MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`, trackingId)
+  return buildMaterialDetailPath(materialId, trackingId)
 }
 
 /** 小程序内打开素材详情 */
@@ -63,14 +58,6 @@ export function pickShareImageUrl(
   if (preferred) return preferred
   const thumbnail = items.find((item) => item.id === materialId)?.thumbnailUrl
   return thumbnail || undefined
-}
-
-export function isRootPageStack(): boolean {
-  try {
-    return getCurrentPages().length <= 1
-  } catch {
-    return true
-  }
 }
 
 export function enableMaterialShareMenu(): void {

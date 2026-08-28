@@ -7,15 +7,15 @@ import {
   reportTrackingEvent,
 } from '../../services/tracking'
 import type { MaterialDetailViewModel } from '../../types/materials'
+import { buildReturnPath } from '../../utils/auth'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import {
-  buildMaterialDetailPath,
   buildMaterialPublishPath,
   buildMaterialSharePath,
   buildMaterialShareQuery,
   buildMaterialShareTitle,
   enableMaterialShareMenu,
-  isRootPageStack,
+  MATERIAL_DETAIL_PATH,
   showMomentsShareGuide,
 } from '../../utils/share-material'
 
@@ -49,19 +49,7 @@ Page({
   videoTouchStartY: 0,
 
   onLoad(options: Record<string, string | undefined>) {
-    const materialId = options.id ?? ''
-    const trackingId = options.trackingId ?? ''
-    const returnPath = isRootPageStack()
-      ? buildMaterialSharePath(materialId, trackingId)
-      : buildMaterialDetailPath(materialId, trackingId)
-
-    runAuthed(returnPath, () => {
-      if (materialId && isRootPageStack()) {
-        wx.reLaunch({ url: buildMaterialSharePath(materialId, trackingId) })
-        return
-      }
-      this.startDetail(options)
-    })
+    runAuthed(buildReturnPath(MATERIAL_DETAIL_PATH, options), () => this.startDetail(options))
   },
   startDetail(options: Record<string, string | undefined>) {
     this.materialId = options.id ?? ''

@@ -18,7 +18,7 @@ import { sortAnalysisUsers } from '../../utils/analysis-users'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
-import { buildHomeShareQuery, buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { persistViewedNotification } from '../../utils/notification-viewed'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed } from './home-notification-preview'
@@ -154,8 +154,6 @@ Page({
       })
       this.setActiveTab(2)
       if (shareMaterialId) this.loadShareMaterial(shareMaterialId)
-    } else if (options.materialId) {
-      wx.navigateTo({ url: buildMaterialDetailPath(options.materialId, options.trackingId) })
     }
     this.loadHomeData()
     this.loadProfileData()
@@ -510,7 +508,7 @@ Page({
     this.closePublishSuccessModalAfterShare()
     return {
       title: this.data.shareTitle || buildMaterialShareTitle([]),
-      query: buildHomeShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
+      query: buildMaterialShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl,
     }
   },
