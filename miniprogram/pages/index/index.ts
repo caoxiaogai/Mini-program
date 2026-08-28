@@ -18,7 +18,7 @@ import { sortAnalysisUsers } from '../../utils/analysis-users'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
-import { buildHomeShareQuery, buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildHomeShareQuery, buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { persistViewedNotification } from '../../utils/notification-viewed'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed } from './home-notification-preview'
@@ -466,12 +466,12 @@ Page({
     if (!material) return
 
     const url = material.isDraft
-      ? `/pages/materials/publish/index?id=${materialId}`
-      : `/pages/material-detail/index?id=${materialId}`
+      ? buildMaterialPublishPath(materialId)
+      : buildMaterialDetailPath(materialId)
     wx.navigateTo({ url })
   },
   onMaterialPublishTap() {
-    wx.navigateTo({ url: '/pages/materials/publish/index' })
+    wx.navigateTo({ url: buildMaterialPublishPath() })
   },
   onPublishSuccessClose() {
     this.setData({

@@ -13,7 +13,7 @@ import { formatDateKey } from '../utils/format'
 import { prepareMediaUrl, prepareMediaUrls } from '../utils/media'
 import { buildMaterialShareTitle } from '../utils/share-material'
 import { prepareDocumentPageImage } from './document'
-import { request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
+import { ensureLogin, request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
 
 const materialsFilters: MaterialsFilterViewModel[] = [
   { id: 'all', label: '全部' },
@@ -147,6 +147,7 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
     .then(async (material) => {
       const fileType = material.fileType ?? 'IMAGE'
       const previewUrl = await prepareMaterialThumbnail(material)
+      const user = await ensureLogin()
 
       let images: string[] = []
       let videoUrl = ''
@@ -174,6 +175,7 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
         pdfUrl,
         pdfFileName,
         descriptionLines: splitMaterialCopy(resolveMaterialCopy(material)),
+        isOwner: String(material.userId) === String(user.userId),
       }
     })
     .catch(() => null)
@@ -225,6 +227,7 @@ export function getMaterialDraft(materialId: string): Promise<MaterialDraftEditV
               previewPath: '',
               name: '',
               duration: 0,
+              remoteUrl: url,
             }))
           : [
               {
@@ -234,13 +237,14 @@ export function getMaterialDraft(materialId: string): Promise<MaterialDraftEditV
                 previewPath,
                 name: kind === 'pdf' ? material.title?.trim() || MATERIAL_DEFAULT_TITLES.PDF : '',
                 duration: material.duration ?? 0,
+                remoteUrl: sourceUrls[0] ?? '',
               },
             ]
 
       return {
         id: String(material.id),
         media,
-        copy: material.content ?? '',
+        copy: resolveMaterialCopy(material),
       }
     })
     .catch(() => null)
@@ -270,9 +274,17 @@ function uploadLocalFile(path: string): Promise<string> {
   return shouldUploadLocalPath(path) ? uploadFile('/material/upload-file', path) : Promise.resolve(path)
 }
 
-function uploadLocalFiles(items: PublishMediaViewModel[]): Promise<string[]> {
+/** 二次编辑/草稿预填的远端文件可直接复用；用户新选的本地文件才上传。 */
+function persistMediaFile(item: PublishMediaViewModel): Promise<string> {
+  if (!shouldUploadLocalPath(item.path)) return Promise.resolve(item.path)
+  const remoteUrl = item.remoteUrl ?? ''
+  if (remoteUrl && !shouldUploadLocalPath(remoteUrl)) return Promise.resolve(remoteUrl)
+  return uploadFile('/material/upload-file', item.path)
+}
+
+function persistMediaFiles(items: PublishMediaViewModel[]): Promise<string[]> {
   return runRequestQueue(
-    items.map((item) => () => uploadLocalFile(item.path)),
+    items.map((item) => () => persistMediaFile(item)),
     UPLOAD_CONCURRENCY,
   )
 }
@@ -303,7 +315,7 @@ function persistNewMaterial(input: MaterialSubmitInput): Promise<string> {
   const kind = input.media[0]?.kind
   if (kind === 'video') {
     const video = input.media[0]
-    return uploadLocalFile(video.path).then((fileUrl) => {
+    return persistMediaFile(video).then((fileUrl) => {
       const coverTask = video.previewPath ? uploadLocalFile(video.previewPath).catch(() => '') : Promise.resolve('')
       return coverTask.then((coverUrl) =>
         createMaterial({
@@ -321,7 +333,7 @@ function persistNewMaterial(input: MaterialSubmitInput): Promise<string> {
   if (kind === 'pdf') {
     const pdf = input.media[0]
     const fallbackTitle = pdf.name.replace(/\.pdf$/i, '').trim() || MATERIAL_DEFAULT_TITLES.PDF
-    return uploadLocalFile(pdf.path).then((fileUrl) =>
+    return persistMediaFile(pdf).then((fileUrl) =>
       createMaterial({
         fileType: 'PDF',
         fileUrl,
@@ -333,7 +345,7 @@ function persistNewMaterial(input: MaterialSubmitInput): Promise<string> {
     )
   }
 
-  return uploadLocalFiles(input.media).then((imageUrls) =>
+  return persistMediaFiles(input.media).then((imageUrls) =>
     createMaterial({
       fileType: 'IMAGE',
       fileUrl: JSON.stringify(imageUrls),

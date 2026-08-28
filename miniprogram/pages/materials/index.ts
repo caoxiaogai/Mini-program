@@ -4,7 +4,7 @@ import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } fro
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
-import { buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
 
 type MaterialsTabId = 'home' | 'notifications' | 'analysis' | 'profile'
@@ -131,14 +131,14 @@ Page({
     const material = this.data.visibleMaterials.find((item) => item.id === materialId)
     if (!material) return
 
-    const url = material?.isDraft
-      ? `/pages/materials/publish/index?id=${materialId}`
-      : `/pages/material-detail/index?id=${materialId}`
+    const url = material.isDraft
+      ? buildMaterialPublishPath(materialId)
+      : buildMaterialDetailPath(materialId)
 
     wx.navigateTo({ url })
   },
   onPublishTap() {
-    wx.navigateTo({ url: '/pages/materials/publish/index' })
+    wx.navigateTo({ url: buildMaterialPublishPath() })
   },
   onTabTap(event: CustomEvent<{ id: MaterialsTabId }>) {
     const { id } = event.detail

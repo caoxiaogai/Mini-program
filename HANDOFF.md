@@ -234,6 +234,7 @@ miniprogram/
 | PDF 点击预览图查看 | done | 素材详情 PDF 去掉「点击查看」按钮，点击预览图进入阅读页 |
 | PDF 与视频查看记浏览 | done | 打开 PDF/视频详情即上报 play；单页文档先 play 再 end；后端 end 补建也会计入浏览 |
 | 进入小程序必须授权登录 | done | 首页和分享进入素材详情都先校验登录；未授权必须先登录，首次登录编辑头像昵称，可一键用微信头像和昵称 |
+| 已发布作品二次编辑 | done | 作者在素材详情用「二次编辑」预填媒体和文案进入发布页，发表为新作品；访客仍显示「分享到朋友圈」 |
 | 其他页面视觉与真机适配验收 | pending | 后续页面实现后执行 |
 
 ## 验收基线
@@ -259,6 +260,13 @@ miniprogram/
 - 不在文档中记录密钥、AppSecret、用户隐私数据或生产接口凭证。
 
 ## 最近变更
+
+### 2026-08-28：已发布作品可二次编辑
+
+- 作者打开素材详情时，底部「分享到朋友圈」换成「二次编辑」；访客仍是朋友圈引导。
+- 点击后进入发布页并预填原图片/视频/PDF 和文案，可直接改。发表或存草稿会生成新素材，不覆盖原来的已发布作品。
+- 从详情进入发布页后返回素材列表时会越过详情页，继续弹出发布成功分享。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，需真机对图片、视频、PDF 各走一遍二次编辑后发表。
 
 ### 2026-08-28：「我的」设置回到昵称行右侧
 
@@ -1250,7 +1258,7 @@ miniprogram/
   - 分析页：dashboard / content list / customer list / intent list 并行；「观看作品数」由各内容详情受众列表聚合（后端列表无该字段）；阅读趋势图由按日 dashboard 聚合（后端无趋势接口，30 天数据带 60s 缓存）；周期筛选「日/周/月」映射 today/week/month，「总」受后端 custom 上限限制取最近 62 天（标记待确认）；点击周期后按所选范围重新加载。
   - 分析详情 / 用户详情：`/analysis/content/detail`、`/analysis/customer/history` + `/material/mine` 补封面；用户详情按作品合并浏览记录（进度取最大，时长/完播数/浏览次数/转发取合计），历史项含 `actionType`。
   - 通知页与首页互动消息：`/analysis/notify/list` 每一次浏览或转发一条，排除发布者本人；通知页按日期分组，首页预览最近 3 条未读。意向标签取该客户峰值。
-  - 素材：`/material/mine` 列表（`publishStatus=0` 为草稿，TABLE 类型暂归入 PDF 筛选）、`/material/{id}` 详情/草稿（多图 `fileUrl` 为 JSON 数组）；发表 = 上传文件 `/material/upload-file` → `POST /material`（`IMAGE` 多图 JSON / `VIDEO` / `PDF`）→ `POST /material/{id}/share`；存草稿同前两步；编辑草稿仅改文案时走 `PUT /material/{id}`，改文件时新建素材（后端无更新文件与删除素材接口，旧草稿会保留）。
+  - 素材：`/material/mine` 列表（`publishStatus=0` 为草稿，TABLE 类型暂归入 PDF 筛选）、`/material/{id}` 详情/草稿（多图 `fileUrl` 为 JSON 数组）；发表 = 上传文件 `/material/upload-file` → `POST /material`（`IMAGE` 多图 JSON / `VIDEO` / `PDF`）→ `POST /material/{id}/share`；存草稿同前两步；编辑草稿仅改文案时走 `PUT /material/{id}`，改文件时新建素材；已发布作品二次编辑预填原文件与文案后 `POST /material` 新建，不覆盖原作品（后端无更新文件与删除素材接口，旧草稿会保留）。
   - 排行榜：后端无对应接口，service 返回空榜单并保留 `TODO(API)` 占位，页面展示既有空状态。
 - `app.ts` 启动时执行真实登录；首页底部导航角标初始值由写死的 2 改为 0，由接口数据驱动。删除 `miniprogram/mocks/` 全部文件与目录。
 - 已知数据口径限制（映射自后端现有字段，如需精确值待后端扩展）：客户级转发数仅有 0/1 标记；首页「新增用户」实际为今日观看客户数（去重）。

@@ -33,6 +33,8 @@ export interface MaterialDetailViewModel {
   /** PDF/表格展示文件名（仅 PDF、TABLE） */
   pdfFileName: string
   descriptionLines: string[]
+  /** 当前登录用户是否为素材作者；作者详情显示二次编辑，访客仍显示分享到朋友圈 */
+  isOwner: boolean
 }
 
 export interface MaterialsViewModel {
@@ -52,6 +54,8 @@ export interface PublishMediaViewModel {
   name: string
   /** 视频时长（秒） */
   duration: number
+  /** 已有素材的远端文件地址；发表时若未替换该文件则直接复用，不必重新上传 */
+  remoteUrl?: string
 }
 
 export interface MaterialDraftEditViewModel {

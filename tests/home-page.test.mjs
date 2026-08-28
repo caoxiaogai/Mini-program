@@ -1580,7 +1580,7 @@ test('material detail shares to friends and guides moments sharing', () => {
   const shareUtil = read('miniprogram/utils/share-material.ts')
 
   assert.match(markup, /open-type="share"/)
-  assert.match(markup, /bindtap="onShareMomentsTap"/)
+  assert.match(markup, /wx:else[\s\S]*bindtap="onShareMomentsTap"/)
   assert.match(logic, /onShareAppMessage\(\)[\s\S]*?reportForwardTracking\(\)/)
   assert.match(logic, /onShareTimeline\(\)[\s\S]*?reportForwardTracking\(\)/)
   assert.match(logic, /buildMaterialSharePath\(detail\.id, detail\.trackingId/)
@@ -1591,6 +1591,46 @@ test('material detail shares to friends and guides moments sharing', () => {
   assert.equal(pageConfig.enableShareAppMessage, true)
   assert.equal(pageConfig.enableShareTimeline, true)
   assert.match(styles, /\.material-detail__share-button::after \{[\s\S]*display: none;/)
+})
+
+test('published material detail opens secondary edit on the publish page', async () => {
+  const markup = read('miniprogram/pages/material-detail/index.wxml')
+  const logic = read('miniprogram/pages/material-detail/index.ts')
+  const styles = read('miniprogram/pages/material-detail/index.less')
+  const types = read('miniprogram/types/materials.ts')
+  const service = read('miniprogram/services/materials.ts')
+  const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
+  const {
+    buildMaterialPublishPath,
+    isPublishRemixQuery,
+    MATERIAL_PUBLISH_PATH,
+  } = await import('../miniprogram/utils/share-material.ts')
+  const { getMaterialsReturnDelta } = await import('../miniprogram/utils/publish-return.ts')
+
+  assert.match(types, /isOwner: boolean/)
+  assert.match(types, /remoteUrl\?: string/)
+  assert.match(service, /isOwner: String\(material\.userId\) === String\(user\.userId\)/)
+  assert.match(service, /remoteUrl: url/)
+  assert.match(service, /copy: resolveMaterialCopy\(material\)/)
+  assert.match(service, /function persistMediaFile/)
+  assert.match(markup, /wx:if="\{\{detail\.isOwner\}\}"[\s\S]*二次编辑/)
+  assert.match(markup, /bindtap="onSecondaryEditTap"/)
+  assert.match(logic, /buildMaterialPublishPath\(detail\.id, true\)/)
+  assert.match(styles, /\.material-detail__share-button--edit \{[\s\S]*background: #0db6c5;/)
+  assert.equal(MATERIAL_PUBLISH_PATH, '/pages/materials/publish/index')
+  assert.equal(buildMaterialPublishPath(), '/pages/materials/publish/index')
+  assert.equal(buildMaterialPublishPath('42'), '/pages/materials/publish/index?id=42')
+  assert.equal(buildMaterialPublishPath('42', true), '/pages/materials/publish/index?id=42&remix=1')
+  assert.equal(isPublishRemixQuery('1'), true)
+  assert.equal(isPublishRemixQuery(undefined), false)
+  assert.match(publishLogic, /isPublishRemixQuery\(options\.remix\)/)
+  assert.match(publishLogic, /this\.draftMaterialId = remix \? null : draft\.id/)
+  assert.match(publishLogic, /this\.draftMediaPaths = remix \? \[\] : draft\.media\.map/)
+  assert.equal(getMaterialsReturnDelta(['pages/index/index', 'pages/materials/publish/index']), 1)
+  assert.equal(getMaterialsReturnDelta(['pages/index/index', 'pages/material-detail/index', 'pages/materials/publish/index']), 2)
+  assert.equal(getMaterialsReturnDelta(['pages/materials/index', 'pages/material-detail/index', 'pages/materials/publish/index']), 2)
+  assert.match(read('miniprogram/pages/index/index.ts'), /buildMaterialPublishPath\(materialId\)/)
+  assert.match(read('miniprogram/pages/materials/index.ts'), /buildMaterialPublishPath\(materialId\)/)
 })
 
 test('document reader current page follows the top of the reading area', async () => {

@@ -2,7 +2,7 @@ import { getMaterialDraft, getMaterialShareCard, publishMaterial, saveMaterialDr
 import { runAuthed } from '../../../services/auth'
 import { ensureEmojiPresentation } from '../../../utils/emoji'
 import { returnToMaterialsList } from '../../../utils/publish-return'
-import { getPublishShareImageUrl } from '../../../utils/share-material'
+import { buildMaterialPublishPath, getPublishShareImageUrl, isPublishRemixQuery } from '../../../utils/share-material'
 import type { MaterialSubmitInput, PublishMediaViewModel } from '../../../types/materials'
 import {
   canAddPublishMedia,
@@ -39,15 +39,19 @@ Page({
     sourceOptions: PUBLISH_SOURCE_OPTIONS,
   },
   onLoad(options: Record<string, string | undefined>) {
-    runAuthed(buildReturnPath('/pages/materials/publish/index', options), () => {
+    runAuthed(buildReturnPath(buildMaterialPublishPath(), options), () => {
       const materialId = options.id
       if (!materialId) return
 
+      const remix = isPublishRemixQuery(options.remix)
       getMaterialDraft(materialId).then((draft) => {
-        if (!draft) return
+        if (!draft) {
+          wx.showToast({ title: '素材不存在', icon: 'none' })
+          return
+        }
 
-        this.draftMaterialId = draft.id
-        this.draftMediaPaths = draft.media.map((item) => item.path)
+        this.draftMaterialId = remix ? null : draft.id
+        this.draftMediaPaths = remix ? [] : draft.media.map((item) => item.path)
 
         this.setData({
           media: draft.media,

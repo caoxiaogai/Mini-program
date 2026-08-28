@@ -10,6 +10,7 @@ import type { MaterialDetailViewModel } from '../../types/materials'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import {
   buildMaterialDetailPath,
+  buildMaterialPublishPath,
   buildMaterialSharePath,
   buildMaterialShareQuery,
   buildMaterialShareTitle,
@@ -463,5 +464,11 @@ Page({
 
   onShareMomentsTap() {
     showMomentsShareGuide()
+  },
+
+  onSecondaryEditTap() {
+    const detail = this.data.detail
+    if (!detail || !detail.isOwner) return
+    wx.navigateTo({ url: buildMaterialPublishPath(detail.id, true) })
   },
 })

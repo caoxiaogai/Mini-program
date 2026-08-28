@@ -80,7 +80,22 @@
       <text>分享给好友</text>
       <image class="material-detail__share-icon" src="/assets/materials/detail-share.svg" mode="aspectFit" />
     </button>
-    <button class="material-detail__share-button material-detail__share-button--moments" bindtap="onShareMomentsTap" hover-class="material-detail__share-button--pressed" hover-stay-time="80">
+    <button
+      wx:if="{{detail.isOwner}}"
+      class="material-detail__share-button material-detail__share-button--edit"
+      bindtap="onSecondaryEditTap"
+      hover-class="material-detail__share-button--pressed"
+      hover-stay-time="80"
+    >
+      <text>二次编辑</text>
+    </button>
+    <button
+      wx:else
+      class="material-detail__share-button material-detail__share-button--moments"
+      bindtap="onShareMomentsTap"
+      hover-class="material-detail__share-button--pressed"
+      hover-stay-time="80"
+    >
       <text>分享到朋友圈</text>
       <view class="material-detail__moments-icon">
         <image src="/assets/materials/detail-moments.png" mode="aspectFit" />

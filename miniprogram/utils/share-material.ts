@@ -1,8 +1,10 @@
 export const HOME_PAGE_PATH = '/pages/index/index'
 export const MATERIAL_DETAIL_PATH = '/pages/material-detail/index'
+export const MATERIAL_PUBLISH_PATH = '/pages/materials/publish/index'
 
 const MATERIAL_ID_QUERY_KEY = 'id'
 const SHARE_MATERIAL_ID_QUERY_KEY = 'materialId'
+const PUBLISH_REMIX_QUERY_KEY = 'remix'
 const DEFAULT_SHARE_TITLE = '图文素材'
 
 function withTrackingId(query: string, trackingId?: string): string {
@@ -22,6 +24,18 @@ export function buildHomeShareQuery(materialId: string, trackingId?: string): st
 /** 小程序内打开素材详情 */
 export function buildMaterialDetailPath(materialId: string, trackingId?: string): string {
   return `${MATERIAL_DETAIL_PATH}?${buildMaterialShareQuery(materialId, trackingId)}`
+}
+
+export function isPublishRemixQuery(value?: string): boolean {
+  return value === '1'
+}
+
+/** 打开发布页；remix 时预填已发布素材，发表为新作品，不覆盖原素材 */
+export function buildMaterialPublishPath(materialId?: string, remix = false): string {
+  if (!materialId) return MATERIAL_PUBLISH_PATH
+  const query = [`${MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`]
+  if (remix) query.push(`${PUBLISH_REMIX_QUERY_KEY}=1`)
+  return `${MATERIAL_PUBLISH_PATH}?${query.join('&')}`
 }
 
 export function buildMaterialShareQuery(materialId: string, trackingId?: string): string {
