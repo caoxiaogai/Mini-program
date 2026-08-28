@@ -88,6 +88,7 @@
       hover-stay-time="80"
     >
       <text>二次编辑</text>
+      <image class="material-detail__share-icon" src="/assets/materials/detail-edit.svg" mode="aspectFit" />
     </button>
     <button
       wx:else

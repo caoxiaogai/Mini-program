@@ -1614,6 +1614,8 @@ test('published material detail opens secondary edit on the publish page', async
   assert.match(service, /copy: resolveMaterialCopy\(material\)/)
   assert.match(service, /function persistMediaFile/)
   assert.match(markup, /wx:if="\{\{detail\.isOwner\}\}"[\s\S]*二次编辑/)
+  assert.match(markup, /src="\/assets\/materials\/detail-edit\.svg"/)
+  assert.equal(existsSync(new URL('../miniprogram/assets/materials/detail-edit.svg', import.meta.url)), true)
   assert.match(markup, /bindtap="onSecondaryEditTap"/)
   assert.match(logic, /buildMaterialPublishPath\(detail\.id, true\)/)
   assert.match(styles, /\.material-detail__share-button--edit \{[\s\S]*background: #0db6c5;/)
