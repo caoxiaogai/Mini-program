@@ -26,10 +26,15 @@
               bindtap="home"
               class="weui-navigation-bar__btn_home_wrapper"
               hover-class="weui-active"
+              hover-stay-time="100"
               aria-role="button"
               aria-label="首页"
             >
-              <view class="weui-navigation-bar__button weui-navigation-bar__btn_home"></view>
+              <image
+                class="weui-navigation-bar__button weui-navigation-bar__btn_home"
+                src="/assets/navigation/home-outline.svg"
+                mode="aspectFit"
+              />
             </view>
           </view>
         </block>

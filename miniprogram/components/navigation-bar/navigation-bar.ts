@@ -1,3 +1,4 @@
+import { HOME_PAGE_PATH } from '../../utils/share-material'
 import { getNavigationBarLayout, isMenuButtonRectValid, toNavigationBarStyle } from '../../utils/navigation-layout'
 
 Component({
@@ -103,6 +104,10 @@ Component({
         })
       }
       this.triggerEvent('back', { delta: data.delta }, {})
+    },
+    home() {
+      wx.reLaunch({ url: HOME_PAGE_PATH })
+      this.triggerEvent('home', {})
     }
   },
 })

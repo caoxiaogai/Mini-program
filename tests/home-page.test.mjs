@@ -1567,9 +1567,8 @@ test('shared material opens the detail page so back returns to the share origin'
   assert.match(homeLogic, /buildMaterialShareQuery\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
   assert.doesNotMatch(detailLogic, /isRootPageStack/)
   assert.doesNotMatch(detailLogic, /wx\.reLaunch/)
-  assert.match(navigationLogic, /fail: \(\) => \{/)
-  assert.match(navigationLogic, /wx\.exitMiniProgram\(/)
-  assert.doesNotMatch(navigationLogic, /wx\.reLaunch/)
+  assert.match(navigationLogic, /fail: \(\) => \{\s*wx\.exitMiniProgram/)
+  assert.match(navigationLogic, /home\(\) \{\s*wx\.reLaunch\(\{ url: HOME_PAGE_PATH \}\)/)
 })
 
 test('material detail shares to friends and guides moments sharing', () => {
@@ -1591,6 +1590,24 @@ test('material detail shares to friends and guides moments sharing', () => {
   assert.equal(pageConfig.enableShareAppMessage, true)
   assert.equal(pageConfig.enableShareTimeline, true)
   assert.match(styles, /\.material-detail__share-button::after \{[\s\S]*display: none;/)
+})
+
+test('material detail navigation shows a home button beside back', () => {
+  const markup = read('miniprogram/pages/material-detail/index.wxml')
+  const navigationLogic = read('miniprogram/components/navigation-bar/navigation-bar.ts')
+  const navigationMarkup = read('miniprogram/components/navigation-bar/navigation-bar.wxml')
+  const navigationStyles = read('miniprogram/components/navigation-bar/navigation-bar.less')
+
+  assert.match(markup, /<navigation-bar title="作品" back="\{\{true\}\}" home-button="\{\{true\}\}"/)
+  assert.match(navigationMarkup, /wx:if="\{\{homeButton\}\}"/)
+  assert.match(navigationMarkup, /bindtap="home"/)
+  assert.match(navigationMarkup, /aria-label="首页"/)
+  assert.match(navigationMarkup, /src="\/assets\/navigation\/home-outline\.svg"/)
+  assert.match(navigationLogic, /home\(\) \{/)
+  assert.match(navigationLogic, /wx\.reLaunch\(\{ url: HOME_PAGE_PATH \}\)/)
+  assert.match(navigationStyles, /\.weui-navigation-bar__btn_home \{/)
+  assert.match(navigationStyles, /\.weui-navigation-bar__buttons_home \{[\s\S]*margin-left: 8px;/)
+  assert.match(read('miniprogram/assets/navigation/home-outline.svg'), /stroke="#000000"/)
 })
 
 test('published material detail opens secondary edit on the publish page', async () => {

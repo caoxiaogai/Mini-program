@@ -1,6 +1,6 @@
 <view class="material-detail-page">
   <view class="material-detail-page__header">
-    <navigation-bar title="作品" back="{{true}}" color="#000000" background="#ffffff" />
+    <navigation-bar title="作品" back="{{true}}" home-button="{{true}}" color="#000000" background="#ffffff" />
   </view>
 
   <view wx:if="{{detail}}" class="material-detail-page__content">
