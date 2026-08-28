@@ -479,6 +479,37 @@ test('profile settings opens a notify intent threshold page', () => {
   assert.match(pageLogic, /onPullDownRefresh/)
 })
 
+test('settings page shows intent rules in a dismissible dialog', () => {
+  const settingTypes = read('miniprogram/types/settings.ts')
+  const pageLogic = read('miniprogram/pages/settings/index.ts')
+  const pageMarkup = read('miniprogram/pages/settings/index.wxml')
+  const pageStyles = read('miniprogram/pages/settings/index.less')
+
+  assert.match(settingTypes, /INTENT_RULES_TITLE = '意向判断标准'/)
+  assert.match(settingTypes, /label: '单图'/)
+  assert.match(settingTypes, /观看5秒以内为低意向，观看5到10秒为中意向，观看10秒以上或者转发1次及以上为高意向/)
+  assert.match(settingTypes, /label: '多图'/)
+  assert.match(settingTypes, /未看完所有图片为低意向，看完所有图片为中意向，查看2次及以上且至少1次看完所有图片或者转发1次及以上为高意向/)
+  assert.match(settingTypes, /label: 'PDF'/)
+  assert.match(settingTypes, /未看完为低意向，看完为中意向，查看2次及以上且至少1次看完或者转发1次及以上为高意向/)
+  assert.match(settingTypes, /label: '视频'/)
+  assert.match(settingTypes, /播放进度低于80%为低意向，播放进度不低于80%为中意向，查看2次及以上且至少1次播放进度要不低于80%或者转发1次及以上为高意向/)
+
+  assert.match(pageMarkup, /settings-card__title-row/)
+  assert.match(pageMarkup, /bindtap="onIntentRulesTap"/)
+  assert.match(pageMarkup, />规则</)
+  assert.match(pageMarkup, /wx:if="\{\{intentRulesVisible\}\}"/)
+  assert.match(pageMarkup, /catchtap="onCloseIntentRules"/)
+  assert.match(pageMarkup, /\{\{item\.label\}\}：\{\{item\.body\}\}/)
+  assert.match(pageLogic, /intentRulesVisible: false/)
+  assert.match(pageLogic, /onIntentRulesTap\(\)/)
+  assert.match(pageLogic, /onCloseIntentRules\(\)/)
+  assert.match(pageLogic, /intentRulesVisible: true/)
+  assert.match(pageLogic, /intentRulesVisible: false/)
+  assert.match(pageStyles, /\.settings-card__rules-text \{[\s\S]*color: #0ec8d9;/)
+  assert.match(pageStyles, /\.settings-rules-modal__mask \{[\s\S]*background: rgba\(0, 0, 0, 0\.8\);/)
+})
+
 test('home analysis passes the selected analysis tab to its content view', () => {
   const page = read('miniprogram/pages/index/index.wxml')
 

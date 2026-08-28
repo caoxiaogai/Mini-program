@@ -4,8 +4,12 @@ import {
   updateNotifySettings,
 } from '../../services/user'
 import { runAuthed } from '../../services/auth'
+import {
+  DEFAULT_NOTIFY_INTENT_LEVEL,
+  INTENT_RULES_TITLE,
+  intentRuleSections,
+} from '../../types/settings'
 import type { NotifyIntentLevel } from '../../types/settings'
-import { DEFAULT_NOTIFY_INTENT_LEVEL } from '../../types/settings'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 Page({
@@ -13,6 +17,9 @@ Page({
     notifyIntentLevelOptions,
     activeNotifyIntentLevel: DEFAULT_NOTIFY_INTENT_LEVEL as NotifyIntentLevel,
     saving: false,
+    intentRulesVisible: false,
+    intentRulesTitle: INTENT_RULES_TITLE,
+    intentRuleSections,
   },
 
   onLoad() {
@@ -53,4 +60,14 @@ Page({
         wx.showToast({ title: '保存失败，请重试', icon: 'none' })
       })
   },
+
+  onIntentRulesTap() {
+    this.setData({ intentRulesVisible: true })
+  },
+
+  onCloseIntentRules() {
+    this.setData({ intentRulesVisible: false })
+  },
+
+  onIntentRulesNoop() {},
 })
