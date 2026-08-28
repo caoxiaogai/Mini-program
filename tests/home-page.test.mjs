@@ -415,9 +415,21 @@ test('profile tab exposes the Figma 519:5031 structure through a typed service s
   assert.match(logic, /runAuthed\(buildReturnPath\(HOME_PAGE_PATH, options\)/)
   assert.match(page, /<home-profile profile="\{\{profileData\}\}" bind:settingstap="onProfileSettingsTap" \/>/)
   assert.match(component, /bindtap="onSettingsTap"/)
-  assert.match(component, /slot="right"/)
+  assert.match(component, /class="home-profile__identity"[\s\S]*class="home-profile__nickname"[\s\S]*class="home-profile__settings"/)
+  assert.doesNotMatch(component, /slot="right"/)
   assert.match(logic, /onProfileSettingsTap\(\)/)
   assert.match(logic, /\/pages\/settings\/index/)
+})
+
+test('profile settings sits on the nickname row with matching side insets', () => {
+  const component = read('miniprogram/components/home-profile/index.wxml')
+  const styles = read('miniprogram/components/home-profile/index.less')
+
+  assert.match(component, /class="home-profile__identity"[\s\S]*class="home-profile__avatar"[\s\S]*class="home-profile__nickname"[\s\S]*class="home-profile__settings"/)
+  assert.match(styles, /.home-profile__content \{[\s\S]*padding: 280rpx 40rpx 360rpx;/)
+  assert.match(styles, /.home-profile__identity \{[\s\S]*display: flex;[\s\S]*align-items: center;/)
+  assert.match(styles, /.home-profile__nickname \{[\s\S]*flex: 1;/)
+  assert.match(styles, /.home-profile__settings \{[\s\S]*margin-left: auto;[\s\S]*padding: 16rpx 0 16rpx 24rpx;/)
 })
 
 test('profile pending module centers the Figma 594:8711 content group', () => {
