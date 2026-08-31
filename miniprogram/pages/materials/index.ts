@@ -5,6 +5,7 @@ import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
+import { getNavigationBarLayout } from '../../utils/navigation-layout'
 import { isPdfFileName, MAX_IMAGE_COUNT, MAX_VIDEO_DURATION_SECONDS, mediaFilesToPublishItems } from '../../utils/publish-media'
 import type { PublishEntryType } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
@@ -58,6 +59,7 @@ Page({
     activeFilter: 'all' as MaterialsFilterId,
     visibleMaterials: [] as MaterialCardViewModel[],
     hasVisibleMaterials: false,
+    materialsNavigationHeight: 91,
     isAndroid: false,
     showPublishSuccessModal: false,
     shareMaterialId: '',
@@ -71,6 +73,7 @@ Page({
   onLoad(options: Record<string, string | undefined>) {
     const { platform } = wx.getSystemInfoSync()
     this.setData({
+      materialsNavigationHeight: getNavigationBarLayout().totalHeight,
       isAndroid: platform === 'android' || platform === 'devtools',
     })
     runAuthed(buildReturnPath('/pages/materials/index', options), () => this.startMaterials(options))
