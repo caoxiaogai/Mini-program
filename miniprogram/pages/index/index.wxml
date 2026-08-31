@@ -69,7 +69,7 @@
       <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{analysisNavigationHeight}}px;">
         <view class="materials-page__base"></view>
         <view class="materials-page__gradient" />
-        <image class="materials-page__stripes" src="/assets/materials/materials-stripes.svg" mode="scaleToFill" />
+        <view class="materials-page__stripes" />
         <view class="materials-page__header">
           <navigation-bar back="{{false}}" title="素材" color="#000000" background="transparent" />
           <view wx:if="{{materials}}" class="materials-filter" role="tablist">
