@@ -60,6 +60,7 @@ export interface ApiAudience {
   viewCount: number | null
   duration: number | null
   completed: number | null
+  intentLevel: ApiIntentLevel | null
   lastViewTime: string | null
 }
 

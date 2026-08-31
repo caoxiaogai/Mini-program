@@ -41,7 +41,7 @@ Component({
     onAnalysisSortTap() { this.triggerEvent('analysissorttap') },
     onAnalysisSortOptionTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysissortoptiontap', { id: event.currentTarget.dataset.id as AnalysisSortId }) },
     onAnalysisSortMaskTap() { this.triggerEvent('analysissortmasktap') },
-    onCardTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('cardtap', { id: event.currentTarget.dataset.id as string }) },
+    onCardTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('cardtap', { id: fromDatasetId(event.currentTarget.dataset.id) }) },
     onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('usertap', { id: fromDatasetId(event.currentTarget.dataset.id) }) },
   },
 })

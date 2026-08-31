@@ -1,79 +1,95 @@
 import { getAnalysisContentDetail } from '../../services/analysis'
 import { runAuthed } from '../../services/auth'
-import type { AnalysisContentDetailViewModel } from '../../types/analysis'
-import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
-import type { DateRange } from '../../utils/date-range'
-import { runPagePullRefresh } from '../../utils/pull-refresh'
+import type { AnalysisAudienceUser, AnalysisContentDetailViewModel, AnalysisIntentLevel } from '../../types/analysis'
 import { buildReturnPath } from '../../utils/auth'
+import { fromDatasetId } from '../../utils/dataset-id'
+import { getNavigationBarLayout } from '../../utils/navigation-layout'
+import { runPagePullRefresh } from '../../utils/pull-refresh'
 
-type ContentPeriodId = 'day' | 'week' | 'month' | 'custom'
+type IntentFilter = 'all' | AnalysisIntentLevel
 
-const contentPeriods: Array<{ id: ContentPeriodId; label: string; iconPath?: string }> = [
-  { id: 'day', label: '日' },
-  { id: 'week', label: '周' },
-  { id: 'month', label: '月' },
-  { id: 'custom', label: '', iconPath: '/assets/analysis/calendar-filter.svg' },
+const intentTabs: Array<{ id: IntentFilter; label: string }> = [
+  { id: 'all', label: '全部' },
+  { id: 'high', label: '高意向' },
+  { id: 'medium', label: '中意向' },
+  { id: 'low', label: '低意向' },
 ]
 
-const defaultDateRange = getDefaultDateRange()
-const dateRangeLimits = getDateRangeLimits()
+const intentSwipeThreshold = 40
+
+function getVisibleIntentUsers(users: AnalysisAudienceUser[], filter: IntentFilter): AnalysisAudienceUser[] {
+  return filter === 'all' ? users : users.filter((user) => user.level === filter)
+}
 
 Page({
   data: {
+    analysisNavigationHeight: 91,
     detail: null as AnalysisContentDetailViewModel | null,
-    contentPeriods,
-    activePeriod: 'day' as ContentPeriodId,
-    dateRangePickerVisible: false,
-    customStartDate: defaultDateRange.startDate,
-    customEndDate: defaultDateRange.endDate,
-    todayDate: dateRangeLimits.maxDate,
-    twoMonthsAgoDate: dateRangeLimits.minDate,
+    intentTabs,
+    activeIntentLevel: 'all' as IntentFilter,
+    activeIntentIndex: 0,
+    intentSwipeStartX: 0,
+    visibleIntentUsers: [] as AnalysisAudienceUser[],
+    hasVisibleIntentUsers: false,
   },
+
+  materialId: '',
+
   onLoad(options: Record<string, string | undefined>) {
+    this.setData({ analysisNavigationHeight: getNavigationBarLayout().totalHeight })
     runAuthed(buildReturnPath('/pages/analysis-detail/index', options), () => {
-      this.loadDetail('day')
+      this.materialId = options.id ?? ''
+      this.loadDetail()
     })
   },
+
   onPullDownRefresh() {
-    runPagePullRefresh(this.loadDetail(this.data.activePeriod, this.getCustomRange()))
+    runPagePullRefresh(this.loadDetail())
   },
-  getCustomRange(): DateRange | undefined {
-    if (this.data.activePeriod !== 'custom') return undefined
-    return { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
-  },
-  loadDetail(period: ContentPeriodId, dateRange?: DateRange) {
-    return getAnalysisContentDetail(period, dateRange, 'view').then((detail) => {
-      this.setData({ detail })
+
+  loadDetail() {
+    if (!this.materialId) return Promise.resolve()
+
+    return getAnalysisContentDetail(this.materialId).then((detail) => {
+      const visibleIntentUsers = detail ? getVisibleIntentUsers(detail.intentUsers, this.data.activeIntentLevel) : []
+      this.setData({
+        detail,
+        visibleIntentUsers,
+        hasVisibleIntentUsers: visibleIntentUsers.length > 0,
+      })
     })
   },
-  onPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: ContentPeriodId; index: number }>) {
-    const periodId = event.detail.id
-    const periodIndex = event.detail.index
-    if (!Number.isInteger(periodIndex) || !contentPeriods[periodIndex] || contentPeriods[periodIndex].id !== periodId) return
 
-    if (periodId === 'custom') {
-      this.setData({ dateRangePickerVisible: true })
-      return
-    }
-
-    this.setData({ activePeriod: periodId })
-    this.loadDetail(periodId)
+  onIntentTabTap(event: WechatMiniprogram.CustomEvent<{ id: IntentFilter; index: number }>) {
+    this.setIntentFilter(event.detail.index)
   },
-  onDateRangeConfirm(event: WechatMiniprogram.CustomEvent<{ startDate: string; endDate: string }>) {
-    const dateRange = event.detail
+
+  onIntentTouchStart(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
+    this.setData({ intentSwipeStartX: event.detail.clientX })
+  },
+
+  onIntentTouchEnd(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
+    const distance = event.detail.clientX - this.data.intentSwipeStartX
+    if (Math.abs(distance) < intentSwipeThreshold) return
+    this.setIntentFilter(this.data.activeIntentIndex + (distance < 0 ? 1 : -1))
+  },
+
+  setIntentFilter(tabIndex: number) {
+    const tab = intentTabs[tabIndex]
+    const detail = this.data.detail
+    if (!tab || !detail) return
+
+    const visibleIntentUsers = getVisibleIntentUsers(detail.intentUsers, tab.id)
     this.setData({
-      activePeriod: 'custom',
-      customStartDate: dateRange.startDate,
-      customEndDate: dateRange.endDate,
-      dateRangePickerVisible: false,
+      activeIntentLevel: tab.id,
+      activeIntentIndex: tabIndex,
+      visibleIntentUsers,
+      hasVisibleIntentUsers: visibleIntentUsers.length > 0,
     })
-    this.loadDetail('custom', dateRange)
   },
-  onDateRangeCancel() {
-    this.setData({ dateRangePickerVisible: false })
-  },
-  onIntentUserTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
-    const userId = String(event.detail.id ?? '')
+
+  onDetailUserTap(event: WechatMiniprogram.TouchEvent) {
+    const userId = fromDatasetId(event.currentTarget.dataset.id)
     if (!userId) return
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${encodeURIComponent(userId)}` })
   },

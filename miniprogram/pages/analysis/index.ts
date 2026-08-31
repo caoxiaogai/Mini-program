@@ -325,9 +325,9 @@ Page({
     this.setData({ analysisSortSheetVisible: false })
   },
   onCardTap(event: WechatMiniprogram.TouchEvent) {
-    const cardId = event.currentTarget.dataset.id as string
-
-    wx.navigateTo({ url: `/pages/analysis-detail/index?id=${cardId}` })
+    const cardId = fromDatasetId(event.currentTarget.dataset.id)
+    if (!cardId) return
+    wx.navigateTo({ url: `/pages/analysis-detail/index?id=${encodeURIComponent(cardId)}` })
   },
   onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) {
     const userId = fromDatasetId(event.currentTarget.dataset.id)

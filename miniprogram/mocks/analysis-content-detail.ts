@@ -1,11 +1,19 @@
 import type { AnalysisContentDetailViewModel, AnalysisViewModel } from '../types/analysis'
 
-/** Figma 743:4059 离线视觉预览数据，仅用于 UI 调试。 */
+/** 单条内容分析离线视觉预览数据，仅用于 UI 调试。 */
 export const analysisContentDetailPreview: AnalysisContentDetailViewModel = {
-  totalViewCount: '24,234',
-  totalForwardCount: '1,223',
-  totalPublishCount: '10',
-  intentUserCount: '1,034',
+  card: {
+    id: 'preview-content-1',
+    thumbnailUrl: '/assets/analysis/content-figma-sunset.jpg',
+    title: '资深AI-Native 全栈产品教程，一人即可干完所有',
+    date: '2026-10-10',
+    metrics: [
+      { label: '转发', value: '1,600' },
+      { label: '播完', value: '23' },
+      { label: '浏览', value: '1,231' },
+      { label: '观看人数', value: '1,231' },
+    ],
+  },
   intentUsers: [
     { id: 'preview-xiaogai-1', userId: 'preview-xiaogai', avatarUrl: '/assets/analysis/user-avatar-01.jpg', name: 'xiaogai', level: 'high', levelLabel: '高意向', readCount: '50', completionCount: '4', shareCount: '4' },
     { id: 'preview-xiaogai-2', userId: 'preview-xiaogai', avatarUrl: '/assets/analysis/user-avatar-02.jpg', name: 'xiaogai', level: 'high', levelLabel: '高意向', readCount: '50', completionCount: '4', shareCount: '4' },
@@ -16,11 +24,6 @@ export const analysisContentDetailPreview: AnalysisContentDetailViewModel = {
     { id: 'preview-laicai-3', userId: 'preview-laicai', avatarUrl: '/assets/analysis/user-avatar-07.jpg', name: '来财来财', level: 'low', levelLabel: '低意向', readCount: '50', completionCount: '2', shareCount: '4' },
     { id: 'preview-laicai-4', userId: 'preview-laicai', avatarUrl: '/assets/analysis/user-avatar-05.jpg', name: '来财来财', level: 'low', levelLabel: '低意向', readCount: '50', completionCount: '2', shareCount: '4' },
     { id: 'preview-laicai-5', userId: 'preview-laicai', avatarUrl: '/assets/analysis/user-avatar-06.jpg', name: '来财来财', level: 'low', levelLabel: '低意向', readCount: '50', completionCount: '2', shareCount: '4' },
-  ],
-  cards: [
-    { id: 'preview-content-1', thumbnailUrl: '/assets/analysis/content-figma-mountain.jpg', title: '资深AI-Native 全栈产品教程', publishedAt: '2026-10-10 16:39 发布', intentLevel: 'high', intentLabel: '4 个高意向', viewCount: '1,231', forwardCount: '21', completeCount: '4' },
-    { id: 'preview-content-2', thumbnailUrl: '/assets/analysis/content-figma-sunset.jpg', title: '资深AI-Native 全栈产品教程', publishedAt: '2026-10-10 16:39 发布', intentLevel: 'high', intentLabel: '4 个高意向', viewCount: '1,231', forwardCount: '21', completeCount: '4' },
-    { id: 'preview-content-3', thumbnailUrl: '/assets/analysis/content-figma-lake.jpg', title: '资深AI-Native 全栈产品教程', publishedAt: '2026-10-10 16:39 发布', intentLevel: 'high', intentLabel: '4 个高意向', viewCount: '1,231', forwardCount: '21', completeCount: '4' },
   ],
 }
 

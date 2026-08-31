@@ -17,6 +17,14 @@
   height: calc(var(--analysis-navigation-height) + 84rpx);
 }
 
+.analysis-page__header--title-only {
+  height: calc(env(safe-area-inset-top, 47px) + 44px);
+}
+
+.analysis-page__header--title-only.analysis-page__header--measured {
+  height: var(--analysis-navigation-height);
+}
+
 .analysis-page__header--embedded {
   position: relative;
   top: auto;

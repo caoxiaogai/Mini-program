@@ -112,25 +112,15 @@ export type AnalysisAudienceUser = {
   shareCount: string
 }
 
-export type AnalysisContentDetailCard = {
-  id: string
-  thumbnailUrl: string
-  title: string
-  publishedAt: string
-  intentLevel: AnalysisIntentLevel | 'empty'
-  intentLabel: string
-  viewCount: string
-  forwardCount: string
-  completeCount: string
-}
-
 export type AnalysisContentDetailViewModel = {
-  totalViewCount: string
-  totalForwardCount: string
-  totalPublishCount: string
-  intentUserCount: string
+  card: {
+    id: string
+    thumbnailUrl: string
+    title: string
+    date: string
+    metrics: AnalysisMetric[]
+  }
   intentUsers: AnalysisAudienceUser[]
-  cards: AnalysisContentDetailCard[]
 }
 
 export type AnalysisViewModel = {

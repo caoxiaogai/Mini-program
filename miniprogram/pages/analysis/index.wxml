@@ -16,7 +16,7 @@
             <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
           </view>
           <view wx:if="{{hasAnalysisCards}}" class="analysis-work-list__cards">
-            <view wx:for="{{visibleAnalysisCards}}" wx:key="id" class="analysis-work-card" hover-class="analysis-card--pressed" hover-stay-time="120" bindtap="onCardTap" data-id="{{item.id}}">
+            <view wx:for="{{visibleAnalysisCards}}" wx:key="id" class="analysis-work-card" hover-class="analysis-card--pressed" hover-stay-time="120" bindtap="onCardTap" data-id="id:{{item.id}}">
               <view class="analysis-work-card__top">
                 <image wx:if="{{item.thumbnailUrl}}" class="analysis-work-card__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
                 <view wx:else class="analysis-work-card__thumbnail analysis-work-card__thumbnail--empty"></view>

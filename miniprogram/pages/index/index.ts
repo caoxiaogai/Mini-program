@@ -578,7 +578,9 @@ Page({
   },
   onAnalysisSortMaskTap() { this.setData({ analysisSortSheetVisible: false }) },
   onAnalysisCardTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
-    if (event.detail.id) wx.navigateTo({ url: `/pages/analysis-detail/index?id=${event.detail.id}` })
+    const cardId = event.detail.id
+    if (!cardId) return
+    wx.navigateTo({ url: `/pages/analysis-detail/index?id=${encodeURIComponent(cardId)}` })
   },
   onAnalysisUserTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
     if (!event.detail.id) return
