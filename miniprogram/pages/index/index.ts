@@ -11,7 +11,6 @@ import type { ProfilePageViewModel } from '../../types/profile'
 import { getProfilePageData } from '../../services/profile'
 import { getHomeGreeting } from '../../utils/greeting'
 import { getHomeHeaderOpacity } from '../../utils/home-header'
-import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
@@ -114,7 +113,6 @@ Page({
     activeMaterialFilter: 'all' as MaterialsFilterId,
     visibleMaterials: [] as MaterialCardViewModel[],
     hasVisibleMaterials: false,
-    materialsHeaderOpacity: 0,
     showPublishSuccessModal: false,
     publishTypeSheetVisible: false,
     shareMaterialId: '',
@@ -585,11 +583,6 @@ Page({
   onAnalysisUserTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
     if (!event.detail.id) return
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${event.detail.id}` })
-  },
-  onMaterialsScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
-    const materialsHeaderOpacity = calculateRankingHeaderOpacity(event.detail.scrollTop)
-    if (materialsHeaderOpacity === this.data.materialsHeaderOpacity) return
-    this.setData({ materialsHeaderOpacity })
   },
   onMaterialFilterTap(event: WechatMiniprogram.TouchEvent) {
     const filterId = event.currentTarget.dataset.id as MaterialsFilterId

@@ -1,7 +1,6 @@
 import { getMaterialDetail, getMaterials } from '../../services/materials'
 import { runAuthed } from '../../services/auth'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
-import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
@@ -59,7 +58,6 @@ Page({
     activeFilter: 'all' as MaterialsFilterId,
     visibleMaterials: [] as MaterialCardViewModel[],
     hasVisibleMaterials: false,
-    materialsHeaderOpacity: 0,
     isAndroid: false,
     showPublishSuccessModal: false,
     shareMaterialId: '',
@@ -112,13 +110,6 @@ Page({
   onPullRefresh() {
     this.setData({ pullRefreshing: true })
     runPullRefresh(this.loadMaterials(), () => this.setData({ pullRefreshing: false }))
-  },
-  onMaterialsScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
-    const materialsHeaderOpacity = calculateRankingHeaderOpacity(event.detail.scrollTop)
-
-    if (materialsHeaderOpacity === this.data.materialsHeaderOpacity) return
-
-    this.setData({ materialsHeaderOpacity })
   },
   onFilterTap(event: WechatMiniprogram.TouchEvent) {
     const filterId = event.currentTarget.dataset.id as MaterialsFilterId
