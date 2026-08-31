@@ -154,6 +154,10 @@ test('the app uses one shared page background color', () => {
   assert.ok(pageStyles.every((styles) => styles.includes('@app-page-background')), 'all page styles must use the shared page background token')
 })
 
+function removeMaterialsFilterDecorations(styles) {
+  return styles.replace(/\.materials-filter(?:__item(?:--active)?|)\s*\{[^}]*\}|\.materials-card__info\s*\{[^}]*\}/g, '')
+}
+
 test('content boxes render without drop shadows', () => {
   const styleFiles = [
     'miniprogram/app.less',
@@ -176,10 +180,10 @@ test('content boxes render without drop shadows', () => {
     'miniprogram/components/navigation-bar/navigation-bar.less',
     'miniprogram/components/segmented-filter/index.less',
     'miniprogram/pages/logs/logs.less',
-  ].map(read)
+  ].map((file) => removeMaterialsFilterDecorations(read(file)))
 
   assert.ok(styleFiles.every((styles) => !/box-shadow\s*:/.test(styles)), 'all style files must remove box-shadow declarations')
-  const visibleBorders = styleFiles.flatMap((styles) => [...styles.replace(/\.publish-page__image-slot--add\s*\{[^}]*\}/, '').matchAll(/border\s*:\s*([^;]+);/g)].map((match) => match[1].trim()).filter((value) => value !== '0' && value !== '1px solid #ebebeb'))
+  const visibleBorders = styleFiles.flatMap((styles) => [...styles.replace(/\.publish-page__image-slot--(?:add|filled)\s*\{[^}]*\}|\.publish-page__draft-button\s*\{[^}]*\}|\.home-ranking-entry\s*\{[^}]*\}|@home-ranking-border:[^;]+;/g, '').matchAll(/border\s*:\s*([^;]+);/g)].map((match) => match[1].trim()).filter((value) => value !== '0' && value !== '1px solid #ebebeb'))
   assert.equal(visibleBorders.length, 0, 'all boxes must remove visible border declarations')
   assert.ok(styleFiles.every((styles) => !/border-color:\s*(?!transparent\b)/.test(styles)), 'all boxes must remove visible border-color declarations')
 })
@@ -308,6 +312,7 @@ test('home interaction messages expose the compact mark-all-read action', async 
   assert.match(component, /wx:if="\{\{!compact\}\}"/)
   assert.match(componentStyles, /notification-mark-all-read--compact/)
   assert.match(componentStyles, /notification-mark-all-read--compact \{[\s\S]*bottom: auto;/)
+  assert.match(componentStyles, /notification-mark-all-read--compact \{[\s\S]*height: 48rpx;/)
 })
 
 test('home greeting follows the device local time', async () => {
@@ -479,7 +484,7 @@ test('home today-most follows Figma 723:11451 card hierarchy', () => {
   assert.doesNotMatch(styles, /\.home-section--today-most \{[\s\S]*margin-(?:right|left): -40rpx;/)
   assert.match(styles, /\.home-content-card \{[\s\S]*padding: 30rpx 40rpx;[\s\S]*border-radius: 40rpx;/)
   assert.match(styles, /\.home-section--today-most \.home-content-card__item \{[\s\S]*padding: 30rpx;[\s\S]*border-radius: 30rpx;[\s\S]*background: (?:#edf0f5|@app-page-background);/)
-  assert.match(styles, /\.home-today-most__icon \{[\s\S]*width: 48rpx;[\s\S]*height: 48rpx;/)
+  assert.match(styles, /\.home-today-most__icon \{[\s\S]*width: 44rpx;[\s\S]*height: 44rpx;/)
   assert.match(styles, /\.home-today-most__more-button \{[\s\S]*height: 80rpx;[\s\S]*margin-top: 40rpx;[\s\S]*border-radius: 20rpx;[\s\S]*background: @app-page-background;/)
   assert.match(styles, /\.home-today-most__chevron \{[\s\S]*width: 12rpx;[\s\S]*height: 22rpx;/)
   assert.match(service, /completeCount: formatCount\(item\.completeCount\)/)
@@ -712,8 +717,7 @@ test('primary page backgrounds stay fixed while first-screen content pulls down'
   const rankingStyles = read('miniprogram/pages/ranking/index.less')
   const profileStyles = read('miniprogram/components/home-profile/index.less')
 
-  assert.match(materialsStyles, /\.materials-page__base\s*\{[^}]*position: fixed;/)
-  assert.match(materialsStyles, /\.materials-page__status-glow\s*\{[^}]*position: fixed;/)
+  assert.match(materialsStyles, /\.materials-page__top\s*\{[^}]*position: fixed;/)
   assert.match(rankingStyles, /\.ranking-page__base\s*\{[^}]*position: fixed;/)
   assert.match(rankingStyles, /\.ranking-page__status-glow\s*\{[^}]*position: fixed;/)
   assert.match(profileStyles, /\.home-profile__stripes\s*\{[^}]*position: fixed;/)
@@ -777,9 +781,9 @@ test('content boxes do not render visible outlines', () => {
     'miniprogram/pages/settings/index.less',
     'miniprogram/components/home-profile/index.less',
     'miniprogram/components/publish-success-modal/index.less',
-  ].map(read)
+  ].map((file) => removeMaterialsFilterDecorations(read(file)))
 
-  const visibleBorders = styleFiles.flatMap((styles) => [...styles.replace(/\.publish-page__image-slot--add\s*\{[^}]*\}/, '').matchAll(/border\s*:\s*([^;]+);/g)].map((match) => match[1].trim()).filter((value) => value !== '0' && value !== '1px solid #ebebeb'))
+  const visibleBorders = styleFiles.flatMap((styles) => [...styles.replace(/\.publish-page__image-slot--(?:add|filled)\s*\{[^}]*\}|\.publish-page__draft-button\s*\{[^}]*\}|\.home-ranking-entry\s*\{[^}]*\}|@home-ranking-border:[^;]+;/g, '').matchAll(/border\s*:\s*([^;]+);/g)].map((match) => match[1].trim()).filter((value) => value !== '0' && value !== '1px solid #ebebeb'))
   assert.equal(visibleBorders.length, 0)
   assert.ok(styleFiles.every((styles) => !/border-color:\s*(?!transparent\b)/.test(styles)))
 })
@@ -850,6 +854,9 @@ test('new homepage assets are local and sized for the target frame', () => {
     'miniprogram/assets/home-new/action-reading.svg',
     'miniprogram/assets/analysis/total-view-icon.svg',
     'miniprogram/assets/analysis/total-forward-icon.svg',
+    'miniprogram/assets/analysis/intent-high-icon.svg',
+    'miniprogram/assets/analysis/intent-middle-icon.svg',
+    'miniprogram/assets/analysis/intent-low-icon.svg',
     'miniprogram/assets/home-new/tab-home.svg',
     'miniprogram/assets/home-new/tab-home-selected.svg',
     'miniprogram/assets/home-new/tab-notification.svg',
@@ -1318,6 +1325,7 @@ test('notification pages show a Figma mark-all action while the bottom navigatio
   assert.match(action, /notification-mark-all-read__close/)
   assert.match(actionStyles, /border: 1px solid #e0e0e0;/)
   assert.match(actionStyles, /box-shadow: 0 0 20rpx rgba\(0, 0, 0, 0\.1\);/)
+  assert.match(actionStyles, /\.notification-mark-all-read\s*\{[\s\S]*height: 88rpx;[\s\S]*padding: 0 32rpx;/)
 })
 
 test('notification header and filters stay fixed while the card list scrolls', () => {
@@ -1447,7 +1455,7 @@ test('intent users card follows Figma 723:11502 layout tokens', () => {
   assert.doesNotMatch(page, /class="home-section__header"><text class="home-section__title">意向用户/)
   assert.match(page, /今日新增 <text class="home-accent">\{\{homeData\.intentSummary\.total\}\}<\/text> 个客户/)
   assert.match(styles, /\.home-intent-card__header \{[\s\S]*display: flex;[\s\S]*justify-content: space-between;/)
-  assert.match(styles, /\.home-intent-card__icon \{[\s\S]*width: 48rpx;[\s\S]*height: 48rpx;/)
+  assert.match(styles, /\.home-intent-card__icon \{[\s\S]*width: 44rpx;[\s\S]*height: 44rpx;/)
   assert.match(styles, /\.home-intent-card__chevron \{[\s\S]*width: 12rpx;[\s\S]*height: 22rpx;/)
   assert.match(styles, /\.home-intent-card__headline \{[\s\S]*font-size: 32rpx;[\s\S]*font-weight: 500;/)
   assert.match(styles, /\.home-intent-card__avatar \{[\s\S]*width: 48rpx;[\s\S]*height: 48rpx;[\s\S]*margin-right: -24rpx;/)
@@ -1510,7 +1518,7 @@ test('user detail page follows Figma 497:4640', () => {
   assert.match(styles, /\.user-detail__records-section \{[\s\S]*margin-top: 40rpx;[\s\S]*gap: 10rpx;/)
   assert.match(styles, /\.user-detail__records-card \{[\s\S]*gap: 34rpx;[\s\S]*padding: 0 40rpx 40rpx;[\s\S]*border-radius: 48rpx;[\s\S]*background: #ffffff;/)
   assert.match(styles, /\.user-detail__records-header \{[\s\S]*gap: 10rpx;[\s\S]*padding: 30rpx 0;[\s\S]*border-bottom: 2rpx solid #f0f0f0;/)
-  assert.match(styles, /\.user-detail__records-icon \{[\s\S]*width: 48rpx;[\s\S]*height: 48rpx;/)
+  assert.match(styles, /\.user-detail__records-icon \{[\s\S]*width: 44rpx;[\s\S]*height: 44rpx;/)
   assert.match(styles, /\.user-detail__records-title \{[\s\S]*font-size: 28rpx;/)
   assert.match(styles, /\.user-detail__records-body \{[\s\S]*gap: 20rpx;/)
   assert.match(styles, /\.user-detail__records \{[\s\S]*gap: 30rpx;/)
@@ -1565,6 +1573,12 @@ test('user detail contact copies the username', () => {
 
   assert.deepEqual(copied, ['测试用户'])
   assert.equal(context.data.noticeVisible, true)
+})
+
+test('user journey behavior icon uses the 22px size', () => {
+  const styles = read('miniprogram/pages/analysis-user-journey/index.less')
+
+  assert.match(styles, /\.user-journey-track-card__icon\s*\{[^}]*width:\s*44rpx;[^}]*height:\s*44rpx;/)
 })
 
 test('user journey service loads real tracking events through the request layer', async () => {
@@ -1953,13 +1967,13 @@ test('materials home uses the Figma publish navigation and reserves space above 
   assert.match(logic, /label: '通知'/)
   assert.match(logic, /label: '分析'/)
   assert.match(logic, /label: '我的'/)
-  assert.match(markup, /<view class="materials-page \{\{isAndroid \? 'materials-page--android' : ''\}\}">/)
-  assert.match(homeMarkup, /<view class="materials-page \{\{isAndroid \? 'materials-page--android' : ''\}\}">/)
+  assert.match(markup, /<view class="materials-page .*?" style="--materials-navigation-height: \{\{materialsNavigationHeight\}\}px;">/)
+  assert.match(homeMarkup, /<view class="materials-page .*?" style="--materials-navigation-height: \{\{analysisNavigationHeight\}\}px;">/)
   assert.match(logic, /isAndroid: false/)
   assert.match(homeLogic, /isAndroid: false/)
   assert.match(logic, /platform === 'android' \|\| platform === 'devtools'/)
   assert.match(homeLogic, /platform === 'android' \|\| platform === 'devtools'/)
-  assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?padding: 0 40rpx calc\(336rpx \+ env\(safe-area-inset-bottom\)\);/)
+  assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?padding: calc\(var\(--materials-navigation-height\) \+ 84rpx \+ 32rpx\) 40rpx calc\(336rpx \+ env\(safe-area-inset-bottom\)\);/)
   assert.match(styles, /\.materials-publish-bar\s*\{[\s\S]*?bottom: 112rpx;/)
   assert.match(styles, /\.materials-publish-button\s*\{[\s\S]*?bottom: calc\(max\(24px, env\(safe-area-inset-bottom\)\) \+ 20rpx\);/)
   assert.match(styles, /\.materials-page--android \.materials-publish-button\s*\{[\s\S]*?bottom: calc\(16px \+ 20rpx\);/)
@@ -1977,42 +1991,51 @@ test('materials home uses the mine API and keeps the fixed Figma top layers', ()
   assert.match(service, /resolveMaterialCopy/)
   assert.match(service, /title: resolveMaterialCopy\(material\)/)
   assert.doesNotMatch(service, /from '\.\.\/mocks\//)
-  assert.match(markup, /<view class="materials-page__stripes" \/>/)
-  assert.match(homeMarkup, /<view class="materials-page__stripes" \/>/)
+  assert.match(markup, /<view class="materials-page__top">[\s\S]*?<view class="materials-page__gradient" \/>[\s\S]*?<view class="materials-page__stripes" \/>[\s\S]*?<view class="materials-page__header">/)
+  assert.match(homeMarkup, /<view class="materials-page__top">[\s\S]*?<view class="materials-page__gradient" \/>[\s\S]*?<view class="materials-page__stripes" \/>[\s\S]*?<view class="materials-page__header">/)
   assert.doesNotMatch(markup, /materials-stripes\.svg/)
   assert.doesNotMatch(homeMarkup, /materials-stripes\.svg/)
   assert.match(markup, /class="materials-card__image" src="\{\{item\.thumbnailUrl\}\}" mode="aspectFill"/)
-  assert.match(styles, /\.materials-page__base\s*\{[\s\S]*?background: #ffffff;/)
-  assert.match(styles, /\.materials-page__gradient\s*\{[\s\S]*?position: absolute;[\s\S]*?z-index: 2;[\s\S]*?height: 131px;[\s\S]*?background: linear-gradient\(180deg, #f5f5f5 0%, #f5f5f5 65\.141%, rgba\(245, 245, 245, 0\) 100%\);/)
-  assert.match(styles, /\.materials-page__stripes\s*\{[\s\S]*?position: fixed;[\s\S]*?left: 4rpx;[\s\S]*?z-index: 3;[\s\S]*?width: 100%;[\s\S]*?height: 260rpx;[\s\S]*?background: repeating-linear-gradient\(90deg, transparent 0 4rpx, #f0f0f0 4rpx 8rpx\);[\s\S]*?-webkit-mask-image: linear-gradient\(180deg, #000000 0%, rgba\(0, 0, 0, 0\) 100%\);/)
-  assert.match(styles, /\.materials-page__header\s*\{[\s\S]*?z-index: 4;/)
+  assert.match(styles, /\.materials-page\s*\{[\s\S]*?background: @app-page-background;/)
+  assert.doesNotMatch(styles, /\.materials-page__base\s*\{/)
+  assert.doesNotMatch(markup, /materials-page__base/)
+  assert.doesNotMatch(homeMarkup, /materials-page__base/)
+  assert.match(styles, /\.materials-page__top\s*\{[\s\S]*?position: fixed;[\s\S]*?z-index: 4;[\s\S]*?height: calc\(var\(--materials-navigation-height\) \+ 84rpx\);/)
+  assert.match(styles, /\.materials-page__gradient\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 0;[\s\S]*?z-index: 0;[\s\S]*?height: 131px;[\s\S]*?background: linear-gradient\(180deg, rgba\(245, 245, 245, 1\) 0, rgba\(245, 245, 245, 1\) 100px, rgba\(245, 245, 245, 0\) 131px\);/)
+  assert.match(styles, /\.materials-page__stripes\s*\{[\s\S]*?position: absolute;[\s\S]*?left: 4rpx;[\s\S]*?z-index: 1;[\s\S]*?width: 100%;[\s\S]*?height: 260rpx;[\s\S]*?background: repeating-linear-gradient\(90deg, transparent 0 4rpx, #f0f0f0 4rpx 8rpx\);[\s\S]*?-webkit-mask-image: linear-gradient\(180deg, #000000 0%, rgba\(0, 0, 0, 0\) 100%\);/)
+  assert.match(styles, /\.materials-page__header\s*\{[\s\S]*?z-index: 2;/)
   assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?z-index: 1;/)
-  assert.match(styles, /\.materials-grid\s*\{[\s\S]*?gap: 20rpx 18rpx;[\s\S]*?margin-top: 32rpx;/)
+  assert.match(styles, /\.materials-grid\s*\{[\s\S]*?gap: 20rpx 18rpx;[\s\S]*?margin-top: 0;/)
   assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?background: transparent;/)
 })
 
 test('materials card information follows Figma 519:4383', () => {
   const styles = read('miniprogram/pages/materials/index.less')
 
-  assert.match(styles, /\.materials-card__info\s*\{[\s\S]*gap: 20rpx;[\s\S]*padding: 16rpx 20rpx;[\s\S]*border-radius: 0 0 24rpx 24rpx;[\s\S]*background: #ffffff;/)
+  assert.match(styles, /\.materials-card__info\s*\{[\s\S]*gap: 20rpx;[\s\S]*padding: 16rpx 20rpx;[\s\S]*border: 1px solid #f0f0f0;[\s\S]*border-radius: 0 0 24rpx 24rpx;[\s\S]*background: #ffffff;[\s\S]*box-shadow: 0 0 10px rgba\(0, 0, 0, 0\.05\);/)
   assert.match(styles, /\.materials-card__title\s*\{[\s\S]*font-size: 28rpx;[\s\S]*font-weight: 400;/)
   assert.match(styles, /\.materials-card__date\s*\{[\s\S]*color: @materials-muted;[\s\S]*font-size: 28rpx;/)
 })
 
-test('materials header keeps the copied gradient while the list scrolls', () => {
+test('materials list scrolls behind the fixed gradient instead of starting below it', () => {
   const markups = [
     read('miniprogram/pages/materials/index.wxml'),
     read('miniprogram/pages/index/index.wxml'),
   ]
+  const styles = read('miniprogram/pages/materials/index.less')
+  const homeStyles = read('miniprogram/pages/index/index.less')
 
   for (const markup of markups) {
-    assert.match(markup, /<view class="materials-page__gradient" \/>/)
-    assert.match(markup, /<view class="materials-page__stripes" \/>/)
-    assert.match(markup, /<view class="materials-page__header">[\s\S]*class="materials-filter"/)
+    assert.match(markup, /<view class="materials-page__top">[\s\S]*?<view class="materials-page__gradient" \/>[\s\S]*?<view class="materials-page__stripes" \/>[\s\S]*?<view class="materials-page__header">[\s\S]*class="materials-filter"/)
+    assert.doesNotMatch(markup, /materials-page__top-spacer/)
     assert.doesNotMatch(markup, /class="materials-page__header" style=/)
     assert.doesNotMatch(markup, /materialsHeaderOpacity/)
     assert.doesNotMatch(markup, /bindscroll="onMaterialsScroll"/)
   }
+
+  assert.match(styles, /\.materials-page__scroll\s*\{[\s\S]*?position: absolute;[\s\S]*?inset: 0;/)
+  assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?padding: calc\(var\(--materials-navigation-height\) \+ 84rpx \+ 32rpx\) 40rpx calc\(336rpx \+ env\(safe-area-inset-bottom\)\);/)
+  assert.match(homeStyles, /\.home-page__materials-scroll\s*\{[\s\S]*?position: absolute;[\s\S]*?inset: 0;/)
 })
 
 test('materials header reserves the navigation and filter space before the list', () => {
@@ -2037,7 +2060,7 @@ test('materials filter buttons stay fixed above the scrolling list', () => {
 
   assert.equal(pageConfig.disableScroll, true)
   assert.match(styles, /\.materials-filter\s*\{[\s\S]*?flex-shrink: 0;/)
-  assert.match(styles, /\.materials-page__scroll\s*\{[\s\S]*?flex: 1;/)
+  assert.match(styles, /\.materials-page__scroll\s*\{[\s\S]*?position: absolute;[\s\S]*?inset: 0;/)
 
   for (const source of [markup, homeMarkup]) {
     const filterIndex = source.indexOf('class="materials-filter"')
@@ -2047,6 +2070,15 @@ test('materials filter buttons stay fixed above the scrolling list', () => {
     const scrollClose = source.indexOf('</scroll-view>', scrollOpen)
     assert.doesNotMatch(source.slice(scrollOpen, scrollClose), /class="materials-filter"/)
   }
+})
+
+test('materials filter matches the Figma card surfaces', () => {
+  const styles = read('miniprogram/pages/materials/index.less')
+
+  assert.match(styles, /\.materials-filter\s*\{[\s\S]*?gap: 20rpx;[\s\S]*?height: 64rpx;[\s\S]*?margin: 20rpx 40rpx 0;[\s\S]*?padding: 0;[\s\S]*?background: transparent;/)
+  assert.match(styles, /\.materials-filter__item\s*\{[\s\S]*?height: 64rpx;[\s\S]*?border: 1px solid #d6d6d6;[\s\S]*?border-radius: 10rpx;[\s\S]*?background: #ffffff;[\s\S]*?font-size: 26rpx;[\s\S]*?font-weight: 400;/)
+  assert.match(styles, /\.materials-filter__item--active\s*\{[\s\S]*?border-color: #7acadb;[\s\S]*?background: linear-gradient\(180deg, #e4f9fc 0%, #fefeff 100%\);[\s\S]*?font-weight: 600;/)
+  assert.match(styles, /box-shadow: 0 0 20px rgba\(0, 0, 0, 0\.1\);/)
 })
 
 test('materials publish button does not place a blue gradient layer over cards or navigation', () => {
@@ -2107,6 +2139,16 @@ test('material detail opens image preview, video player and PDF reader', () => {
   assert.match(documentLogic, /prepareDocumentPageImage/)
   assert.match(documentLogic, /pickCurrentDocumentPageByScroll/)
   assert.match(documentLogic, /onDocumentScroll/)
+})
+
+test('material detail uses the shared page background above and below the media', () => {
+  const markup = read('miniprogram/pages/material-detail/index.wxml')
+  const styles = read('miniprogram/pages/material-detail/index.less')
+
+  assert.match(markup, /<navigation-bar title="作品" back="\{\{true\}\}" home-button="\{\{true\}\}" color="#000000" background="#f5f5f5" \/>/)
+  assert.match(styles, /\.material-detail-page__header\s*\{[^}]*background:\s*@app-page-background;/)
+  assert.match(styles, /\.material-detail__description\s*\{[^}]*background:\s*@app-page-background;/)
+  assert.match(styles, /\.material-detail__share-bar\s*\{[^}]*background:\s*@app-page-background;/)
 })
 
 test('pdf first-page previews are used wherever thumbnails are shown', () => {
@@ -2500,9 +2542,11 @@ test('analysis intent summary follows the Figma 743:4027 three-card layout', () 
 
   assert.match(styles, /\.analysis-user__summary \{[\s\S]*gap: 10px;/)
   assert.match(styles, /\.analysis-user__summary-card \{[\s\S]*padding: 15px;[\s\S]*border-radius: 12px;[\s\S]*background: #ffffff;/)
-  assert.match(styles, /\.analysis-user__summary-icon \{[\s\S]*width: 24px;[\s\S]*height: 24px;/)
-  assert.match(styles, /\.analysis-user__summary-icon--high[\s\S]*#ff3000/)
-  assert.match(service, /iconPath: '\/assets\/analysis\/intent-summary-icon\.svg'/)
+  assert.match(styles, /\.analysis-user__summary-icon \{[\s\S]*width: 22px;[\s\S]*height: 22px;/)
+  assert.doesNotMatch(styles, /\.analysis-user__summary-icon--high/)
+  assert.match(service, /iconPath: '\/assets\/analysis\/intent-high-icon\.svg'/)
+  assert.match(service, /iconPath: '\/assets\/analysis\/intent-middle-icon\.svg'/)
+  assert.match(service, /iconPath: '\/assets\/analysis\/intent-low-icon\.svg'/)
 })
 
 test('analysis user list stacks its filter above the rows', () => {
@@ -3317,7 +3361,7 @@ test('home today data card follows Figma 723:11527', async () => {
   assert.match(page, /wx:if="\{\{homeData\.today\.comparison\}\}" class="home-today-card__comparison"/)
   assert.match(page, /class="home-today-card__comparison-divider" src="\/assets\/analysis\/total-metric-divider\.svg"/)
   assert.match(styles, /\.home-today-card__header \{[\s\S]*height: 48rpx;[\s\S]*margin-bottom: 30rpx;/)
-  assert.match(styles, /\.home-today-card__icon \{[\s\S]*width: 48rpx;[\s\S]*height: 48rpx;/)
+  assert.match(styles, /\.home-today-card__icon \{[\s\S]*width: 44rpx;[\s\S]*height: 44rpx;/)
   assert.match(styles, /\.home-today-card__chevron \{[\s\S]*width: 10rpx;[\s\S]*height: 20rpx;/)
   assert.match(styles, /\.home-today-card__hero \{[\s\S]*display: flex;[\s\S]*justify-content: space-between;/)
   assert.match(styles, /\.home-today-card__hero \{[\s\S]*flex-direction: row;[\s\S]*align-items: flex-start;/)

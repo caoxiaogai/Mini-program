@@ -51,10 +51,7 @@
     <view class="analysis-user-panel">
       <view class="analysis-user__summary">
         <view wx:for="{{analysisData.userSummary}}" wx:key="label" class="analysis-user__summary-card">
-          <view class="analysis-user__summary-icon analysis-user__summary-icon--{{index === 0 ? 'high' : index === 1 ? 'medium' : 'low'}}">
-            <image wx:if="{{index !== 1}}" class="analysis-user__summary-icon-glyph analysis-user__summary-icon-glyph--{{index}}" src="{{item.iconPath}}" mode="aspectFit" />
-            <view wx:else class="analysis-user__summary-icon-line"></view>
-          </view>
+          <image class="analysis-user__summary-icon" src="{{item.iconPath}}" mode="aspectFit" />
           <view class="analysis-user__summary-copy"><text class="analysis-user__summary-value">{{item.value}}</text><text class="analysis-user__summary-label">{{item.label}}</text></view>
         </view>
       </view>

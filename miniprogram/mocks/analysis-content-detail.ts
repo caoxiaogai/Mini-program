@@ -42,9 +42,9 @@ export const analysisOverviewPreview: AnalysisViewModel = {
     { id: 'preview-work-5', thumbnailUrl: '/assets/analysis/content-figma-lake.jpg', title: '资深AI-Native 全栈产品教程，一人...', date: '2026-08-20', publishedAt: '8 月 20 17:00', intentLevel: 'medium', intentLabel: '3 个中意向', metrics: [], compactMetrics: [{ label: '浏览次数', value: '0' }, { label: '转发', value: '1' }, { label: '完播', value: '0' }], sortCounts: { view: 0, share: 1, completion: 0 } },
   ],
   userSummary: [
-    { label: '高意向', value: '4,234', iconPath: '/assets/analysis/intent-summary-icon.svg' },
-    { label: '中意向', value: '1,223', iconPath: '/assets/analysis/intent-summary-icon.svg' },
-    { label: '低意向', value: '1,223', iconPath: '/assets/analysis/intent-summary-icon.svg' },
+    { label: '高意向', value: '4,234', iconPath: '/assets/analysis/intent-high-icon.svg' },
+    { label: '中意向', value: '1,223', iconPath: '/assets/analysis/intent-middle-icon.svg' },
+    { label: '低意向', value: '1,223', iconPath: '/assets/analysis/intent-low-icon.svg' },
   ],
   audienceUsers: analysisContentDetailPreview.intentUsers,
   totalData: {

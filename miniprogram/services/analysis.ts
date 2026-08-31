@@ -501,9 +501,9 @@ export function getAnalysisOverview(
       cards,
       workCount: formatCount(dashboard.totalPublishCount),
       userSummary: [
-        { label: '高意向', value: formatCount(dashboard.highIntentCount), iconPath: '/assets/analysis/intent-summary-icon.svg' },
-        { label: '中意向', value: formatCount(dashboard.mediumIntentCount), iconPath: '/assets/analysis/intent-summary-icon.svg' },
-        { label: '低意向', value: formatCount(dashboard.lowIntentCount), iconPath: '/assets/analysis/intent-summary-icon.svg' },
+        { label: '高意向', value: formatCount(dashboard.highIntentCount), iconPath: '/assets/analysis/intent-high-icon.svg' },
+        { label: '中意向', value: formatCount(dashboard.mediumIntentCount), iconPath: '/assets/analysis/intent-middle-icon.svg' },
+        { label: '低意向', value: formatCount(dashboard.lowIntentCount), iconPath: '/assets/analysis/intent-low-icon.svg' },
       ],
       audienceUsers: customers.map((customer, index) => {
         const customerId = String(customer.customerId)

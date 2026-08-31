@@ -67,10 +67,10 @@
     <view class="home-page__tab-panel home-page__notification-panel" hidden="{{activeTabIndex !== 1}}"><notification-header embedded="{{true}}" navigation-height="{{analysisNavigationHeight}}" filters="{{notifications.filters}}" active-filter="{{activeNotificationFilter}}" bind:filtertap="onNotificationFilterTap" /><scroll-view scroll-y class="home-page__tab-scroll home-page__notification-scroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh"><home-notifications notifications="{{notifications}}" active-filter="{{activeNotificationFilter}}" visible-groups="{{visibleNotificationGroups}}" has-visible-groups="{{hasVisibleNotificationGroups}}" bind:cardtap="onNotificationCardTap" bind:contactaction="onNotificationContactAction" /></scroll-view></view>
     <view class="home-page__tab-panel home-page__materials-panel" hidden="{{activeTabIndex !== 2}}">
       <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{analysisNavigationHeight}}px;">
-        <view class="materials-page__base"></view>
-        <view class="materials-page__gradient" />
-        <view class="materials-page__stripes" />
-        <view class="materials-page__header">
+        <view class="materials-page__top">
+          <view class="materials-page__gradient" />
+          <view class="materials-page__stripes" />
+          <view class="materials-page__header">
           <navigation-bar back="{{false}}" title="素材" color="#000000" background="transparent" />
           <view wx:if="{{materials}}" class="materials-filter" role="tablist">
             <view
@@ -86,6 +86,7 @@
             >
               <text>{{item.label}}</text>
             </view>
+          </view>
           </view>
         </view>
         <scroll-view scroll-y class="home-page__tab-scroll home-page__materials-scroll" show-scrollbar="{{false}}" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">

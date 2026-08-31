@@ -1,9 +1,8 @@
 <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{materialsNavigationHeight}}px;">
-  <view class="materials-page__base"></view>
-  <view class="materials-page__gradient" />
-  <view class="materials-page__stripes" />
-
-  <view class="materials-page__header">
+  <view class="materials-page__top">
+    <view class="materials-page__gradient" />
+    <view class="materials-page__stripes" />
+    <view class="materials-page__header">
     <navigation-bar back="{{true}}" title="素材" color="#000000" background="transparent" />
     <view wx:if="{{materials}}" class="materials-filter" role="tablist">
       <view
@@ -20,8 +19,8 @@
         <text>{{item.label}}</text>
       </view>
     </view>
+    </view>
   </view>
-
   <scroll-view scroll-y class="materials-page__scroll" show-scrollbar="{{false}}" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">
     <view wx:if="{{materials}}" class="materials-page__content">
       <view wx:if="{{hasVisibleMaterials}}" class="materials-grid">

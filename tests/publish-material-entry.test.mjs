@@ -105,9 +105,25 @@ test('publish detail add-image slot matches Figma 850:9370', () => {
   assert.doesNotMatch(styles, /\.publish-page__add-icon\s*\{[^}]*font-size:/)
 })
 
+test('publish detail filled image slots use the requested outline', () => {
+  const markup = read('miniprogram/pages/materials/publish/index.wxml')
+  const styles = read('miniprogram/pages/materials/publish/index.less')
+
+  assert.match(markup, /class="publish-page__image-slot publish-page__image-slot--filled"/)
+  assert.match(styles, /\.publish-page__image-slot--filled\s*\{[^}]*border:\s*2rpx solid #e5e5e5;/)
+})
+
 test('publish copy area starts 20px below the image grid', () => {
   const styles = read('miniprogram/pages/materials/publish/index.less')
 
   assert.match(styles, /\.publish-page__copy-area\s*\{[^}]*margin-top:\s*40rpx;/)
   assert.doesNotMatch(styles, /\.publish-page__copy-area\s*\{[^}]*margin-top:\s*20rpx;/)
+})
+
+test('publish actions match Figma 850:9374 without a white bottom container', () => {
+  const styles = read('miniprogram/pages/materials/publish/index.less')
+
+  assert.match(styles, /\.publish-page__actions\s*\{[^}]*background:\s*transparent;/)
+  assert.doesNotMatch(styles, /\.publish-page__actions\s*\{[^}]*background:\s*#ffffff;/)
+  assert.match(styles, /\.publish-page__draft-button\s*\{[^}]*border:\s*2rpx solid #e5e5e5;/)
 })
