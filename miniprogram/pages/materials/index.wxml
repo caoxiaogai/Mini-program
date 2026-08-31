@@ -1,6 +1,5 @@
 <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{materialsNavigationHeight}}px;">
   <view class="materials-page__base"></view>
-  <view class="materials-page__gradient" />
   <view class="materials-page__stripes" />
 
   <view class="materials-page__header">
