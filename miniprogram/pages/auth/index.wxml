@@ -6,7 +6,6 @@
   <view wx:if="{{step === 'login'}}" class="auth-page__content">
     <view class="auth-page__copy">
       <text class="auth-page__title">欢迎使用言界阿乐</text>
-      <text class="auth-page__hint">授权登录</text>
     </view>
     <button class="auth-page__primary" hover-class="auth-page__primary--pressed" disabled="{{busy}}" bindtap="onAuthorizeTap">授权登录</button>
   </view>

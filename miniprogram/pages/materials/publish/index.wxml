@@ -76,34 +76,5 @@
     </view>
   </view>
 
-  <view wx:if="{{typeSheetVisible}}" class="publish-sheet">
-    <view class="publish-sheet__mask" catchtap="onTypeSheetMaskTap"></view>
-    <view class="publish-sheet__panel">
-      <view
-        wx:for="{{typeOptions}}"
-        wx:key="id"
-        class="publish-sheet__option"
-        data-id="{{item.id}}"
-        bindtap="onTypeOptionTap"
-        hover-class="publish-sheet__option--pressed"
-        hover-stay-time="80"
-      >{{item.label}}</view>
-    </view>
-  </view>
-
-  <view wx:if="{{sourceSheetVisible}}" class="publish-sheet">
-    <view class="publish-sheet__mask" catchtap="onSourceSheetMaskTap"></view>
-    <view class="publish-sheet__panel">
-      <view
-        wx:for="{{sourceOptions}}"
-        wx:key="id"
-        class="publish-sheet__option"
-        data-id="{{item.id}}"
-        bindtap="onSourceOptionTap"
-        hover-class="publish-sheet__option--pressed"
-        hover-stay-time="80"
-      >{{item.label}}</view>
-    </view>
-  </view>
-
+  <publish-type-sheet visible="{{publishTypeSheetVisible}}" bind:select="onPublishTypeSelect" bind:cancel="onPublishTypeCancel" />
 </view>

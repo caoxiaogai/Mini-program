@@ -276,6 +276,12 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-31：发布详情清空素材后加号重新选类型
+
+- 发布详情已有图片时点「+」仍直接打开相册追加图片。
+- 删光所有素材后再点「+」，底部弹出与素材页相同的「图片 / 视频 / PDF」选项。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs tests/publish-material-entry.test.mjs`。当前环境无微信开发者工具 GUI，需真机删光图片后再点加号看弹层。
+
 ### 2026-08-31：通知列表补齐顶部与日期分组间距
 
 - 按用户标注补充通知页筛选栏到底部首个日期标题的 20px 间距；独立通知页与首页内嵌通知 Tab 同步调整。
@@ -316,6 +322,12 @@ miniprogram/
 - 修复分析顶部移出滚动区域后，作品分析首块内容紧贴/进入顶部渐变层，以及首页内嵌分析其他页签仍沿用旧 `padding-top: 0` 的问题。
 - 独立分析页与首页内嵌分析的作品分析、用户分析、总数据统一为固定顶部底边后 `20px` 出现首块可见内容；页签切换、滚动和数据逻辑不变。
 - 新增覆盖六种“独立/内嵌 × 三个分析页签”组合的顶部间距回归测试。验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-reporter=spec tests/*.mjs`（150 tests passed）。当前环境无微信开发者工具 GUI，仍需在开发者工具或真机核对顶部视觉间距。
+
+### 2026-08-31：发布详情加号直接打开相册
+
+- 发布详情页点「+」不再弹已无样式的类型/来源面板，改为按当前素材类型直接打开相册或微信文件选择。
+- 图片可继续追加到 9 张；视频和 PDF 仍只能一份，加满后不加号。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs tests/publish-material-entry.test.mjs`。当前环境无微信开发者工具 GUI，需真机点加号确认能打开相册。
 
 ### 2026-08-28：设置页增加意向判断标准
 
