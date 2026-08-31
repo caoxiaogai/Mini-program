@@ -1,4 +1,4 @@
-<view class="notification-page__header {{embedded ? 'notification-page__header--embedded' : ''}}">
+<view class="notification-page__header {{embedded ? 'notification-page__header--embedded' : ''}} {{navigationHeight > 0 ? 'notification-page__header--measured' : ''}}" style="--notification-navigation-height: {{navigationHeight}}px;">
   <navigation-bar back="{{false}}" title="通知" title-weight="600" background="transparent" />
   <view wx:if="{{filters.length}}" class="notification-filter" role="tablist">
     <segmented-filter items="{{filters}}" active-id="{{activeFilter}}" variant="notification" bind:change="onFilterChange" />

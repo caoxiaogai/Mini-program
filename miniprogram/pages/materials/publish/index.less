@@ -40,6 +40,8 @@ page {
 
 .publish-page__image-slot--add {
   background: #f7f7f7;
+  border: 2rpx solid #e5e5e5;
+  border-radius: 20rpx;
 }
 
 .publish-page__image-slot--pressed {
@@ -82,11 +84,30 @@ page {
   position: absolute;
   top: 50%;
   left: 50%;
-  color: #cccccc;
-  font-size: 80rpx;
-  font-weight: 200;
-  line-height: 80rpx;
+  width: 58rpx;
+  height: 58rpx;
   transform: translate(-50%, -50%);
+}
+
+.publish-page__add-icon-horizontal,
+.publish-page__add-icon-vertical {
+  position: absolute;
+  border-radius: 46rpx;
+  background: #8a8e94;
+}
+
+.publish-page__add-icon-horizontal {
+  top: 27rpx;
+  left: 0;
+  width: 58rpx;
+  height: 4rpx;
+}
+
+.publish-page__add-icon-vertical {
+  top: 0;
+  left: 27rpx;
+  width: 4rpx;
+  height: 58rpx;
 }
 
 .publish-page__video-play {
@@ -140,7 +161,7 @@ page {
   flex: 1;
   width: 100%;
   min-height: 200rpx;
-  margin-top: 20rpx;
+  margin-top: 40rpx;
 }
 
 .publish-page__copy {

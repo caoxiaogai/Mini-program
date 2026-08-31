@@ -8,6 +8,7 @@ import { sortAnalysisUsers } from '../../utils/analysis-users'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import { buildReturnPath } from '../../utils/auth'
+import { getNavigationBarLayout } from '../../utils/navigation-layout'
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
 
@@ -64,6 +65,7 @@ const analysisSwipeThreshold = 40
 
 Page({
   data: {
+    analysisNavigationHeight: 91,
     analysisData: null as AnalysisViewModel | null,
     analysisTabs,
     activeAnalysisTab: 'work' as AnalysisTabId,
@@ -100,6 +102,7 @@ Page({
     ...buildTotalTrendState('day'),
   },
   onLoad(options: Record<string, string | undefined>) {
+    this.setData({ analysisNavigationHeight: getNavigationBarLayout().totalHeight })
     runAuthed(buildReturnPath('/pages/analysis/index', options), () => {
       const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
 

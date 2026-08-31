@@ -15,9 +15,6 @@ Component({
     onMaskTap() {
       this.triggerEvent('cancel')
     },
-    onCancelTap() {
-      this.triggerEvent('cancel')
-    },
     onOptionTap(event: WechatMiniprogram.TouchEvent) {
       const type = event.currentTarget.dataset.id as PublishEntryType
       this.triggerEvent('select', { type })

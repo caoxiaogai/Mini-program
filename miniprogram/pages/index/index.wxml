@@ -1,4 +1,4 @@
-<view class="home-page">
+<view class="home-page" style="--analysis-navigation-height: {{analysisNavigationHeight}}px; --notification-navigation-height: {{analysisNavigationHeight}}px;">
   <view class="home-page__tabs">
     <view class="home-page__tab-panel" hidden="{{activeTabIndex !== 0}}">
       <scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">
@@ -64,7 +64,7 @@
         </view>
       </scroll-view>
     </view>
-    <view class="home-page__tab-panel home-page__notification-panel" hidden="{{activeTabIndex !== 1}}"><notification-header embedded="{{true}}" filters="{{notifications.filters}}" active-filter="{{activeNotificationFilter}}" bind:filtertap="onNotificationFilterTap" /><scroll-view scroll-y class="home-page__tab-scroll home-page__notification-scroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh"><home-notifications notifications="{{notifications}}" active-filter="{{activeNotificationFilter}}" visible-groups="{{visibleNotificationGroups}}" has-visible-groups="{{hasVisibleNotificationGroups}}" bind:cardtap="onNotificationCardTap" bind:contactaction="onNotificationContactAction" /></scroll-view></view>
+    <view class="home-page__tab-panel home-page__notification-panel" hidden="{{activeTabIndex !== 1}}"><notification-header embedded="{{true}}" navigation-height="{{analysisNavigationHeight}}" filters="{{notifications.filters}}" active-filter="{{activeNotificationFilter}}" bind:filtertap="onNotificationFilterTap" /><scroll-view scroll-y class="home-page__tab-scroll home-page__notification-scroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh"><home-notifications notifications="{{notifications}}" active-filter="{{activeNotificationFilter}}" visible-groups="{{visibleNotificationGroups}}" has-visible-groups="{{hasVisibleNotificationGroups}}" bind:cardtap="onNotificationCardTap" bind:contactaction="onNotificationContactAction" /></scroll-view></view>
     <view class="home-page__tab-panel home-page__materials-panel" hidden="{{activeTabIndex !== 2}}">
       <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}">
         <view class="materials-page__base"></view>
@@ -126,7 +126,7 @@
       </view>
     </view>
     <view class="home-page__tab-panel home-page__analysis-panel" hidden="{{activeTabIndex !== 3}}">
-      <analysis-header embedded="{{true}}" analysis-tabs="{{analysisTabs}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-tab-offset="{{analysisTabOffset}}" bind:analysistabtap="onAnalysisTabTap" bind:analysistouchstart="onAnalysisTouchStart" bind:analysistouchend="onAnalysisTouchEnd" />
+      <analysis-header embedded="{{true}}" navigation-height="{{analysisNavigationHeight}}" analysis-tabs="{{analysisTabs}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-tab-offset="{{analysisTabOffset}}" bind:analysistabtap="onAnalysisTabTap" bind:analysistouchstart="onAnalysisTouchStart" bind:analysistouchend="onAnalysisTouchEnd" />
       <scroll-view scroll-y class="home-page__tab-scroll home-page__analysis-scroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">
         <home-analysis embedded="{{true}}" analysis-data="{{analysisData}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-periods="{{analysisPeriods}}" active-period="{{activePeriod}}" active-analysis-sort-label="{{activeAnalysisSortLabel}}" analysis-sort-options="{{analysisSortOptions}}" analysis-sort-sheet-visible="{{analysisSortSheetVisible}}" visible-analysis-users="{{visibleAnalysisUsers}}" work-summary="{{workSummary}}" work-count="{{workCount}}" visible-analysis-cards="{{visibleAnalysisCards}}" has-analysis-cards="{{hasAnalysisCards}}" has-analysis-users="{{hasAnalysisUsers}}" total-analysis-periods="{{totalAnalysisPeriods}}" active-overview-period="{{activeOverviewPeriod}}" active-peak-period="{{activePeakPeriod}}" active-analysis-read-range="{{activeAnalysisReadRange}}" visible-analysis-read-trend="{{visibleAnalysisReadTrend}}" analysis-trend-slot-count="{{analysisTrendSlotCount}}" chart-axis-ticks="{{chartAxisTicks}}" chart-axis-max="{{chartAxisMax}}" chart-axis-scale="{{chartAxisScale}}" bind:periodtap="onAnalysisPeriodTap" bind:overviewperiodtap="onTotalOverviewPeriodTap" bind:peakperiodtap="onTotalPeakPeriodTap" bind:analysissorttap="onAnalysisSortTap" bind:analysissortoptiontap="onAnalysisSortOptionTap" bind:analysissortmasktap="onAnalysisSortMaskTap" bind:cardtap="onAnalysisCardTap" bind:usertap="onAnalysisUserTap" />
       </scroll-view>

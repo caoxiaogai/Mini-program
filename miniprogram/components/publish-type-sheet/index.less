@@ -4,9 +4,7 @@
   z-index: 1200;
   display: flex;
   align-items: flex-end;
-  background: #f5f5f5;
-  padding-bottom: env(safe-area-inset-bottom);
-  box-sizing: border-box;
+  background: transparent;
 }
 
 .publish-type-sheet__mask {
@@ -22,26 +20,11 @@
   display: flex;
   width: 100%;
   flex-direction: column;
-  gap: 20rpx;
-  animation: publish-type-sheet-panel-in 300ms ease-out both;
-}
-
-.publish-type-sheet__options {
-  overflow: hidden;
-  background: #ffffff;
-}
-
-.publish-type-sheet__cancel {
-  overflow: hidden;
-  background: #ffffff;
-}
-
-.publish-type-sheet__options {
   border-radius: 40rpx 40rpx 0 0;
-}
-
-.publish-type-sheet__cancel {
-  border-radius: 0;
+  background: #ffffff;
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+  animation: publish-type-sheet-panel-in 300ms ease-out both;
 }
 
 .publish-type-sheet__option {
@@ -58,16 +41,6 @@
 
 .publish-type-sheet__option:last-child {
   border-bottom: 0;
-}
-
-.publish-type-sheet__cancel {
-  display: flex;
-  height: 160rpx;
-  align-items: center;
-  justify-content: center;
-  color: #000000;
-  font-size: 30rpx;
-  line-height: normal;
 }
 
 .publish-type-sheet__option--pressed {

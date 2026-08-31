@@ -3,6 +3,7 @@ import type { NotificationFilterId } from '../../types/notifications'
 Component({
   properties: {
     embedded: { type: Boolean, value: false },
+    navigationHeight: { type: Number, value: 0 },
     filters: { type: Array, value: [] },
     activeFilter: { type: String, value: 'all' },
   },

@@ -1,5 +1,5 @@
-<view class="notification-page">
-  <notification-header filters="{{notifications.filters}}" active-filter="{{activeFilter}}" bind:filtertap="onFilterTap" />
+<view class="notification-page" style="--notification-navigation-height: {{notificationNavigationHeight}}px;">
+  <notification-header navigation-height="{{notificationNavigationHeight}}" filters="{{notifications.filters}}" active-filter="{{activeFilter}}" bind:filtertap="onFilterTap" />
 
   <view wx:if="{{notifications}}" class="notification-page__content">
     <view wx:if="{{hasVisibleGroups}}">

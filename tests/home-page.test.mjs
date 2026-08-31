@@ -178,7 +178,7 @@ test('content boxes render without drop shadows', () => {
   ].map(read)
 
   assert.ok(styleFiles.every((styles) => !/box-shadow\s*:/.test(styles)), 'all style files must remove box-shadow declarations')
-  const visibleBorders = styleFiles.flatMap((styles) => [...styles.matchAll(/border\s*:\s*([^;]+);/g)].map((match) => match[1].trim()).filter((value) => value !== '0' && value !== '1px solid #ebebeb'))
+  const visibleBorders = styleFiles.flatMap((styles) => [...styles.replace(/\.publish-page__image-slot--add\s*\{[^}]*\}/, '').matchAll(/border\s*:\s*([^;]+);/g)].map((match) => match[1].trim()).filter((value) => value !== '0' && value !== '1px solid #ebebeb'))
   assert.equal(visibleBorders.length, 0, 'all boxes must remove visible border declarations')
   assert.ok(styleFiles.every((styles) => !/border-color:\s*(?!transparent\b)/.test(styles)), 'all boxes must remove visible border-color declarations')
 })
@@ -778,7 +778,7 @@ test('content boxes do not render visible outlines', () => {
     'miniprogram/components/publish-success-modal/index.less',
   ].map(read)
 
-  const visibleBorders = styleFiles.flatMap((styles) => [...styles.matchAll(/border\s*:\s*([^;]+);/g)].map((match) => match[1].trim()).filter((value) => value !== '0' && value !== '1px solid #ebebeb'))
+  const visibleBorders = styleFiles.flatMap((styles) => [...styles.replace(/\.publish-page__image-slot--add\s*\{[^}]*\}/, '').matchAll(/border\s*:\s*([^;]+);/g)].map((match) => match[1].trim()).filter((value) => value !== '0' && value !== '1px solid #ebebeb'))
   assert.equal(visibleBorders.length, 0)
   assert.ok(styleFiles.every((styles) => !/border-color:\s*(?!transparent\b)/.test(styles)))
 })
@@ -1030,7 +1030,7 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   const types = read('miniprogram/types/notifications.ts')
   const config = JSON.parse(read('miniprogram/pages/notifications/notifications.json'))
 
-  assert.match(page, /<notification-header filters="\{\{notifications\.filters\}\}"/)
+  assert.match(page, /<notification-header navigation-height="\{\{notificationNavigationHeight\}\}" filters="\{\{notifications\.filters\}\}"/)
   assert.match(page, /<bottom-tab-bar items="\{\{tabItems\}\}"/)
   assert.match(page, /class="home-status-tag home-status-tag--\{\{notification\.intent\}\}"/)
   assert.match(page, /class="home-notification-card__copy"[\s\S]*class="home-status-tag home-status-tag--\{\{notification\.intent\}\}"/)
@@ -1048,10 +1048,10 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   assert.match(headerStyles, /\.notification-page__header \{[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f5f5f5 0%, #f5f5f5 65\.141%, rgba\(245, 245, 245, 0\) 100%\);/)
   assert.doesNotMatch(headerStyles, /\.notification-page__header \{[\s\S]*background-color: #ffffff;/)
   assert.match(headerStyles, /\.notification-page__header \.weui-navigation-bar__center \{[^}]*font-size: 32rpx;/)
-  assert.match(styles, /\.notification-page__content \{[\s\S]*padding: calc\(@notification-header-height \+ 20rpx\) 40rpx 220rpx;/)
+  assert.match(styles, /\.notification-page__content \{[\s\S]*padding: calc\(var\(--notification-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\) 40rpx 220rpx;/)
   assert.match(styles, /\.notification-group\s*\{[^}]*margin-top: 0;/)
   assert.match(page, /class="notification-group \{\{index > 0 \? 'notification-group--spaced' : ''\}\}"/)
-  assert.match(styles, /\.notification-group--spaced \.notification-group__date \{[^}]*margin-top: 40rpx;/)
+  assert.match(styles, /\.notification-group--spaced \{[^}]*padding-top: 40rpx;/)
   assert.match(headerStyles, /\.notification-filter \{[^}]*margin: 20rpx 40rpx 0;/)
   assert.match(segmentedStyles, /\.segmented-filter--notification \{[\s\S]*border-radius: 105rpx;[\s\S]*background: #e3e4e5;/)
   assert.match(segmentedStyles, /\.segmented-filter--notification \.segmented-filter__selection \{[^}]*border-radius: 78rpx;/)
@@ -1325,24 +1325,56 @@ test('notification header and filters stay fixed while the card list scrolls', (
   const styles = read('miniprogram/pages/notifications/notifications.less')
   const homeStyles = read('miniprogram/pages/index/index.less')
 
-  assert.match(page, /<notification-header filters="\{\{notifications\.filters\}\}"/)
+  assert.match(page, /<notification-header navigation-height="\{\{notificationNavigationHeight\}\}" filters="\{\{notifications\.filters\}\}"/)
   assert.match(page, /data-event-id="\{\{notification\.eventId\}\}"/)
   assert.match(component, /data-event-id="\{\{notification\.eventId\}\}"/)
   assert.match(homePage, /<notification-header embedded="\{\{true\}\}"[\s\S]*<scroll-view[^>]*class="home-page__tab-scroll home-page__notification-scroll"/)
-  assert.match(header, /class="notification-page__header \{\{embedded \? 'notification-page__header--embedded' : ''\}\}"/)
+  assert.match(header, /class="notification-page__header \{\{embedded \? 'notification-page__header--embedded' : ''\}\} \{\{navigationHeight > 0 \? 'notification-page__header--measured' : ''\}\}"/)
   assert.doesNotMatch(component, /notification-page__header/)
   assert.match(component, /class="notification-page notification-page--embedded"/)
   assert.match(headerStyles, /\.notification-page__header \{[\s\S]*position: fixed;[\s\S]*top: 0;[\s\S]*left: 0;[\s\S]*width: 100%;/)
   assert.match(headerStyles, /\.notification-page__header \{[\s\S]*z-index: 1001;/)
   assert.match(headerStyles, /\.notification-page__header--embedded \{[\s\S]*position: relative;/)
-  assert.match(styles, /\.notification-page__content \{[\s\S]*padding: calc\(@notification-header-height \+ 20rpx\) 40rpx 220rpx;/)
+  assert.match(styles, /\.notification-page__content \{[\s\S]*padding: calc\(var\(--notification-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\) 40rpx 220rpx;/)
   assert.match(styles, /\.notification-page--embedded \.notification-page__content \{[\s\S]*padding-top: 0;/)
   assert.match(styles, /\.notification-page--embedded \{[\s\S]*background: @app-page-background;/)
   assert.match(homeStyles, /\.home-page__notification-panel \{[\s\S]*position: relative;/)
   assert.match(homeStyles, /\.home-page__notification-panel > notification-header \{[\s\S]*position: absolute;[\s\S]*z-index: 1001;/)
-  assert.match(homeStyles, /\.home-page__notification-panel \.notification-page--embedded \.notification-page__content \{[\s\S]*padding-top: calc\(@notification-header-height \+ 20rpx\);/)
+  assert.match(homeStyles, /\.home-page__notification-panel \.notification-page--embedded \.notification-page__content \{[\s\S]*padding-top: calc\(var\(--notification-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\);/)
   assert.match(homeStyles, /\.home-page__notification-panel \{[\s\S]*background: @app-page-background;/)
   assert.match(homeStyles, /\.home-page__notification-scroll \{[\s\S]*background: @app-page-background;/)
+})
+
+test('notification header and content use the measured navigation height instead of CSS safe-area fallback', () => {
+  const standaloneMarkup = read('miniprogram/pages/notifications/notifications.wxml')
+  const standaloneLogic = read('miniprogram/pages/notifications/notifications.ts')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const homeStyles = read('miniprogram/pages/index/index.less')
+  const headerMarkup = read('miniprogram/components/notification-header/index.wxml')
+  const headerStyles = read('miniprogram/components/notification-header/index.less')
+  const styles = read('miniprogram/pages/notifications/notifications.less')
+
+  assert.match(standaloneLogic, /getNavigationBarLayout\(\)\.totalHeight/)
+  assert.match(standaloneMarkup, /--notification-navigation-height: \{\{notificationNavigationHeight\}\}px/)
+  assert.match(homeMarkup, /--notification-navigation-height: \{\{analysisNavigationHeight\}\}px/)
+  assert.match(standaloneMarkup, /<notification-header[^>]*navigation-height="\{\{notificationNavigationHeight\}\}"/)
+  assert.match(homeMarkup, /<notification-header[^>]*navigation-height="\{\{analysisNavigationHeight\}\}"/)
+  assert.match(headerMarkup, /--notification-navigation-height: \{\{navigationHeight\}\}px/)
+  assert.match(headerStyles, /\.notification-page__header--measured \{[^}]*height: calc\(var\(--notification-navigation-height\) \+ 84rpx\);/)
+  assert.match(styles, /var\(--notification-navigation-height, 91px\)/)
+  assert.match(homeStyles, /var\(--notification-navigation-height, 91px\)/)
+})
+
+test('notification content keeps a 20px gap after the filter and between date groups', () => {
+  const standaloneStyles = read('miniprogram/pages/notifications/notifications.less')
+  const homeStyles = read('miniprogram/pages/index/index.less')
+  const embeddedMarkup = read('miniprogram/components/home-notifications/index.wxml')
+
+  assert.match(standaloneStyles, /\.notification-page__content \{[\s\S]*padding: calc\(var\(--notification-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\) 40rpx 220rpx;/)
+  assert.match(homeStyles, /\.home-page__notification-panel \.notification-page--embedded \.notification-page__content \{[\s\S]*padding-top: calc\(var\(--notification-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\);/)
+  assert.match(standaloneStyles, /\.notification-group--spaced \{[^}]*padding-top: 40rpx;/)
+  assert.doesNotMatch(standaloneStyles, /\.notification-group--spaced \.notification-group__date \{[^}]*margin-top:/)
+  assert.match(embeddedMarkup, /class="notification-group \{\{index > 0 \? 'notification-group--spaced' : ''\}\}"/)
 })
 
 test('home analysis keeps the notification-style header outside its scroll area', () => {
@@ -1363,10 +1395,10 @@ test('home analysis keeps the notification-style header outside its scroll area'
   assert.match(home, /home-page__analysis-panel[\s\S]*<analysis-header embedded="\{\{true\}\}"[\s\S]*<scroll-view[^>]*home-page__analysis-scroll[\s\S]*<home-analysis embedded="\{\{true\}\}"/)
   assert.match(component, /class="analysis-page \{\{embedded \? 'analysis-page--embedded' : ''\}\}"/)
   assert.match(component, /wx:if="\{\{!embedded\}\}" class="analysis-page__header"/)
-  assert.match(header, /class="analysis-page__header \{\{embedded \? 'analysis-page__header--embedded' : ''\}\}"/)
+  assert.match(header, /class="analysis-page__header \{\{embedded \? 'analysis-page__header--embedded' : ''\}\} \{\{navigationHeight > 0 \? 'analysis-page__header--measured' : ''\}\}"/)
   assert.match(header, /<segmented-filter items="\{\{analysisTabs\}\}" active-id="\{\{activeAnalysisTab\}\}" variant="notification" bind:change="onAnalysisTabTap"/)
   assert.match(headerStyles, /\.analysis-page__header--embedded \{[\s\S]*position: relative;[\s\S]*top: auto;[\s\S]*left: auto;/)
-  assert.match(styles, /\.analysis-page--embedded \.analysis-page__content--work \{[\s\S]*padding-top: 40rpx;/)
+  assert.match(styles, /\.analysis-page--embedded \.analysis-page__content--work \{[\s\S]*padding-top: calc\(var\(--analysis-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\);/)
   assert.match(headerStyles, /\.analysis-page__header \{[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f5f5f5 0%, #f5f5f5 65\.141%, rgba\(245, 245, 245, 0\) 100%\);/)
   const homeStyles = read('miniprogram/pages/index/index.less')
   assert.match(homeStyles, /\.home-page__analysis-panel \{[\s\S]*position: relative;/)
@@ -2170,7 +2202,65 @@ test('analysis top reuses the notification gradient and segmented control', () =
   assert.match(markup, /<segmented-filter items="\{\{analysisTabs\}\}" active-id="\{\{activeAnalysisTab\}\}" variant="notification" bind:change="onAnalysisTabTap"/)
   assert.equal(componentConfig.usingComponents['segmented-filter'], '/components/segmented-filter/index')
   assert.match(headerStyles, /\.analysis-page__header \{[\s\S]*position: fixed;[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f5f5f5 0%, #f5f5f5 65\.141%, rgba\(245, 245, 245, 0\) 100%\);/)
-  assert.match(styles, /\.analysis-page__content \{[^}]*padding: calc\(@notification-header-height \+ 20rpx\) 40rpx 220rpx;/)
+  assert.match(styles, /\.analysis-page__content \{[^}]*padding: calc\(var\(--analysis-navigation-height, 91px\) \+ @page-top-tab-height \+ 20rpx\) 40rpx 220rpx;/)
+})
+
+test('analysis tabs keep their first visible content 20px below the fixed header', () => {
+  const styles = read('miniprogram/pages/analysis/index.less')
+  const ruleBody = (source, selector) => {
+    const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return source.match(new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`))?.[1] ?? ''
+  }
+  const measuredOffset = (rule, property) => {
+    const extra = Number(rule.match(new RegExp(`${property}\\s*:\\s*calc\\(var\\(--analysis-navigation-height, 91px\\) \\+ @page-top-tab-height \\+ (\\d+)rpx\\)`))?.[1] ?? Number.NaN)
+    return 64 + extra
+  }
+  const rpxValue = (rule, property) => Number(rule.match(new RegExp(`${property}\\s*:\\s*(\\d+)rpx`))?.[1] ?? Number.NaN)
+
+  const headerBottom = 84
+  const defaultContentTop = measuredOffset(ruleBody(styles, '.analysis-page__content'), 'padding')
+  const workContentTop = measuredOffset(ruleBody(styles, '.analysis-page__content--work'), 'padding-top')
+  const embeddedContentTop = measuredOffset(ruleBody(styles, '.analysis-page--embedded .analysis-page__content'), 'padding-top')
+  const embeddedWorkRule = ruleBody(styles, '.analysis-page--embedded .analysis-page__content--work')
+  const embeddedWorkContentTop = measuredOffset(embeddedWorkRule, 'padding-top') || workContentTop
+  const userPanelTop = rpxValue(ruleBody(styles, '.analysis-user-panel'), 'margin-top')
+  const totalPanelTop = rpxValue(ruleBody(styles, '.analysis-total-panel'), 'margin-top')
+
+  assert.deepEqual({
+    standaloneWork: workContentTop - headerBottom,
+    standaloneUser: defaultContentTop + userPanelTop - headerBottom,
+    standaloneTotal: defaultContentTop + totalPanelTop - headerBottom,
+    embeddedWork: embeddedWorkContentTop - headerBottom,
+    embeddedUser: embeddedContentTop + userPanelTop - headerBottom,
+    embeddedTotal: embeddedContentTop + totalPanelTop - headerBottom,
+  }, {
+    standaloneWork: 40,
+    standaloneUser: 40,
+    standaloneTotal: 40,
+    embeddedWork: 40,
+    embeddedUser: 40,
+    embeddedTotal: 40,
+  })
+})
+
+test('analysis header and content use the measured navigation height instead of CSS safe-area fallback', () => {
+  const standaloneMarkup = read('miniprogram/pages/analysis/index.wxml')
+  const standaloneLogic = read('miniprogram/pages/analysis/index.ts')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const headerMarkup = read('miniprogram/components/analysis-header/index.wxml')
+  const styles = read('miniprogram/pages/analysis/index.less')
+
+  assert.match(standaloneLogic, /getNavigationBarLayout\(\)\.totalHeight/)
+  assert.match(homeLogic, /getNavigationBarLayout\(\)\.totalHeight/)
+  assert.match(standaloneMarkup, /--analysis-navigation-height: \{\{analysisNavigationHeight\}\}px/)
+  assert.match(homeMarkup, /--analysis-navigation-height: \{\{analysisNavigationHeight\}\}px/)
+  assert.match(standaloneMarkup, /<analysis-header[^>]*navigation-height="\{\{analysisNavigationHeight\}\}"/)
+  assert.match(homeMarkup, /<analysis-header[^>]*navigation-height="\{\{analysisNavigationHeight\}\}"/)
+  assert.match(headerMarkup, /--analysis-navigation-height: \{\{navigationHeight\}\}px/)
+  assert.match(read('miniprogram/components/analysis-header/index.less'), /\.analysis-page__header--measured \{[^}]*height: calc\(var\(--analysis-navigation-height\) \+ 84rpx\);/)
+  assert.match(styles, /var\(--analysis-navigation-height, 91px\)/)
+  assert.doesNotMatch(styles, /padding(?:-top)?: calc\(@notification-header-height/)
 })
 
 test('analysis sort sheet hides the root tab bar while it is open', () => {
@@ -2319,7 +2409,7 @@ test('analysis work filters match Figma 517:3836', () => {
   const styles = read('miniprogram/pages/analysis/index.less')
   const componentStyles = read('miniprogram/components/segmented-filter/index.less')
 
-  assert.match(styles, /\.analysis-page__content--work \{[\s\S]*padding-top: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: @app-page-background;/)
+  assert.match(styles, /\.analysis-page__content--work \{[\s\S]*padding-top: calc\(var\(--analysis-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\);[\s\S]*background: @app-page-background;/)
   assert.match(styles, /\.analysis-filters--redesign\s*\{[\s\S]*margin-top: 0;[\s\S]*justify-content: flex-start;[\s\S]*gap: 20px;/)
   assert.match(markup, /<segmented-filter items="\{\{analysisPeriods\}\}" active-id="\{\{activePeriod\}\}" item-width="68" bind:change="onPeriodTap" \/>/)
   assert.match(componentStyles, /\.segmented-filter \{[\s\S]*height: 64rpx;[\s\S]*padding: @segmented-filter-vertical-inset;[\s\S]*border-radius: 20rpx;[\s\S]*background: #e0e0e0;/)

@@ -1,8 +1,8 @@
 page { min-height: 100vh; background: @app-page-background; }
 .analysis-page { min-height: 100vh; background: @app-page-background; color: #000; }
-.analysis-page__content { position: relative; z-index: 1; padding: calc(@notification-header-height + 20rpx) 40rpx 220rpx; background: @app-page-background; box-sizing: border-box; }
+.analysis-page__content { position: relative; z-index: 1; padding: calc(var(--analysis-navigation-height, 91px) + @page-top-tab-height + 20rpx) 40rpx 220rpx; background: @app-page-background; box-sizing: border-box; }
 .analysis-page--embedded { background: @app-page-background; }
-.analysis-page--embedded .analysis-page__content { padding-top: 0; }
+.analysis-page--embedded .analysis-page__content { padding-top: calc(var(--analysis-navigation-height, 91px) + @page-top-tab-height + 20rpx); }
 .analysis-filters { display: flex; align-items: center; justify-content: space-between; margin-top: 40rpx; }
 .analysis-sort { display: flex; align-items: stretch; height: 64rpx; padding: @segmented-filter-vertical-inset; border-radius: 20rpx; background: #e0e0e0; box-sizing: border-box; }
 .analysis-sort__inner { display: flex; align-items: center; justify-content: center; gap: 8rpx; height: auto; padding: 0 20rpx; border-radius: 16rpx; background: #ffffff; color: #000000; font-size: 26rpx; line-height: normal; white-space: nowrap; box-sizing: border-box; }
@@ -105,8 +105,8 @@ page { min-height: 100vh; background: @app-page-background; }
 .analysis-total__chart--axis .analysis-total__trend-chart { height: 336rpx; }
 
 /* Figma 743:3561 — works analysis content card. */
-.analysis-page__content--work { min-height: calc(100vh - @notification-header-height); padding-top: calc(@notification-header-height + 20rpx); padding-bottom: 200rpx; background: @app-page-background; }
-.analysis-page--embedded .analysis-page__content--work { min-height: 100%; padding-top: 40rpx; }
+.analysis-page__content--work { min-height: calc(100vh - var(--analysis-navigation-height, 91px) - @page-top-tab-height); padding-top: calc(var(--analysis-navigation-height, 91px) + @page-top-tab-height + 60rpx); padding-bottom: 200rpx; background: @app-page-background; }
+.analysis-page--embedded .analysis-page__content--work { min-height: 100%; padding-top: calc(var(--analysis-navigation-height, 91px) + @page-top-tab-height + 60rpx); }
 .analysis-work-panel--figma { display: flex; flex-direction: column; gap: 20px; }
 .analysis-summary--redesign { margin-top: 0; }
 .analysis-summary--redesign .analysis-summary__card { height: auto; flex-direction: row; align-items: flex-start; justify-content: flex-start; gap: 5px; padding: 15px 20px; padding-left: 20px; border-radius: 12px; background: #ffffff; text-align: left; }

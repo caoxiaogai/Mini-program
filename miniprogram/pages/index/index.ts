@@ -27,6 +27,7 @@ import { buildReturnPath } from '../../utils/auth'
 import { isPdfFileName, MAX_IMAGE_COUNT, MAX_VIDEO_DURATION_SECONDS, mediaFilesToPublishItems } from '../../utils/publish-media'
 import type { PublishEntryType } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
+import { getNavigationBarLayout } from '../../utils/navigation-layout'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
@@ -92,6 +93,7 @@ Page({
   publishSuccessShared: false,
   authReady: false,
   data: {
+    analysisNavigationHeight: 91,
     greetingHeadline: getHomeGreeting(),
     greetingSubtitle: '今日阳光明媚，祝你好运☀️',
     homeData: null as HomePageViewModel | null,
@@ -158,7 +160,10 @@ Page({
   },
   onLoad(options: Record<string, string | undefined>) {
     const { platform } = wx.getSystemInfoSync()
-    this.setData({ isAndroid: platform === 'android' || platform === 'devtools' })
+    this.setData({
+      analysisNavigationHeight: getNavigationBarLayout().totalHeight,
+      isAndroid: platform === 'android' || platform === 'devtools',
+    })
     runAuthed(buildReturnPath(HOME_PAGE_PATH, options), () => this.startHome(options))
   },
   startHome(options: Record<string, string | undefined>) {

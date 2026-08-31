@@ -3,6 +3,7 @@ Component({
     title: { type: String, value: '分析' },
     titleWeight: { type: Number, value: 700 },
     embedded: { type: Boolean, value: false },
+    navigationHeight: { type: Number, value: 0 },
     back: { type: Boolean, value: false },
     analysisTabs: { type: Array, value: [] },
     activeAnalysisTab: { type: String, value: 'work' },

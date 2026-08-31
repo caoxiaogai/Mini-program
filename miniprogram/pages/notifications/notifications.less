@@ -20,7 +20,7 @@ page {
 .notification-page__content {
   position: relative;
   z-index: 1;
-  padding: calc(@notification-header-height + 20rpx) 40rpx 220rpx;
+  padding: calc(var(--notification-navigation-height, 91px) + @page-top-tab-height + 60rpx) 40rpx 220rpx;
   background: @app-page-background;
   box-sizing: border-box;
 }
@@ -55,9 +55,9 @@ page {
   line-height: 40rpx;
 }
 
-// Add the separation directly to later date titles so their position is explicit.
-.notification-group--spaced .notification-group__date {
-  margin-top: 40rpx;
+// Keep each later date heading 20px below the previous notification card.
+.notification-group--spaced {
+  padding-top: 40rpx;
 }
 
 .notification-empty-state {

@@ -45,7 +45,10 @@
         aria-role="button"
         aria-label="添加素材"
       >
-        <text class="publish-page__add-icon">+</text>
+        <view class="publish-page__add-icon" aria-hidden="true">
+          <view class="publish-page__add-icon-horizontal"></view>
+          <view class="publish-page__add-icon-vertical"></view>
+        </view>
       </view>
     </view>
 

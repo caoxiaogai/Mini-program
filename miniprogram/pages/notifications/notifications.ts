@@ -5,6 +5,7 @@ import { persistViewedNotification, persistViewedNotifications } from '../../uti
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed } from '../../utils/notifications'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
+import { getNavigationBarLayout } from '../../utils/navigation-layout'
 
 type NotificationTabId = 'home' | 'notifications' | 'analysis' | 'profile'
 
@@ -26,6 +27,7 @@ function getVisibleNotificationGroups(groups: NotificationGroupViewModel[], filt
 
 Page({
   data: {
+    notificationNavigationHeight: 91,
     notifications: null as NotificationsViewModel | null,
     activeFilter: 'all' as NotificationFilterId,
     tabItems: notificationTabItems,
@@ -35,6 +37,7 @@ Page({
   },
   authReady: false,
   onLoad() {
+    this.setData({ notificationNavigationHeight: getNavigationBarLayout().totalHeight })
     runAuthed('/pages/notifications/notifications', () => {
       this.authReady = true
       this.loadNotifications()

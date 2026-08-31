@@ -1,5 +1,5 @@
-<view class="analysis-page">
-  <analysis-header back="{{false}}" title-weight="600" analysis-tabs="{{analysisTabs}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-tab-offset="{{analysisTabOffset}}" bind:analysistabtap="onAnalysisTabTap" bind:analysistouchstart="onAnalysisTouchStart" bind:analysistouchend="onAnalysisTouchEnd" />
+<view class="analysis-page" style="--analysis-navigation-height: {{analysisNavigationHeight}}px;">
+  <analysis-header back="{{false}}" title-weight="600" navigation-height="{{analysisNavigationHeight}}" analysis-tabs="{{analysisTabs}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-tab-offset="{{analysisTabOffset}}" bind:analysistabtap="onAnalysisTabTap" bind:analysistouchstart="onAnalysisTouchStart" bind:analysistouchend="onAnalysisTouchEnd" />
   <view wx:if="{{analysisData && activeAnalysisTab === 'work'}}" class="analysis-page__content analysis-page__content--work">
     <view class="analysis-work-panel analysis-work-panel--figma">
       <view class="analysis-summary analysis-summary--redesign">
