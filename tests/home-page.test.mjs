@@ -1948,6 +1948,20 @@ test('materials header keeps the copied gradient while the list scrolls', () => 
   }
 })
 
+test('materials header reserves the navigation and filter space before the list', () => {
+  const markup = read('miniprogram/pages/materials/index.wxml')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
+  const logic = read('miniprogram/pages/materials/index.ts')
+  const styles = read('miniprogram/pages/materials/index.less')
+
+  assert.match(markup, /<view class="materials-page .*?" style="--materials-navigation-height: \{\{materialsNavigationHeight\}\}px;">/)
+  assert.match(homeMarkup, /<view class="materials-page .*?" style="--materials-navigation-height: \{\{analysisNavigationHeight\}\}px;">/)
+  assert.match(logic, /import \{ getNavigationBarLayout \} from '..\/..\/utils\/navigation-layout'/)
+  assert.match(logic, /materialsNavigationHeight: 91/)
+  assert.match(logic, /materialsNavigationHeight: getNavigationBarLayout\(\)\.totalHeight/)
+  assert.match(styles, /\.materials-page__header\s*\{[\s\S]*?height: calc\(var\(--materials-navigation-height\) \+ 84rpx\);/)
+})
+
 test('materials filter buttons stay fixed above the scrolling list', () => {
   const markup = read('miniprogram/pages/materials/index.wxml')
   const homeMarkup = read('miniprogram/pages/index/index.wxml')
