@@ -91,8 +91,10 @@ Page({
       if (!detail) return
 
       this.videoDurationSec = detail.duration
-      this.setData({
-        detail,
+      this.setData({ detail }, () => {
+        if (detail.fileType === 'VIDEO' && detail.videoUrl) {
+          this.getVideoContext()?.play()
+        }
       })
 
       if (detail.fileType === 'IMAGE' && detail.images.length > 0) {

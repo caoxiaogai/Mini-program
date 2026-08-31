@@ -16,6 +16,7 @@
           class="material-detail__video"
           src="{{detail.videoUrl}}"
           poster="{{detail.previewUrl}}"
+          autoplay
           controls
           show-center-play-btn
           show-fullscreen-btn

@@ -287,6 +287,12 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-08-31：视频素材进入详情后自动播放
+
+- 素材详情的视频加上 `autoplay`，数据渲染完成后立刻 `play()`，打开视频作品不必再点中间播放按钮。
+- 离开页面仍会暂停；播放、暂停、完播埋点不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，需真机打开视频详情确认自动开播。
+
 ### 2026-08-31：体验版打开用户轨迹不再白屏
 
 - 用户轨迹页去掉 Skyline 不支持的 `100vh + overflow: hidden` 和卡片 `overflow-y: auto`，改为与用户详情相同的页面滚动，避免真机/体验版整页空白。
