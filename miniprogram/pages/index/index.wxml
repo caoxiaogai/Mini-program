@@ -68,6 +68,7 @@
     <view class="home-page__tab-panel home-page__materials-panel" hidden="{{activeTabIndex !== 2}}">
       <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{analysisNavigationHeight}}px;">
         <view class="materials-page__base"></view>
+        <view class="materials-page__gradient" />
         <view class="materials-page__stripes" />
         <view class="materials-page__header">
           <navigation-bar back="{{false}}" title="素材" color="#000000" background="transparent" />
