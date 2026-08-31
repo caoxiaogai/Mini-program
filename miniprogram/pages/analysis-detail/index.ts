@@ -21,6 +21,7 @@ const dateRangeLimits = getDateRangeLimits()
 Page({
   data: {
     detail: null as AnalysisContentDetailViewModel | null,
+    materialId: '',
     contentPeriods,
     activePeriod: 'day' as ContentPeriodId,
     dateRangePickerVisible: false,
@@ -30,19 +31,21 @@ Page({
     twoMonthsAgoDate: dateRangeLimits.minDate,
   },
   onLoad(options: Record<string, string | undefined>) {
+    const materialId = String(options.id ?? '')
+    this.setData({ materialId })
     runAuthed(buildReturnPath('/pages/analysis-detail/index', options), () => {
-      this.loadDetail('day')
+      this.loadDetail('day', undefined, materialId)
     })
   },
   onPullDownRefresh() {
-    runPagePullRefresh(this.loadDetail(this.data.activePeriod, this.getCustomRange()))
+    runPagePullRefresh(this.loadDetail(this.data.activePeriod, this.getCustomRange(), this.data.materialId))
   },
   getCustomRange(): DateRange | undefined {
     if (this.data.activePeriod !== 'custom') return undefined
     return { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
   },
-  loadDetail(period: ContentPeriodId, dateRange?: DateRange) {
-    return getAnalysisContentDetail(period, dateRange, 'view').then((detail) => {
+  loadDetail(period: ContentPeriodId, dateRange?: DateRange, materialId = this.data.materialId) {
+    return getAnalysisContentDetail(period, dateRange, 'view', materialId).then((detail) => {
       this.setData({ detail })
     })
   },
@@ -57,7 +60,7 @@ Page({
     }
 
     this.setData({ activePeriod: periodId })
-    this.loadDetail(periodId)
+    this.loadDetail(periodId, undefined, this.data.materialId)
   },
   onDateRangeConfirm(event: WechatMiniprogram.CustomEvent<{ startDate: string; endDate: string }>) {
     const dateRange = event.detail
@@ -67,7 +70,7 @@ Page({
       customEndDate: dateRange.endDate,
       dateRangePickerVisible: false,
     })
-    this.loadDetail('custom', dateRange)
+    this.loadDetail('custom', dateRange, this.data.materialId)
   },
   onDateRangeCancel() {
     this.setData({ dateRangePickerVisible: false })

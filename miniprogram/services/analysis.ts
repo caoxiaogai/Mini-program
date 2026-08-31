@@ -499,9 +499,9 @@ export function getAnalysisOverview(
       cards,
       workCount: formatCount(dashboard.totalPublishCount),
       userSummary: [
-        { label: '高意向', value: formatCount(dashboard.highIntentCount), iconPath: '/assets/analysis/intent-summary-icon.svg' },
-        { label: '中意向', value: formatCount(dashboard.mediumIntentCount), iconPath: '/assets/analysis/intent-summary-icon.svg' },
-        { label: '低意向', value: formatCount(dashboard.lowIntentCount), iconPath: '/assets/analysis/intent-summary-icon.svg' },
+        { label: '高意向', value: formatCount(dashboard.highIntentCount), iconPath: '/assets/analysis/intent-high-icon.svg' },
+        { label: '中意向', value: formatCount(dashboard.mediumIntentCount), iconPath: '/assets/analysis/intent-middle-icon.svg' },
+        { label: '低意向', value: formatCount(dashboard.lowIntentCount), iconPath: '/assets/analysis/intent-low-icon.svg' },
       ],
       audienceUsers: customers.map((customer, index) => {
         const customerId = String(customer.customerId)
@@ -587,6 +587,7 @@ export function getAnalysisContentDetail(
   period: AnalysisTimeRange = 'day',
   customRange?: DateRange,
   sortId: AnalysisWorkSortId = 'view',
+  materialId?: string,
 ): Promise<AnalysisContentDetailViewModel> {
   if (DEV_UI_PREVIEW) return Promise.resolve(getAnalysisContentDetailPreview())
 
@@ -602,18 +603,25 @@ export function getAnalysisContentDetail(
       () => [] as ApiIntentCustomer[],
     ),
   ]).then(async ([dashboard, contents, intentCustomers]) => {
+    const selectedMaterialId = String(materialId ?? '')
+    const selectedContents = selectedMaterialId
+      ? contents.filter((item) => String(item.materialId) === selectedMaterialId)
+      : contents
+    const selectedIntentCustomers = selectedMaterialId
+      ? intentCustomers.filter((item) => String(item.materialId ?? '') === selectedMaterialId)
+      : intentCustomers
     const [cards, intentAvatarUrls] = await Promise.all([
-      mapContentCards(contents, sortId),
-      prepareMediaUrls(intentCustomers.map((item) => item.avatar)),
+      mapContentCards(selectedContents, sortId),
+      prepareMediaUrls(selectedIntentCustomers.map((item) => item.avatar)),
     ])
-    const intentByMaterial = buildContentDetailIntentMap(intentCustomers)
+    const intentByMaterial = buildContentDetailIntentMap(selectedIntentCustomers)
 
     return {
       totalViewCount: formatCount(dashboard.totalViewCount),
       totalForwardCount: formatCount(dashboard.totalForwardCount),
       totalPublishCount: formatCount(dashboard.totalPublishCount),
-      intentUserCount: formatCount(intentCustomers.length),
-      intentUsers: mapContentIntentUsers(intentCustomers, intentAvatarUrls),
+      intentUserCount: formatCount(selectedIntentCustomers.length),
+      intentUsers: mapContentIntentUsers(selectedIntentCustomers, intentAvatarUrls),
       cards: cards.map((card) => ({
         id: card.id,
         thumbnailUrl: card.thumbnailUrl,
