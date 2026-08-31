@@ -1,7 +1,7 @@
 <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{materialsNavigationHeight}}px;">
   <view class="materials-page__base"></view>
   <view class="materials-page__gradient" />
-  <image class="materials-page__stripes" src="/assets/materials/materials-stripes.svg" mode="scaleToFill" />
+  <view class="materials-page__stripes" />
 
   <view class="materials-page__header">
     <navigation-bar back="{{true}}" title="素材" color="#000000" background="transparent" />
