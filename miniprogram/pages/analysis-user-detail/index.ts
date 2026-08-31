@@ -1,6 +1,7 @@
 import { enrichAnalysisUserDetailThumbnails, getAnalysisUserDetail } from '../../services/analysis'
 import { runAuthed } from '../../services/auth'
 import type { AnalysisUserDetailViewModel, AnalysisUserRecord } from '../../types/analysis'
+import { fromDatasetId } from '../../utils/dataset-id'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import { buildReturnPath } from '../../utils/auth'
 
@@ -98,10 +99,13 @@ Page({
     })
   },
   onUserRecordTap(event: WechatMiniprogram.TouchEvent) {
-    const contentId = event.currentTarget.dataset.contentId as string | undefined
+    const dataset = event.currentTarget.dataset as WechatMiniprogram.IAnyObject
+    const contentId = fromDatasetId(dataset.contentId ?? dataset['content-id'])
     if (!contentId || !this.userId) return
 
-    wx.navigateTo({ url: `/pages/analysis-user-journey/index?userId=${this.userId}&materialId=${contentId}` })
+    wx.navigateTo({
+      url: `/pages/analysis-user-journey/index?userId=${encodeURIComponent(this.userId)}&materialId=${encodeURIComponent(contentId)}`,
+    })
   },
   showNotice() {
     if (this.noticeTimer !== null) {

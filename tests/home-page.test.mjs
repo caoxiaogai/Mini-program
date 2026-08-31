@@ -1502,7 +1502,7 @@ test('user detail page follows Figma 497:4640', () => {
   assert.match(markup, /class="user-detail__records"/)
   assert.match(markup, /class="user-detail__records-header"[\s\S]*class="user-detail__records-icon" src="\/assets\/analysis\/reading-record-icon\.svg"[\s\S]*class="user-detail__records-title">浏览记录<\/text>/)
   assert.match(markup, /class="user-detail__records-body"[\s\S]*<segmented-filter/)
-  assert.match(markup, /class="user-detail__record" bindtap="onUserRecordTap" data-content-id="\{\{item\.contentId\}\}"/)
+  assert.match(markup, /class="user-detail__record" bindtap="onUserRecordTap" data-content-id="id:\{\{item\.contentId\}\}"/)
   assert.match(markup, /浏览记录/)
   assert.doesNotMatch(markup, /user-detail__record-tabs/)
   assert.match(markup, /微信名称复制成功，/)
@@ -1682,11 +1682,20 @@ test('user journey line reaches the final event', () => {
 
 test('user journey track fills the available view and leaves 20px before the contact button', () => {
   const styles = read('miniprogram/pages/analysis-user-journey/index.less')
+  const markup = read('miniprogram/pages/analysis-user-journey/index.wxml')
+  const logic = read('miniprogram/pages/analysis-user-journey/index.ts')
 
-  assert.match(styles, /\.user-journey-page \{[\s\S]*height: 100vh;[\s\S]*overflow: hidden;/)
-  assert.match(styles, /\.user-journey-page__content \{[\s\S]*display: flex;[\s\S]*min-height: 0;[\s\S]*flex: 1;[\s\S]*padding: 30rpx 40rpx 0;/)
-  assert.match(styles, /\.user-journey-track-card \{[\s\S]*min-height: 0;[\s\S]*flex: 1;[\s\S]*margin: 40rpx 0;/)
+  const pageRule = styles.match(/\.user-journey-page \{([^}]*)\}/)?.[1] ?? ''
+  const trackRule = styles.match(/\.user-journey-track-card \{([^}]*)\}/)?.[1] ?? ''
+  assert.match(pageRule, /min-height: 100vh;/)
+  assert.doesNotMatch(pageRule, /overflow/)
+  assert.doesNotMatch(trackRule, /overflow/)
+  assert.match(styles, /\.user-journey-page__content \{[\s\S]*display: flex;[\s\S]*padding: 30rpx 40rpx 0;/)
+  assert.match(styles, /\.user-journey-track-card \{[\s\S]*margin: 40rpx 0;/)
   assert.match(styles, /\.user-journey-contact \{[\s\S]*position: static;[\s\S]*margin: 0 40rpx 48rpx;/)
+  assert.match(markup, /status === 'loading'/)
+  assert.match(markup, /status === 'error'/)
+  assert.match(logic, /status: 'success'/)
 })
 
 test('user detail history merges the same work into one record', async () => {
@@ -1743,6 +1752,8 @@ test('dataset ids keep snowflake customer ids as strings', async () => {
   assert.match(analysisMarkup, /data-id="id:\{\{item\.id\}\}"/)
   assert.match(detailMarkup, /data-id="id:\{\{item\.userId\}\}"/)
   assert.match(notificationsMarkup, /data-id="id:\{\{notification\.userId\}\}"/)
+  assert.match(read('miniprogram/pages/analysis-user-detail/index.wxml'), /data-content-id="id:\{\{item\.contentId\}\}"/)
+  assert.match(userDetailLogic, /fromDatasetId/)
   assert.match(userDetailLogic, /\[analysis-user-detail\] load failed/)
 })
 
@@ -1755,10 +1766,12 @@ test('user detail records resolve per-work intent and high-intent work count', a
   assert.equal(resolveIntentLevelFromCounts(3, 2), 'high')
 })
 
-test('tapping a user reading record opens that user’s product trajectory', () => {
+test('tapping a user reading record opens that user’s product trajectory', async () => {
+  const { fromDatasetId } = await import('../miniprogram/utils/dataset-id.ts')
   const navigatedUrls = []
   const page = loadPageDefinition('miniprogram/pages/analysis-user-detail/index.ts', {
     getAnalysisUserDetail: () => Promise.resolve(null),
+    fromDatasetId,
     wx: {
       navigateTo: ({ url }) => navigatedUrls.push(url),
     },
@@ -1767,7 +1780,7 @@ test('tapping a user reading record opens that user’s product trajectory', () 
   assert.equal(typeof page.onUserRecordTap, 'function')
 
   page.userId = 'customer-7'
-  page.onUserRecordTap({ currentTarget: { dataset: { contentId: 'material-56' } } })
+  page.onUserRecordTap({ currentTarget: { dataset: { contentId: 'id:material-56' } } })
 
   assert.deepEqual(navigatedUrls, ['/pages/analysis-user-journey/index?userId=customer-7&materialId=material-56'])
 })
@@ -1792,7 +1805,7 @@ test('publish belongs to the root swiper and does not navigate to a separate mat
   assert.match(read('miniprogram/utils/publish-return.ts'), /\/pages\/index\/index/)
 })
 
-test('publish page picks image/video from the album and PDF from chat files', () => {
+test('publish page picks image/video from camera or album and PDF from chat files', () => {
   const markup = read('miniprogram/pages/materials/publish/index.wxml')
   const logic = read('miniprogram/pages/materials/publish/index.ts')
   const entryLogic = read('miniprogram/pages/index/index.ts')
@@ -1803,15 +1816,19 @@ test('publish page picks image/video from the album and PDF from chat files', ()
 
   assert.match(markup, /bindtap="onAddMediaTap"/)
   assert.match(markup, /<publish-type-sheet[\s\S]*visible="\{\{publishTypeSheetVisible\}\}"/)
-  assert.doesNotMatch(markup, /sourceSheetVisible/)
+  assert.match(markup, /<publish-type-sheet kind="source"[\s\S]*visible="\{\{publishSourceSheetVisible\}\}"/)
   assert.match(picker, /label: '图片'/)
   assert.match(picker, /label: '视频'/)
   assert.match(picker, /label: 'PDF'/)
+  assert.match(picker, /label: '拍摄'/)
+  assert.match(picker, /label: '从相册选择'/)
   assert.match(picker, /export function getPublishTypeOptions/)
-  assert.match(logic, /wx\.chooseMedia\(/)
+  assert.match(picker, /sourceType: \[options\.source\]/)
+  assert.match(logic, /choosePublishImageOrVideo\(/)
   assert.match(logic, /onAddMediaTap\(\) \{[\s\S]*media\.length === 0[\s\S]*publishTypeSheetVisible: true/)
-  assert.match(logic, /onAddMediaTap\(\) \{[\s\S]*chooseImageOrVideo\(\['album'\]\)/)
+  assert.match(logic, /onAddMediaTap\(\) \{[\s\S]*publishSourceSheetVisible: true/)
   assert.match(logic, /this\.pendingMediaType === 'video'/)
+  assert.match(logic, /chooseImageOrVideo\(source\)/)
   assert.doesNotMatch(logic, /mediaType: \['image', 'video'\]/)
   assert.match(logic, /wx\.chooseMessageFile\(/)
   assert.match(logic, /type: 'file'/)

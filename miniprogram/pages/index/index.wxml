@@ -145,6 +145,7 @@
   <notification-mark-all-read wx:if="{{activeTabIndex === 1 && unreadNotificationCount}}" unread-count="{{unreadNotificationCount}}" bind:markallread="onMarkAllReadTap" />
   <bottom-tab-bar wx:if="{{!analysisSortSheetVisible}}" items="{{tabItems}}" plus-active="{{plusActive}}" bind:tabtap="onTabTap" bind:plus="onPlusTap" />
   <publish-type-sheet visible="{{publishTypeSheetVisible}}" bind:select="onPublishTypeSelect" bind:cancel="onPublishTypeCancel" />
+  <publish-type-sheet kind="source" visible="{{publishSourceSheetVisible}}" bind:select="onPublishSourceSelect" bind:cancel="onPublishSourceCancel" />
   <publish-success-modal
     visible="{{showPublishSuccessModal}}"
     share-ready="{{shareImageUrl ? true : false}}"

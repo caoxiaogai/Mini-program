@@ -20,6 +20,34 @@ export const PUBLISH_SOURCE_OPTIONS = [
   { id: 'album', label: '从相册选择' },
 ] as const
 
+export type PublishMediaSource = (typeof PUBLISH_SOURCE_OPTIONS)[number]['id']
+
+export function isPickerCancel(errMsg?: string): boolean {
+  return typeof errMsg === 'string' && /cancel/i.test(errMsg)
+}
+
+export function showPublishPickerError(errMsg?: string): void {
+  if (!isPickerCancel(errMsg)) wx.showToast({ title: '选择失败，请稍后重试', icon: 'none' })
+}
+
+export function choosePublishImageOrVideo(options: {
+  type: 'image' | 'video'
+  source: PublishMediaSource
+  count: number
+}): Promise<PublishMediaViewModel[]> {
+  return new Promise((resolve, reject) => {
+    wx.chooseMedia({
+      count: Math.max(options.count, 1),
+      mediaType: [options.type],
+      sourceType: [options.source],
+      maxDuration: MAX_VIDEO_DURATION_SECONDS,
+      sizeType: ['compressed'],
+      success: (result) => resolve(mediaFilesToPublishItems(result.tempFiles, result.type)),
+      fail: (error) => reject(error),
+    })
+  })
+}
+
 export function getPublishEntryType(value: string | undefined): PublishEntryType | null {
   if (value === 'image' || value === 'video' || value === 'pdf') return value
   return null

@@ -6,8 +6,8 @@ import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
-import { isPdfFileName, MAX_IMAGE_COUNT, MAX_VIDEO_DURATION_SECONDS, mediaFilesToPublishItems } from '../../utils/publish-media'
-import type { PublishEntryType } from '../../utils/publish-media'
+import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
+import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
 
 type MaterialsTabId = 'home' | 'notifications' | 'analysis' | 'profile'
@@ -47,12 +47,9 @@ function getVisibleMaterials(items: MaterialCardViewModel[], filterId: Materials
   return filterId === 'all' ? items : items.filter((item) => item.kind === filterId)
 }
 
-function isUserCancel(errMsg?: string): boolean {
-  return typeof errMsg === 'string' && /cancel/i.test(errMsg)
-}
-
 Page({
   publishSuccessShared: false,
+  pendingPublishType: null as 'image' | 'video' | null,
   data: {
     materials: null as MaterialsViewModel | null,
     tabItems: materialsTabItems,
@@ -68,6 +65,7 @@ Page({
     shareImageUrl: '',
     pullRefreshing: false,
     publishTypeSheetVisible: false,
+    publishSourceSheetVisible: false,
   },
   authReady: false,
   onLoad(options: Record<string, string | undefined>) {
@@ -145,6 +143,9 @@ Page({
   onPublishTypeCancel() {
     this.setData({ publishTypeSheetVisible: false })
   },
+  onPublishSourceCancel() {
+    this.setData({ publishSourceSheetVisible: false })
+  },
   onPublishTypeSelect(event: WechatMiniprogram.CustomEvent<{ type: PublishEntryType }>) {
     const type = event.detail.type
     this.setData({ publishTypeSheetVisible: false }, () => {
@@ -152,21 +153,33 @@ Page({
         this.choosePdfForPublish()
         return
       }
-
-      wx.chooseMedia({
-        count: type === 'image' ? MAX_IMAGE_COUNT : 1,
-        mediaType: [type],
-        sourceType: ['album'],
-        maxDuration: MAX_VIDEO_DURATION_SECONDS,
-        success: (result) => {
-          setPendingPublishSelection({ type, media: mediaFilesToPublishItems(result.tempFiles, result.type) })
-          wx.navigateTo({ url: `/pages/materials/publish/index?type=${type}` })
-        },
-        fail: (error) => {
-          if (!isUserCancel(error.errMsg)) wx.showToast({ title: '选择失败，请稍后重试', icon: 'none' })
-        },
-      })
+      if (type !== 'image' && type !== 'video') return
+      this.pendingPublishType = type
+      this.setData({ publishSourceSheetVisible: true })
     })
+  },
+  onPublishSourceSelect(event: WechatMiniprogram.CustomEvent<{ source: PublishMediaSource }>) {
+    const type = this.pendingPublishType
+    const source = event.detail.source
+    this.setData({ publishSourceSheetVisible: false }, () => {
+      if (!type) return
+      if (source !== 'camera' && source !== 'album') return
+      this.openPublishEditorFromPicker(type, source)
+    })
+  },
+  openPublishEditorFromPicker(type: 'image' | 'video', source: PublishMediaSource) {
+    choosePublishImageOrVideo({
+      type,
+      source,
+      count: type === 'image' ? MAX_IMAGE_COUNT : 1,
+    })
+      .then((media) => {
+        setPendingPublishSelection({ type, media })
+        wx.navigateTo({ url: `/pages/materials/publish/index?type=${type}` })
+      })
+      .catch((error: WechatMiniprogram.GeneralCallbackResult) => {
+        showPublishPickerError(error.errMsg)
+      })
   },
   choosePdfForPublish() {
     wx.chooseMessageFile({
@@ -188,7 +201,7 @@ Page({
         wx.navigateTo({ url: '/pages/materials/publish/index?type=pdf' })
       },
       fail: (error) => {
-        if (!isUserCancel(error.errMsg)) wx.showToast({ title: '选择失败，请稍后重试', icon: 'none' })
+        showPublishPickerError(error.errMsg)
       },
     })
   },

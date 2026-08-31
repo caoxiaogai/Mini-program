@@ -34,7 +34,7 @@
         <view class="user-detail__records-body">
           <segmented-filter items="{{recordSortOptions}}" active-id="{{activeRecordSort}}" bind:change="onRecordSortChange" />
           <view class="user-detail__records">
-            <view wx:for="{{visibleUserRecords}}" wx:key="id" class="user-detail__record" bindtap="onUserRecordTap" data-content-id="{{item.contentId}}" hover-class="user-detail__record--pressed">
+            <view wx:for="{{visibleUserRecords}}" wx:key="id" class="user-detail__record" bindtap="onUserRecordTap" data-content-id="id:{{item.contentId}}" hover-class="user-detail__record--pressed">
               <view class="user-detail__record-head">
                 <image class="user-detail__record-thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
                 <view class="user-detail__record-body">

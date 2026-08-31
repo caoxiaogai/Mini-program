@@ -19,6 +19,10 @@ export function getUserJourney(userId: string, materialId: string): Promise<User
       materialId,
     },
   }).then(async (raw) => {
+    if (!raw) {
+      throw new Error('用户轨迹为空')
+    }
+
     const thumbnailUrl = await prepareMaterialThumbnail({
       id: String(raw.materialId ?? materialId),
       fileType: raw.fileType,

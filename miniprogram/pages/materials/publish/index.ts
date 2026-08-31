@@ -7,22 +7,17 @@ import type { MaterialSubmitInput, PublishMediaViewModel } from '../../../types/
 import { takePendingPublishSelection } from '../../../utils/publish-selection'
 import {
   canAddPublishMedia,
+  choosePublishImageOrVideo,
   isPdfFileName,
   getPublishEntryType,
   MAX_IMAGE_COUNT,
-  MAX_VIDEO_DURATION_SECONDS,
-  mediaFilesToPublishItems,
   mergePublishMedia,
+  showPublishPickerError,
 } from '../../../utils/publish-media'
-import type { PublishTypeOptionId } from '../../../utils/publish-media'
+import type { PublishEntryType, PublishMediaSource, PublishTypeOptionId } from '../../../utils/publish-media'
 import { buildReturnPath } from '../../../utils/auth'
-import type { PublishEntryType } from '../../../utils/publish-media'
 
 const initialMedia: PublishMediaViewModel[] = []
-
-function isUserCancel(errMsg?: string): boolean {
-  return typeof errMsg === 'string' && /cancel/i.test(errMsg)
-}
 
 Page({
   draftMaterialId: null as string | null,
@@ -36,6 +31,7 @@ Page({
     copy: '',
     copyFocused: false,
     publishTypeSheetVisible: false,
+    publishSourceSheetVisible: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     const selectedEntryType = getPublishEntryType(options.type)
@@ -102,7 +98,7 @@ Page({
 
     this.pendingMediaType = 'image'
     this.entryType = 'image'
-    this.chooseImageOrVideo(['album'])
+    this.setData({ publishSourceSheetVisible: true })
   },
   onPublishTypeSelect(event: WechatMiniprogram.CustomEvent<{ type: PublishEntryType }>) {
     const type = event.detail.type
@@ -114,31 +110,37 @@ Page({
       }
       if (type !== 'image' && type !== 'video') return
       this.pendingMediaType = type
-      this.chooseImageOrVideo(['album'])
+      this.setData({ publishSourceSheetVisible: true })
     })
   },
   onPublishTypeCancel() {
     this.setData({ publishTypeSheetVisible: false })
   },
-  chooseImageOrVideo(sourceType: Array<'album'>) {
+  onPublishSourceSelect(event: WechatMiniprogram.CustomEvent<{ source: PublishMediaSource }>) {
+    const source = event.detail.source
+    this.setData({ publishSourceSheetVisible: false }, () => {
+      if (source !== 'camera' && source !== 'album') return
+      this.chooseImageOrVideo(source)
+    })
+  },
+  onPublishSourceCancel() {
+    this.setData({ publishSourceSheetVisible: false })
+  },
+  chooseImageOrVideo(source: PublishMediaSource) {
     const imageCount = this.data.media.filter((item) => item.kind === 'image').length
     const remaining = this.pendingMediaType === 'video'
       ? 1
       : this.data.media.length === 0 ? MAX_IMAGE_COUNT : MAX_IMAGE_COUNT - imageCount
 
-    wx.chooseMedia({
-      count: Math.max(remaining, 1),
-      mediaType: [this.entryType === 'video' ? 'video' : 'image'],
-      sourceType,
-      maxDuration: MAX_VIDEO_DURATION_SECONDS,
-      sizeType: ['compressed'],
-      success: (result) => {
-        this.applySelectedMedia(mediaFilesToPublishItems(result.tempFiles, result.type))
-      },
-      fail: (error) => {
-        if (!isUserCancel(error.errMsg)) wx.showToast({ title: '选择失败，请稍后重试', icon: 'none' })
-      },
+    choosePublishImageOrVideo({
+      type: this.entryType === 'video' ? 'video' : 'image',
+      source,
+      count: remaining,
     })
+      .then((incoming) => this.applySelectedMedia(incoming))
+      .catch((error: WechatMiniprogram.GeneralCallbackResult) => {
+        showPublishPickerError(error.errMsg)
+      })
   },
   choosePdfFromChat() {
     wx.chooseMessageFile({
@@ -165,7 +167,7 @@ Page({
         ])
       },
       fail: (error) => {
-        if (!isUserCancel(error.errMsg)) wx.showToast({ title: '选择失败，请稍后重试', icon: 'none' })
+        showPublishPickerError(error.errMsg)
       },
     })
   },

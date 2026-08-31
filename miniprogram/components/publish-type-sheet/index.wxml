@@ -2,7 +2,7 @@
   wx:if="{{visible}}"
   class="publish-type-sheet"
   aria-role="dialog"
-  aria-label="选择发布素材类型"
+  aria-label="{{dialogLabel}}"
 >
   <view class="publish-type-sheet__mask" catchtap="onMaskTap"></view>
   <view class="publish-type-sheet__panel">

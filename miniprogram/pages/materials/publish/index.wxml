@@ -77,4 +77,5 @@
   </view>
 
   <publish-type-sheet visible="{{publishTypeSheetVisible}}" bind:select="onPublishTypeSelect" bind:cancel="onPublishTypeCancel" />
+  <publish-type-sheet kind="source" visible="{{publishSourceSheetVisible}}" bind:select="onPublishSourceSelect" bind:cancel="onPublishSourceCancel" />
 </view>
