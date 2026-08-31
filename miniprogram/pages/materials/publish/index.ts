@@ -4,10 +4,12 @@ import { ensureEmojiPresentation } from '../../../utils/emoji'
 import { returnToMaterialsList } from '../../../utils/publish-return'
 import { buildMaterialPublishPath, getPublishShareImageUrl, isPublishRemixQuery } from '../../../utils/share-material'
 import type { MaterialSubmitInput, PublishMediaViewModel } from '../../../types/materials'
+import { takePendingPublishSelection } from '../../../utils/publish-selection'
 import {
   canAddPublishMedia,
   getPublishTypeOptions,
   isPdfFileName,
+  getPublishEntryType,
   MAX_IMAGE_COUNT,
   MAX_VIDEO_DURATION_SECONDS,
   mediaFilesToPublishItems,
@@ -16,6 +18,7 @@ import {
 } from '../../../utils/publish-media'
 import type { PublishTypeOptionId } from '../../../utils/publish-media'
 import { buildReturnPath } from '../../../utils/auth'
+import type { PublishEntryType } from '../../../utils/publish-media'
 
 const initialMedia: PublishMediaViewModel[] = []
 
@@ -28,6 +31,7 @@ Page({
   draftMediaPaths: [] as string[],
   submitting: false,
   pendingMediaType: 'image' as Exclude<PublishTypeOptionId, 'pdf'>,
+  entryType: 'image' as PublishEntryType,
   data: {
     media: initialMedia,
     canAddMedia: canAddPublishMedia(initialMedia),
@@ -39,7 +43,20 @@ Page({
     sourceOptions: PUBLISH_SOURCE_OPTIONS,
   },
   onLoad(options: Record<string, string | undefined>) {
+    const selectedEntryType = getPublishEntryType(options.type)
+    const pendingSelection = takePendingPublishSelection()
+    this.entryType = pendingSelection?.type ?? selectedEntryType ?? 'image'
+    if (this.entryType === 'image' || this.entryType === 'video') this.pendingMediaType = this.entryType
+
     runAuthed(buildReturnPath(buildMaterialPublishPath(), options), () => {
+      if (pendingSelection) {
+        this.setData({
+          media: pendingSelection.media,
+          canAddMedia: canAddPublishMedia(pendingSelection.media),
+          typeOptions: getPublishTypeOptions(pendingSelection.media),
+        })
+      }
+
       const materialId = options.id
       if (!materialId) return
 
@@ -52,6 +69,7 @@ Page({
 
         this.draftMaterialId = remix ? null : draft.id
         this.draftMediaPaths = remix ? [] : draft.media.map((item) => item.path)
+        if (!selectedEntryType && draft.media[0]) this.entryType = draft.media[0].kind
 
         this.setData({
           media: draft.media,
@@ -84,6 +102,7 @@ Page({
   },
   onAddMediaTap() {
     if (!this.data.canAddMedia) return
+    if (this.entryType !== 'image' && this.entryType !== 'video') return
     this.setData({
       typeOptions: getPublishTypeOptions(this.data.media),
       typeSheetVisible: true,
@@ -107,24 +126,19 @@ Page({
     if (optionId !== 'image' && optionId !== 'video') return
 
     this.pendingMediaType = optionId
+    this.entryType = optionId
     this.setData({ typeSheetVisible: false, sourceSheetVisible: true })
   },
   onSourceOptionTap(event: WechatMiniprogram.TouchEvent) {
     const optionId = event.currentTarget.dataset.id as string
-    if (optionId === 'camera') {
-      this.setData({ sourceSheetVisible: false }, () => {
-        this.chooseImageOrVideo(['camera'])
-      })
-      return
-    }
     if (optionId !== 'album') return
 
     this.setData({ sourceSheetVisible: false }, () => {
       this.chooseImageOrVideo(['album'])
     })
   },
-  chooseImageOrVideo(sourceType: Array<'album' | 'camera'>) {
-    const mediaType = this.pendingMediaType === 'video' ? ['video'] : ['image']
+  chooseImageOrVideo(sourceType: Array<'album'>) {
+    const pendingMediaType = this.pendingMediaType === 'video' ? ['video'] : ['image']
     const imageCount = this.data.media.filter((item) => item.kind === 'image').length
     const remaining = this.pendingMediaType === 'video'
       ? 1
@@ -132,10 +146,9 @@ Page({
 
     wx.chooseMedia({
       count: Math.max(remaining, 1),
-      mediaType,
+      mediaType: [this.entryType === 'video' ? 'video' : 'image'],
       sourceType,
       maxDuration: MAX_VIDEO_DURATION_SECONDS,
-      camera: 'back',
       sizeType: ['compressed'],
       success: (result) => {
         this.applySelectedMedia(mediaFilesToPublishItems(result.tempFiles, result.type))

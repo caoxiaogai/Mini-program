@@ -27,18 +27,27 @@
 - 首页空数据状态参考节点：`486:2569`，通知空提示、作品空卡与发布入口、零值意向用户和今日数据。
 - 首页「今日最多」内容卡参考节点：`478:1620`，单个白色圆角组合卡内包含两条内容记录、分隔线和阅读/转发/高意向统计。
 - 首页底部导航参考节点：`478:1454`，悬浮胶囊、四个 24px 图标、10px 标签、发布加号和通知红点。
+- 底部导航新版样式参考节点：`723:11206`，60px 高悬浮玻璃胶囊、主题色选中面、白色选中内容、`#333333` 未选中内容，以及 5px 背景模糊和轻投影。
 - 首页低意向状态提示参考节点：`478:1612`，背景 `#F0F0F0`、文字 `#8A8E94`、48px 胶囊圆角。
-- 首页意向用户卡参考节点：`478:1568`，标题与总数、五个 24px 叠放头像以及高/中/低意向统计。
+- 首页意向用户卡参考节点：`723:11502`（替代旧节点 `478:1568`），顶部图标/标题/箭头、今日新增客户数、五个 24px 叠放头像以及高/中/低意向统计。
+- 首页今日数据卡参考节点：`723:11527`，顶部图标/标题/箭头、浏览次数与阅读人数对比、总完播/转发/观看人数及高/中/低意向统计。
 - 首页底部背景参考节点：`507:2485`，底部 88px 的透明白到不透明白渐变、7.7px 背景模糊，以及导航胶囊的 40% 白色透明填充和 5px 模糊。
+- 首页互动消息参考节点：`723:11434`，20px 圆角消息卡片、50×68px 缩略图以及超过三条后的两层灰色叠加底。
 - 通知新版参考节点：`486:1850`，白色页面、32px 下划线筛选栏、50×68px 内容缩略图、行为状态胶囊和底部悬浮导航。
-- 分析页顶部参考节点：`279:15071`，顶部状态栏、导航栏和分析标签区域使用白色背景。
+- 分析页顶部历史参考节点：`279:15071`（已由新版节点替代）。
+- 分析页新版顶部参考节点：`804:7536`，复用通知页的固定渐变顶部、透明导航栏和胶囊分析标签。
 - 分析页筛选控件参考节点：`166:9097`，日/周/月/总/日历筛选与完播数排序控件。
 - 分析页周期与排序筛选参考节点：`517:3836`，32px 高的 `#E0E0E0` 外层、2px 内边距、10px 圆角和 13px 文案。
 - 分析页用户分析参考节点：`507:1682`，高/中/低意向汇总卡、意向用户列表卡、内置意向筛选和阅读/完播/转发指标。
+- 用户分析“高/中/低意向”汇总卡参考节点：`743:4027`，三张等分白色卡片、24px 意向图标、15px 内边距、10px 卡片间距和 12px 圆角。
 - 分析页总数据参考节点：`587:8623`，日/本周/本月/总周期控件、数据总览双主指标与六项统计；浏览峰值折线图组件参考节点：`684:10088`。
 - 分析页汇总数据卡片参考节点：`127:7894`，总发布、总阅读次数和总转发三项统计卡片。
 - 分析页内容卡片参考节点：`107:7553`，内容缩略图、标题日期、打开图标和四项指标布局。
 - 分析详情页参考节点：`173:11084`，内容分析导航、内容卡片和意向用户区域。
+- 内容详情新版参考节点：`743:3538`，总阅读/转发汇总、我的作品列表、周期筛选与作品数据卡。
+- 分析作品汇总卡新版参考节点：`743:3539`，两张总阅读次数/总转发卡片及对应 24px SVG 图标。
+- 分析总数据总览卡新版参考节点：`743:5979`，数据总览图标、阅读总次数/人数主指标及 2×3 统计卡。
+- 内容详情意向用户组件新版参考节点：`743:4059`，意向用户人数、周期/阅读量筛选和用户指标列表。
 - 设计稿基准：iPhone 16，画板宽度 393px。
 - 首页新版确认日期：2026-08-24。
 
@@ -210,6 +219,7 @@ miniprogram/
 | 实现排行榜页面与排序交互 | done | Figma `311:15611` 排行榜页面、typed mock/service、本地资源与首页排名 tab 跳转已实现 |
 | 实现素材页面与发布入口视觉 | done | Figma `173:12468` 素材双列卡片、筛选交互、本地资源、首页素材 tab 跳转与顶部滚动透明度已实现 |
 | 实现素材发布页面 | done | Figma `208:13581` 发布页、最多 9 张图片、无限制文案输入、草稿/发表占位交互及成功弹窗已实现 |
+| 发布选择后直达详情页 | done | 选择图片/视频/PDF 后先打开系统相册或文件选择器，再将已选素材带入发布详情；图片支持继续追加 |
 | 实现素材详情分享页 | done | Figma `229:14271` 作品详情页、素材卡片按 id 跳转、轮播图片、描述文案、底部分享按钮与 typed service/mock 已实现 |
 | 接入后端真实接口 | done | 统一 `services/request.ts` 请求层 + 微信登录；首页/分析/通知/素材/我的头像昵称走后端数据；排行榜后端无接口，暂用 Figma 预览 mock；余额/会员为视觉占位 |
 | 首页像素级与真机适配验收 | pending | 新版首页已实现，等待开发者工具或真机进行视觉核对 |
@@ -365,6 +375,473 @@ miniprogram/
 - 小程序把 `yyyy-MM-dd HH:mm:ss` 按墙上时间拆开解析，避免无时区 ISO 被当成 UTC。
 - 已经写进服务器库的旧记录仍是 UTC 墙上时间，新浏览会是北京时间。如需纠正历史数据，把对应 `create_time` 加 8 小时。
 - 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。需重新构建并部署 aisales。当前环境无微信开发者工具 GUI。
+### 2026-08-31：发布入口选择素材后直达详情页
+
+- “发布素材”在首页内嵌素材页和独立素材页均先打开公共“图片 / 视频 / PDF”类型选择；图片、视频类型选择后直接进入手机相册，PDF 进入微信文件选择器。
+- 选择结果通过 `utils/publish-selection.ts` 的 typed 临时交接传入发布详情页，详情页首屏直接展示已选素材；图片详情页保留“再次添加图片”，最多 9 张，视频/PDF 仍为单文件。
+- 删除详情页旧的“拍摄 / 从相册选择”二次来源面板及不再需要的相机权限；文案、存草稿、发表和上传 service 流程保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-reporter=spec tests/*.mjs`（138 tests passed）；相关 TypeScript 语法剥离、JSON 解析和 `git diff --check` 通过。当前环境未安装 `tsc`，也无微信开发者工具 GUI，仍需在开发者工具/真机核对系统选择器与详情页视觉。
+
+### 2026-08-31：分析页签顶部复用通知页固定渐变层
+
+- 首页内嵌分析页签的顶部导航按通知页结构固定在滚动内容之外，保持导航层级 `1001`，避免分析内容滚动时覆盖或带走顶部渐变背景。
+- 分析页独立路由继续使用分析头部自身的通知样式渐变；本次只调整分析页相关承载样式与回归测试。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-reporter=spec tests/*.mjs`（136 tests passed），`git diff --check` 通过。
+
+### 2026-08-31：补发素材详情页图片卡片按 Figma 835:8415 放大
+
+- 发布/补发素材详情页继续使用全局 `#F5F5F5` 页面背景，和 Figma 画板底色保持一致。
+- 已选图片与“再次添加”卡片共用 `publish-page__image-slot`，统一调整为 `228rpx × 228rpx`（iPhone 16 画板约 `114px × 114px`）；图片网格间距调整为 `20rpx`（约 `10px`），内容左右内边距调整为 `48rpx`（约 `24px`）。
+- 选图、删除、添加文案、存草稿和发表交互保持不变。
+- 验证：新增 Figma 尺寸/背景回归测试；`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-reporter=spec tests/home-page.test.mjs tests/publish-material-entry.test.mjs`（136 tests passed）；TypeScript/JSON 语法检查及 `git diff --check` 通过。
+
+### 2026-08-31：发布素材入口先选择素材类型
+
+- 按 Figma 节点 `835:9004` 新增公共组件 `components/publish-type-sheet`，选择顺序为“视频 / 图片 / PDF”，并提供独立的“取消”操作；遮罩、底部面板动画和安全区处理由组件统一维护。
+- Figma 外层承载面板和两个分组之间的 `10px` 间隔使用 `#F5F5F5`；上方三项选择组和底部“取消”组保持白色，底部“取消”组高度为 `80px`。
+- 只有素材页的“发布素材”按钮打开该面板；底部导航“+”和首页空作品区的发布入口仍进入素材页。选择类型后跳转 `/pages/materials/publish/index?type=image|video|pdf`。
+- 发布编辑页读取 `type` 参数并限制原生选择器：图片/视频使用 `wx.chooseMedia` 的单一 `mediaType`，PDF 使用 `wx.chooseMessageFile`；编辑页继续提供“添加文案”、草稿、发表和删除素材。
+- 未传 `type` 的直接进入仍默认图片，编辑既有草稿时按草稿首个素材类型恢复；真实上传接口仍待后端合同确认。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-reporter=spec tests/home-page.test.mjs tests/publish-material-entry.test.mjs`（135 tests passed）；相关页面/组件 JSON 解析通过；`git diff --check` 通过。当前环境未安装 `tsc`，未执行 TypeScript 类型编译；仍需在微信开发者工具和真机核对面板视觉与系统选择器行为。
+
+### 2026-08-31：首页第三条未读消息增加“查看更多”
+
+- 按 Figma `747:6618`，当首页未读消息超过 3 条时，仅在第三条未读卡片底部显示浅灰色“查看更多”按钮；未超过 3 条时不渲染该区域。
+- 按钮使用首页原有 `onTabTap` 进入通知列表，并通过 `catchtap` 阻止触发第三条消息卡片的已读处理；原有消息卡片和灰色叠层逻辑保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-reporter=spec tests/home-page.test.mjs`（132 tests passed）。
+
+### 2026-08-31：恢复分析页真实数据
+
+- 公司开发网络可用后，将 `DEV_UI_PREVIEW` 设为 `false`；分析作品列表、总览和内容详情恢复调用既有真实接口，不再返回固定的本地预览数据。
+- 通知页原本已调用真实接口；用户轨迹因服务端接口尚待确认，继续使用 typed Mock 数据。
+- 开发者工具、真机/体验版请求基址统一使用同事电脑的 `192.168.31.225:8080`，不再回退到 `127.0.0.1`。两端均需确保后端监听 8080 且设备可访问；当前工作区直连该地址仍返回 HTTP 000，需同事启动服务并确认防火墙/局域网可达。
+
+### 2026-08-31：首页互动消息增加“一建已读”
+
+- 首页互动消息标题右侧改为 Figma `811:8009` 的紧凑“一建已读”胶囊；有未读消息时显示，无未读时隐藏。
+- 点击后批量持久化接口返回的全部未读事件 ID，清空首页互动消息预览，并同步清除已加载通知页的未读状态；未新增接口。
+- 验证：`node --test tests/home-page.test.mjs`（132 tests passed）；页面/组件 JSON 解析和 `git diff --check` 通过。当前环境无微信开发者工具 GUI，需重新编译确认真机视觉效果。
+- 后续修正：紧凑变体显式重置继承的 `bottom` 偏移，避免按钮从互动消息标题栏上移到 Hero 区域。
+
+### 2026-08-30：通知页增加“一建已读”操作
+
+- 按 Figma `816:8042` 新增可复用的底部“一建已读（数量）”悬浮操作；未读数量大于 0 时才显示，右侧“×”仅作视觉图标，不提供关闭行为。
+- 点击后将当前通知集合中所有未读事件写入既有本地已读记录，独立通知页和首页内嵌通知 Tab 的小红点、未读数量与操作按钮立即同步更新。
+- 底部导航已移除通知数字及对应数据赋值；首页“互动消息”标题内的未读数量保持原有职责。
+- 验证：通知与底部导航定向回归 `23 tests passed`，`git diff --check` 通过；待项目级验证后补充最终结果。
+
+### 2026-08-30：浏览峰值卡补充周期筛选并移除顶部空块
+
+- 总数据页及首页内嵌分析的“浏览峰值”标题栏新增与“数据总览”一致的日/周/月/日历筛选控件；两处筛选分别维护当前周期，互不联动。
+- 浏览峰值卡改为与数据总览一致的 20px 圆角、`0 20px 20px` 内边距和 20px 内容间距，去掉标题上方多余空白。
+- 数据总览筛选改变总览查询并保留峰值周期；浏览峰值筛选只更新图表，不重新加载总览。自定义日期分别记录到各自的日期范围。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-reporter=spec tests/home-page.test.mjs`（127 tests passed）；TypeScript/JSON 语法检查及 `git diff --check` 通过。
+
+### 2026-08-29：总数据周期筛选移入数据总览标题栏
+
+- 按 Figma `743:5979` 移除总数据页顶部独立的周期控件，将日/周/月/筛选图标控件放入“数据总览”标题右侧。
+- “总”改为与作品分析相同的日历筛选图标；日期选择复用现有两个月范围（`twoMonthsAgoDate` 到 `todayDate`），确认后按自定义范围加载总数据。
+- 独立分析页与首页内嵌分析同步调整，默认周期为“日”；同时删除首页已废弃的顶部筛选容器样式。后续总览和峰值筛选拆为独立状态。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-reporter=spec tests/home-page.test.mjs`（126 tests passed）；TypeScript/JSON 语法检查及 `git diff --check` 通过。
+
+### 2026-08-29：总数据总览卡按 Figma 743:5979 重排
+
+- 总数据页及首页内嵌分析的“数据总览”卡统一为 Figma 743:5979：24px 数据总览图标、两项主指标、较昨日对比和 2×3 统计卡。
+- 使用用户提供的 `icon_1.svg` 原始 SVG，保存为 `assets/analysis/data-overview-icon.svg`；同组“浏览峰值”标题补充用户提供的 `icon_2.svg`，保存为 `assets/analysis/peak-data-icon.svg`，并复用相同的 24px 标题栏结构。
+- 主指标文案统一为“阅读总次数 / 阅读总人数”；真实接口暂无昨日增量字段，生产映射保留 `+0`，离线预览按 Figma 展示 `+30`。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（125 tests passed）；TypeScript/JSON 语法检查及 `git diff --check` 通过。
+
+### 2026-08-29：内容详情意向用户列表按 Figma 743:4059 校准
+
+- 意向用户公共组件的指标文案与 Figma 统一为“浏览次数 / 完播 / 转发”。
+- 用户行分割线按 Figma 的意向等级使用对应浅色：高/中意向 `#F0F0F0`，低意向 `#F4F5F5`；保留 44px 头像、11px 内容间距、15px 行间距和 20px 外部内边距。
+- 仅修改 `analysis-intent-users` 组件及其回归断言，不涉及接口、数据字段或其他页面。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`；`git diff --check` 通过。
+
+### 2026-08-29：修复分析页用户分析 Tab 点击无响应
+
+- `analysis-header` 现在从 `segmented-filter` 的自定义事件 `event.detail.index` 转发 Tab 索引；此前误读 `currentTarget.dataset.index`，导致点击“用户分析”得到 `NaN` 而被页面忽略。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（123 tests passed）；`git diff --check` 通过。
+
+### 2026-08-29：用户分析意向汇总按 Figma 743:4027 更新
+
+- 独立分析页与首页内嵌分析 Tab 的用户分析汇总改为三张横向等分卡片，复用 Figma 的 24px 图标、数量/标签层级和高中低意向渐变色。
+- 新增本地 Figma SVG `miniprogram/assets/analysis/intent-summary-icon.svg`；中意向保留 Figma 的白色横线图形，高/低意向使用同一 SVG 的对应方向。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（122 tests passed）；`git diff --check` 通过。
+
+### 2026-08-29：作品分析下方内容按 Figma 743:3561 重排
+
+- 独立分析页与首页内嵌分析 Tab 的“作品分析”下方统一为 Figma 743:3561：两张汇总卡下接白色“我的作品（数量）”容器、周期/阅读量筛选和浅灰作品卡列表。
+- 作品卡使用 50×68px 缩略图、15px 内边距、15px 圆角、10px 卡片间距，补充意向标签与浏览/转发/完播指标；卡片点击和筛选仍沿用原页面交互。
+- “我的作品”标题使用 Figma 导出的本地 SVG `miniprogram/assets/analysis/my-works-icon.svg`；卡片标题/日期保持同组紧凑排版，意向标签与文字组之间保留 10px 间距。
+- 内容详情页（`analysis-detail`）同步使用同一套 24px 图标、作品卡层级和 50×68px 缩略图，避免组件样式缺失时回退到 SVG 默认大尺寸。
+- 作品列表从现有 `/analysis/content/list` 与 `/analysis/intent/list` 映射意向标签；离线预览通过 `DEV_UI_PREVIEW` 提供固定数据，页面不直接依赖 Mock。
+- 修正内容详情页周期筛选控件宽度为 Figma 所需 140px（组件传入 `item-width="68"`）。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（121 tests passed）；`git diff --check` 通过。当前环境无微信开发者工具 GUI，需重新编译确认真机视觉细节。
+
+### 2026-08-29：内容详情增加离线 UI 预览开关
+
+- 新增 `miniprogram/config/dev.ts` 的 `DEV_UI_PREVIEW` 开关，当前为 `true`，用于无法连接同事局域网 IP 时直接预览内容详情页面。
+- 预览数据集中放在 typed mock `miniprogram/mocks/analysis-content-detail.ts`，覆盖高/中/低意向用户、长列表和内容卡；页面仍只调用 service，不直接依赖 Mock。
+- 通过 `services/analysis-preview.ts` 作为开发数据适配层，周一接入同事接口前将 `DEV_UI_PREVIEW` 改为 `false` 即可恢复真实接口请求。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（120 tests passed）；`git diff --check` 通过。当前环境无微信开发者工具 GUI，需在本地开发者工具重新编译确认视觉细节。
+
+### 2026-08-28：内容详情接入 Figma 743:4059 意向用户组件
+
+- 新增可复用 `analysis-intent-users` 组件，按 Figma 还原意向用户人数、日/周/月/日历筛选、阅读量排序和用户指标行。
+- 组件使用 20px 外部内边距、15px 内容节奏、44px 头像、11px 头像与正文间距、15px 用户行间距及内部浅色分隔线；未引入投影或可见描边。
+- 内容详情 service 复用 `/analysis/intent/list` 映射用户头像、昵称、意向等级、浏览次数、完播和转发数据；点击用户沿用用户详情页路由。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`；`git diff --check`。
+
+### 2026-08-28：分析作品汇总卡改为两张并加入 Figma SVG 图标
+
+- 按 Figma `743:3539` 移除「总发布」卡，仅保留「总阅读次数」与「总转发」两张卡。
+- 两张卡使用 Figma 导出的 24px SVG 图标，卡片间距 10px、左右内边距 20px、上下内边距 15px、圆角 12px；这些固定尺寸直接使用 px，独立分析页与首页内嵌分析组件同步更新。
+- 卡片内部图标、数值和标签显式从左侧内边距开始排列，避免内容在卡片中居中。
+- `AnalysisMetric` 增加可选 `iconPath`，仍复用现有 dashboard 数据，不新增后端接口。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（118 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：新版内容详情页按 Figma 743:3538 重排
+
+- 内容详情页改为顶部总阅读/总转发汇总卡、“我的作品（数量）”容器、日/周/月/日历筛选和阅读量排序控件，整体按 Figma `743:3538` 还原。
+- 页面顶部标题按最新 Figma 截图确认改为“通知”，保留详情页返回箭头和公共分析头部组件。
+- 作品列表直接复用首页内容卡的缩略图、标题/日期、意向标签及浏览/转发/完播指标布局，卡片之间保留 `10px` 间距，不再维护另一套内容卡结构。
+- 数据继续由 `services/analysis.ts` 组合现有 `/analysis/dashboard`、`/analysis/content/list` 与 `/analysis/intent/list`，未新增后端接口；页面不直接依赖 Mock。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（118 tests passed）；`git diff --check` 通过。当前环境无微信开发者工具 GUI，需在开发者工具或真机确认最终视觉细节。
+
+### 2026-08-28：分析页顶部复用通知页顶部样式
+
+- 按 Figma 节点 `804:7536`，分析页顶部改为与通知页一致的固定渐变背景、透明导航栏和通知样式胶囊筛选条。
+- 保留分析页的“分析”标题与“作品分析 / 用户分析 / 总数据”三项标签；根分析页不显示返回箭头，标签切换和左右滑动逻辑保持不变。
+- 仅修改分析头部公共组件、分析页顶部偏移与回归测试，不涉及接口、数据字段或业务逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（118 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知列表日期分组增加 20px 间距
+
+- 后续日期标题直接增加 `20px`（`40rpx`）顶部间距，避免日期分隔标题紧贴上一组的最后一张卡片。
+- 同一日期分组内卡片间距保持原有 `10px`（`20rpx`），首个日期分组与顶部筛选区的间距不变。
+- 仅修改通知页 Less 与回归断言，不涉及接口、数据字段或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（118 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：用户详情作品记录改为用户轨迹
+
+- 按 Figma `743:2355` 新增 `pages/analysis-user-journey`：包含“用户轨迹”导航、作品信息卡、行为时间线与底部联系用户按钮。
+- 通知进入用户详情后，点击某个作品记录现在携带 `userId` 与 `materialId` 进入用户轨迹；分析页中的通用“内容详情”页面和入口保持不变。
+- 当前数据为固定、可重复的 typed Mock，由 `services/user-journey.ts` 提供，页面不直接依赖 Mock。Figma 导出的作品封面与行为图标已保存到 `assets/analysis/`。
+- `services/user-journey.ts` 记录了真实 API 的合同占位；后续仅在该 service 替换数据来源，不改变页面、类型或路由。
+- 行为轨迹竖线调整为视觉 `2px`（`4rpx`），并延伸至末尾圆点中心；底部联系用户按钮调整为距屏幕底部 `24px`（`48rpx`）。
+- 轨迹卡取消固定最小高度，改由页面纵向弹性布局填充剩余视口；卡片与“联系用户”按钮之间固定保留 `20px`（`40rpx`），按钮仍保留 `24px`（`48rpx`）底部间距。较长行为列表在卡片内滚动，避免遮挡按钮。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（116 tests passed）；页面 JSON 解析、相关 TypeScript 语法剥离、静态资源检查和 `git diff --check` 通过。当前环境未安装本地 `tsc`，也无微信开发者工具 GUI，仍需重新编译后进行视觉确认。
+
+### 2026-08-28：全局页面底色统一为 #F5F5F5
+
+- 用户确认将页面统一画布背景从 `#EDF0F5` 调整为 `#F5F5F5`，所有使用 `@app-page-background` 的页面同步生效。
+- 用户详情页显式背景与导航栏、浏览记录卡片，以及通知顶部渐变的实色和透明端也统一为 `#F5F5F5`。
+- 仅修改前端 Less/WXML 与对应视觉回归断言，不涉及接口、数据字段或交互逻辑。
+
+### 2026-08-28：通知卡片增加逐条未读红点
+
+- 对照 Figma `723:12527`，通知卡片左侧增加 `7×7px`、`#EF7A7C` 未读红点，位置为距卡片左侧 7px、顶部 32px；首页内嵌通知 Tab 与独立通知页共用该样式。
+- 通知 ViewModel 根据当前用户本地已查看事件记录生成 `isUnread`；打开通知页、刷新或切换筛选不会清除红点，只有点击对应卡片进入用户详情时才将该事件标记为已读并立即移除红点。
+- 已读状态继续复用现有 `notifications.viewedEvents` 本地存储，不新增或猜测后端接口；首页通知角标与现有互动消息预览数量同步减少。
+- 仅修改通知类型、service 映射、共享工具、两处通知列表状态与样式，并补充回归测试。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（115 tests passed）；`git diff --check` 通过。当前环境无微信开发者工具 GUI，需在开发者工具或真机确认红点与卡片的实际对齐。
+
+### 2026-08-28：用户详情浏览记录按 Figma 738:2133 重排
+
+- 用户详情浏览记录区域改为白色圆角容器，新增阅读记录图标标题行与底部分隔线；复用现有阅读动作图标资源，不新增接口数据。
+- 筛选条保持公共 `segmented-filter`，内容卡按 Figma 使用 `#F0F2F5` 背景、15px 内边距、15px 圆角，卡片之间 15px 间距。
+- 仅修改用户详情 WXML/Less、回归断言和交接记录；现有标题、日期、缩略图、意向标签及五项指标字段保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。微信开发者工具/真机视觉仍需重新编译确认。
+
+### 2026-08-28：用户详情浏览记录标题改用 Frame.svg 图标
+
+- 用户详情浏览记录标题不再复用首页浏览次数图标，改用用户提供的 `Frame.svg`（24×24 红橙渐变眼睛图标）。
+- 原始 SVG 已保存为 `miniprogram/assets/analysis/reading-record-icon.svg`，WXML 仅替换资源引用；不涉及接口、数据或布局。
+- 验证：资源与 `/Users/xiaogai/Desktop/Frame.svg` 字节一致；`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：首页移除顶部渐变背景
+
+- 删除首页 Hero 区域的多色渐变背景图片节点与专用样式，顶部区域现在直接使用页面统一底色 `#EDF0F5`。
+- 删除不再使用的 `miniprogram/assets/home-new/home-background.svg`；问候文案、Hero 高度、内容间距和交互保持不变。
+- 仅修改首页 WXML/Less、本地资源和回归测试，不涉及接口或数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；生产目录无背景残留引用，`git diff --check` 通过。
+
+### 2026-08-28：用户详情顶部导航底色统一
+
+- 用户详情页顶部导航栏背景由 `#FFFFFF` 调整为 `#F0F2F5`，与当前页面顶部视觉规范保持一致。
+- 仅修改用户详情页 WXML/Less 与回归断言，不涉及接口、数据字段或路由。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知筛选条至日期标题间距修正
+
+- 修正顶部预留空间与通知分组外边距叠加的问题：分组顶部外边距调整为 `0`，筛选条至日期标题的最终可见间距为 20px。
+- 通知卡片之间的 10px 间距仍由卡片列表容器的 `gap` 控制，未受影响。
+- 仅修改通知页 Less 与回归测试，不涉及接口、数据或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知筛选区间距与选中胶囊垂直对齐
+
+- 通知筛选条至日期标题的间距调整为 20px（`40rpx`）。
+- 公共 `segmented-filter` 的白色选中层改为同时固定 `top`、`bottom` 为 2px（`4rpx`），由浏览器计算高度，确保真机上下间距相等。
+- 该公共控件同步影响通知、分析和排行榜等已有筛选场景；未涉及接口、数据或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：首页内嵌通知头部改为内容上层固定渐变
+
+- 对照 Figma `782:6708`，首页通知 Tab 的头部改为面板内绝对定位层，层级高于通知 `scroll-view`，滚动时卡片可从渐变底部透出。
+- 为内嵌通知内容预留 `@notification-header-height + 20rpx` 顶部空间；独立通知页原有固定头部不变。
+- 不涉及接口、数据字段或业务交互；仅修改首页 Less 与回归测试。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知页顶部渐变按 Figma 782:6708 校准
+
+- 顶部固定层高度调整为 `@notification-header-height + 20rpx`（对应 Figma 142px Frame），确保滚动内容从渐变层下方经过。
+- 渐变前 `65.141%` 保持 `#F0F2F5` 不透明，最后一段向下过渡到 0% 透明；无模糊、无额外遮罩层。
+- 顶部固定层保持高于内容层，滚动时通知卡片可从底部透明区域透出；不涉及接口、数据或交互逻辑。
+- 仅修改通知头部 Less 与回归测试。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知页顶部渐变按标注恢复透明底
+
+- 按红框标注将顶部渐变限定在 `@notification-header-height`：顶部 `#F0F2F5` 不透明度 100%，底部不透明度 0%。
+- 移除此前增加的白色基底，透明端直接露出全局 `#EDF0F5` 背景；无额外遮罩、无背景模糊，不改变接口或交互。
+- 仅修改通知头部 Less 与回归测试。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知页顶部渐变可见性修正
+
+- 保留顶部区域高度、反向渐变和无模糊要求；为通知头部增加白色基底，让 `#F0F2F5` 到透明的渐变与底色形成可见对比。
+- 移除额外遮罩层，标题与筛选控件不再存在被覆盖风险；不涉及接口、数据或交互逻辑。
+- 仅修改通知头部 Less 与回归测试。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知页顶部移除额外遮罩层
+
+- 移除顶部独立渐变遮罩节点，避免层级覆盖通知头部内容。
+- 直接在通知头部本体设置红框区域高度 `@notification-header-height` 的反向渐变（顶部 `#F0F2F5`、向下透明），并保持无背景模糊。
+- 独立通知页与首页内嵌通知头部同步生效；不涉及接口、数据或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知页顶部渐变高度与模糊调整
+
+- 顶部渐变遮罩高度恢复为红框标注的顶部区域高度 `@notification-header-height`，不再向下延伸。
+- 移除顶部背景模糊，仅保留顶部实色、向下透明的 `#F0F2F5` 渐变；不改变标题、筛选控件、接口或交互。
+- 仅修改通知头部组件 Less 与回归测试，不涉及接口或数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知页顶部渐变透明度可见性修正
+
+- 顶部渐变保持“顶部实色、向下淡出”的方向和 `#F0F2F5` 颜色。
+- 渐变遮罩向下延伸 `176rpx` 过渡区，并允许溢出显示，使透明度变化能与下方内容形成可见过渡；模糊仍为 `5px`。
+- 仅修改通知头部 Less 与回归测试，不涉及接口或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知页顶部渐变方向与颜色调整
+
+- 顶部渐变改为与底部导航相反的方向：顶部使用实色，向下逐渐淡出。
+- 渐变颜色统一为 `#F0F2F5`，保留 `5px` 背景模糊；不改变标题、筛选控件、接口或交互。
+- 仅修改通知头部组件 Less 与回归测试，不涉及接口或数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知卡片之间增加 10px 垂直间距
+
+- 日期标题与第一张卡片的原有间距保持不变；同一日期下连续通知卡片之间增加 10px（20rpx）间距。
+- 通过独立的卡片列表容器使用 flex `gap` 控制间距，卡片自身取消顶部外边距；不改变卡片内容、接口、字段或交互。
+- 仅修改通知页与首页内嵌通知组件的 WXML/Less 及回归测试，不涉及接口或数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知页顶部增加渐变模糊背景
+
+- 通知页顶部新增独立背景遮罩，复用底部导航的渐变与 `5px` 模糊思路；标题和筛选控件保持在遮罩层之上。
+- 独立通知页与首页内嵌通知头部同步使用该样式，不改变页面数据、接口或交互逻辑。
+- 仅修改通知头部组件 WXML/Less 与回归测试，不涉及接口或数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知页内容卡片与首页互动消息统一
+
+- 通知页独立入口与首页内嵌通知 Tab 的卡片统一采用首页互动消息的头像、文案、意向标签、状态条、缩略图尺寸及内边距布局。
+- 状态条移动到文案列内，头像顶部与姓名文案对齐；卡片按首页节奏使用 20px 间距和相同按下反馈。
+- 通知页不增加底部叠加卡片效果，所有通知记录保持普通列表展示。
+- 仅修改通知页 WXML/Less 与回归测试，不涉及接口、字段或跳转逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知筛选器收敛为公共组件并增加切换反馈
+
+- 通知页改用公共 `segmented-filter` 组件，保留通知专用胶囊变体，确保独立通知页和首页内嵌通知 Tab 复用同一套筛选器。
+- 选中层改为固定 `56rpx` 高度并取消底部自适应计算，保证真机上下内距一致；切换时通过选中层 `transform` 横向平移。
+- 通知筛选切换增加 `wx.vibrateShort({ type: 'light' })` 轻触感；未改变通知接口、数据字段和跳转逻辑。
+- 仅修改公共筛选组件、通知头部组件与回归测试，不涉及接口或数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：通知页顶部按 Figma 772:6700 调整
+
+- 通知页顶部画布改为全局 `#EDF0F5`，标题字号按 Figma 调整为 16px（`32rpx`）。
+- 四项筛选改为左右 20px 的 32px 高胶囊控件：外层 `#E3E4E5`，选中项为白色内嵌胶囊，移除原全宽下划线布局。
+- 为新增顶部间距同步调整通知页内容起始位置；通知卡片、筛选数据、接口和跳转逻辑保持不变。
+- 将顶部样式落到 `notification-header` 组件自身 Less，确保独立通知页和首页内嵌通知 Tab 都使用同一套视觉规则；仅修改组件 WXML/Less 与回归测试，不涉及接口或数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：首页互动消息预取 7 条避免点击补位卡顿
+
+- 首页互动消息从现有通知列表中最多预取 7 条，页面仍只渲染前 5 个位置（3 条完整卡片和 2 条叠层卡片）。
+- 点击任一可见消息后，已预取的下一条消息可立即补位，避免移除卡片后等待重新加载造成卡顿；无新增接口或请求参数。
+- 仅修改首页 service、WXML 与回归测试，不涉及接口、字段或跳转逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：首页互动消息头像与顶部文案对齐
+
+- 将互动消息卡片中的头像身份容器改为顶部对齐，使头像顶部与姓名及意向标签所在的上方文案行对齐，不再按整段状态文案垂直居中。
+- 仅修改首页 Less 与回归测试，不涉及接口、字段或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`、`git diff --check`。
+
+### 2026-08-28：首页今日数据双指标横向布局修复
+
+- 明确设置顶部双指标容器为横向 flex，并固定中间分隔线宽度，避免阅读人数被纵向撑开、分隔线变成长竖条以及下方统计重叠。
+- 将分隔元素改为显式闭合的 WXML `view`，降低 Skyline/glass-easel 对自闭合容器解析差异的风险。
+- 仅修改首页 WXML/Less，不涉及接口、字段和跳转逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：首页今日数据双指标布局闭合修复
+
+- 修复今日数据卡顶部双指标容器闭合层级错误：浏览次数、分隔线和阅读人数现在处于同一行，避免阅读人数被撑到卡片底部并与下方指标重叠。
+- 仅修正首页 WXML 的 `view` 嵌套闭合，未改变接口、字段或交互。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：首页今日数据 WXML 闭合修复
+
+- 修复“今日数据”改版后首页模板少一个 `view` 闭合标签导致的 `expect end-tag 'view'` 编译错误。
+- 仅修正 WXML 结构，未改变数据、样式、交互或接口。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：首页今日数据按 Figma 723:11527 改版
+
+- 首页“今日数据”由旧的单一主指标调整为 Figma 双主指标布局：浏览次数与阅读人数并列，下面分两行展示总完播、转发次数、观看人数和高/中/低意向。
+- 使用用户提供的 `5.svg` 保存为 `miniprogram/assets/home-new/today-data-icon.svg`，箭头复用现有 `today-most-chevron.svg`；卡片继续使用现有 `onTodayDataTap` 跳转逻辑。
+- 仅复用已有 `today` 和 `intentSummary` 字段，未新增或修改接口；对比信息仍按现有可选 `today.comparison` 展示，不伪造昨日数据。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：首页意向用户按 Figma 723:11502 改版
+
+- 首页“意向用户”由独立标题和卡片调整为单一卡片结构：顶部加入用户图标、标题和右侧箭头，中部保留今日新增客户数及五个叠放头像，底部保留高/中/低意向统计。
+- 使用用户提供的 `2.svg` 保存为 `miniprogram/assets/home-new/intent-user-icon.svg`；箭头复用现有 `today-most-chevron.svg`。
+- 继续消费现有 `intentSummary` 数据和 `onIntentSummaryTap` 跳转逻辑，没有新增或修改接口；遵循已确认的全局无投影、无描边约定。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（113 tests passed）；`git diff --check` 通过。
+
+### 2026-08-28：底部导航按 Figma 723:11206 更新选中样式
+
+- 公共 `bottom-tab-bar` 胶囊此前按 Figma 从 `56px` 增加至 `60px`，现按用户最新要求恢复为 `56px`；选中滑动层继续使用主题色 `#0EC8D9`。
+- 选中图标和文字改为白色，带内部细节的通知、发布和分析图标使用主题色镂空；未选中图标和文字统一为 `#333333`。
+- 修复开发者工具继续命中旧 `*-active.svg` 缓存导致选中图标仍为主题色的问题：五个选中态资源统一更名为 `*-selected.svg`，页面与组件改用新 URL，并删除旧资源路径。
+- 保留导航胶囊的半透明白色 Glass、5px 背景模糊，并按新版 Figma 使用固定 `1px`、100% 不透明的 `#FFFFFF` 描边和 `0 0 20px rgba(0, 0, 0, 0.05)` 轻投影；其他内容盒子继续保持无投影、无描边。
+- 针对 Skyline 测试中描边与投影不可见的问题，将 Glass 与描边/投影拆成两个独立渲染层，并把固定容器向上扩展 20px 作为投影绘制空间；胶囊本体尺寸和安全区位置不变。
+- 将胶囊导航下方的渐变遮罩和安全区接续底色由白色统一改为 `#F2F3F6`，增加白色描边及 5% 黑色投影与底层之间的视觉对比。
+- 仅修改公共底部导航样式、本地图标资源和回归测试，不涉及接口或交互逻辑。
+- 验证：底部导航相关定向回归 5/5 通过；当前全量回归为 113/113，`git diff --check` 通过。当前环境无微信开发者工具 GUI，需在开发者工具或真机确认 Glass 效果与安全区位置。
+
+### 2026-08-28：首页“今日浏览最多”查看更多按钮间距调整
+
+- 将内容卡片与底部“查看更多”按钮之间的垂直间距从 `10px` 调整为 `20px`（`40rpx`）。
+- 仅修改首页 Less 与回归测试，不涉及接口或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（112 tests passed）、`git diff --check`。
+
+### 2026-08-28：首页「今日浏览最多」增加底部查看更多按钮
+
+- 移除标题栏右侧的“查看更多”文案，标题栏仅保留 Figma 右箭头。
+- 在白色内容 Box 底部增加浅灰色圆角“查看更多”按钮，点击后继续进入作品分析。
+- 保持白色 Box 与其他首页 Box 一致的左右 `20px` 间距；仅修改首页 WXML/Less 与回归测试，不涉及接口。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（112 tests passed）、`git diff --check`。
+
+### 2026-08-28：首页「今日浏览最多」恢复 20px 外边距与查看更多
+
+- 撤销该区域的全宽负边距，白色外框恢复与首页其他 Box 一致的左右 `20px` 间距。
+- 右侧恢复“查看更多”文字，并保留 Figma 右箭头；标题行整体仍进入作品分析。
+- 仅修改首页 WXML/Less 与回归测试，不涉及接口或数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（112 tests passed）、`git diff --check`。
+
+### 2026-08-28：首页「今日浏览最多」按 Figma 723:11451 重做
+
+- 删除该区域右侧“查看更多”文字，改为 Figma 的眼睛图标、标题和右箭头组合；整个标题行可点击并继续进入作品分析。
+- 将作品列表改为白色圆角容器内的 `#EDF0F5` 独立卡片，补充高意向状态标签、完播统计和对应的 50×68px 缩略图布局。
+- 完播数复用现有 `GET /analysis/content/list` 响应的 `completeCount`，只增加前端 ViewModel 映射，不新增或修改接口。
+- 新增本地 `today-most-icon.svg` 与 `today-most-chevron.svg` 资源；仅修改首页 WXML/Less、类型、service 映射、资源和回归测试。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（112 tests passed）、`git diff --check`；当前环境无微信开发者工具 GUI，需在开发者工具或真机确认视觉比例。
+
+### 2026-08-28：全局盒子移除投影与描边
+
+- 移除首页、通知、分析、素材、详情、排行榜、设置、发布、个人中心、底部导航和弹窗等盒子容器的 `box-shadow` 与可见 `border`，保留标签下划线、列表分隔线、图表网格线等结构性线条。
+- 清理不再使用的盒子描边 Less 变量；不改变页面数据、导航和交互逻辑。
+- 仅修改前端 Less 与回归测试，不涉及接口或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（111 tests passed）、`git diff --check`；当前环境无微信开发者工具 GUI，需在开发者工具或真机确认所有页面的无投影、无描边效果。
+
+### 2026-08-28：移除首页超级榜单卡片投影
+
+- 删除首页“超级榜单”入口卡片的 `box-shadow`，保留原有渐变、边框、圆角和点击跳转。
+- 仅修改前端 Less 与回归测试，不涉及接口或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（110 tests passed）、`git diff --check`。
+
+### 2026-08-28：首页互动消息状态条与意向颜色统一
+
+- 首页互动消息状态提示条增加左右 `10px` 视觉内缩（`20rpx`），避免贴满内容列边缘。
+- 首页和通知列表状态提示条均使用 `align-self: flex-start` 按文案宽度自适应，并保留左右 `10px` padding。
+- 按最新首页视觉规范统一通知、分析和用户详情中的高/中/低意向颜色；通知状态条同步使用最新浅色版本。
+- 仅修改前端 Less 与回归测试，不涉及接口或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（110 tests passed）、`git diff --check`。
+
+### 2026-08-28：首页移除排行榜区块标题文案
+
+- 删除首页排行榜卡片上方的“排行榜”标题，仅保留“超级榜单”入口卡片。
+- 排行榜卡片点击跳转和数据逻辑保持不变；仅修改首页 WXML 与回归测试，不涉及接口。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（109 tests passed）、`git diff --check`。
+
+### 2026-08-28：统一小程序页面画布背景色
+
+- 在 `app.less` 新增全局 `@app-page-background: #EDF0F5`，并将首页、通知、分析、素材、排行榜、详情、发布和设置等页面的根画布统一使用该颜色。
+- 卡片、导航栏、弹窗、筛选控件及 PDF 阅读器深色阅读底保持原样，以保留内容层级和阅读对比度。
+- 仅修改前端 Less 与回归测试，不涉及接口或交互逻辑。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（109 tests passed）、`git diff --check`；当前环境无微信开发者工具 GUI，需在开发者工具或真机确认各页面视觉效果。
+
+### 2026-08-28：首页互动消息第 4、5 条改为真实卡片叠层
+
+- 首页 service 继续使用现有 `GET /analysis/notify/list`，将互动消息预览从 3 条取到最多 5 条；前 3 条完整展示，第 4、5 条使用真实通知数据并按 94% / 89% 缩放叠放在第三条后方。
+- 删除原先仅有灰色矩形的占位叠加层，前 3 条仍保持直接点击跳转；叠层消息只作为视觉露出，不新增点击行为。
+- 叠层卡片背景沿用 Figma 灰色：第 4 条使用 `#EBEBEB`，第 5 条使用 `#E0E0E0`。
+- 仅修改首页 service 预览数量、WXML 结构、Less 样式与回归测试，不新增或修改接口、请求参数和数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（108 tests passed）、`git diff --check`；当前环境无微信开发者工具 GUI，需在开发者工具或真机确认第 4、5 条的实际露出高度。
+
+### 2026-08-27：修正首页互动消息叠加层遮挡卡片问题
+
+- 对照 Figma `747:6618` 修正叠加层结构：叠加底放入第三条卡片的包装容器并置于卡片下方，卡片内容保持在上层，避免灰色区域覆盖文字和缩略图。
+- 叠加底按 Figma 的 23px 上偏移、两层 91px 高度和 10px 层间偏移还原，并为包装容器预留底部空间。
+- 仅修改首页 WXML/Less 与回归测试，不涉及接口或数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（108 tests passed）、`git diff --check`；需在微信开发者工具或真机热编译后确认视觉效果。
+
+### 2026-08-27：首页互动消息按 Figma 723:11434 调整并支持三条后叠加
+
+- 首页「互动消息」卡片按 Figma `723:11434` 调整：20px 圆角、15px 上下内边距、50×68px 缩略图、意向与状态标签配色及 10px 卡片间距。
+- 当未读互动消息超过 3 条时，在第三张卡片下方展示两层灰色叠加底；叠加层仅作视觉提示，不改变第三张卡片点击行为。
+- 复用现有 `/analysis/notify/list` 数据和首页预览限制，不新增或修改接口、请求参数和数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（108 tests passed）、`git diff --check`；需在微信开发者工具或真机热编译后确认视觉效果。
+
+### 2026-08-27：首页移除 Hero 太阳光晕 SVG
+
+- 按用户要求移除首页 Hero 区域的太阳光晕装饰：删除 WXML 图片节点、对应 Less 样式和 `assets/home-new/home-hero-glow.svg` 资源。
+- 新替换的首页背景 `assets/home-new/home-background.svg` 保留，不影响首页其他内容和交互。
+- 仅涉及前端静态资源、WXML 和 Less，不新增或修改接口、数据合同。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`、`git diff --check`；需在微信开发者工具或真机热编译后确认视觉效果。
+
+### 2026-08-27：首页背景改用 WXML image 渲染本地 SVG
+
+- 由于当前 Skyline/glass-easel 页面中通过 WXSS `background-image` 引用本地 SVG 未稳定显示，首页背景改为 WXML `<image>` 节点直接加载 `assets/home-new/home-background.svg`。
+- 保留 393×371 的设计比例，背景节点高度为 `742rpx`，不改变首页数据、交互或接口。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（107 tests passed）、`git diff --check`；需在微信开发者工具或真机热编译后确认视觉显示。
+
+### 2026-08-27：首页顶部背景替换为用户提供的 Bg.svg
+
+- 将用户提供的 `Bg.svg` 原样保存为 `miniprogram/assets/home-new/home-background.svg`。
+- 首页 `.home-page__hero-background` 改为使用该 SVG，按 393×371 设计比例铺满顶部背景区域；其他 Tab 背景不变。
+- 仅涉及本地静态资源和 Less 样式，不新增或修改接口。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`（107 tests passed）、`git diff --check`、SVG 与源文件字节一致；当前环境无微信开发者工具 GUI，需真机/模拟器复核视觉效果。
 
 ### 2026-08-27：通知和互动消息不再展示自己看自己的素材
 
@@ -939,7 +1416,7 @@ miniprogram/
 ### 2026-08-25：发布底部导航选中态对齐
 
 - 按用户指定的 Figma 视觉基线，将发布项调整为与其余导航一致的 `#E0E0E0` 胶囊选中底和 `#0EC8D9` 标签色；素材页仅高亮发布项，不再同时高亮首页。
-- 新增本地 `tab-publish-active.svg`：沿用用户提供的发布图标结构，仅切换主色为青色，保留白色加号，替代会同时染色图形和加号的 CSS 滤镜方案。
+- 新增的发布选中态资源现为 `tab-publish-selected.svg`；当前新版样式使用白色主图形和主题色加号，并通过新文件名避免命中旧颜色缓存。
 - 验证：发布选中态先红后绿的定向回归通过；全量 `node --test tests/home-page.test.mjs` 为 46/46 通过。
 
 ### 2026-08-25：按 Figma `507:1682` 重做用户分析

@@ -15,7 +15,7 @@ import { prepareMaterialThumbnailMap } from './materials'
 import { NOTIFICATION_RANGE_DAYS } from './notifications'
 import { request, resolveMediaUrl } from './request'
 
-const HOME_PREVIEW_LIMIT = 3
+const HOME_PREVIEW_LIMIT = 7
 const HOME_CONTENT_LIMIT = 2
 
 function mapHomeNotification(
@@ -42,6 +42,7 @@ function mapContent(
   const highIntentCount = intentCustomers.filter(
     (customer) => String(customer.materialId) === materialId && customer.intentLevel === 'high',
   ).length
+  const formattedHighIntentCount = formatCount(highIntentCount)
 
   return {
     id: materialId,
@@ -50,7 +51,10 @@ function mapContent(
     thumbnailUrl,
     viewCount: formatCount(item.viewCount),
     forwardCount: formatCount(item.forwardCount),
-    highIntentCount: formatCount(highIntentCount),
+    completeCount: formatCount(item.completeCount),
+    highIntentCount: formattedHighIntentCount,
+    highIntentLevel: highIntentCount > 0 ? 'high' : 'empty',
+    highIntentLabel: highIntentCount > 0 ? `${formattedHighIntentCount} 个高意向` : '暂无高意向',
   }
 }
 
@@ -123,6 +127,7 @@ export function getHomePageData(): Promise<HomePageViewModel> {
 
     return {
       unreadNotificationCount: unreadEvents.length,
+      unreadNotificationEventIds: unreadEvents.map((event) => String(event.id)),
       notifications: notifications.map((item, index) => ({
         ...item,
         avatarUrl: notificationAvatars[index] ?? '',

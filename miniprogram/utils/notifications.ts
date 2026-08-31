@@ -61,6 +61,7 @@ export function mapNotificationEvent(
   event: ApiNotificationEvent,
   thumbnailUrl: string,
   avatarUrl: string,
+  isUnread = true,
 ): NotificationCardViewModel {
   const intent = resolveNotificationIntent(event.intentLevel)
   const isForward = (event.actionType ?? '').toLowerCase() === 'forward'
@@ -68,6 +69,7 @@ export function mapNotificationEvent(
   return {
     id: `notification-${event.id}`,
     eventId: String(event.id),
+    isUnread,
     userId: String(event.customerId),
     visitorName: event.nickname ?? '微信用户',
     intent,
@@ -81,6 +83,44 @@ export function mapNotificationEvent(
     thumbnailUrl,
     statusLabel: buildNotificationStatus(event),
   }
+}
+
+export function markNotificationGroupsViewed(
+  groups: NotificationGroupViewModel[],
+  eventId: string,
+): NotificationGroupViewModel[] {
+  if (!eventId) return groups
+
+  return groups.map((group) => ({
+    ...group,
+    items: group.items.map((notification) => (
+      notification.eventId === eventId && notification.isUnread
+        ? { ...notification, isUnread: false }
+        : notification
+    )),
+  }))
+}
+
+export function countUnreadNotificationGroups(groups: NotificationGroupViewModel[]): number {
+  return groups.reduce(
+    (total, group) => total + group.items.filter((notification) => notification.isUnread).length,
+    0,
+  )
+}
+
+export function getUnreadNotificationEventIds(groups: NotificationGroupViewModel[]): string[] {
+  return groups.flatMap((group) => group.items
+    .filter((notification) => notification.isUnread)
+    .map((notification) => notification.eventId))
+}
+
+export function markAllNotificationGroupsViewed(groups: NotificationGroupViewModel[]): NotificationGroupViewModel[] {
+  return groups.map((group) => ({
+    ...group,
+    items: group.items.map((notification) => (
+      notification.isUnread ? { ...notification, isUnread: false } : notification
+    )),
+  }))
 }
 
 export function groupNotificationCards(cards: NotificationCardViewModel[]): NotificationGroupViewModel[] {

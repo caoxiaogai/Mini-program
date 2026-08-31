@@ -7,7 +7,7 @@ import { DEV_LAN_ORIGIN, DEVTOOLS_ORIGIN } from '../config/dev'
 let cachedApiBaseUrl: string | null = null
 
 /**
- * 开发者工具走本机回环；真机调试和体验版都走局域网 IP（与 caoxiaogai-aisales 一致）。
+ * 开发者工具、真机调试和体验版都走当前配置的局域网 IP（与 caoxiaogai-aisales 一致）。
  * 延迟到首次请求再判定，避免模块加载时读不到运行环境。
  */
 export function getApiBaseUrl(): string {

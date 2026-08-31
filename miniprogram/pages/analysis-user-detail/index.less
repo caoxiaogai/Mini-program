@@ -1,11 +1,11 @@
 page {
   min-height: 100vh;
-  background: #ffffff;
+  background: @app-page-background;
 }
 
 .user-detail-page {
   min-height: 100vh;
-  background: #ffffff;
+  background: @app-page-background;
   color: #000000;
 }
 
@@ -13,7 +13,7 @@ page {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: #ffffff;
+  background: #f5f5f5;
 }
 
 .user-detail-page__content {
@@ -31,10 +31,8 @@ page {
 .user-detail__profile-card {
   gap: 20rpx;
   padding: 40rpx;
-  border: 2rpx solid @content-box-border;
   border-radius: 40rpx;
   background: linear-gradient(180deg, #f3fbfc 0%, #ffffff 100%);
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
 }
 
 .user-detail__profile-main {
@@ -99,12 +97,12 @@ page {
 
 .user-detail__record-intent--medium {
   color: #ffa602;
-  background: #f5ead5;
+  background: #fff0d3;
 }
 
 .user-detail__record-intent--low {
-  color: #707e80;
-  background: #ededed;
+  color: #656159;
+  background: #d8d8d8;
 }
 
 .user-detail__metrics {
@@ -146,41 +144,58 @@ page {
   display: flex;
   flex-direction: column;
   margin-top: 40rpx;
-  gap: 10rpx;
 }
 
 .user-detail__records-card {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
-  padding: 30rpx;
-  border: 2rpx solid @content-box-border;
-  border-radius: 40rpx;
+  gap: 34rpx;
+  padding: 0 40rpx 40rpx;
+  border-radius: 48rpx;
   background: #ffffff;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
 }
 
-.user-detail__title {
+.user-detail__records-header {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 30rpx 0;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.user-detail__records-icon {
+  width: 48rpx;
+  height: 48rpx;
+  flex: none;
+}
+
+.user-detail__records-title {
   color: #8a8e94;
   font-size: 28rpx;
-  line-height: normal;
+  font-weight: 500;
+  line-height: 40rpx;
+}
+
+.user-detail__records-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
 }
 
 .user-detail__records {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 30rpx;
 }
 
 .user-detail__record {
   display: flex;
-  min-height: 176rpx;
   flex-direction: column;
   align-items: stretch;
-  gap: 20rpx;
-  padding: 20rpx;
-  border-radius: 20rpx;
+  gap: 30rpx;
+  padding: 30rpx;
+  border-radius: 30rpx;
   background: #f5f5f5;
   box-sizing: border-box;
 }

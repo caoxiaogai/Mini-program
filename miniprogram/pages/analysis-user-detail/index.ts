@@ -99,9 +99,9 @@ Page({
   },
   onUserRecordTap(event: WechatMiniprogram.TouchEvent) {
     const contentId = event.currentTarget.dataset.contentId as string | undefined
-    if (!contentId) return
+    if (!contentId || !this.userId) return
 
-    wx.navigateTo({ url: `/pages/analysis-detail/index?id=${contentId}` })
+    wx.navigateTo({ url: `/pages/analysis-user-journey/index?userId=${this.userId}&materialId=${contentId}` })
   },
   showNotice() {
     if (this.noticeTimer !== null) {

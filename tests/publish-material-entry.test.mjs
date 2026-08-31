@@ -1,0 +1,89 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import test from 'node:test'
+
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+
+test('publish entry exposes separate image, video and PDF choices', async () => {
+  const { PUBLISH_ENTRY_TYPE_OPTIONS, getPublishEntryType, getMediaPickerType } = await import('../miniprogram/utils/publish-media.ts')
+
+  assert.deepEqual(PUBLISH_ENTRY_TYPE_OPTIONS.map((item) => item.id), ['image', 'video', 'pdf'])
+  assert.deepEqual(PUBLISH_ENTRY_TYPE_OPTIONS.map((item) => item.label), ['图片', '视频', 'PDF'])
+  assert.equal(getPublishEntryType('image'), 'image')
+  assert.equal(getPublishEntryType('video'), 'video')
+  assert.equal(getPublishEntryType('pdf'), 'pdf')
+  assert.equal(getPublishEntryType(undefined), null)
+  assert.equal(getPublishEntryType('media'), null)
+  assert.equal(getMediaPickerType('image'), 'image')
+  assert.equal(getMediaPickerType('video'), 'video')
+  assert.equal(getMediaPickerType('pdf'), 'pdf')
+})
+
+test('home routes both publish entry points through the shared type sheet', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const logic = read('miniprogram/pages/index/index.ts')
+  const config = read('miniprogram/pages/index/index.json')
+  const component = read('miniprogram/components/publish-type-sheet/index.wxml')
+  const componentStyles = read('miniprogram/components/publish-type-sheet/index.less')
+
+  assert.match(config, /"publish-type-sheet"\s*:\s*"\/components\/publish-type-sheet\/index"/)
+  assert.match(page, /<publish-type-sheet[\s\S]*visible="\{\{publishTypeSheetVisible\}\}"/)
+  assert.match(page, /bind:select="onPublishTypeSelect"/)
+  assert.match(page, /bind:cancel="onPublishTypeCancel"/)
+  assert.match(component, /bindtap="onCancelTap"/)
+  assert.match(component, />取消<\/text>/)
+  assert.match(componentStyles, /\.publish-type-sheet\s*\{[\s\S]*background:\s*#f5f5f5;/)
+  assert.match(componentStyles, /\.publish-type-sheet__panel\s*\{[\s\S]*gap:\s*20rpx;/)
+  assert.match(componentStyles, /\.publish-type-sheet__cancel\s*\{[\s\S]*background:\s*#ffffff;/)
+  assert.match(componentStyles, /\.publish-type-sheet__cancel[\s\S]*height:\s*160rpx;/)
+  assert.match(logic, /onMaterialPublishTap\(\)\s*\{[\s\S]*publishTypeSheetVisible: true/)
+  assert.match(logic, /onPlusTap\(\)\s*\{\s*this\.setActiveTab\(2\)\s*}/)
+  assert.doesNotMatch(logic, /onPlusTap\(\)\s*\{[\s\S]*publishTypeSheetVisible: true/)
+  assert.match(logic, /url: `\/pages\/materials\/publish\/index\?type=\$\{type\}`/)
+})
+
+test('publish editor reads the selected type and limits native pickers', () => {
+  const page = read('miniprogram/pages/materials/publish/index.ts')
+  const markup = read('miniprogram/pages/materials/publish/index.wxml')
+
+  assert.match(page, /entryType:\s*'image'\s*as\s*PublishEntryType/)
+  assert.match(page, /getPublishEntryType\(options\.type\)/)
+  assert.match(page, /mediaType:\s*\[this\.entryType === 'video' \? 'video' : 'image'\]/)
+  assert.match(page, /takePendingPublishSelection\(\)/)
+  assert.match(page, /this\.entryType !== 'image'/)
+  assert.match(markup, /placeholder="添加文案"/)
+  assert.doesNotMatch(page, /mediaType:\s*\['image',\s*'video'\]/)
+})
+
+test('publish type selection opens the phone picker before navigating to the detail editor', async () => {
+  const selection = await import('../miniprogram/utils/publish-selection.ts')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+  const materialsLogic = read('miniprogram/pages/materials/index.ts')
+  const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
+  const publishMarkup = read('miniprogram/pages/materials/publish/index.wxml')
+  const materialsConfig = read('miniprogram/pages/materials/index.json')
+
+  assert.equal(typeof selection.setPendingPublishSelection, 'function')
+  assert.equal(typeof selection.takePendingPublishSelection, 'function')
+  assert.match(homeLogic, /wx\.chooseMedia\([\s\S]*sourceType:\s*\['album'\]/)
+  assert.match(homeLogic, /setPendingPublishSelection\(/)
+  const materialsMarkup = read('miniprogram/pages/materials/index.wxml')
+  assert.match(materialsMarkup, /<publish-type-sheet[\s\S]*visible="\{\{publishTypeSheetVisible\}\}"/)
+  assert.match(materialsConfig, /publish-type-sheet/)
+  assert.match(publishLogic, /takePendingPublishSelection\(\)/)
+  assert.match(publishMarkup, /placeholder="添加文案"/)
+  assert.match(publishLogic, /chooseImageOrVideo\(\['album'\]\)/)
+  assert.doesNotMatch(publishLogic, /chooseImageOrVideo\(\['camera'\]\)/)
+})
+
+test('publish selection is consumed once and image detail can append another image', async () => {
+  const { setPendingPublishSelection, takePendingPublishSelection } = await import('../miniprogram/utils/publish-selection.ts')
+  const { mergePublishMedia } = await import('../miniprogram/utils/publish-media.ts')
+  const first = { id: 'image-1', path: 'wxfile://image-1', kind: 'image', previewPath: '', name: '', duration: 0 }
+  const second = { id: 'image-2', path: 'wxfile://image-2', kind: 'image', previewPath: '', name: '', duration: 0 }
+
+  setPendingPublishSelection({ type: 'image', media: [first] })
+  assert.deepEqual(takePendingPublishSelection(), { type: 'image', media: [first] })
+  assert.equal(takePendingPublishSelection(), null)
+  assert.deepEqual(mergePublishMedia([first], [second]).items, [first, second])
+})

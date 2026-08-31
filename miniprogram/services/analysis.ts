@@ -1,5 +1,4 @@
 import type {
-  ApiContentDetail,
   ApiContentListItem,
   ApiCustomerListItem,
   ApiCustomerViewHistory,
@@ -12,7 +11,8 @@ import type {
 import type {
   AnalysisCard,
   AnalysisChartPoint,
-  AnalysisDetailViewModel,
+  AnalysisAudienceUser,
+  AnalysisContentDetailViewModel,
   AnalysisIntentLevel,
   AnalysisMetric,
   AnalysisReadRange,
@@ -34,10 +34,12 @@ import type { DateRange } from '../utils/date-range'
 import { getTotalRangeStart, startOfWeekMonday } from '../utils/date-range'
 import { aggregateCustomerHistoryByMaterial, resolveIntentLevelFromCounts } from '../utils/analysis-users'
 import { prepareMediaUrls } from '../utils/media'
-import { prepareMaterialThumbnail, prepareMaterialThumbnailMap } from './materials'
+import { DEV_UI_PREVIEW } from '../config/dev'
+import { getAnalysisContentDetailPreview, getAnalysisOverviewPreview, getAnalysisWorkListPreview } from './analysis-preview'
+import { prepareMaterialThumbnailMap } from './materials'
 import { request, resolveMediaUrl } from './request'
 
-/** 分析页时间筛选：日/周/月对应后端 today/week/month；日历自定义走 custom；「总」受后端 custom 上限约束取最近 62 天（待后端确认全量口径） */
+/** 分析页时间筛选：日/周/月对应后端 today/week/month；日历自定义走 custom，范围限制为最近 62 天。 */
 export type AnalysisTimeRange = 'day' | 'week' | 'month' | 'total' | 'custom'
 
 const MAX_QUERY_RANGE_DAYS = 62
@@ -104,7 +106,11 @@ const workSortOrderBy: Record<AnalysisWorkSortId, string> = {
   completion: 'complete_count',
 }
 
-function mapContentCard(item: ApiContentListItem, thumbnailUrl: string): AnalysisCard {
+function mapContentCard(
+  item: ApiContentListItem,
+  thumbnailUrl: string,
+  intentSummary?: ContentDetailIntentSummary,
+): AnalysisCard {
   const metrics = buildCardMetrics(item.viewCount, item.forwardCount, item.completeCount, item.viewerCount)
 
   return {
@@ -113,6 +119,7 @@ function mapContentCard(item: ApiContentListItem, thumbnailUrl: string): Analysi
     title: item.title ?? '',
     date: formatDateKey(item.createTime),
     publishedAt: formatPublishedAt(item.createTime),
+    ...getContentDetailIntent(intentSummary),
     metrics: metrics.full,
     compactMetrics: metrics.compact,
     sortCounts: buildCardSortCounts(item.viewCount, item.forwardCount, item.completeCount),
@@ -121,14 +128,18 @@ function mapContentCard(item: ApiContentListItem, thumbnailUrl: string): Analysi
 
 function buildWorkSummary(dashboard: ApiDashboard): AnalysisMetric[] {
   return [
-    { label: '总发布', value: formatCount(dashboard.totalPublishCount) },
-    { label: '总浏览次数', value: formatCount(dashboard.totalViewCount) },
-    { label: '总转发', value: formatCount(dashboard.totalForwardCount) },
+    { label: '总浏览次数', value: formatCount(dashboard.totalViewCount), iconPath: '/assets/analysis/total-view-icon.svg' },
+    { label: '总转发', value: formatCount(dashboard.totalForwardCount), iconPath: '/assets/analysis/total-forward-icon.svg' },
   ]
 }
 
-async function mapContentCards(contents: ApiContentListItem[] | null | undefined, sortId: AnalysisWorkSortId): Promise<AnalysisCard[]> {
+async function mapContentCards(
+  contents: ApiContentListItem[] | null | undefined,
+  sortId: AnalysisWorkSortId,
+  intentCustomers: ApiIntentCustomer[] = [],
+): Promise<AnalysisCard[]> {
   const items = contents ?? []
+  const intentByMaterial = buildContentDetailIntentMap(intentCustomers)
   const thumbnailByMaterialId = await prepareMaterialThumbnailMap(items.map((item) => ({
     id: String(item.materialId),
     fileType: item.fileType,
@@ -136,7 +147,7 @@ async function mapContentCards(contents: ApiContentListItem[] | null | undefined
   })))
 
   return sortAnalysisCards(
-    items.map((item) => mapContentCard(item, thumbnailByMaterialId.get(String(item.materialId)) ?? '')),
+    items.map((item) => mapContentCard(item, thumbnailByMaterialId.get(String(item.materialId)) ?? '', intentByMaterial.get(String(item.materialId)))),
     sortId,
   )
 }
@@ -147,6 +158,8 @@ export function getAnalysisWorkList(
   customRange?: DateRange,
   sortId: AnalysisWorkSortId = 'view',
 ): Promise<AnalysisWorkListViewModel> {
+  if (DEV_UI_PREVIEW) return Promise.resolve(getAnalysisWorkListPreview())
+
   const query = {
     ...buildPeriodQuery(period, customRange),
     orderBy: workSortOrderBy[sortId],
@@ -155,9 +168,13 @@ export function getAnalysisWorkList(
   return Promise.all([
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query }),
     request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query }),
-  ]).then(async ([dashboard, contents]) => ({
+    request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query, silent: true }).catch(
+      () => [] as ApiIntentCustomer[],
+    ),
+  ]).then(async ([dashboard, contents, intentCustomers]) => ({
     summary: buildWorkSummary(dashboard),
-    cards: await mapContentCards(contents, sortId),
+    cards: await mapContentCards(contents, sortId, intentCustomers),
+    workCount: formatCount(dashboard.totalPublishCount),
   }))
 }
 
@@ -323,11 +340,19 @@ function buildHeroMetric(
   }
 }
 
-function buildHeroMetrics(dashboard: ApiDashboard, period: AnalysisTimeRange): AnalysisViewModel['totalData']['heroMetrics'] {
+function buildHeroMetrics(totalDashboard: ApiDashboard, period: AnalysisTimeRange): AnalysisViewModel['totalData']['heroMetrics'] {
   const comparisonLabel = getTotalComparisonLabel(period)
+  const viewDelta = Math.trunc(Number(totalDashboard.totalViewCountDelta) || 0)
+  const viewerDelta = Math.trunc(Number(totalDashboard.totalViewerCountDelta) || 0)
   return [
-    buildHeroMetric('views', '浏览总次数', dashboard.totalViewCount, dashboard.totalViewCountDelta, comparisonLabel),
-    buildHeroMetric('viewers', '浏览总人数', dashboard.totalViewerCount, dashboard.totalViewerCountDelta, comparisonLabel),
+    {
+      label: '阅读总次数', value: `${formatCount(totalDashboard.totalViewCount)}次`, id: 'views', renderKey: `views-${viewDelta}`,
+      comparisonLabel, delta: formatSignedCountDelta(viewDelta), deltaTone: viewDelta < 0 ? 'down' : 'up',
+    },
+    {
+      label: '阅读总人数', value: `${formatCount(totalDashboard.totalViewerCount)}人`, id: 'viewers', renderKey: `viewers-${viewerDelta}`,
+      comparisonLabel, delta: formatSignedCountDelta(viewerDelta), deltaTone: viewerDelta < 0 ? 'down' : 'up',
+    },
   ]
 }
 
@@ -444,6 +469,8 @@ export function getAnalysisOverview(
   sortId: AnalysisWorkSortId = 'view',
   totalPeriod: AnalysisTimeRange = 'total',
 ): Promise<AnalysisViewModel> {
+  if (DEV_UI_PREVIEW) return Promise.resolve(getAnalysisOverviewPreview())
+
   const periodQuery = buildPeriodQuery(period, customRange)
   const contentQuery = { ...periodQuery, orderBy: workSortOrderBy[sortId] }
   const resolvedTotalPeriod = totalPeriod === 'custom' ? 'total' : totalPeriod
@@ -462,7 +489,7 @@ export function getAnalysisOverview(
   ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) => {
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
     const [cards, avatarUrls] = await Promise.all([
-      mapContentCards(contents, sortId),
+      mapContentCards(contents, sortId, intentCustomers),
       prepareMediaUrls(customers.map((customer) => customer.avatar)),
     ])
     const heroDashboard = totalDashboard ?? dashboard
@@ -470,10 +497,11 @@ export function getAnalysisOverview(
     return {
       summary: buildWorkSummary(dashboard),
       cards,
+      workCount: formatCount(dashboard.totalPublishCount),
       userSummary: [
-        { label: '高意向', value: formatCount(dashboard.highIntentCount) },
-        { label: '中意向', value: formatCount(dashboard.mediumIntentCount) },
-        { label: '低意向', value: formatCount(dashboard.lowIntentCount) },
+        { label: '高意向', value: formatCount(dashboard.highIntentCount), iconPath: '/assets/analysis/intent-summary-icon.svg' },
+        { label: '中意向', value: formatCount(dashboard.mediumIntentCount), iconPath: '/assets/analysis/intent-summary-icon.svg' },
+        { label: '低意向', value: formatCount(dashboard.lowIntentCount), iconPath: '/assets/analysis/intent-summary-icon.svg' },
       ],
       audienceUsers: customers.map((customer, index) => {
         const customerId = String(customer.customerId)
@@ -507,62 +535,95 @@ export function getAnalysisOverview(
   })
 }
 
-export function getAnalysisDetail(cardId: string): Promise<AnalysisDetailViewModel | null> {
-  const rangeQuery = buildPeriodQuery('total')
+type ContentDetailIntentSummary = Record<AnalysisIntentLevel, number>
 
-  return Promise.all([
-    request<ApiContentDetail | null>({
-      method: 'GET',
-      path: '/analysis/content/detail',
-      query: { ...rangeQuery, materialId: cardId },
-    }).catch(() => null),
-    request<ApiMaterial>({ method: 'GET', path: `/material/${cardId}`, silent: true }).catch(() => null),
-    request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: rangeQuery, silent: true }).catch(
-      () => [] as ApiIntentCustomer[],
-    ),
-  ]).then(async ([detail, material, intentCustomers]) => {
-    if (!detail && !material) return null
+function buildContentDetailIntentMap(intentCustomers: ApiIntentCustomer[]): Map<string, ContentDetailIntentSummary> {
+  const byMaterial = new Map<string, ContentDetailIntentSummary>()
+  for (const item of intentCustomers) {
+    if (!item.materialId || !['high', 'medium', 'low'].includes(item.intentLevel)) continue
+    const materialId = String(item.materialId)
+    const counts = byMaterial.get(materialId) ?? { high: 0, medium: 0, low: 0 }
+    counts[item.intentLevel] += 1
+    byMaterial.set(materialId, counts)
+  }
+  return byMaterial
+}
 
-    const intentByCustomer = new Map((intentCustomers ?? []).map((item) => [String(item.customerId), item]))
-    const audienceList = detail?.audienceList ?? []
-    const metrics = buildCardMetrics(detail?.viewCount, detail?.forwardCount, detail?.completeCount, detail?.viewerCount)
-    const [thumbnailUrl, avatarUrls] = await Promise.all([
-      prepareMaterialThumbnail({
-        id: String(material?.id ?? detail?.materialId ?? cardId),
-        fileType: material?.fileType ?? detail?.fileType,
-        coverUrl: material?.coverUrl,
-        fileUrl: material?.fileUrl,
-      }),
-      prepareMediaUrls(audienceList.map((audience) => audience.avatar)),
-    ])
+function getContentDetailIntent(summary?: ContentDetailIntentSummary): Pick<AnalysisContentDetailViewModel['cards'][number], 'intentLevel' | 'intentLabel'> {
+  if (!summary || (summary.high === 0 && summary.medium === 0 && summary.low === 0)) {
+    return { intentLevel: 'empty', intentLabel: '暂无高意向' }
+  }
+  if (summary.high > 0) return { intentLevel: 'high', intentLabel: `${summary.high} 个高意向` }
+  if (summary.medium > 0) return { intentLevel: 'medium', intentLabel: `${summary.medium} 个中意向` }
+  return { intentLevel: 'low', intentLabel: `${summary.low} 个低意向` }
+}
+
+function getCompactMetricValue(card: AnalysisCard, label: string): string {
+  return card.compactMetrics.find((metric) => metric.label === label)?.value ?? '0'
+}
+
+function mapContentIntentUsers(items: ApiIntentCustomer[], avatarUrls: string[]): AnalysisAudienceUser[] {
+  return items.map((item, index) => {
+    const userId = String(item.customerId)
+    const materialId = item.materialId == null ? 'all' : String(item.materialId)
+    const level = item.intentLevel
 
     return {
-      card: {
-        id: String(detail?.materialId ?? material?.id ?? cardId),
-        thumbnailUrl,
-        title: detail?.title ?? material?.title ?? '',
-        date: formatDateKey(material?.createTime),
-        publishedAt: formatPublishedAt(material?.createTime),
-        metrics: metrics.full,
-        compactMetrics: metrics.compact,
-        sortCounts: buildCardSortCounts(detail?.viewCount, detail?.forwardCount, detail?.completeCount),
-      },
-      intentUsers: audienceList.map((audience, index) => {
-        const customerId = String(audience.customerId)
-        const level = resolveIntentLevel(intentByCustomer, customerId, audience.viewCount ?? 0, audience.completed ?? 0)
-        const intent = intentByCustomer.get(customerId)
+      id: `${userId}-${materialId}-${index}`,
+      userId,
+      avatarUrl: avatarUrls[index] ?? '',
+      name: item.nickname ?? '微信用户',
+      level,
+      levelLabel: intentLevelLabels[level],
+      readCount: formatCount(item.viewCount),
+      completionCount: formatCount(item.completed),
+      shareCount: item.hasForwarded === 1 ? '1' : '0',
+    }
+  })
+}
 
-        return {
-          id: customerId,
-          avatarUrl: avatarUrls[index] ?? '',
-          name: audience.nickname ?? '微信用户',
-          level,
-          levelLabel: intentLevelLabels[level],
-          readCount: formatCount(audience.viewCount),
-          completionCount: audience.completed === 1 ? '1' : '0',
-          shareCount: intent?.hasForwarded === 1 ? '1' : '0',
-        }
-      }),
+/** 内容详情页：复用内容分析列表与数据看板，按筛选范围返回我的作品卡片。 */
+export function getAnalysisContentDetail(
+  period: AnalysisTimeRange = 'day',
+  customRange?: DateRange,
+  sortId: AnalysisWorkSortId = 'view',
+): Promise<AnalysisContentDetailViewModel> {
+  if (DEV_UI_PREVIEW) return Promise.resolve(getAnalysisContentDetailPreview())
+
+  const query = {
+    ...buildPeriodQuery(period, customRange),
+    orderBy: workSortOrderBy[sortId],
+  }
+
+  return Promise.all([
+    request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query }),
+    request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query }),
+    request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query, silent: true }).catch(
+      () => [] as ApiIntentCustomer[],
+    ),
+  ]).then(async ([dashboard, contents, intentCustomers]) => {
+    const [cards, intentAvatarUrls] = await Promise.all([
+      mapContentCards(contents, sortId),
+      prepareMediaUrls(intentCustomers.map((item) => item.avatar)),
+    ])
+    const intentByMaterial = buildContentDetailIntentMap(intentCustomers)
+
+    return {
+      totalViewCount: formatCount(dashboard.totalViewCount),
+      totalForwardCount: formatCount(dashboard.totalForwardCount),
+      totalPublishCount: formatCount(dashboard.totalPublishCount),
+      intentUserCount: formatCount(intentCustomers.length),
+      intentUsers: mapContentIntentUsers(intentCustomers, intentAvatarUrls),
+      cards: cards.map((card) => ({
+        id: card.id,
+        thumbnailUrl: card.thumbnailUrl,
+        title: card.title,
+        publishedAt: card.publishedAt,
+        ...getContentDetailIntent(intentByMaterial.get(card.id)),
+        viewCount: getCompactMetricValue(card, '浏览次数'),
+        forwardCount: getCompactMetricValue(card, '转发'),
+        completeCount: getCompactMetricValue(card, '完播'),
+      })),
     }
   })
 }

@@ -26,7 +26,10 @@ export interface HomeContentViewModel {
   thumbnailUrl: string
   viewCount: string
   forwardCount: string
+  completeCount: string
   highIntentCount: string
+  highIntentLevel: 'high' | 'empty'
+  highIntentLabel: string
 }
 
 export interface HomeIntentSummaryViewModel {
@@ -50,6 +53,7 @@ export interface HomeTodayViewModel {
 
 export interface HomePageViewModel {
   unreadNotificationCount: number
+  unreadNotificationEventIds: string[]
   notifications: HomeNotificationViewModel[]
   contents: HomeContentViewModel[]
   intentSummary: HomeIntentSummaryViewModel

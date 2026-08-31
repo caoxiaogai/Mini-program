@@ -3,11 +3,15 @@ import type { PublishMediaKind, PublishMediaViewModel } from '../types/materials
 export const MAX_IMAGE_COUNT = 9
 export const MAX_VIDEO_DURATION_SECONDS = 30
 
+export type PublishEntryType = 'image' | 'video' | 'pdf'
+
 export const PUBLISH_TYPE_OPTIONS = [
   { id: 'image', label: '图片' },
   { id: 'video', label: '视频' },
   { id: 'pdf', label: 'PDF' },
 ] as const
+
+export const PUBLISH_ENTRY_TYPE_OPTIONS = PUBLISH_TYPE_OPTIONS
 
 export type PublishTypeOptionId = (typeof PUBLISH_TYPE_OPTIONS)[number]['id']
 
@@ -15,6 +19,15 @@ export const PUBLISH_SOURCE_OPTIONS = [
   { id: 'camera', label: '拍摄' },
   { id: 'album', label: '从相册选择' },
 ] as const
+
+export function getPublishEntryType(value: string | undefined): PublishEntryType | null {
+  if (value === 'image' || value === 'video' || value === 'pdf') return value
+  return null
+}
+
+export function getMediaPickerType(entryType: PublishEntryType): 'image' | 'video' | 'pdf' {
+  return entryType
+}
 
 export function getPublishTypeOptions(
   items: Array<{ kind: PublishMediaKind }>,

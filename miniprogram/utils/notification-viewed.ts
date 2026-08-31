@@ -30,6 +30,13 @@ export function rememberViewedNotification(
   return { ...viewed, [eventId]: true }
 }
 
+export function rememberViewedNotifications(
+  viewed: ViewedNotificationMap,
+  eventIds: Array<string | null | undefined>,
+): ViewedNotificationMap {
+  return eventIds.reduce((next, eventId) => rememberViewedNotification(next, String(eventId ?? '')), viewed)
+}
+
 export function isViewedNotification(eventId: string, viewed: ViewedNotificationMap): boolean {
   if (!eventId) return false
   return viewed[eventId] === true
@@ -63,6 +70,20 @@ export function persistViewedNotification(eventId: string | null | undefined): b
 
   const current = readViewedNotificationMap()
   const next = rememberViewedNotification(current, id)
+  if (next === current) return false
+
+  try {
+    wx.setStorageSync(viewedNotificationStorageKey(), next)
+  } catch {
+    // 存储失败时仍以本次会话的本地移除为准，下次启动可能再次出现
+  }
+  return true
+}
+
+/** 将多条浏览/转发通知记为已读。返回是否新增了至少一条已读记录。 */
+export function persistViewedNotifications(eventIds: Array<string | null | undefined>): boolean {
+  const current = readViewedNotificationMap()
+  const next = rememberViewedNotifications(current, eventIds)
   if (next === current) return false
 
   try {

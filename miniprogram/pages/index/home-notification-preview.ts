@@ -13,6 +13,16 @@ export function markHomeNotificationViewed(
   return {
     ...homeData,
     unreadNotificationCount: Math.max(homeData.unreadNotificationCount - 1, 0),
+    unreadNotificationEventIds: homeData.unreadNotificationEventIds.filter((id) => id !== eventId),
     notifications,
+  }
+}
+
+export function markHomeNotificationsViewed(homeData: HomePageViewModel): HomePageViewModel {
+  return {
+    ...homeData,
+    unreadNotificationCount: 0,
+    unreadNotificationEventIds: [],
+    notifications: [],
   }
 }

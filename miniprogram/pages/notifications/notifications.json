@@ -1,7 +1,8 @@
 {
   "usingComponents": {
     "notification-header": "/components/notification-header/index",
-    "bottom-tab-bar": "/components/bottom-tab-bar/bottom-tab-bar"
+    "bottom-tab-bar": "/components/bottom-tab-bar/bottom-tab-bar",
+    "notification-mark-all-read": "/components/notification-mark-all-read/index"
   },
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark"

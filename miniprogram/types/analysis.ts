@@ -1,4 +1,4 @@
-export type AnalysisMetric = { label: string; value: string }
+export type AnalysisMetric = { label: string; value: string; iconPath?: string }
 
 export type AnalysisWorkSortId = 'completion' | 'share' | 'view'
 
@@ -36,23 +36,14 @@ export type AnalysisCard = {
   title: string
   date: string
   publishedAt: string
+  intentLevel: AnalysisIntentLevel | 'empty'
+  intentLabel: string
   metrics: AnalysisMetric[]
   compactMetrics: AnalysisMetric[]
   sortCounts: AnalysisCardSortCounts
 }
 
 export type AnalysisIntentLevel = 'high' | 'medium' | 'low'
-
-export type AnalysisIntentUser = {
-  id: string
-  avatarUrl: string
-  name: string
-  level: AnalysisIntentLevel
-  levelLabel: string
-  readCount: string
-  completionCount: string
-  shareCount: string
-}
 
 export type AnalysisUserRecord = {
   id: string
@@ -88,8 +79,30 @@ export type AnalysisUserDetailViewModel = {
   records: AnalysisUserRecord[]
 }
 
+export type UserJourneyProduct = {
+  id: string
+  thumbnailUrl: string
+  title: string
+  intentLabel: string
+}
+
+export type UserJourneyEvent = {
+  id: string
+  occurredAt: string
+  action: string
+  detail: string
+}
+
+export type UserJourneyViewModel = {
+  userId: string
+  userName: string
+  product: UserJourneyProduct
+  events: UserJourneyEvent[]
+}
+
 export type AnalysisAudienceUser = {
   id: string
+  userId?: string
   avatarUrl: string
   name: string
   level: AnalysisIntentLevel
@@ -99,14 +112,31 @@ export type AnalysisAudienceUser = {
   shareCount: string
 }
 
-export type AnalysisDetailViewModel = {
-  card: AnalysisCard
-  intentUsers: AnalysisIntentUser[]
+export type AnalysisContentDetailCard = {
+  id: string
+  thumbnailUrl: string
+  title: string
+  publishedAt: string
+  intentLevel: AnalysisIntentLevel | 'empty'
+  intentLabel: string
+  viewCount: string
+  forwardCount: string
+  completeCount: string
+}
+
+export type AnalysisContentDetailViewModel = {
+  totalViewCount: string
+  totalForwardCount: string
+  totalPublishCount: string
+  intentUserCount: string
+  intentUsers: AnalysisAudienceUser[]
+  cards: AnalysisContentDetailCard[]
 }
 
 export type AnalysisViewModel = {
   summary: AnalysisMetric[]
   cards: AnalysisCard[]
+  workCount: string
   userSummary: AnalysisMetric[]
   audienceUsers: AnalysisAudienceUser[]
   totalData: AnalysisTotalViewModel
@@ -115,4 +145,5 @@ export type AnalysisViewModel = {
 export type AnalysisWorkListViewModel = {
   summary: AnalysisMetric[]
   cards: AnalysisCard[]
+  workCount: string
 }

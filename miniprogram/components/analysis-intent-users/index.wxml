@@ -1,0 +1,46 @@
+<view class="analysis-intent-users">
+  <view class="analysis-intent-users__header">
+    <image class="analysis-intent-users__icon" src="/assets/home-new/intent-user-icon.svg" mode="aspectFit" />
+    <text class="analysis-intent-users__title">意向用户<text class="analysis-intent-users__count">（{{userCount}}）</text></text>
+    <view class="analysis-intent-users__header-line"></view>
+  </view>
+
+  <view class="analysis-intent-users__body">
+    <view class="analysis-intent-users__filters">
+      <view class="analysis-intent-users__periods">
+        <view class="analysis-intent-users__period-selection" style="transform: translateX({{periodSelectionOffset}}px);"></view>
+        <view wx:for="{{periods}}" wx:key="id" class="analysis-intent-users__period {{item.id === activePeriod ? 'analysis-intent-users__period--active' : ''}}" bindtap="onPeriodTap" data-id="{{item.id}}" data-index="{{index}}">
+          <image wx:if="{{item.iconPath}}" class="analysis-intent-users__calendar" src="{{item.iconPath}}" mode="aspectFit" />
+          <text wx:else>{{item.label}}</text>
+        </view>
+      </view>
+      <view class="analysis-intent-users__sort" bindtap="onSortTap">
+        <text>{{sortLabel}}</text>
+        <image src="/assets/analysis/polygon-2.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <view wx:if="{{users.length}}" class="analysis-intent-users__list">
+      <view wx:for="{{users}}" wx:key="id" class="analysis-intent-users__row" bindtap="onUserTap" data-user-id="{{item.userId}}" hover-class="analysis-intent-users__row--pressed">
+        <image class="analysis-intent-users__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
+        <view class="analysis-intent-users__content">
+          <view class="analysis-intent-users__details">
+            <view class="analysis-intent-users__identity">
+              <text class="analysis-intent-users__name">{{item.name}}</text>
+              <text class="analysis-intent-users__tag analysis-intent-users__tag--{{item.level}}">#{{item.levelLabel}}</text>
+            </view>
+            <view class="analysis-intent-users__stats">
+              <view class="analysis-intent-users__stat"><text class="analysis-intent-users__stat-label">浏览次数</text><text class="analysis-intent-users__stat-value">{{item.readCount}}</text></view>
+              <view class="analysis-intent-users__divider"></view>
+              <view class="analysis-intent-users__stat"><text class="analysis-intent-users__stat-label">完播</text><text class="analysis-intent-users__stat-value">{{item.completionCount}}</text></view>
+              <view class="analysis-intent-users__divider"></view>
+              <view class="analysis-intent-users__stat"><text class="analysis-intent-users__stat-label">转发</text><text class="analysis-intent-users__stat-value">{{item.shareCount}}</text></view>
+            </view>
+          </view>
+          <view class="analysis-intent-users__line analysis-intent-users__line--{{item.level}}"></view>
+        </view>
+      </view>
+    </view>
+    <view wx:else class="analysis-intent-users__empty">暂无意向用户</view>
+  </view>
+</view>

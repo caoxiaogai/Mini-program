@@ -9,7 +9,7 @@ Component({
     analysisTabOffset: { type: Number, value: 0 },
   },
   methods: {
-    onAnalysisTabTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysistabtap', { index: Number(event.currentTarget.dataset.index) }) },
+    onAnalysisTabTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) { this.triggerEvent('analysistabtap', { index: Number(event.detail.index) }) },
     onAnalysisTouchStart(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysistouchstart', { clientX: event.touches[0]?.clientX ?? 0 }) },
     onAnalysisTouchEnd(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysistouchend', { clientX: event.changedTouches[0]?.clientX ?? 0 }) },
   },

@@ -1,0 +1,273 @@
+.analysis-intent-users {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 15px;
+  padding: 0 20px 15px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.analysis-intent-users__header {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 55px;
+  align-items: center;
+  gap: 5px;
+  padding: 15px 0;
+  box-sizing: border-box;
+}
+
+.analysis-intent-users__header-line {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: #f0f0f0;
+}
+
+.analysis-intent-users__icon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
+
+.analysis-intent-users__title {
+  color: #8a8e94;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.analysis-intent-users__count {
+  color: #000000;
+}
+
+.analysis-intent-users__body {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.analysis-intent-users__filters {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.analysis-intent-users__periods,
+.analysis-intent-users__sort {
+  position: relative;
+  display: flex;
+  height: 32px;
+  align-items: center;
+  padding: 2px;
+  border-radius: 10px;
+  background: #e0e0e0;
+  box-sizing: border-box;
+}
+
+.analysis-intent-users__periods {
+  width: 140px;
+}
+
+.analysis-intent-users__period-selection {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: 34px;
+  border-radius: 8px;
+  background: #ffffff;
+  transition: transform 180ms ease-out;
+}
+
+.analysis-intent-users__period,
+.analysis-intent-users__sort {
+  color: #8a8e94;
+  font-size: 13px;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.analysis-intent-users__period {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 34px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.analysis-intent-users__period--active {
+  color: #000000;
+}
+
+.analysis-intent-users__calendar {
+  width: 34px;
+  height: 28px;
+}
+
+.analysis-intent-users__sort {
+  width: 74px;
+  justify-content: center;
+  gap: 4px;
+  padding: 2px 10px;
+  color: #000000;
+}
+
+.analysis-intent-users__sort image {
+  width: 7px;
+  height: 4px;
+  flex: none;
+}
+
+.analysis-intent-users__list {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.analysis-intent-users__row {
+  display: flex;
+  width: 100%;
+  min-height: 59px;
+  align-items: flex-start;
+  gap: 11px;
+  transition: opacity 120ms ease-out;
+}
+
+.analysis-intent-users__row--pressed {
+  opacity: 0.72;
+}
+
+.analysis-intent-users__avatar {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  background: #d9e4ef;
+}
+
+.analysis-intent-users__content {
+  display: flex;
+  min-width: 0;
+  height: 59px;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.analysis-intent-users__details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.analysis-intent-users__identity {
+  display: flex;
+  min-width: 0;
+  height: 22px;
+  align-items: center;
+  gap: 12px;
+}
+
+.analysis-intent-users__name {
+  overflow: hidden;
+  color: #000000;
+  font-size: 16px;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analysis-intent-users__tag {
+  display: flex;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0 10px;
+  border-radius: 48px;
+  font-size: 11px;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.analysis-intent-users__tag--high {
+  color: #ff4343;
+  background: #ffd7ce;
+}
+
+.analysis-intent-users__tag--medium {
+  color: #ffa602;
+  background: #f5ead5;
+}
+
+.analysis-intent-users__tag--low {
+  color: #8a8e94;
+  background: #f0f0f0;
+}
+
+.analysis-intent-users__stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  color: #333333;
+  font-size: 12px;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.analysis-intent-users__stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.analysis-intent-users__stat-label {
+  color: #8a8e94;
+}
+
+.analysis-intent-users__stat-value {
+  color: #333333;
+}
+
+.analysis-intent-users__divider {
+  width: 1px;
+  height: 10px;
+  flex: none;
+  background: #b0b0b0;
+}
+
+.analysis-intent-users__line {
+  width: 100%;
+  height: 1px;
+}
+
+.analysis-intent-users__line--high,
+.analysis-intent-users__line--medium {
+  background: #f0f0f0;
+}
+
+.analysis-intent-users__line--low {
+  background: #f4f5f5;
+}
+
+.analysis-intent-users__empty {
+  min-height: 160px;
+  padding-top: 40px;
+  color: #8a8e94;
+  font-size: 14px;
+  text-align: center;
+  box-sizing: border-box;
+}

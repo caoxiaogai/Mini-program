@@ -1,17 +1,16 @@
 @publish-muted: #8a8e94;
-@publish-border: @content-box-border;
 @publish-accent: #0db6c5;
 
 page {
   min-height: 100vh;
-  background: #ffffff;
+  background: @app-page-background;
 }
 
 .publish-page {
   display: flex;
   min-height: 100vh;
   flex-direction: column;
-  background: #ffffff;
+  background: @app-page-background;
   color: #000000;
 }
 
@@ -20,23 +19,21 @@ page {
   flex: 1;
   min-height: 0;
   flex-direction: column;
-  padding: 10rpx 40rpx 180rpx;
+  padding: 10rpx 48rpx 180rpx;
   box-sizing: border-box;
 }
 
 .publish-page__image-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
   width: 100%;
 }
 
 .publish-page__image-slot {
   position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  height: auto;
-  border: 2rpx solid @publish-border;
+  width: 228rpx;
+  height: 228rpx;
   border-radius: 16rpx;
   box-sizing: border-box;
 }
@@ -194,7 +191,6 @@ page {
 
 .publish-page__draft-button {
   flex: 0 0 202rpx;
-  border: 2rpx solid #eff0f0;
   color: #000000;
 }
 
@@ -207,62 +203,4 @@ page {
 .publish-page__button--pressed {
   opacity: 0.66;
   transform: scale(0.98);
-}
-
-.publish-sheet {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  display: flex;
-  align-items: flex-end;
-}
-
-.publish-sheet__mask {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  animation: publish-sheet-mask-in 300ms ease-out both;
-}
-
-.publish-sheet__panel {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  overflow: hidden;
-  padding-bottom: env(safe-area-inset-bottom);
-  border-radius: 40rpx 40rpx 0 0;
-  background: #ffffff;
-  animation: publish-sheet-panel-in 300ms ease-out both;
-}
-
-.publish-sheet__option {
-  display: flex;
-  height: 100rpx;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 2rpx solid #f4f5f5;
-  color: #000000;
-  font-size: 30rpx;
-  line-height: normal;
-  box-sizing: border-box;
-}
-
-.publish-sheet__option:last-child {
-  border-bottom: 0;
-}
-
-.publish-sheet__option--pressed {
-  opacity: 0.66;
-}
-
-@keyframes publish-sheet-mask-in {
-  from { background: rgba(0, 0, 0, 0); }
-  to { background: rgba(0, 0, 0, 0.8); }
-}
-
-@keyframes publish-sheet-panel-in {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
 }

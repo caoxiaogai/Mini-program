@@ -2,6 +2,7 @@ import type { ApiMaterial, ApiNotificationEvent } from '../types/api'
 import type { NotificationFilterViewModel, NotificationsViewModel } from '../types/notifications'
 import { buildCustomRangeQuery } from '../utils/format'
 import { prepareMediaUrls } from '../utils/media'
+import { isViewedNotification, readViewedNotificationMap } from '../utils/notification-viewed'
 import { groupNotificationCards, mapNotificationEvent } from '../utils/notifications'
 import { prepareMaterialThumbnailMap } from './materials'
 import { request } from './request'
@@ -44,11 +45,13 @@ export function getNotifications(): Promise<NotificationsViewModel> {
         : { id }
     }))
     const avatarUrls = await prepareMediaUrls(visibleEvents.map((event) => event.avatar))
+    const viewedNotifications = readViewedNotificationMap()
     const cards = visibleEvents.map((event, index) => (
       mapNotificationEvent(
         event,
         event.materialId ? thumbnailByMaterial.get(String(event.materialId)) ?? '' : '',
         avatarUrls[index] ?? '',
+        !isViewedNotification(String(event.id ?? ''), viewedNotifications),
       )
     ))
 

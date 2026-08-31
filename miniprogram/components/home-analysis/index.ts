@@ -1,7 +1,7 @@
 import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
 import { fromDatasetId } from '../../utils/dataset-id'
 
-type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total'
+type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
 type AnalysisSortId = 'completion' | 'share' | 'view'
 Component({
   properties: {
@@ -17,11 +17,13 @@ Component({
     analysisSortSheetVisible: { type: Boolean, value: false },
     visibleAnalysisUsers: { type: Array, value: [] },
     workSummary: { type: Array, value: [] },
+    workCount: { type: String, value: '0' },
     visibleAnalysisCards: { type: Array, value: [] },
     hasAnalysisCards: { type: Boolean, value: false },
     hasAnalysisUsers: { type: Boolean, value: false },
     totalAnalysisPeriods: { type: Array, value: [] },
-    activeTotalPeriod: { type: String, value: 'total' },
+    activeOverviewPeriod: { type: String, value: 'day' },
+    activePeakPeriod: { type: String, value: 'day' },
     activeAnalysisReadRange: { type: String, value: 'total' },
     visibleAnalysisReadTrend: { type: Array, value: [] },
     analysisTrendSlotCount: { type: Number, value: 0 },
@@ -34,7 +36,8 @@ Component({
     onAnalysisTouchStart(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysistouchstart', { clientX: event.touches[0]?.clientX ?? 0 }) },
     onAnalysisTouchEnd(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysistouchend', { clientX: event.changedTouches[0]?.clientX ?? 0 }) },
     onPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) { this.triggerEvent('periodtap', event.detail) },
-    onTotalPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) { this.triggerEvent('totalperiodtap', event.detail) },
+    onTotalOverviewPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) { this.triggerEvent('overviewperiodtap', event.detail) },
+    onTotalPeakPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) { this.triggerEvent('peakperiodtap', event.detail) },
     onAnalysisSortTap() { this.triggerEvent('analysissorttap') },
     onAnalysisSortOptionTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('analysissortoptiontap', { id: event.currentTarget.dataset.id as AnalysisSortId }) },
     onAnalysisSortMaskTap() { this.triggerEvent('analysissortmasktap') },

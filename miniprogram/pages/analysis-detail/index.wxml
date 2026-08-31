@@ -1,55 +1,74 @@
 <view class="detail-page">
   <view class="detail-page__header">
-    <analysis-header title="内容分析" back="{{true}}" title-weight="600" />
+    <analysis-header title="通知" back="{{true}}" title-weight="600" />
   </view>
+
   <view wx:if="{{detail}}" class="detail-page__content">
-    <view class="detail-card">
-      <view class="detail-card__inner">
-        <view class="detail-card__head">
-          <image class="detail-card__thumbnail" src="{{detail.card.thumbnailUrl}}" mode="aspectFill" />
-          <view class="detail-card__identity">
-            <text class="detail-card__title">{{detail.card.title}}</text>
-            <text class="detail-card__date">{{detail.card.date}}</text>
-          </view>
+    <view class="detail-page__summary">
+      <view class="detail-page__summary-card">
+        <image class="detail-page__summary-icon detail-page__summary-icon--view" src="/assets/home-new/today-most-icon.svg" mode="aspectFit" />
+        <view class="detail-page__summary-copy">
+          <text class="detail-page__summary-value">{{detail.totalViewCount}}</text>
+          <text class="detail-page__summary-label">总阅读次数</text>
         </view>
-        <view class="detail-card__metrics">
-          <view wx:for="{{detail.card.metrics}}" wx:key="label" class="detail-card__metric">
-            <text class="detail-card__metric-label">{{item.label}}</text>
-            <text class="detail-card__metric-value">{{item.value}}</text>
-          </view>
+      </view>
+      <view class="detail-page__summary-card">
+        <image class="detail-page__summary-icon" src="/assets/home-new/action-forward.svg" mode="aspectFit" />
+        <view class="detail-page__summary-copy">
+          <text class="detail-page__summary-value">{{detail.totalForwardCount}}</text>
+          <text class="detail-page__summary-label">总转发</text>
         </view>
       </view>
     </view>
-    <view class="detail-intent">
-      <text class="detail-intent__title">意向用户</text>
-      <view class="detail-intent__panel">
-        <segmented-filter items="{{intentTabs}}" active-id="{{activeIntentLevel}}" bind:change="onIntentTabTap" bind:touchstart="onIntentTouchStart" bind:touchend="onIntentTouchEnd" />
-        <view wx:if="{{hasVisibleIntentUsers}}" class="detail-users">
-          <view wx:for="{{visibleIntentUsers}}" wx:key="id" class="detail-user" bindtap="onDetailUserTap" data-id="id:{{item.id}}">
-            <image class="detail-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
-            <view class="detail-user__body">
-              <view class="detail-user__summary">
-                <view class="detail-user__identity">
-                  <text class="detail-user__name">{{item.name}}</text>
-                  <text class="detail-user__tag detail-user__tag--{{item.level}}">#{{item.levelLabel}}</text>
+
+    <view class="detail-works-card">
+      <view class="detail-works-header">
+        <image class="detail-works-icon" src="/assets/analysis/my-works-icon.svg" mode="aspectFit" style="width:24px;height:24px;flex:none;" />
+        <text class="detail-works-title" style="font-size:14px;line-height:normal;white-space:nowrap;flex:none;">我的作品 <text class="detail-page__works-count">（{{detail.totalPublishCount}}）</text></text>
+      </view>
+      <view class="detail-works-body">
+        <view class="detail-works-filters">
+          <segmented-filter items="{{contentPeriods}}" active-id="{{activePeriod}}" item-width="68" bind:change="onPeriodTap" />
+          <view class="detail-works-sort"><view class="detail-works-sort__inner"><text>阅读量</text><image src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
+        </view>
+        <view wx:if="{{detail.cards.length}}" class="detail-content-list">
+          <view wx:for="{{detail.cards}}" wx:key="id" class="detail-content-card">
+            <view class="detail-content-card__top">
+              <image wx:if="{{item.thumbnailUrl}}" class="detail-content-card__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+              <view wx:else class="detail-content-card__thumbnail detail-content-card__thumbnail--empty" />
+              <view class="detail-content-card__copy">
+                <view class="detail-content-card__heading">
+                  <text class="detail-content-card__title">{{item.title}}</text>
+                  <text class="detail-content-card__date">{{item.publishedAt}}</text>
                 </view>
-                <view class="detail-user__stats">
-                  <view class="detail-user__stat"><text>浏览</text><text>{{item.readCount}}</text></view>
-                  <view class="detail-user__divider"></view>
-                  <view class="detail-user__stat"><text>完播</text><text>{{item.completionCount}}</text></view>
-                  <view class="detail-user__divider"></view>
-                  <view class="detail-user__stat"><text>转发</text><text>{{item.shareCount}}</text></view>
-                </view>
+                <text class="detail-content-card__intent detail-content-card__intent--{{item.intentLevel}}">{{item.intentLabel}}</text>
               </view>
-              <view wx:if="{{index < visibleIntentUsers.length - 1}}" class="detail-user__line"></view>
+            </view>
+            <view class="detail-content-card__metrics">
+              <view class="detail-content-card__metric"><text>浏览次数</text><text class="detail-content-card__metric-value">{{item.viewCount}}</text></view>
+              <view class="detail-content-card__metric"><text>转发</text><text class="detail-content-card__metric-value">{{item.forwardCount}}</text></view>
+              <view class="detail-content-card__metric"><text>完播</text><text class="detail-content-card__metric-value">{{item.completeCount}}</text></view>
             </view>
           </view>
         </view>
-        <view wx:else class="detail-intent__empty-state">
-          <image class="detail-intent__empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
-          <text>没有意向用户</text>
+        <view wx:else class="detail-content-empty">
+          <image src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+          <text>还没有作品，你可以发布一个</text>
         </view>
       </view>
     </view>
+
+    <analysis-intent-users
+      user-count="{{detail.intentUserCount}}"
+      periods="{{contentPeriods}}"
+      active-period="{{activePeriod}}"
+      sort-label="阅读量"
+      users="{{detail.intentUsers}}"
+      bind:periodtap="onPeriodTap"
+      bind:usertap="onIntentUserTap"
+    />
   </view>
+
+  <view wx:else class="detail-page__loading">正在加载内容分析</view>
+  <date-range-picker visible="{{dateRangePickerVisible}}" start-date="{{customStartDate}}" end-date="{{customEndDate}}" min-date="{{twoMonthsAgoDate}}" max-date="{{todayDate}}" bind:confirm="onDateRangeConfirm" bind:cancel="onDateRangeCancel" />
 </view>

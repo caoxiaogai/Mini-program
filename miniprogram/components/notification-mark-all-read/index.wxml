@@ -1,0 +1,7 @@
+<view class="notification-mark-all-read {{compact ? 'notification-mark-all-read--compact' : ''}}" bindtap="onMarkAllReadTap" hover-class="notification-mark-all-read--pressed" hover-start-time="80" hover-stay-time="120" aria-role="button" aria-label="一建已读">
+  <text class="notification-mark-all-read__label">一建已读<text wx:if="{{!compact}}">({{unreadCount}})</text></text>
+  <view class="notification-mark-all-read__close" aria-hidden="true">
+    <view class="notification-mark-all-read__close-line notification-mark-all-read__close-line--first" />
+    <view class="notification-mark-all-read__close-line notification-mark-all-read__close-line--second" />
+  </view>
+</view>

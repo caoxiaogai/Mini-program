@@ -1,0 +1,34 @@
+<view class="user-journey-page">
+  <navigation-bar title="用户轨迹" back="{{true}}" color="#000000" background="#f5f5f5" />
+
+  <view wx:if="{{journey}}" class="user-journey-page__content">
+    <view class="user-journey-product-card">
+      <image class="user-journey-product-card__thumbnail" src="{{journey.product.thumbnailUrl}}" mode="aspectFill" />
+      <view class="user-journey-product-card__copy">
+        <text class="user-journey-product-card__title">{{journey.product.title}}</text>
+        <text class="user-journey-product-card__intent">{{journey.product.intentLabel}}</text>
+      </view>
+    </view>
+
+    <view class="user-journey-track-card">
+      <view class="user-journey-track-card__header">
+        <image class="user-journey-track-card__icon" src="/assets/analysis/user-journey-behavior-icon.svg" mode="aspectFit" />
+        <text class="user-journey-track-card__title">行为轨迹</text>
+      </view>
+      <view class="user-journey-track">
+        <view class="user-journey-track__line" />
+        <view wx:for="{{journey.events}}" wx:key="id" class="user-journey-track__event">
+          <view class="user-journey-track__dot" />
+          <view class="user-journey-track__copy">
+            <text class="user-journey-track__time">{{item.occurredAt}}</text>
+            <text class="user-journey-track__action">{{item.action}}</text>
+            <text class="user-journey-track__detail">{{item.detail}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{journey}}" class="user-journey-contact" bindtap="onContactTap" hover-class="user-journey-contact--pressed" hover-start-time="80" hover-stay-time="120">联系用户</view>
+  <view wx:if="{{noticeVisible}}" class="user-journey-copy-feedback">微信名称复制成功，关闭小程序后，前往微信联系用户。</view>
+</view>

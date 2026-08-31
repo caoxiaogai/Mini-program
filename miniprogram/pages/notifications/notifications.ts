@@ -1,17 +1,18 @@
 import { getNotifications } from '../../services/notifications'
 import { runAuthed } from '../../services/auth'
 import { fromDatasetId } from '../../utils/dataset-id'
-import { persistViewedNotification } from '../../utils/notification-viewed'
+import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
+import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed } from '../../utils/notifications'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 type NotificationTabId = 'home' | 'notifications' | 'analysis' | 'profile'
 
 const notificationTabItems = [
-  { id: 'home' as NotificationTabId, label: '首页', iconPath: '/assets/home-new/tab-home.svg', activeIconPath: '/assets/home-new/tab-home-active.svg', active: false },
-  { id: 'notifications' as NotificationTabId, label: '通知', iconPath: '/assets/home-new/tab-notification.svg', activeIconPath: '/assets/home-new/tab-notification-active.svg', active: true },
-  { id: 'analysis' as NotificationTabId, label: '分析', iconPath: '/assets/home-new/tab-analysis.svg', activeIconPath: '/assets/home-new/tab-analysis-active.svg', active: false },
-  { id: 'profile' as NotificationTabId, label: '我的', iconPath: '/assets/home-new/tab-profile.svg', activeIconPath: '/assets/home-new/tab-profile-active.svg', active: false },
+  { id: 'home' as NotificationTabId, label: '首页', iconPath: '/assets/home-new/tab-home.svg', activeIconPath: '/assets/home-new/tab-home-selected.svg', active: false },
+  { id: 'notifications' as NotificationTabId, label: '通知', iconPath: '/assets/home-new/tab-notification.svg', activeIconPath: '/assets/home-new/tab-notification-selected.svg', active: true },
+  { id: 'analysis' as NotificationTabId, label: '分析', iconPath: '/assets/home-new/tab-analysis.svg', activeIconPath: '/assets/home-new/tab-analysis-selected.svg', active: false },
+  { id: 'profile' as NotificationTabId, label: '我的', iconPath: '/assets/home-new/tab-profile.svg', activeIconPath: '/assets/home-new/tab-profile-selected.svg', active: false },
 ]
 
 function getVisibleNotificationGroups(groups: NotificationGroupViewModel[], filterId: NotificationFilterId): NotificationGroupViewModel[] {
@@ -30,6 +31,7 @@ Page({
     tabItems: notificationTabItems,
     visibleGroups: [] as NotificationGroupViewModel[],
     hasVisibleGroups: false,
+    unreadNotificationCount: 0,
   },
   authReady: false,
   onLoad() {
@@ -49,7 +51,12 @@ Page({
     return getNotifications().then((notifications) => {
       const visibleGroups = getVisibleNotificationGroups(notifications.groups, this.data.activeFilter)
 
-      this.setData({ notifications, visibleGroups, hasVisibleGroups: visibleGroups.length > 0 })
+      this.setData({
+        notifications,
+        visibleGroups,
+        hasVisibleGroups: visibleGroups.length > 0,
+        unreadNotificationCount: countUnreadNotificationGroups(notifications.groups),
+      })
     })
   },
   onFilterTap(event: WechatMiniprogram.TouchEvent) {
@@ -67,11 +74,32 @@ Page({
     const eventId = event.currentTarget.dataset.eventId as string | undefined
     if (!userId) return
 
-    persistViewedNotification(eventId)
+    if (eventId && persistViewedNotification(eventId) && this.data.notifications) {
+      const groups = markNotificationGroupsViewed(this.data.notifications.groups, eventId)
+      const notifications = { ...this.data.notifications, groups }
+      const visibleGroups = getVisibleNotificationGroups(groups, this.data.activeFilter)
+      this.setData({
+        notifications,
+        visibleGroups,
+        hasVisibleGroups: visibleGroups.length > 0,
+        unreadNotificationCount: countUnreadNotificationGroups(groups),
+      })
+    }
 
     wx.navigateTo({
       url: `/pages/analysis-user-detail/index?id=${userId}`,
     })
+  },
+  onMarkAllReadTap() {
+    const groups = this.data.notifications?.groups ?? []
+    const eventIds = getUnreadNotificationEventIds(groups)
+    if (eventIds.length === 0) return
+
+    persistViewedNotifications(eventIds)
+    const nextGroups = markAllNotificationGroupsViewed(groups)
+    const notifications = this.data.notifications ? { ...this.data.notifications, groups: nextGroups } : null
+    const visibleGroups = getVisibleNotificationGroups(nextGroups, this.data.activeFilter)
+    this.setData({ notifications, visibleGroups, hasVisibleGroups: visibleGroups.length > 0, unreadNotificationCount: 0 })
   },
   onContactActionTap() {},
   onTabTap(event: WechatMiniprogram.CustomEvent<{ id: NotificationTabId }>) {

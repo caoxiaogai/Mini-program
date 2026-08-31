@@ -1,0 +1,31 @@
+<view
+  wx:if="{{visible}}"
+  class="publish-type-sheet"
+  aria-role="dialog"
+  aria-label="选择发布素材类型"
+>
+  <view class="publish-type-sheet__mask" catchtap="onMaskTap"></view>
+  <view class="publish-type-sheet__panel">
+    <view class="publish-type-sheet__options">
+      <view
+        wx:for="{{options}}"
+        wx:key="id"
+        class="publish-type-sheet__option"
+        data-id="{{item.id}}"
+        bindtap="onOptionTap"
+        hover-class="publish-type-sheet__option--pressed"
+        hover-stay-time="80"
+      >
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+    <view
+      class="publish-type-sheet__cancel"
+      bindtap="onCancelTap"
+      hover-class="publish-type-sheet__option--pressed"
+      hover-stay-time="80"
+    >
+      <text>取消</text>
+    </view>
+  </view>
+</view>

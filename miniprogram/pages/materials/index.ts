@@ -6,6 +6,9 @@ import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
+import { isPdfFileName, MAX_IMAGE_COUNT, MAX_VIDEO_DURATION_SECONDS, mediaFilesToPublishItems } from '../../utils/publish-media'
+import type { PublishEntryType } from '../../utils/publish-media'
+import { setPendingPublishSelection } from '../../utils/publish-selection'
 
 type MaterialsTabId = 'home' | 'notifications' | 'analysis' | 'profile'
 
@@ -14,34 +17,38 @@ const materialsTabItems = [
     id: 'home' as const,
     label: '首页',
     iconPath: '/assets/home-new/tab-home-default.svg',
-    activeIconPath: '/assets/home-new/tab-home-active.svg',
+    activeIconPath: '/assets/home-new/tab-home-selected.svg',
     active: false,
   },
   {
     id: 'notifications' as const,
     label: '通知',
     iconPath: '/assets/home-new/tab-notification-default.svg',
-    activeIconPath: '/assets/home-new/tab-notification-active.svg',
+    activeIconPath: '/assets/home-new/tab-notification-selected.svg',
     active: false,
   },
   {
     id: 'analysis' as const,
     label: '分析',
     iconPath: '/assets/home-new/tab-analysis-default.svg',
-    activeIconPath: '/assets/home-new/tab-analysis-active.svg',
+    activeIconPath: '/assets/home-new/tab-analysis-selected.svg',
     active: false,
   },
   {
     id: 'profile' as const,
     label: '我的',
     iconPath: '/assets/home-new/tab-profile-default.svg',
-    activeIconPath: '/assets/home-new/tab-profile-active.svg',
+    activeIconPath: '/assets/home-new/tab-profile-selected.svg',
     active: false,
   },
 ]
 
 function getVisibleMaterials(items: MaterialCardViewModel[], filterId: MaterialsFilterId): MaterialCardViewModel[] {
   return filterId === 'all' ? items : items.filter((item) => item.kind === filterId)
+}
+
+function isUserCancel(errMsg?: string): boolean {
+  return typeof errMsg === 'string' && /cancel/i.test(errMsg)
 }
 
 Page({
@@ -60,6 +67,7 @@ Page({
     shareTitle: '',
     shareImageUrl: '',
     pullRefreshing: false,
+    publishTypeSheetVisible: false,
   },
   authReady: false,
   onLoad(options: Record<string, string | undefined>) {
@@ -138,7 +146,57 @@ Page({
     wx.navigateTo({ url })
   },
   onPublishTap() {
-    wx.navigateTo({ url: buildMaterialPublishPath() })
+    this.setData({ publishTypeSheetVisible: true })
+  },
+  onPublishTypeCancel() {
+    this.setData({ publishTypeSheetVisible: false })
+  },
+  onPublishTypeSelect(event: WechatMiniprogram.CustomEvent<{ type: PublishEntryType }>) {
+    const type = event.detail.type
+    this.setData({ publishTypeSheetVisible: false }, () => {
+      if (type === 'pdf') {
+        this.choosePdfForPublish()
+        return
+      }
+
+      wx.chooseMedia({
+        count: type === 'image' ? MAX_IMAGE_COUNT : 1,
+        mediaType: [type],
+        sourceType: ['album'],
+        maxDuration: MAX_VIDEO_DURATION_SECONDS,
+        success: (result) => {
+          setPendingPublishSelection({ type, media: mediaFilesToPublishItems(result.tempFiles, result.type) })
+          wx.navigateTo({ url: `/pages/materials/publish/index?type=${type}` })
+        },
+        fail: (error) => {
+          if (!isUserCancel(error.errMsg)) wx.showToast({ title: '选择失败，请稍后重试', icon: 'none' })
+        },
+      })
+    })
+  },
+  choosePdfForPublish() {
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      extension: ['pdf'],
+      success: (result) => {
+        const file = result.tempFiles[0]
+        if (!file) return
+        if (!isPdfFileName(file.name)) {
+          wx.showToast({ title: '请选择 PDF 文件', icon: 'none' })
+          return
+        }
+
+        setPendingPublishSelection({
+          type: 'pdf',
+          media: [{ id: file.path, path: file.path, kind: 'pdf', previewPath: '', name: file.name, duration: 0 }],
+        })
+        wx.navigateTo({ url: '/pages/materials/publish/index?type=pdf' })
+      },
+      fail: (error) => {
+        if (!isUserCancel(error.errMsg)) wx.showToast({ title: '选择失败，请稍后重试', icon: 'none' })
+      },
+    })
   },
   onTabTap(event: CustomEvent<{ id: MaterialsTabId }>) {
     const { id } = event.detail
