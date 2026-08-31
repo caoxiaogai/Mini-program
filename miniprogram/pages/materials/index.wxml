@@ -1,28 +1,28 @@
 <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}">
   <view class="materials-page__base"></view>
-  <image class="materials-page__status-glow" src="/assets/materials/materials-stripes.svg" mode="scaleToFill" />
+  <view class="materials-page__gradient" />
+  <image class="materials-page__stripes" src="/assets/materials/materials-stripes.svg" mode="scaleToFill" />
 
-  <view class="materials-page__header" style="background: rgba(255, 255, 255, {{materialsHeaderOpacity}});">
+  <view class="materials-page__header">
     <navigation-bar back="{{true}}" title="素材" color="#000000" background="transparent" />
-  </view>
-
-  <view wx:if="{{materials}}" class="materials-filter" role="tablist">
-    <view
-      wx:for="{{materials.filters}}"
-      wx:key="id"
-      class="materials-filter__item {{activeFilter === item.id ? 'materials-filter__item--active' : ''}}"
-      bindtap="onFilterTap"
-      data-id="{{item.id}}"
-      hover-class="materials-filter__item--pressed"
-      hover-stay-time="80"
-      role="tab"
-      aria-selected="{{activeFilter === item.id}}"
-    >
-      <text>{{item.label}}</text>
+    <view wx:if="{{materials}}" class="materials-filter" role="tablist">
+      <view
+        wx:for="{{materials.filters}}"
+        wx:key="id"
+        class="materials-filter__item {{activeFilter === item.id ? 'materials-filter__item--active' : ''}}"
+        bindtap="onFilterTap"
+        data-id="{{item.id}}"
+        hover-class="materials-filter__item--pressed"
+        hover-stay-time="80"
+        role="tab"
+        aria-selected="{{activeFilter === item.id}}"
+      >
+        <text>{{item.label}}</text>
+      </view>
     </view>
   </view>
 
-  <scroll-view scroll-y class="materials-page__scroll" bindscroll="onMaterialsScroll" show-scrollbar="{{false}}" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">
+  <scroll-view scroll-y class="materials-page__scroll" show-scrollbar="{{false}}" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">
     <view wx:if="{{materials}}" class="materials-page__content">
       <view wx:if="{{hasVisibleMaterials}}" class="materials-grid">
         <view
