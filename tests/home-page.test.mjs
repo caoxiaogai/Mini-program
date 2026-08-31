@@ -82,7 +82,7 @@ test('data access goes through the unified request layer', () => {
   assert.match(requestLayer, /export function patchCachedLogin/)
   assert.match(requestLayer, /\/wechat\/login/)
 
-  for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile', 'tracking', 'user']) {
+  for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile', 'tracking', 'user', 'user-journey']) {
     const service = read(`miniprogram/services/${name}.ts`)
     assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
     if (name !== 'ranking') {
@@ -102,6 +102,7 @@ test('entry pages require authorized login and first-time profile setup', async 
   const homeLogic = read('miniprogram/pages/index/index.ts')
   const detailLogic = read('miniprogram/pages/material-detail/index.ts')
   const documentLogic = read('miniprogram/pages/document-reader/index.ts')
+  const journeyLogic = read('miniprogram/pages/analysis-user-journey/index.ts')
 
   assert.ok(app.pages.includes('pages/auth/index'))
   assert.equal(isLoginProfileComplete({ nickname: '阿乐', avatar: 'https://example.com/a.png' }), true)
@@ -129,6 +130,7 @@ test('entry pages require authorized login and first-time profile setup', async 
   assert.match(homeLogic, /runAuthed\(buildReturnPath\(HOME_PAGE_PATH, options\)/)
   assert.match(detailLogic, /runAuthed\(buildReturnPath\(MATERIAL_DETAIL_PATH, options\)/)
   assert.match(documentLogic, /runAuthed\(buildReturnPath\('\/pages\/document-reader\/index', options\)/)
+  assert.match(journeyLogic, /runAuthed\(buildReturnPath\('\/pages\/analysis-user-journey\/index', options\)/)
   assert.match(read('miniprogram/app.ts'), /if \(!hasAuthorizedLogin\(\)\) return/)
 })
 
@@ -1103,7 +1105,7 @@ test('notifications map each browse from the notify list API', () => {
 test('backend datetime strings display as China wall-clock hours', async () => {
   const formatSource = read('miniprogram/utils/format.ts')
   const notificationSource = read('miniprogram/utils/notifications.ts')
-  const { formatMonthDayTime, parseDateTime } = await import('../miniprogram/utils/format.ts')
+  const { formatMonthDayTime, formatRelativeDayTime, parseDateTime } = await import('../miniprogram/utils/format.ts')
   const { mapNotificationEvent } = await import('../miniprogram/utils/notifications.ts')
   const parsed = parseDateTime('2026-08-27 14:05:00')
 
@@ -1118,6 +1120,9 @@ test('backend datetime strings display as China wall-clock hours', async () => {
   assert.equal(parsed?.getMinutes(), 5)
   assert.equal(formatMonthDayTime('2026-08-27 14:05:00'), '8月27日 14:05')
   assert.equal(formatMonthDayTime('2026-08-27T06:00:00'), '8月27日 06:00')
+  assert.equal(formatRelativeDayTime('2026-08-31 16:14:00', new Date(2026, 7, 31, 18, 0, 0)), '今天 16:14')
+  assert.equal(formatRelativeDayTime('2026-08-30 15:30:00', new Date(2026, 7, 31, 18, 0, 0)), '昨天 15:30')
+  assert.equal(formatRelativeDayTime('2026-08-20 10:05:00', new Date(2026, 7, 31, 18, 0, 0)), '8月20日 10:05')
   assert.equal(
     mapNotificationEvent({
       id: '1',
@@ -1563,35 +1568,97 @@ test('user detail contact copies the username', () => {
   assert.equal(context.data.noticeVisible, true)
 })
 
-test('user journey service provides a fixed product timeline through the service layer', async () => {
-  const servicePath = new URL('../miniprogram/services/user-journey.ts', import.meta.url)
-  assert.equal(existsSync(servicePath), true, 'the user journey service must exist')
-
-  const { getMockUserJourney } = await import('../miniprogram/mocks/user-journey.ts')
-  const source = read('miniprogram/services/user-journey.ts')
+test('user journey service loads real tracking events through the request layer', async () => {
+  const service = read('miniprogram/services/user-journey.ts')
+  const mapper = read('miniprogram/utils/user-journey.ts')
+  const { formatRelativeDayTime } = await import('../miniprogram/utils/format.ts')
+  const executable = read('miniprogram/utils/user-journey.ts')
     .replace(/^import[^\n]+\n/gm, '')
-    .replace(/^export function /m, 'function ')
-  const getUserJourney = new Function(
-    'getMockUserJourney',
-    `${stripTypeScriptTypes(source, { mode: 'strip' })}; return getUserJourney`,
-  )(getMockUserJourney)
-  const journey = await getUserJourney('customer-7', 'material-2')
+    .replace(/^export function /gm, 'function ')
+  const { formatForwardDetail, mapUserJourney } = new Function(
+    'formatRelativeDayTime',
+    `${stripTypeScriptTypes(executable, { mode: 'strip' })}; return { formatForwardDetail, mapUserJourney }`,
+  )(formatRelativeDayTime)
+
+  assert.match(service, /path: '\/analysis\/customer\/journey'/)
+  assert.match(service, /customerId: userId/)
+  assert.match(service, /mapUserJourney/)
+  assert.match(service, /prepareMaterialThumbnail/)
+  assert.doesNotMatch(service, /from '\.\.\/mocks\//)
+  assert.doesNotMatch(service, /TODO\(API\)/)
+  assert.match(mapper, /完播了/)
+  assert.match(mapper, /浏览了/)
+  assert.match(mapper, /转发了/)
+  assert.equal(formatForwardDetail(1), '第一次转发')
+  assert.equal(formatForwardDetail(2), '第二次转发')
+  assert.equal(formatForwardDetail(11), '第十一次转发')
+
+  const journey = mapUserJourney({
+    customerId: 'customer-7',
+    nickname: '云端探索者',
+    materialId: 'material-2',
+    title: '资深AI-Native 全栈产品教程，一人即可干完所有',
+    coverUrl: '/assets/analysis/user-journey-product.png',
+    fileUrl: null,
+    fileType: 'IMAGE',
+    pageCount: 5,
+    intentLevel: 'high',
+    events: [
+      { id: 'e1', occurredAt: '2026-08-31 16:14:00', actionType: 'play', completed: 1, duration: 20, progress: 100, viewedPages: 5, forwardIndex: null },
+      { id: 'e2', occurredAt: '2026-08-31 14:23:00', actionType: 'play', completed: 0, duration: 12, progress: 60, viewedPages: 3, forwardIndex: null },
+      { id: 'e3', occurredAt: '2026-08-30 15:30:00', actionType: 'forward', completed: 0, duration: 0, progress: 0, viewedPages: null, forwardIndex: 2 },
+      { id: 'e4', occurredAt: '2026-08-30 14:35:00', actionType: 'forward', completed: 0, duration: 0, progress: 0, viewedPages: null, forwardIndex: 1 },
+    ],
+  }, '/assets/analysis/user-journey-product.png', new Date(2026, 7, 31, 18, 0, 0))
 
   assert.equal(journey.userId, 'customer-7')
+  assert.equal(journey.userName, '云端探索者')
   assert.equal(journey.product.id, 'material-2')
-  assert.equal(journey.events.length, 6)
+  assert.equal(journey.product.intentLabel, '#高意向')
   assert.deepEqual(journey.events[0], {
-    id: 'journey-complete-pages',
+    id: 'e1',
     occurredAt: '今天 16:14',
     action: '完播了',
     detail: '查看 5 页',
   })
-  assert.deepEqual(journey.events[4], {
-    id: 'journey-share-first',
+  assert.deepEqual(journey.events[1], {
+    id: 'e2',
+    occurredAt: '今天 14:23',
+    action: '浏览了',
+    detail: '查看 3 页',
+  })
+  assert.deepEqual(journey.events[2], {
+    id: 'e3',
     occurredAt: '昨天 15:30',
+    action: '转发了',
+    detail: '第二次转发',
+  })
+  assert.deepEqual(journey.events[3], {
+    id: 'e4',
+    occurredAt: '昨天 14:35',
     action: '转发了',
     detail: '第一次转发',
   })
+
+  const videoJourney = mapUserJourney({
+    customerId: 'c1',
+    nickname: '访客',
+    materialId: 'm1',
+    title: '视频作品',
+    coverUrl: null,
+    fileUrl: null,
+    fileType: 'VIDEO',
+    pageCount: 0,
+    intentLevel: 'medium',
+    events: [
+      { id: 'v1', occurredAt: '2026-08-31 09:31:00', actionType: 'play', completed: 1, duration: 50, progress: 100, viewedPages: null, forwardIndex: null },
+      { id: 'v2', occurredAt: '2026-08-31 08:10:00', actionType: 'play', completed: 0, duration: 32, progress: 40, viewedPages: null, forwardIndex: null },
+    ],
+  }, '', new Date(2026, 7, 31, 18, 0, 0))
+  assert.equal(videoJourney.events[0].action, '完播了')
+  assert.equal(videoJourney.events[0].detail, '播放了 50 秒')
+  assert.equal(videoJourney.events[1].action, '浏览了')
+  assert.equal(videoJourney.events[1].detail, '播放了 32 秒')
 })
 
 test('user journey line reaches the final event', () => {
@@ -1754,7 +1821,7 @@ test('publish detail media slots follow Figma 835:8415 sizing and page backgroun
   assert.match(styles, /\.publish-page \{[\s\S]*background: @app-page-background;/)
   assert.match(styles, /\.publish-page__content \{[\s\S]*padding: 10rpx 48rpx 180rpx;/)
   assert.match(styles, /\.publish-page__image-grid \{[\s\S]*gap: 20rpx;/)
-  assert.match(styles, /\.publish-page__image-slot \{[\s\S]*width: 228rpx;[\s\S]*height: 228rpx;/)
+  assert.match(styles, /\.publish-page__image-slot \{[\s\S]*width: calc\(\(100% - 40rpx\) \/ 3\);[\s\S]*aspect-ratio: 1 \/ 1;/)
 })
 
 test('publish copy keeps colorful emoji presentation', async () => {
@@ -1777,7 +1844,7 @@ test('publish copy keeps colorful emoji presentation', async () => {
   assert.match(logic, /copyFocused: true/)
   assert.match(logic, /onCopyBlur\(\)/)
   assert.match(styles, /\.publish-page__image-grid \{[\s\S]*gap: 20rpx;/)
-  assert.match(styles, /\.publish-page__image-slot \{[\s\S]*width: 228rpx;[\s\S]*height: 228rpx;/)
+  assert.match(styles, /\.publish-page__image-slot \{[\s\S]*width: calc\(\(100% - 40rpx\) \/ 3\);[\s\S]*aspect-ratio: 1 \/ 1;/)
   assert.match(styles, /\.publish-page__content \{[\s\S]*padding: 10rpx 48rpx 180rpx/)
   assert.match(logic, /ensureEmojiPresentation\(event\.detail\.value\)/)
   assert.match(logic, /ensureEmojiPresentation\(this\.data\.copy\)/)
@@ -2017,7 +2084,22 @@ test('material detail opens image preview, video player and PDF reader', () => {
   assert.doesNotMatch(markup, /点击查看/)
   assert.doesNotMatch(markup, /material-detail__pdf-open/)
   assert.match(markup, /bindtap="onImageTap"/)
-  assert.match(logic, /wx\.previewImage/)
+  assert.match(markup, /class="material-detail-preview"/)
+  assert.match(markup, /bindchange="onPreviewSwiperChange"/)
+  assert.match(markup, /<movable-view[\s\S]*scale[\s\S]*scale-min="1"[\s\S]*scale-max="4"/)
+  assert.match(markup, /disable-touch="\{\{previewZoomed\}\}"/)
+  assert.match(markup, /bindtap="onPreviewImageTap"/)
+  assert.match(markup, /show-menu-by-longpress="\{\{!previewPinching\}\}"/)
+  assert.match(markup, /bindtouchend="onPreviewTouchEnd"/)
+  assert.match(logic, /patch\.previewPinching = true/)
+  assert.doesNotMatch(logic, /onPreviewLongPress/)
+  assert.match(logic, /imagePreviewVisible: true/)
+  assert.match(logic, /onPreviewSwiperChange/)
+  assert.match(logic, /onPreviewScale/)
+  assert.match(logic, /togglePreviewZoom/)
+  assert.match(logic, /PREVIEW_DOUBLE_TAP_SCALE/)
+  assert.match(logic, /markImageViewed\(activeImageIndex, detail\)/)
+  assert.doesNotMatch(logic, /wx\.previewImage/)
   assert.match(logic, /\/pages\/document-reader\/index\?/)
   assert.match(logic, /materialId=\$\{encodeURIComponent\(detail\.id\)\}/)
   assert.match(documentService, /path: `\/material\/\$\{materialId\}\/page-count`/)
@@ -2074,6 +2156,8 @@ test('friend material views report play and forward tracking events', () => {
   assert.match(detailLogic, /createTrackingSessionId/)
   assert.match(detailLogic, /reportTrackingEvent/)
   assert.match(detailLogic, /markImageViewed/)
+  assert.match(detailLogic, /onPreviewSwiperChange/)
+  assert.match(detailMarkup, /bindchange="onPreviewSwiperChange"/)
   assert.match(detailLogic, /reportDocumentView/)
   assert.match(detailLogic, /fileType === 'VIDEO'/)
   assert.match(detailLogic, /reportVideoProgress\(false, detail\)/)

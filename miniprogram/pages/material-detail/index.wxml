@@ -103,4 +103,51 @@
       </view>
     </button>
   </view>
+
+  <view
+    wx:if="{{detail && imagePreviewVisible}}"
+    class="material-detail-preview"
+    aria-role="dialog"
+    aria-label="图片预览"
+  >
+    <swiper
+      class="material-detail-preview__swiper"
+      current="{{activeImageIndex}}"
+      duration="180"
+      disable-touch="{{previewZoomed}}"
+      bindchange="onPreviewSwiperChange"
+    >
+      <swiper-item wx:for="{{detail.images}}" wx:key="*this">
+        <movable-area class="material-detail-preview__area" scale-area>
+          <movable-view
+            class="material-detail-preview__view"
+            direction="all"
+            inertia
+            out-of-bounds="{{false}}"
+            scale
+            scale-min="1"
+            scale-max="4"
+            scale-value="{{previewScale}}"
+            animation
+            bindscale="onPreviewScale"
+            bindtouchstart="onPreviewTouchStart"
+            bindtouchend="onPreviewTouchEnd"
+            bindtouchcancel="onPreviewTouchEnd"
+            bindtap="onPreviewImageTap"
+          >
+            <image
+              class="material-detail-preview__image"
+              src="{{item}}"
+              mode="aspectFit"
+              show-menu-by-longpress="{{!previewPinching}}"
+              bindtouchstart="onPreviewTouchStart"
+              bindtouchend="onPreviewTouchEnd"
+              bindtouchcancel="onPreviewTouchEnd"
+            />
+          </movable-view>
+        </movable-area>
+      </swiper-item>
+    </swiper>
+    <text class="material-detail-preview__counter">{{activeImageIndex + 1}} / {{detail.images.length}}</text>
+  </view>
 </view>

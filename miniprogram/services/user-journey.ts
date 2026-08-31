@@ -1,16 +1,31 @@
+import type { ApiUserJourney } from '../types/api'
 import type { UserJourneyViewModel } from '../types/analysis'
-import { getMockUserJourney } from '../mocks/user-journey'
+import { mapUserJourney } from '../utils/user-journey'
+import { prepareMaterialThumbnail } from './materials'
+import { request, resolveMediaUrl } from './request'
 
 /**
  * 用户在指定作品上的行为轨迹。
- * TODO(API): 接入「用户在指定作品上的行为轨迹」真实接口
- * Method: 待后端确认
- * Endpoint: 待后端确认
- * Request: { userId: string; materialId: string }
- * Response: UserJourneyViewModel
- * Auth/permission: 待后端确认
- * Error states: 待后端确认
+ * GET /analysis/customer/journey
+ * Request: { customerId: string; materialId: string }
+ * Response: ApiUserJourney → UserJourneyViewModel
  */
 export function getUserJourney(userId: string, materialId: string): Promise<UserJourneyViewModel> {
-  return Promise.resolve(getMockUserJourney(userId, materialId))
+  return request<ApiUserJourney>({
+    method: 'GET',
+    path: '/analysis/customer/journey',
+    query: {
+      customerId: userId,
+      materialId,
+    },
+  }).then(async (raw) => {
+    const thumbnailUrl = await prepareMaterialThumbnail({
+      id: String(raw.materialId ?? materialId),
+      fileType: raw.fileType,
+      coverUrl: raw.coverUrl,
+      fileUrl: raw.fileUrl,
+    }).catch(() => resolveMediaUrl(raw.coverUrl) || '')
+
+    return mapUserJourney(raw, thumbnailUrl)
+  })
 }

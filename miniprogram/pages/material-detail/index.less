@@ -216,3 +216,43 @@ page {
   width: 36rpx;
   height: 36rpx;
 }
+
+.material-detail-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: #000000;
+}
+
+.material-detail-preview__swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.material-detail-preview__area,
+.material-detail-preview__view,
+.material-detail-preview__image {
+  width: 100%;
+  height: 100%;
+}
+
+.material-detail-preview__view {
+  display: block;
+}
+
+.material-detail-preview__image {
+  display: block;
+}
+
+.material-detail-preview__counter {
+  position: absolute;
+  right: 0;
+  bottom: calc(48rpx + env(safe-area-inset-bottom));
+  left: 0;
+  z-index: 1;
+  color: #ffffff;
+  font-size: 26rpx;
+  line-height: 36rpx;
+  text-align: center;
+  pointer-events: none;
+}

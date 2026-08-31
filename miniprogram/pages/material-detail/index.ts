@@ -23,6 +23,10 @@ const VIDEO_PROGRESS_INTERVAL_MS = 5000
 const VIDEO_SEEK_STEP_SEC = 10
 const VIDEO_SWIPE_THRESHOLD_PX = 48
 const IMAGE_VIEW_INTERVAL_MS = 5000
+const PREVIEW_DOUBLE_TAP_MS = 280
+const PREVIEW_SCALE_MIN = 1
+const PREVIEW_SCALE_MAX = 4
+const PREVIEW_DOUBLE_TAP_SCALE = 2.5
 
 function isDocumentMaterial(detail: MaterialDetailViewModel): boolean {
   return detail.fileType === 'PDF' || detail.fileType === 'TABLE'
@@ -32,6 +36,10 @@ Page({
   data: {
     detail: null as MaterialDetailViewModel | null,
     activeImageIndex: 0,
+    imagePreviewVisible: false,
+    previewZoomed: false,
+    previewPinching: false,
+    previewScale: 1,
   },
 
   materialId: '',
@@ -47,6 +55,9 @@ Page({
   videoDurationSec: 0,
   videoTouchStartX: 0,
   videoTouchStartY: 0,
+  previewScaleLive: 1,
+  lastPreviewTapAt: 0,
+  previewTapTimer: null as number | null,
 
   onLoad(options: Record<string, string | undefined>) {
     runAuthed(buildReturnPath(MATERIAL_DETAIL_PATH, options), () => this.startDetail(options))
@@ -63,6 +74,7 @@ Page({
     this.videoDurationSec = 0
     this.videoTouchStartX = 0
     this.videoTouchStartY = 0
+    this.resetPreviewZoomState()
 
     if (!this.materialId) return
 
@@ -113,6 +125,7 @@ Page({
     this.reportVideoProgress(true)
     this.reportDocumentView()
     this.getVideoContext()?.pause()
+    this.clearPreviewTapTimer()
     this.trackingSessionId = ''
     this.viewedImageIndices = []
     this.hasReportedComplete = false
@@ -177,11 +190,108 @@ Page({
 
     const index = Number(event.currentTarget.dataset.index)
     const currentIndex = Number.isNaN(index) ? this.data.activeImageIndex : index
-    const currentUrl = detail.images[currentIndex] ?? detail.images[0]
 
-    wx.previewImage({
-      urls: detail.images,
-      current: currentUrl,
+    this.setData({
+      imagePreviewVisible: true,
+      activeImageIndex: currentIndex,
+      previewZoomed: false,
+      previewPinching: false,
+      previewScale: 1,
+    })
+    this.previewScaleLive = 1
+    this.markImageViewed(currentIndex, detail)
+  },
+
+  onPreviewSwiperChange(event: WechatMiniprogram.CustomEvent<{ current: number }>) {
+    const activeImageIndex = event.detail.current
+    this.resetPreviewZoom()
+    this.setData({ activeImageIndex })
+
+    const detail = this.data.detail
+    if (!detail) return
+
+    this.markImageViewed(activeImageIndex, detail)
+  },
+
+  onPreviewTouchStart(event: WechatMiniprogram.TouchEvent) {
+    if (event.touches.length < 2) return
+
+    const patch: { previewPinching?: boolean; previewZoomed?: boolean } = {}
+    if (!this.data.previewPinching) patch.previewPinching = true
+    if (!this.data.previewZoomed) patch.previewZoomed = true
+    if (patch.previewPinching || patch.previewZoomed) this.setData(patch)
+  },
+
+  onPreviewTouchEnd(event: WechatMiniprogram.TouchEvent) {
+    if (event.touches.length > 0 || !this.data.previewPinching) return
+    this.setData({ previewPinching: false })
+  },
+
+  onPreviewScale(event: WechatMiniprogram.MovableViewScale) {
+    const scale = event.detail.scale
+    this.previewScaleLive = scale
+    const previewZoomed = scale > PREVIEW_SCALE_MIN + 0.02
+    if (previewZoomed !== this.data.previewZoomed) {
+      this.setData({ previewZoomed })
+    }
+  },
+
+  onPreviewImageTap() {
+    const now = Date.now()
+    if (now - this.lastPreviewTapAt < PREVIEW_DOUBLE_TAP_MS) {
+      this.clearPreviewTapTimer()
+      this.lastPreviewTapAt = 0
+      this.togglePreviewZoom()
+      return
+    }
+
+    this.lastPreviewTapAt = now
+    this.clearPreviewTapTimer()
+    this.previewTapTimer = setTimeout(() => {
+      this.previewTapTimer = null
+      this.onCloseImagePreview()
+    }, PREVIEW_DOUBLE_TAP_MS) as unknown as number
+  },
+
+  togglePreviewZoom() {
+    const zoomedIn = this.previewScaleLive > PREVIEW_SCALE_MIN + 0.05
+    const nextScale = zoomedIn ? PREVIEW_SCALE_MIN : PREVIEW_DOUBLE_TAP_SCALE
+    this.previewScaleLive = nextScale
+    this.setData({
+      previewScale: nextScale,
+      previewZoomed: nextScale > PREVIEW_SCALE_MIN + 0.02,
+    })
+  },
+
+  resetPreviewZoom() {
+    this.resetPreviewZoomState()
+    this.setData({
+      previewZoomed: false,
+      previewPinching: false,
+      previewScale: 1.01,
+    }, () => this.setData({ previewScale: PREVIEW_SCALE_MIN }))
+  },
+
+  resetPreviewZoomState() {
+    this.previewScaleLive = 1
+    this.lastPreviewTapAt = 0
+    this.clearPreviewTapTimer()
+  },
+
+  clearPreviewTapTimer() {
+    if (this.previewTapTimer === null) return
+    clearTimeout(this.previewTapTimer)
+    this.previewTapTimer = null
+  },
+
+  onCloseImagePreview() {
+    if (!this.data.imagePreviewVisible) return
+    this.resetPreviewZoomState()
+    this.setData({
+      imagePreviewVisible: false,
+      previewZoomed: false,
+      previewPinching: false,
+      previewScale: PREVIEW_SCALE_MIN,
     })
   },
 

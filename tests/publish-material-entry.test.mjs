@@ -98,10 +98,10 @@ test('publish detail add-image slot matches Figma 850:9370', () => {
 
   assert.match(markup, /class="publish-page__add-icon" aria-hidden="true"[\s\S]*publish-page__add-icon-horizontal[\s\S]*publish-page__add-icon-vertical/)
   assert.match(styles, /\.publish-page__image-slot--add\s*\{[^}]*background:\s*#f7f7f7;[^}]*border:\s*2rpx solid #e5e5e5;[^}]*border-radius:\s*20rpx;/)
-  assert.match(styles, /\.publish-page__add-icon\s*\{[^}]*width:\s*58rpx;[^}]*height:\s*58rpx;/)
+  assert.match(styles, /\.publish-page__add-icon\s*\{[^}]*width:\s*26%;[^}]*height:\s*26%;/)
   assert.match(styles, /\.publish-page__add-icon-horizontal,\s*\.publish-page__add-icon-vertical\s*\{[^}]*background:\s*#8a8e94;/)
-  assert.match(styles, /\.publish-page__add-icon-horizontal\s*\{[^}]*width:\s*58rpx;[^}]*height:\s*4rpx;/)
-  assert.match(styles, /\.publish-page__add-icon-vertical\s*\{[^}]*width:\s*4rpx;[^}]*height:\s*58rpx;/)
+  assert.match(styles, /\.publish-page__add-icon-horizontal\s*\{[^}]*width:\s*100%;[^}]*height:\s*4rpx;/)
+  assert.match(styles, /\.publish-page__add-icon-vertical\s*\{[^}]*width:\s*4rpx;[^}]*height:\s*100%;/)
   assert.doesNotMatch(styles, /\.publish-page__add-icon\s*\{[^}]*font-size:/)
 })
 

@@ -62,6 +62,20 @@ export function formatMonthDayTime(value: string | null | undefined): string {
   return `${formatMonthDay(value)} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`
 }
 
+/** 后端日期时间转相对日+时分，例如今天 → '今天 16:14'，昨天 → '昨天 15:30' */
+export function formatRelativeDayTime(value: string | null | undefined, now = new Date()): string {
+  const date = parseDateTime(value)
+  if (!date) return ''
+
+  const time = `${pad2(date.getHours())}:${pad2(date.getMinutes())}`
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const startOfThatDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+  const dayDiff = Math.round((startOfToday - startOfThatDay) / 86400000)
+  if (dayDiff === 0) return `今天 ${time}`
+  if (dayDiff === 1) return `昨天 ${time}`
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${time}`
+}
+
 /** 后端日期时间转 'MM月DD日'，例如 '2026-08-20 10:00:00' -> '08月20日' */
 export function formatPaddedMonthDay(value: string | null | undefined): string {
   const date = parseDateTime(value)

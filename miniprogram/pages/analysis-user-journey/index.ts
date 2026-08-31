@@ -1,5 +1,7 @@
+import { runAuthed } from '../../services/auth'
 import { getUserJourney } from '../../services/user-journey'
 import type { UserJourneyViewModel } from '../../types/analysis'
+import { buildReturnPath } from '../../utils/auth'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 Page({
@@ -11,11 +13,13 @@ Page({
   userId: '',
   materialId: '',
   onLoad(options: Record<string, string | undefined>) {
-    this.userId = options.userId ?? ''
-    this.materialId = options.materialId ?? ''
-    if (!this.userId || !this.materialId) return
+    runAuthed(buildReturnPath('/pages/analysis-user-journey/index', options), () => {
+      this.userId = options.userId ?? ''
+      this.materialId = options.materialId ?? ''
+      if (!this.userId || !this.materialId) return
 
-    this.loadJourney()
+      this.loadJourney()
+    })
   },
   onPullDownRefresh() {
     runPagePullRefresh(this.loadJourney())

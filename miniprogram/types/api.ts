@@ -148,6 +148,32 @@ export interface ApiNotificationEvent {
   viewTime: string | null
 }
 
+/** GET /analysis/customer/journey 响应项（UserJourneyEventVO） */
+export interface ApiUserJourneyEvent {
+  id: string
+  occurredAt: string | null
+  actionType: string | null
+  completed: number | null
+  duration: number | null
+  progress: number | null
+  viewedPages: number | null
+  forwardIndex: number | null
+}
+
+/** GET /analysis/customer/journey 响应（UserJourneyVO） */
+export interface ApiUserJourney {
+  customerId: string
+  nickname: string | null
+  materialId: string
+  title: string | null
+  coverUrl: string | null
+  fileUrl: string | null
+  fileType: string | null
+  pageCount: number | null
+  intentLevel: ApiIntentLevel | null
+  events: ApiUserJourneyEvent[] | null
+}
+
 export type ApiMaterialFileType = 'PDF' | 'IMAGE' | 'VIDEO' | 'TABLE'
 
 /** 素材实体（Material），fileUrl 为单个 URL 或多图 JSON 数组字符串 */
