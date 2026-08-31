@@ -1916,8 +1916,8 @@ test('materials home uses the mine API and keeps the fixed Figma top layers', ()
   assert.doesNotMatch(markup, /materials-stripes\.svg/)
   assert.doesNotMatch(homeMarkup, /materials-stripes\.svg/)
   assert.match(markup, /class="materials-card__image" src="\{\{item\.thumbnailUrl\}\}" mode="aspectFill"/)
-  assert.match(styles, /\.materials-page__base\s*\{[\s\S]*?background: linear-gradient\(180deg, #f5f5f5 0%, #f5f5f5 65\.141%, rgba\(245, 245, 245, 0\) 100%\), #ffffff;[\s\S]*?background-repeat: no-repeat;[\s\S]*?background-size: 100% 131px;/)
-  assert.doesNotMatch(styles, /\.materials-page__gradient\s*\{/)
+  assert.match(styles, /\.materials-page__base\s*\{[\s\S]*?background: #ffffff;/)
+  assert.match(styles, /\.materials-page__gradient\s*\{[\s\S]*?position: absolute;[\s\S]*?z-index: 2;[\s\S]*?height: 131px;[\s\S]*?background: linear-gradient\(180deg, #f5f5f5 0%, #f5f5f5 65\.141%, rgba\(245, 245, 245, 0\) 100%\);/)
   assert.match(styles, /\.materials-page__stripes\s*\{[\s\S]*?position: fixed;[\s\S]*?left: 4rpx;[\s\S]*?z-index: 3;[\s\S]*?width: 100%;[\s\S]*?height: 260rpx;[\s\S]*?background: repeating-linear-gradient\(90deg, transparent 0 4rpx, #f0f0f0 4rpx 8rpx\);[\s\S]*?-webkit-mask-image: linear-gradient\(180deg, #000000 0%, rgba\(0, 0, 0, 0\) 100%\);/)
   assert.match(styles, /\.materials-page__header\s*\{[\s\S]*?z-index: 4;/)
   assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?z-index: 1;/)
@@ -1940,7 +1940,7 @@ test('materials header keeps the copied gradient while the list scrolls', () => 
   ]
 
   for (const markup of markups) {
-    assert.doesNotMatch(markup, /materials-page__gradient/)
+    assert.match(markup, /<view class="materials-page__gradient" \/>/)
     assert.match(markup, /<view class="materials-page__stripes" \/>/)
     assert.match(markup, /<view class="materials-page__header">[\s\S]*class="materials-filter"/)
     assert.doesNotMatch(markup, /class="materials-page__header" style=/)
