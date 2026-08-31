@@ -1899,10 +1899,11 @@ test('materials home uses the Figma publish navigation and reserves space above 
   assert.match(styles, /\.materials-page--android \.materials-publish-button\s*\{[\s\S]*?bottom: calc\(16px \+ 20rpx\);/)
 })
 
-test('materials home uses the mine API and the Figma striped background', () => {
+test('materials home uses the mine API and keeps the fixed Figma top layers', () => {
   const config = read('miniprogram/config/dev.ts')
   const service = read('miniprogram/services/materials.ts')
   const markup = read('miniprogram/pages/materials/index.wxml')
+  const homeMarkup = read('miniprogram/pages/index/index.wxml')
   const styles = read('miniprogram/pages/materials/index.less')
 
   assert.doesNotMatch(config, /MATERIALS_DATA_SOURCE/)
@@ -1910,9 +1911,16 @@ test('materials home uses the mine API and the Figma striped background', () => 
   assert.match(service, /resolveMaterialCopy/)
   assert.match(service, /title: resolveMaterialCopy\(material\)/)
   assert.doesNotMatch(service, /from '\.\.\/mocks\//)
-  assert.match(markup, /src="\/assets\/materials\/materials-stripes\.svg"/)
+  assert.match(markup, /<image class="materials-page__stripes" src="\/assets\/materials\/materials-stripes\.svg" mode="scaleToFill" \/>/)
+  assert.match(homeMarkup, /<image class="materials-page__stripes" src="\/assets\/materials\/materials-stripes\.svg" mode="scaleToFill" \/>/)
+  assert.match(styles, /\.materials-page__stripes\s*\{[\s\S]*?width: 100vw;[\s\S]*?max-width: none;[\s\S]*?height: 130px;/)
   assert.match(markup, /class="materials-card__image" src="\{\{item\.thumbnailUrl\}\}" mode="aspectFill"/)
-  assert.match(styles, /\.materials-page__base\s*\{[\s\S]*?background: @app-page-background;/)
+  assert.match(styles, /\.materials-page__base\s*\{[\s\S]*?background: #ffffff;/)
+  assert.match(styles, /\.materials-page__gradient\s*\{[\s\S]*?position: absolute;[\s\S]*?z-index: 2;[\s\S]*?height: 131px;[\s\S]*?background: linear-gradient\(180deg, #f5f5f5 0%, #f5f5f5 65\.141%, rgba\(245, 245, 245, 0\) 100%\);/)
+  assert.match(styles, /\.materials-page__stripes\s*\{[\s\S]*?position: absolute;[\s\S]*?left: 0;[\s\S]*?z-index: 3;[\s\S]*?display: block;[\s\S]*?width: 100vw;[\s\S]*?max-width: none;[\s\S]*?height: 130px;/)
+  assert.match(styles, /\.materials-page__header\s*\{[\s\S]*?z-index: 4;/)
+  assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?z-index: 1;/)
+  assert.match(styles, /\.materials-grid\s*\{[\s\S]*?gap: 20rpx 18rpx;[\s\S]*?margin-top: 32rpx;/)
   assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?background: transparent;/)
 })
 
@@ -1924,10 +1932,20 @@ test('materials card information follows Figma 519:4383', () => {
   assert.match(styles, /\.materials-card__date\s*\{[\s\S]*color: @materials-muted;[\s\S]*font-size: 28rpx;/)
 })
 
-test('materials header fades to white while the list scrolls', () => {
-  const markup = read('miniprogram/pages/materials/index.wxml')
+test('materials header keeps the copied gradient while the list scrolls', () => {
+  const markups = [
+    read('miniprogram/pages/materials/index.wxml'),
+    read('miniprogram/pages/index/index.wxml'),
+  ]
 
-  assert.match(markup, /background: rgba\(255, 255, 255, \{\{materialsHeaderOpacity\}\}\);/)
+  for (const markup of markups) {
+    assert.match(markup, /<view class="materials-page__gradient" \/>/)
+    assert.match(markup, /<image class="materials-page__stripes" src="\/assets\/materials\/materials-stripes\.svg" mode="scaleToFill" \/>/)
+    assert.match(markup, /<view class="materials-page__header">[\s\S]*class="materials-filter"/)
+    assert.doesNotMatch(markup, /class="materials-page__header" style=/)
+    assert.doesNotMatch(markup, /materialsHeaderOpacity/)
+    assert.doesNotMatch(markup, /bindscroll="onMaterialsScroll"/)
+  }
 })
 
 test('materials filter buttons stay fixed above the scrolling list', () => {
@@ -1955,7 +1973,7 @@ test('materials publish button does not place a blue gradient layer over cards o
   const navigationStyles = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.less')
 
   assert.match(navigationStyles, /\.bottom-tab-bar\s*\{[\s\S]*?z-index: 1000;/)
-  assert.match(pageStyles, /\.materials-page__content\s*\{[\s\S]*?z-index: 2;/)
+  assert.match(pageStyles, /\.materials-page__content\s*\{[\s\S]*?z-index: 1;/)
   assert.match(pageStyles, /\.materials-publish-bar\s*\{[\s\S]*?z-index: 3;[\s\S]*?background: transparent;/)
   assert.doesNotMatch(pageStyles, /\.materials-publish-bar\s*\{[\s\S]*?background: linear-gradient/)
 })
