@@ -1,0 +1,51 @@
+<view class="membership-page">
+  <view class="membership-page__header">
+    <navigation-bar title="会员" back="{{true}}" color="#000000" background="#ffffff" />
+  </view>
+
+  <view wx:if="{{status === 'loading'}}" class="membership-page__state">
+    <text>正在加载会员套餐</text>
+  </view>
+
+  <view wx:elif="{{status === 'error'}}" class="membership-page__state">
+    <text>{{errorMessage}}</text>
+    <view class="membership-page__retry" bindtap="onRetryTap" hover-class="membership-page__retry--pressed">重新加载</view>
+  </view>
+
+  <view wx:elif="{{status === 'success' && membership}}" class="membership-page__content">
+    <view class="membership-status">
+      <text class="membership-status__title">{{membership.statusTitle}}</text>
+      <text class="membership-status__subtitle">{{membership.statusSubtitle}}</text>
+    </view>
+
+    <view class="membership-plans">
+      <view
+        wx:for="{{membership.plans}}"
+        wx:key="id"
+        class="membership-plan {{selectedPlanId === item.id ? 'membership-plan--selected' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onPlanTap"
+        hover-class="membership-plan--pressed"
+        hover-stay-time="80"
+      >
+        <view class="membership-plan__copy">
+          <text class="membership-plan__title">{{item.title}}</text>
+          <text class="membership-plan__hint">支付成功后立即生效</text>
+        </view>
+        <text class="membership-plan__price">{{item.priceLabel}}</text>
+      </view>
+    </view>
+
+    <text class="membership-page__note">支付未完成不会开通或续期。若支付成功后状态未更新，请下拉刷新。</text>
+  </view>
+
+  <view wx:if="{{status === 'success' && selectedPlan}}" class="membership-page__footer">
+    <view
+      class="membership-pay {{paying ? 'membership-pay--disabled' : ''}}"
+      bindtap="onPayTap"
+      hover-class="{{paying ? '' : 'membership-pay--pressed'}}"
+    >
+      <text>{{paying ? '正在支付' : selectedPayLabel}}</text>
+    </view>
+  </view>
+</view>

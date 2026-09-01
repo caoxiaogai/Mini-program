@@ -176,6 +176,45 @@ export interface ApiUserJourney {
   events: ApiUserJourneyEvent[] | null
 }
 
+export type ApiMembershipPlanId = 'month' | 'quarter' | 'half_year'
+
+export type ApiMembershipOrderStatus = 'pending' | 'paid' | 'closed'
+
+/** GET /membership/me 套餐项（MembershipPlanVO） */
+export interface ApiMembershipPlan {
+  id: ApiMembershipPlanId
+  title: string
+  durationMonths: number
+  amountFen: number
+  priceYuan: string
+}
+
+/** GET /membership/me 响应（MembershipStatusVO） */
+export interface ApiMembershipStatus {
+  active: boolean
+  expireAt: string | null
+  plans: ApiMembershipPlan[] | null
+  lastPaidOutTradeNo?: string | null
+}
+
+/** POST /membership/order 响应（MembershipPayParamsVO，虚拟支付） */
+export interface ApiMembershipPayParams {
+  outTradeNo: string
+  signData: string
+  paySig: string
+  signature: string
+  mode: string
+}
+
+/** GET /membership/orders/:outTradeNo 与 POST /membership/orders/:outTradeNo/sync 响应（MembershipOrderVO） */
+export interface ApiMembershipOrder {
+  outTradeNo: string
+  planId: ApiMembershipPlanId
+  status: ApiMembershipOrderStatus
+  amountFen: number
+  expireAt: string | null
+}
+
 export type ApiMaterialFileType = 'PDF' | 'IMAGE' | 'VIDEO' | 'TABLE'
 
 /** 素材实体（Material），fileUrl 为单个 URL 或多图 JSON 数组字符串 */

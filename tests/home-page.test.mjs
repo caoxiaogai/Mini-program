@@ -83,7 +83,7 @@ test('data access goes through the unified request layer', () => {
   assert.match(requestLayer, /export function patchCachedLogin/)
   assert.match(requestLayer, /\/wechat\/login/)
 
-  for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile', 'tracking', 'user', 'user-journey']) {
+  for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile', 'tracking', 'user', 'user-journey', 'membership']) {
     const service = read(`miniprogram/services/${name}.ts`)
     assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
     if (name !== 'ranking') {
@@ -148,6 +148,7 @@ test('the app uses one shared page background color', () => {
     'miniprogram/pages/analysis-user-detail/index.less',
     'miniprogram/pages/materials/publish/index.less',
     'miniprogram/pages/settings/index.less',
+    'miniprogram/pages/membership/index.less',
   ].map(read)
 
   assert.match(appStyles, /@app-page-background: #f0f1f2;/)
@@ -624,7 +625,7 @@ test('home bottom navigation switches primary pages without a swipe container', 
   assert.match(page, /class="home-page__tab-panel home-page__analysis-panel" hidden="\{\{activeTabIndex !== 3\}\}"/)
   assert.match(page, /<notification-header[\s\S]*bind:filtertap="onNotificationFilterTap"/)
   assert.match(page, /<home-analysis[\s\S]*bind:periodtap="onAnalysisPeriodTap"/)
-  assert.match(page, /<home-profile profile="\{\{profileData\}\}" bind:settingstap="onProfileSettingsTap" \/>/)
+  assert.match(page, /<home-profile profile="\{\{profileData\}\}" bind:settingstap="onProfileSettingsTap" bind:membershiptap="onProfileMembershipTap" \/>/)
   assert.match(logic, /activeTabIndex: 0/)
   assert.doesNotMatch(logic, /onTabChange/)
   assert.match(logic, /activeTabIndex: nextIndex/)
@@ -653,7 +654,8 @@ test('profile tab exposes the Figma 519:5031 structure through a typed service s
   assert.doesNotMatch(service, /870\.39/)
   assert.match(service, /pendingTitle: '尽情期待'/)
   assert.match(service, /pendingDescription: '更多功能，即将呈现'/)
-  assert.match(service, /TODO\(API\): 接入「我的余额 \/ 提现 \/ 会员」真实接口/)
+  assert.match(service, /TODO\(API\): 接入「我的余额 \/ 提现」真实接口/)
+  assert.match(service, /getMembershipStatusSilent/)
   assert.equal(existsSync(new URL('../miniprogram/mocks/profile.ts', import.meta.url)), false)
   assert.match(config, /bottom-tab-bar/)
   assert.match(component, /class="home-profile"/)
@@ -663,12 +665,15 @@ test('profile tab exposes the Figma 519:5031 structure through a typed service s
   assert.match(read('miniprogram/app.ts'), /from '\.\/services\/profile'/)
   assert.match(read('miniprogram/app.ts'), /hasAuthorizedLogin\(\)/)
   assert.match(logic, /runAuthed\(buildReturnPath\(HOME_PAGE_PATH, options\)/)
-  assert.match(page, /<home-profile profile="\{\{profileData\}\}" bind:settingstap="onProfileSettingsTap" \/>/)
+  assert.match(page, /<home-profile profile="\{\{profileData\}\}" bind:settingstap="onProfileSettingsTap" bind:membershiptap="onProfileMembershipTap" \/>/)
   assert.match(component, /bindtap="onSettingsTap"/)
   assert.match(component, /class="home-profile__identity"[\s\S]*class="home-profile__nickname"[\s\S]*class="home-profile__settings"/)
   assert.doesNotMatch(component, /slot="right"/)
   assert.match(logic, /onProfileSettingsTap\(\)/)
   assert.match(logic, /\/pages\/settings\/index/)
+  assert.match(logic, /onProfileMembershipTap\(\)/)
+  assert.match(logic, /MEMBERSHIP_PAGE_PATH/)
+  assert.match(component, /bindtap="onMembershipTap"/)
 })
 
 test('profile settings sits on the nickname row with matching side insets', () => {
@@ -692,13 +697,13 @@ test('profile pending module centers the Figma 594:8711 content group', () => {
   assert.match(styles, /.home-profile__pending-button \{[\s\S]*padding: 0 48rpx;[\s\S]*border-radius: 84rpx;/)
 })
 
-test('profile pending module stays above the locked content overlay', () => {
+test('profile page does not frost real content with a locked overlay', () => {
+  const component = read('miniprogram/components/home-profile/index.wxml')
   const styles = read('miniprogram/components/home-profile/index.less')
 
-  assert.match(styles, /.home-profile__locked-overlay \{[\s\S]*z-index: 2;/)
-  assert.match(styles, /.home-profile__locked-overlay \{[\s\S]*top: 442rpx;/)
-  assert.match(styles, /.home-profile__content \{[\s\S]*z-index: auto;/)
-  assert.match(styles, /.home-profile__pending \{[\s\S]*position: relative;[\s\S]*z-index: 3;/)
+  assert.doesNotMatch(component, /home-profile__locked-overlay/)
+  assert.doesNotMatch(styles, /backdrop-filter/)
+  assert.doesNotMatch(styles, /home-profile__locked-overlay/)
 })
 
 test('profile settings opens a notify intent threshold page', () => {
@@ -3714,6 +3719,7 @@ test('every page can pull from the top to refresh', () => {
     'pages/analysis-user-detail/index',
     'pages/analysis-user-journey/index',
     'pages/settings/index',
+    'pages/membership/index',
   ]
   const ungatedPages = [
     'pages/auth/index',

@@ -1,0 +1,165 @@
+page {
+  min-height: 100vh;
+  background: @app-page-background;
+}
+
+.membership-page {
+  min-height: 100vh;
+  background: @app-page-background;
+  color: #000000;
+}
+
+.membership-page__header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #ffffff;
+}
+
+.membership-page__state {
+  display: flex;
+  min-height: 60vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24rpx;
+  padding: 48rpx;
+  color: #8a8e94;
+  font-size: 28rpx;
+  line-height: 40rpx;
+  text-align: center;
+}
+
+.membership-page__retry {
+  padding: 16rpx 40rpx;
+  border-radius: 8rpx;
+  background: #0ec8d9;
+  color: #ffffff;
+  font-size: 28rpx;
+  line-height: 40rpx;
+}
+
+.membership-page__retry--pressed {
+  opacity: 0.65;
+}
+
+.membership-page__content {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+  padding: 40rpx 40rpx calc(200rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.membership-status {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: 40rpx;
+  border-radius: 40rpx;
+  background: #ffffff;
+}
+
+.membership-status__title {
+  color: #18939e;
+  font-size: 36rpx;
+  font-weight: 500;
+  line-height: 50rpx;
+}
+
+.membership-status__subtitle {
+  color: #8a8e94;
+  font-size: 26rpx;
+  line-height: 36rpx;
+}
+
+.membership-plans {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.membership-plan {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 36rpx 40rpx;
+  border-radius: 32rpx;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.membership-plan--selected {
+  background: #e8fcfe;
+}
+
+.membership-plan--pressed {
+  opacity: 0.7;
+}
+
+.membership-plan__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.membership-plan__title {
+  color: #000000;
+  font-size: 32rpx;
+  font-weight: 500;
+  line-height: 44rpx;
+}
+
+.membership-plan__hint {
+  color: #8a8e94;
+  font-size: 24rpx;
+  line-height: 34rpx;
+}
+
+.membership-plan__price {
+  flex: none;
+  color: #18939e;
+  font-size: 40rpx;
+  font-weight: 600;
+  line-height: 48rpx;
+}
+
+.membership-page__note {
+  color: #8a8e94;
+  font-size: 22rpx;
+  line-height: 32rpx;
+}
+
+.membership-page__footer {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  padding: 24rpx 40rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: @app-page-background;
+  box-sizing: border-box;
+}
+
+.membership-pay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  border-radius: 84rpx;
+  background: #0ec8d9;
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: 500;
+  line-height: 44rpx;
+}
+
+.membership-pay--pressed {
+  opacity: 0.7;
+}
+
+.membership-pay--disabled {
+  opacity: 0.5;
+}

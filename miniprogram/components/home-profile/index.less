@@ -132,6 +132,10 @@
   border-radius: 20rpx;
 }
 
+.home-profile__membership--pressed {
+  opacity: 0.85;
+}
+
 .home-profile__membership-art,
 .home-profile__membership-base,
 .home-profile__membership-fill,
@@ -237,7 +241,6 @@
   gap: 20rpx;
   width: 252rpx;
   margin: 16rpx auto 0;
-  z-index: 3;
 }
 
 .home-profile__pending-button {
@@ -259,18 +262,6 @@
   font-size: 28rpx;
   line-height: 40rpx;
   opacity: 0.5;
-}
-
-.home-profile__locked-overlay {
-  position: absolute;
-  top: 442rpx;
-  right: 0;
-  left: 0;
-  z-index: 2;
-  height: 1250rpx;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 29.444%, #ffffff 100%);
-  backdrop-filter: blur(6rpx);
-  pointer-events: none;
 }
 
 .home-profile__loading {

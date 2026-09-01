@@ -25,7 +25,12 @@
       </view>
     </view>
 
-    <view class="home-profile__membership">
+    <view
+      class="home-profile__membership"
+      bindtap="onMembershipTap"
+      hover-class="home-profile__membership--pressed"
+      hover-stay-time="80"
+    >
       <view class="home-profile__membership-art">
         <image class="home-profile__membership-base" src="/assets/profile/membership-base.svg" mode="scaleToFill" />
         <image class="home-profile__membership-glow home-profile__membership-glow--cyan" src="/assets/profile/profile-glow-cyan.svg" mode="scaleToFill" />
@@ -53,5 +58,4 @@
     </view>
   </view>
   <view wx:else class="home-profile__loading"><text>正在加载</text></view>
-  <view class="home-profile__locked-overlay" />
 </view>

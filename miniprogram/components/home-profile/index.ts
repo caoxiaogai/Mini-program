@@ -9,5 +9,8 @@ Component({
     onSettingsTap() {
       this.triggerEvent('settingstap')
     },
+    onMembershipTap() {
+      this.triggerEvent('membershiptap')
+    },
   },
 })

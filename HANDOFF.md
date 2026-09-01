@@ -77,7 +77,7 @@
 ### 本期不包含
 
 - 真实后端接口、数据库和管理后台。
-- 真实登录、支付、订单提交、消息推送等业务闭环。
+- 真实登录、余额提现、订单提交（会员虚拟支付除外）、以及未确认的业务闭环。
 - 未在 Figma 或用户确认范围内的功能扩展。
 - 以“看起来成功”的方式伪造支付、提交或服务端写入结果。
 
@@ -228,7 +228,7 @@ miniprogram/
 | 发布详情已添加图片描边 | done | 已添加媒体槽位使用 `2rpx solid #E5E5E5` 描边，继续添加入口样式保持不变 |
 | 实现素材详情分享页 | done | Figma `229:14271` 作品详情页、素材卡片按 id 跳转、轮播图片、描述文案、底部分享按钮与 typed service/mock 已实现 |
 | 素材内容详情上下背景色调整 | done | 发布后进入内容详情时，导航、说明区和底部分享操作区统一使用 `#F5F5F5`，媒体展示和按钮颜色保持不变 |
-| 接入后端真实接口 | done | 统一 `services/request.ts` 请求层 + 微信登录；首页/分析/通知/素材/我的头像昵称走后端数据；排行榜后端无接口，暂用 Figma 预览 mock；余额/会员为视觉占位 |
+| 接入后端真实接口 | done | 统一 `services/request.ts` 请求层 + 微信登录；首页/分析/通知/素材/我的头像昵称走后端数据；排行榜后端无接口，暂用 Figma 预览 mock；余额/提现仍为视觉占位 |
 | 首页像素级与真机适配验收 | pending | 新版首页已实现，等待开发者工具或真机进行视觉核对 |
 | 首页改版（重新开始） | in_progress | 已按新版 Figma `478:1234` 重写首页结构、数据层、底部导航和本地资源 |
 | 首页顶部背景 SVG 替换 | done | 使用用户提供的 Figma `887:12344` 导出资源 `miniprogram/assets/home-new/home-header-background.svg`，固定在首页首个滚动面板底层 |
@@ -242,10 +242,11 @@ miniprogram/
 | 首页“今日数据”按 Figma 926:14117 更新 | done | 使用上方渐变矩形与下方白色矩形拼接背景，重做双主指标与 2×3 小指标布局；移除新版未展示的箭头和环比，保留整卡跳转 |
 | 首页“一键已读”控件高度调整 | done | 首页互动消息标题右侧的紧凑“一键已读”控件高度调整为 24px（`48rpx`） |
 | 通知页“一键已读”控件尺寸调整 | done | 通知页完整“一键已读”控件左右内边距为 16px（`32rpx`），高度为 44px（`88rpx`）；首页紧凑版不变 |
-| 实现「我的」页视觉切片 | done | 已按 Figma `519:5031` 接入首页第五个 tab；头像/昵称来自登录接口，余额/会员为视觉占位 |
+| 实现「我的」页视觉切片 | done | 已按 Figma `519:5031` 接入首页第五个 tab；头像/昵称来自登录接口，余额为视觉占位，会员卡进入开通页 |
 | 所有页面下拉刷新 | done | 滑到顶部再下拉刷新当前页数据；发布页只收起动画，不覆盖未保存编辑 |
 | 分享素材浏览埋点 | done | 朋友打开素材详情/文档阅读页上报 `POST /tracking/event`，转发上报 `POST /tracking/forward`；浏览次数与意向由后端统计 |
 | 推送意向门槛自定义 | done | 默认高意向；「我的」进入设置页三选一（低/中/高），经 `GET/PUT /user/notify-settings` 读写 `notifyIntentLevel` |
+| 会员套餐与微信支付 | done | 联调测试价：1个月 ¥0.01 / 3个月 ¥0.02 / 半年 ¥0.03（上线前改回 29.9 / 79.9 / 139.9）；「我的」会员卡进入 `/pages/membership/index`，经小程序虚拟支付（道具直购）开通。未配置 OfferId/AppKey 时明确失败。本期不按会员身份关闭分析等功能 |
 | 设置页意向规则说明 | done | 「推送意向门槛」后「规则」打开意向判断标准弹窗，点空白关闭 |
 | 总数据按日浏览峰值坐标轴 | done | 横轴 0/4/8/12/16/20/24，纵轴随浏览量取整；小时数据走 `GET /analysis/trend?timeRange=today` |
 | 总数据按周浏览峰值坐标轴 | done | 横轴周一到周日用 1–7，纵轴随浏览量取整；数据走 `GET /analysis/trend?timeRange=week` |
@@ -300,6 +301,35 @@ miniprogram/
 - 已把 `origin/developer-v2`（`6876d4f`）合入当前 `main-v2`。
 - 首页问候、意向用户、今日数据、今日浏览最多和超级榜单视觉更新来自 developer-v2。
 - 通知未完成文案按素材类型区分仍保留 main-v2 的实现。
+
+### 2026-09-01：会员开通改接小程序虚拟支付
+
+- 会员属虚拟商品，不再调用 `wx.requestPayment` / JSAPI。开通改为道具直购：`wx.login` 换 `session_key`，后端签发 `signData` / `paySig` / `signature`，前端原样传给 `wx.requestVirtualPayment`（`mode=short_series_goods`）。
+- 后端配置 `wechat.xpay.offer-id`、`app-key`（体验版/正式版 `env=0` 用现网 AppKey）。未填齐时下单返回「虚拟支付尚未配置」，不会假装支付成功。
+- 小程序后台需创建三个道具，**productId** 与套餐 id 一致：`month` / `quarter` / `half_year`，标价与 `amountFen` 一致（当前测试 1 / 2 / 3 分）。当前 `env=0`，必须点「发布到现网」；只上传开发版会报 `-15010`。刚发布约 10 分钟生效（`-15014`）。发货推送 URL：`https://host/api/pay/xpay/notify`（响应 `ErrCode`/`ErrMsg`，不是 `Result`）。
+- 支付成功后仍轮询 `POST /membership/orders/{outTradeNo}/sync`；本地无公网回调时可走 `xpay/query_order` 查单开通，并补调 `xpay/notify_provide_goods`，避免微信后台一直显示未发货。进入会员页也会对最近一笔已支付订单补发货通知。
+- iOS 虚拟支付最低约 ¥1，当前 ¥0.01 测试价请用安卓或开发者工具。体验版必须 `env=0`，否则 `-15011`。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/membership-page.test.mjs`。真机需填 OfferId/AppKey、发布道具并重启后端后验收。
+
+### 2026-09-01：微信支付改用商户平台公钥
+
+- 新商户没有平台证书，`GET /v3/certificates` 会 404。SDK 改为 `RSAPublicKeyConfig`，读取商户平台「API安全」里申请的微信支付公钥。
+- 需配置 `wechat.pay.public-key-id`（`PUB_KEY_ID_...`）以及按环境覆盖的 `public-key-path`（与 `apiclient_key.pem` 同目录的 `pub_key.pem`）。
+
+### 2026-09-01：去掉「我的」页毛玻璃遮罩
+
+- 原先 `.home-profile__locked-overlay` 从余额卡附近盖到页面底部，并带 `backdrop-filter`，余额和会员卡会被发虚。会员已是可点入口，去掉这层遮罩，页面内容清晰显示。
+- 「尽情期待」模块保留，不再垫在模糊层上。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "profile" tests/home-page.test.mjs`。
+
+### 2026-09-01：会员套餐接入微信支付
+
+- 套餐当前为联调测试价：1 个月 ¥0.01、3 个月 ¥0.02、半年 ¥0.03。上线前改回 29.9 / 79.9 / 139.9。
+- 后端新增 `sales_user.member_expire_at`、`membership_order`，以及 `GET /membership/me`、`POST /membership/order`、`GET /membership/orders/{outTradeNo}`、`POST /membership/orders/{outTradeNo}/sync`。套餐常量在服务端，不以页面写死的价格下单。
+- 会员支付已于同日改接虚拟支付（见上条）。原 JSAPI / `POST /pay/wechat/notify` 不再用于开通会员。
+- 已有库执行 `sql/upgrade_membership.sql`。
+- 本期不根据会员状态关闭分析或其他功能。会员权益范围待确认。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/membership-page.test.mjs tests/home-page.test.mjs`。
 
 ### 2026-09-01：通知未完成文案按素材类型区分
 
@@ -2535,6 +2565,9 @@ miniprogram/
 - 页面间哪些交互仅做视觉效果，哪些需要可点击跳转。
 - 访问者身份识别、授权提示、匿名访问和数据留存的后端与合规方案。
 - 高、中、低意向规则发生重叠时的后端优先级；设置页已展示单图 / 多图 / PDF / 视频的产品口径。
+- 会员开通后具体解锁哪些功能（当前只记录到期时间，不关闭现有分析能力）。
+- 小程序虚拟支付：后台填 OfferId / 现网 AppKey；创建道具 `month` / `quarter` / `half_year`（1 / 2 / 3 分）并**发布到现网**；发货推送指向公网 `https://host/api/pay/xpay/notify`。
+- iOS 虚拟支付最低约 ¥1，当前测试价 ¥0.01 不能在 iOS 上调起；上线前改回 29.9 / 79.9 / 139.9。
 - 排行榜后端接口（当前 aisales 未提供销售排行榜数据，页面暂用 Figma 预览 mock）。
 - 分析页「总」时间范围口径：后端 custom 查询上限 62 天，暂按最近 62 天，需后端确认是否提供全量范围。
 - 后端待补能力：按日阅读趋势接口（当前由前端按日聚合 dashboard）、素材图片更新与素材删除接口（编辑草稿改图会产生新素材）、客户级转发次数（当前仅 0/1 标记）、未读通知/红点口径。

@@ -13,6 +13,7 @@
     "pages/analysis-user-detail/index",
     "pages/analysis-user-journey/index",
     "pages/settings/index",
+    "pages/membership/index",
     "pages/logs/logs"
   ],
   "window": {

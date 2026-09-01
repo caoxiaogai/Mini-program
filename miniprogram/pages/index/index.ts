@@ -27,6 +27,7 @@ import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishP
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
+import { MEMBERSHIP_PAGE_PATH } from '../../types/membership'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
@@ -293,6 +294,9 @@ Page({
   },
   onProfileSettingsTap() {
     wx.navigateTo({ url: '/pages/settings/index' })
+  },
+  onProfileMembershipTap() {
+    wx.navigateTo({ url: MEMBERSHIP_PAGE_PATH })
   },
   refreshActiveTab() {
     const tab = rootTabIds[this.data.activeTabIndex]
