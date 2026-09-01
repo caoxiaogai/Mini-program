@@ -37,7 +37,6 @@ export interface HomeIntentSummaryViewModel {
   highCount: string
   mediumCount: string
   lowCount: string
-  previewAvatars: Array<{ id: string; avatarUrl: string }>
 }
 
 export interface HomeTodayViewModel {

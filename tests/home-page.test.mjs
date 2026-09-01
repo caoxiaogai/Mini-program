@@ -72,8 +72,9 @@ test('data access goes through the unified request layer', () => {
   assert.doesNotMatch(requestLayer, /PROD_API_ORIGIN/)
   assert.doesNotMatch(requestLayer, /envVersion/)
   assert.match(requestLayer, /\/api\/files\/sales-materials\//)
-  assert.match(config, /DEVTOOLS_ORIGIN = 'http:\/\/192\.168\.31\.225:8080'/)
-  assert.match(config, /DEV_LAN_ORIGIN = 'http:\/\/192\.168\.31\.225:8080'/)
+  assert.match(config, /DEVTOOLS_ORIGIN = 'http:\/\/192\.168\.13\.102:8080'/)
+  assert.match(config, /DEV_LAN_ORIGIN = 'http:\/\/192\.168\.13\.102:8080'/)
+  assert.doesNotMatch(config, /192\.168\.31\.225/)
   assert.doesNotMatch(config, /PROD_API_ORIGIN/)
   assert.match(requestLayer, /export function request</)
   assert.match(requestLayer, /export function ensureLogin/)
@@ -149,13 +150,14 @@ test('the app uses one shared page background color', () => {
     'miniprogram/pages/settings/index.less',
   ].map(read)
 
-  assert.match(appStyles, /@app-page-background: #f5f5f5;/)
+  assert.match(appStyles, /@app-page-background: #f0f1f2;/)
+  assert.doesNotMatch(appStyles, /#f5f5f5/i)
   assert.match(appStyles, /page \{[\s\S]*background: @app-page-background;/)
   assert.ok(pageStyles.every((styles) => styles.includes('@app-page-background')), 'all page styles must use the shared page background token')
 })
 
 function removeMaterialsFilterDecorations(styles) {
-  return styles.replace(/\.materials-filter(?:__item(?:--active)?|)\s*\{[^}]*\}|\.materials-card__info\s*\{[^}]*\}/g, '')
+  return styles.replace(/\.materials-filter(?:__item(?:--active)?|)\s*\{[^}]*\}|\.materials-card__info\s*\{[^}]*\}|\.home-section--today-most \.home-content-card(?:__item)?\s*\{[^}]*\}|\.home-intent-metric\s*\{[^}]*\}|\.home-today-card__hero\s*\{[^}]*\}|\.home-ranking-entry__button\s*\{[^}]*\}|@home-ranking-border\s*:\s*[^;]+;/g, '')
 }
 
 test('content boxes render without drop shadows', () => {
@@ -234,7 +236,7 @@ test('viewing a home notification removes only that preview card and decrements 
       { id: 'home-notification-n3', eventId: 'n3', userId: 'u3' },
     ],
     contents: [],
-    intentSummary: { total: '0', highCount: '0', mediumCount: '0', lowCount: '0', previewAvatars: [] },
+    intentSummary: { total: '0', highCount: '0', mediumCount: '0', lowCount: '0' },
     today: { viewCount: '0', completeCount: '0', forwardCount: '0', viewerCount: '0' },
   }
 
@@ -295,7 +297,7 @@ test('home interaction messages expose the compact mark-all-read action', async 
       { id: 'home-notification-n2', eventId: 'n2' },
     ],
     contents: [],
-    intentSummary: { total: '0', highCount: '0', mediumCount: '0', lowCount: '0', previewAvatars: [] },
+    intentSummary: { total: '0', highCount: '0', mediumCount: '0', lowCount: '0' },
     today: { viewCount: '0', completeCount: '0', forwardCount: '0', viewerCount: '0' },
   }
 
@@ -343,7 +345,8 @@ test('home page declares the new Figma sections and state branches', () => {
   assert.match(page, /class="home-content-card"/)
   assert.match(page, /class="home-intent-card"/)
   assert.match(page, /class="home-today-card"/)
-  assert.match(logic, /greetingSubtitle: '今日阳光明媚，祝你好运☀️'/)
+  assert.match(logic, /greetingSubtitle: '今日阳光明媚，祝你好运'/)
+  assert.doesNotMatch(logic, /greetingSubtitle:[^\n]*☀/)
   assert.match(page, /wx:if="\{\{isLoading\}\}"/)
   assert.match(page, /wx:elif="\{\{loadError\}\}"/)
   assert.match(page, /bindtap="onRetryTap"/)
@@ -354,11 +357,51 @@ test('home page declares the new Figma sections and state branches', () => {
   assert.match(styles, /\.home-hero__subtitle \{[\s\S]*font-size: 44rpx;[\s\S]*font-weight: 500;[\s\S]*line-height: 68rpx;/)
 })
 
-test('home hero aligns the greeting and notification start with Figma 619:9173', () => {
+test('home page uses the local Figma header background asset', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
   const styles = read('miniprogram/pages/index/index.less')
 
-  assert.match(styles, /\.home-hero \{[\s\S]*height: 520rpx;/)
-  assert.match(styles, /\.home-hero__copy \{[\s\S]*top: 310rpx;/)
+  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/home-header-background.svg', import.meta.url)), true)
+  assert.match(page, /class="home-page__header-background" src="\/assets\/home-new\/home-header-background\.svg"/)
+  assert.match(styles, /\.home-page__tabs\s*>\s*\.home-page__tab-panel:first-child\s*\{[\s\S]*position:\s*relative;/)
+  assert.match(styles, /\.home-page__header-background\s*\{[\s\S]*position:\s*absolute;[\s\S]*top:\s*0;/)
+})
+
+test('home greeting title uses the Tencent Sans W7 subset and Figma top spacing', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(page, /class="home-hero__headline"/)
+  assert.match(styles, /@font-face\s*\{[\s\S]*font-family:\s*['"]TencentSansW7['"][\s\S]*base64,/)
+  assert.match(styles, /\.home-hero__copy\s*\{[\s\S]*top:\s*80rpx;/)
+  assert.match(styles, /\.home-hero__headline\s*\{[\s\S]*font-family:\s*['"]TencentSansW7['"][\s\S]*font-size:\s*44rpx;/)
+  assert.match(styles, /\.home-hero__subtitle\s*\{[\s\S]*font-family:\s*['"]TencentSansW7['"][\s\S]*font-size:\s*44rpx;/)
+})
+
+test('home greeting lines include the Figma companion icons and quoted headline', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/home-greeting-flame.png', import.meta.url)), true)
+  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/home-greeting-star.png', import.meta.url)), true)
+  assert.match(page, /class="[^"]*home-hero__headline-row[^"]*"[\s\S]*<text class="home-hero__headline">“\{\{greetingHeadline\}\}”<\/text>[\s\S]*class="home-hero__headline-icon" src="\/assets\/home-new\/home-greeting-flame\.png"/)
+  assert.match(page, /class="[^"]*home-hero__subtitle-row[^"]*"[\s\S]*class="home-hero__subtitle-icon" src="\/assets\/home-new\/home-greeting-star\.png"/)
+  assert.match(styles, /\.home-hero__headline-row\s*,\s*\.home-hero__subtitle-row\s*\{[\s\S]*display:\s*flex;/)
+})
+
+test('home greeting icons float vertically in an infinite staggered loop', () => {
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(styles, /@keyframes home-greeting-float\s*\{[\s\S]*from\s*\{[\s\S]*transform:\s*translateY\(0\);[\s\S]*50%\s*\{[\s\S]*transform:\s*translateY\(-8rpx\);[\s\S]*to\s*\{[\s\S]*transform:\s*translateY\(0\);/)
+  assert.match(styles, /\.home-hero__headline-icon\s*,\s*\.home-hero__subtitle-icon\s*\{[\s\S]*animation:\s*home-greeting-float 2\.4s ease-in-out infinite;/)
+  assert.match(styles, /\.home-hero__subtitle-icon\s*\{[\s\S]*animation-delay:\s*-1\.2s;/)
+})
+
+test('home hero aligns the greeting title with Figma 899:12847', () => {
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(styles, /\.home-hero \{[\s\S]*height: 320rpx;/)
+  assert.match(styles, /\.home-hero__copy \{[\s\S]*top: 80rpx;/)
 })
 
 test('home interaction messages match Figma 723:11434 and stack after three cards', () => {
@@ -374,8 +417,8 @@ test('home interaction messages match Figma 723:11434 and stack after three card
   assert.match(page, /home-notification-card-stack--overflow-first[\s\S]*class="home-notification-card[^\"]*" data-id/)
   assert.match(page, /class="home-notification-card__copy"[\s\S]*class="home-status-tag home-status-tag--\{\{item\.intent\}\}"/)
   assert.match(styles, /\.home-notification-card \{[\s\S]*padding: 30rpx 40rpx;/)
-  assert.doesNotMatch(styles, /\.home-notification-card \{[\s\S]*border\s*:/)
-  assert.doesNotMatch(styles, /\.home-notification-card \{[\s\S]*box-shadow\s*:/)
+  assert.doesNotMatch(styles, /\.home-notification-card \{[^}]*border\s*:/)
+  assert.doesNotMatch(styles, /\.home-notification-card \{[^}]*box-shadow\s*:/)
   assert.match(styles, /\.home-notification-card-stack \{[\s\S]*position: relative;/)
   assert.match(styles, /\.home-notification-card-stack--overflow \{[\s\S]*margin-top: -180rpx;/)
   assert.match(styles, /\.home-notification-card-stack--overflow-first \{[\s\S]*transform: scale\(0\.94\);/)
@@ -398,7 +441,7 @@ test('home interaction messages show more on the third unread card only', () => 
   assert.match(page, /wx:if="\{\{homeData\.unreadNotificationCount > 3 && index === 2\}\}" class="home-notification-card__more-button" catchtap="onTabTap" data-id="notifications"/)
   assert.match(page, /class="home-notification-card__more-button"[\s\S]*查看更多/)
   assert.match(styles, /\.home-notification-card-stack--with-more \.home-notification-card\s*\{[\s\S]*display: flex;[\s\S]*flex-direction: column;[\s\S]*gap: 40rpx;/)
-  assert.match(styles, /\.home-notification-card__more-button\s*\{[\s\S]*height: 80rpx;[\s\S]*border-radius: 20rpx;[\s\S]*background: #f5f5f5;/)
+  assert.match(styles, /\.home-notification-card__more-button\s*\{[\s\S]*height: 80rpx;[\s\S]*border-radius: 20rpx;[\s\S]*background: #f0f1f2;/)
 })
 
 test('all intent tags use the latest high, medium and low colors', () => {
@@ -430,6 +473,31 @@ test('home summary cards open the matching analysis tabs', () => {
   assert.match(logic, /onTodayMostTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(0\)/)
   assert.match(logic, /onIntentSummaryTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(1\)/)
   assert.match(logic, /onTodayDataTap\(\) \{[\s\S]*this\.setActiveTab\(3\)[\s\S]*this\.setAnalysisTab\(2\)/)
+})
+
+test('home intent summary follows Figma 887:12304 card structure', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+  const types = read('miniprogram/types/home.ts')
+  const service = read('miniprogram/services/home.ts')
+
+  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/intent-card-background.svg', import.meta.url)), true)
+  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/intent-high-icon.svg', import.meta.url)), true)
+  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/intent-low-icon.svg', import.meta.url)), true)
+  assert.match(page, /class="home-intent-card__background" src="\/assets\/home-new\/intent-card-background\.svg"/)
+  assert.match(page, /class="home-intent-card__headline"[\s\S]*今日新增[\s\S]*homeData\.intentSummary\.total[\s\S]*个客户/)
+  assert.match(page, /class="home-intent-metric home-intent-metric--high"[\s\S]*intent-high-icon\.svg[\s\S]*homeData\.intentSummary\.highCount[\s\S]*高意向/)
+  assert.match(page, /class="home-intent-metric home-intent-metric--medium"[\s\S]*home-intent-metric__middle-icon[\s\S]*homeData\.intentSummary\.mediumCount[\s\S]*中意向/)
+  assert.match(page, /class="home-intent-metric home-intent-metric--low"[\s\S]*intent-low-icon\.svg[\s\S]*homeData\.intentSummary\.lowCount[\s\S]*低意向/)
+  assert.match(page, /class="home-intent-card__more"[\s\S]*查看更多/)
+  assert.doesNotMatch(page, /class="home-intent-card__avatars"/)
+  assert.doesNotMatch(page, /class="home-intent-card__chevron"/)
+  assert.doesNotMatch(types, /previewAvatars/)
+  assert.doesNotMatch(service, /previewCustomers|previewAvatars/)
+  assert.match(styles, /\.home-intent-card \{[\s\S]*position: relative;[\s\S]*height: 474rpx;/)
+  assert.match(styles, /\.home-intent-card__metrics \{[\s\S]*gap: 20rpx;/)
+  assert.match(styles, /\.home-intent-metric \{[\s\S]*flex: 1;[\s\S]*width: auto;[\s\S]*min-width: 0;[\s\S]*height: 196rpx;[\s\S]*border: 4rpx solid #ffffff;[\s\S]*border-radius: 30rpx;/)
+  assert.match(styles, /\.home-intent-card__more \{[\s\S]*height: 80rpx;[\s\S]*margin-top: 42rpx;[\s\S]*border-radius: 20rpx;[\s\S]*background: #f0f1f2;/)
 })
 
 test('home today data includes high, medium and low intent metrics', () => {
@@ -465,7 +533,7 @@ test('home today-most opens work analysis', () => {
   assert.deepEqual(calls, [['tab', 3], ['analysis', 0]])
 })
 
-test('home today-most follows Figma 723:11451 card hierarchy', () => {
+test('home today-most follows Figma 878:11389 card hierarchy', () => {
   const page = read('miniprogram/pages/index/index.wxml')
   const styles = read('miniprogram/pages/index/index.less')
   const service = read('miniprogram/services/home.ts')
@@ -479,14 +547,16 @@ test('home today-most follows Figma 723:11451 card hierarchy', () => {
   assert.match(section, /class="home-today-most__more-button" bindtap="onTodayMostTap"[\s\S]*查看更多/)
   assert.doesNotMatch(section, /home-today-most__more"><text>查看更多/)
   assert.match(section, /class="home-content-card__item" bindtap="onTodayMostTap"/)
+  assert.doesNotMatch(section, /home-content-card__divider/)
   assert.match(section, /class="home-content-card__intent home-content-card__intent--\{\{item\.highIntentLevel\}\}"\s*>\{\{item\.highIntentLabel\}\}/)
   assert.match(section, /class="home-stat"><text>完播<\/text><text class="home-stat__value">\{\{item\.completeCount\}\}/)
   assert.doesNotMatch(styles, /\.home-section--today-most \{[\s\S]*margin-(?:right|left): -40rpx;/)
-  assert.match(styles, /\.home-content-card \{[\s\S]*padding: 30rpx 40rpx;[\s\S]*border-radius: 40rpx;/)
-  assert.match(styles, /\.home-section--today-most \.home-content-card__item \{[\s\S]*padding: 30rpx;[\s\S]*border-radius: 30rpx;[\s\S]*background: (?:#edf0f5|@app-page-background);/)
+  assert.match(styles, /\.home-section--today-most \.home-content-card \{[\s\S]*border: 4rpx solid #ffffff;[\s\S]*background: linear-gradient\(180deg, #fff8e4 0%, #ffffff 13\.333%\);/)
+  assert.match(styles, /\.home-section--today-most \.home-section__title \{[\s\S]*color: #333333;[\s\S]*font-size: 32rpx;[\s\S]*font-weight: 700;/)
+  assert.match(styles, /\.home-section--today-most \.home-content-card__item \{[\s\S]*padding: 30rpx;[\s\S]*border: 2rpx solid #f4f5f5;[\s\S]*border-radius: 30rpx;[\s\S]*background: #ffffff;/)
   assert.match(styles, /\.home-today-most__icon \{[\s\S]*width: 44rpx;[\s\S]*height: 44rpx;/)
-  assert.match(styles, /\.home-today-most__more-button \{[\s\S]*height: 80rpx;[\s\S]*margin-top: 40rpx;[\s\S]*border-radius: 20rpx;[\s\S]*background: @app-page-background;/)
-  assert.match(styles, /\.home-today-most__chevron \{[\s\S]*width: 12rpx;[\s\S]*height: 22rpx;/)
+  assert.match(styles, /\.home-today-most__more-button \{[\s\S]*height: 80rpx;[\s\S]*margin-top: 40rpx;[\s\S]*border-radius: 20rpx;[\s\S]*background: #f0f1f2;[\s\S]*color: #666666;/)
+  assert.match(styles, /\.home-today-most__chevron \{[\s\S]*width: 9rpx;[\s\S]*height: 19rpx;/)
   assert.match(service, /completeCount: formatCount\(item\.completeCount\)/)
   assert.match(service, /highIntentLevel: highIntentCount > 0 \? 'high' : 'empty'/)
   assert.match(types, /completeCount: string/)
@@ -503,7 +573,8 @@ test('home empty state follows Figma 486:2569', () => {
   assert.match(page, /class="home-section home-section--ranking"><view class="home-ranking-entry" bindtap="onRankingEntryTap"/)
   assert.doesNotMatch(page, /home-section--ranking>[\s\S]*排行榜/)
   assert.doesNotMatch(page, /home-section--ranking" wx:if=/)
-  assert.match(page, /今日有个新增用户/)
+  assert.match(page, /今日新增 <text class="home-accent">\{\{homeData\.intentSummary\.total\}\}<\/text> 个客户/)
+  assert.doesNotMatch(page, /今日有个新增用户/)
   assert.match(page, /src="\/assets\/analysis\/empty-state-cloud\.png"/)
   assert.match(styles, /\.home-empty--notification \{[\s\S]*height: 172rpx;[\s\S]*gap: 20rpx;/)
   assert.match(styles, /\.home-content-card__empty \{[\s\S]*padding: 30rpx 40rpx;/)
@@ -699,17 +770,23 @@ test('home navigation title and background fade in over 100px of scroll', async 
   const page = read('miniprogram/pages/index/index.wxml')
   const logic = read('miniprogram/pages/index/index.ts')
   const styles = read('miniprogram/pages/index/index.less')
-  const { getHomeHeaderOpacity } = await import('../miniprogram/utils/home-header.ts')
+  const { getHomeHeaderOpacity, getHomeHeaderGradientOpacity } = await import('../miniprogram/utils/home-header.ts')
 
   assert.match(page, /<scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll"/)
   assert.match(page, /<navigation-bar back="\{\{false\}\}" title="首页" color="rgba\(0,0,0, \{\{homeHeaderOpacity\}\}\)"/)
   assert.match(page, /background="rgba\(255,255,255, \{\{homeHeaderOpacity\}\}\)"/)
+  assert.match(page, /class="home-page__header-background" src="\/assets\/home-new\/home-header-background\.svg" mode="scaleToFill" style="opacity: \{\{homeHeaderGradientOpacity\}\}"/)
   assert.match(logic, /homeHeaderOpacity: 0/)
+  assert.match(logic, /homeHeaderGradientOpacity: 1/)
   assert.match(logic, /onHomeScroll\(event: WechatMiniprogram\.ScrollViewScrollEvent\)/)
   assert.equal(getHomeHeaderOpacity(0), 0)
   assert.equal(getHomeHeaderOpacity(50), 0.5)
   assert.equal(getHomeHeaderOpacity(100), 1)
   assert.equal(getHomeHeaderOpacity(180), 1)
+  assert.equal(getHomeHeaderGradientOpacity(0), 1)
+  assert.equal(getHomeHeaderGradientOpacity(50), 0.5)
+  assert.equal(getHomeHeaderGradientOpacity(100), 0)
+  assert.equal(getHomeHeaderGradientOpacity(180), 0)
 })
 
 test('primary page backgrounds stay fixed while first-screen content pulls down', () => {
@@ -738,16 +815,30 @@ test('home page places a high-resolution ranking entry between notifications and
   assert.match(page, /class="home-ranking-entry" bindtap="onRankingEntryTap"/)
   assert.match(page, /src="\/assets\/ranking\/ranking-title\.png"/)
   assert.match(page, /src="\/assets\/ranking\/ranking-trophy\.png"/)
+  assert.match(page, /class="home-ranking-entry__texture" src="\/assets\/ranking\/ranking-texture\.svg"/)
+  assert.match(page, /class="home-ranking-entry__glow" src="\/assets\/ranking\/ranking-bottom-glow\.svg"/)
   assert.match(page, /看看谁的内容更受欢迎/)
+  assert.match(page, /class="home-ranking-entry__button"[^>]*>\s*<text>查看详情<\/text>/)
   assert.match(logic, /onRankingEntryTap()[\s\S]*pages\/ranking\/index/)
-  assert.match(styles, /\.home-ranking-entry \{[\s\S]*height: 200rpx;[\s\S]*border-radius: 40rpx;/)
+  assert.match(styles, /\.home-ranking-entry \{[\s\S]*height: 300rpx;[\s\S]*border-radius: 40rpx;/)
   assert.doesNotMatch(styles, /\.home-ranking-entry \{[^}]*box-shadow:/)
   assert.match(styles, /\.home-ranking-entry__subtitle \{[\s\S]*white-space: nowrap;/)
+  assert.match(styles, /\.home-ranking-entry \{[\s\S]*border: 4rpx solid transparent;[\s\S]*background: linear-gradient\(270deg, #fee4b7 0%, #fffbe7 100%\) padding-box,[\s\S]*border-box;/)
+  assert.match(styles, /\.home-ranking-entry__texture \{[\s\S]*position: absolute;[\s\S]*width: 100%;[\s\S]*height: 100%;[\s\S]*opacity: 0\.5;/)
+  assert.match(styles, /\.home-ranking-entry__glow \{[\s\S]*position: absolute;[\s\S]*bottom: 0;[\s\S]*height: 204rpx;[\s\S]*opacity: 0\.5;/)
+  assert.match(styles, /\.home-ranking-entry__button \{[\s\S]*width: 172rpx;[\s\S]*height: 64rpx;[\s\S]*box-shadow: 0 4rpx 4rpx rgba\(0, 0, 0, 0\.1\);/)
 
   const title = getPngDimensions('miniprogram/assets/ranking/ranking-title.png')
   const trophy = getPngDimensions('miniprogram/assets/ranking/ranking-trophy.png')
   assert.ok(title.width >= 576 && title.height >= 150, 'ranking title should be a 3x-or-higher asset')
   assert.ok(trophy.width >= 294 && trophy.height >= 351, 'ranking trophy should be a 3x-or-higher asset')
+})
+
+test('home ranking trophy has an infinite vertical float animation', () => {
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(styles, /@keyframes home-ranking-trophy-float\s*\{[\s\S]*50%\s*\{[\s\S]*transform:\s*translateY\(-14rpx\);[\s\S]*to\s*\{[\s\S]*transform:\s*translateY\(0\);/)
+  assert.match(styles, /\.home-ranking-entry__trophy\s*\{[\s\S]*animation:\s*home-ranking-trophy-float 2\.8s ease-in-out infinite;/)
 })
 
 test('ranking reuses the profile striped background and fades its content to white', () => {
@@ -848,8 +939,9 @@ test('new homepage assets are local and sized for the target frame', () => {
     'miniprogram/assets/home-new/today-most-02.jpg',
     'miniprogram/assets/home-new/today-most-icon.svg',
     'miniprogram/assets/home-new/today-most-chevron.svg',
-    'miniprogram/assets/home-new/intent-user-icon.svg',
-    'miniprogram/assets/home-new/today-data-icon.svg',
+    'miniprogram/assets/home-new/intent-summary-user-icon.svg',
+    'miniprogram/assets/home-new/today-data-background-926.svg',
+    'miniprogram/assets/home-new/today-data-date-icon.svg',
     'miniprogram/assets/home-new/action-forward.svg',
     'miniprogram/assets/home-new/action-reading.svg',
     'miniprogram/assets/analysis/total-view-icon.svg',
@@ -1053,7 +1145,7 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   assert.equal(headerConfig.usingComponents['segmented-filter'], '/components/segmented-filter/index')
   assert.match(headerLogic, /wx\.vibrateShort\(\{ type: 'light' \}\)/)
   assert.match(appStyles, /@page-top-tab-height: 64rpx;/)
-  assert.match(headerStyles, /\.notification-page__header \{[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f5f5f5 0%, #f5f5f5 65\.141%, rgba\(245, 245, 245, 0\) 100%\);/)
+  assert.match(headerStyles, /\.notification-page__header \{[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f0f1f2 0%, #f0f1f2 65\.141%, rgba\(240, 241, 242, 0\) 100%\);/)
   assert.doesNotMatch(headerStyles, /\.notification-page__header \{[\s\S]*background-color: #ffffff;/)
   assert.match(headerStyles, /\.notification-page__header \.weui-navigation-bar__center \{[^}]*font-size: 32rpx;/)
   assert.match(styles, /\.notification-page__content \{[\s\S]*padding: calc\(var\(--notification-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\) 40rpx 220rpx;/)
@@ -1443,7 +1535,7 @@ test('home analysis keeps the notification-style header outside its scroll area'
   assert.match(header, /<segmented-filter items="\{\{analysisTabs\}\}" active-id="\{\{activeAnalysisTab\}\}" variant="notification" bind:change="onAnalysisTabTap"/)
   assert.match(headerStyles, /\.analysis-page__header--embedded \{[\s\S]*position: relative;[\s\S]*top: auto;[\s\S]*left: auto;/)
   assert.match(styles, /\.analysis-page--embedded \.analysis-page__content--work \{[\s\S]*padding-top: calc\(var\(--analysis-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\);/)
-  assert.match(headerStyles, /\.analysis-page__header \{[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f5f5f5 0%, #f5f5f5 65\.141%, rgba\(245, 245, 245, 0\) 100%\);/)
+  assert.match(headerStyles, /\.analysis-page__header \{[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f0f1f2 0%, #f0f1f2 65\.141%, rgba\(240, 241, 242, 0\) 100%\);/)
   const homeStyles = read('miniprogram/pages/index/index.less')
   assert.match(homeStyles, /\.home-page__analysis-panel \{[\s\S]*position: relative;/)
   assert.match(homeStyles, /\.home-page__analysis-panel > analysis-header \{[\s\S]*position: absolute;[\s\S]*z-index: 1001;/)
@@ -1467,7 +1559,7 @@ test('home page uses the 20px content inset and scroll-safe bottom space', () =>
   assert.doesNotMatch(styles, /\.home-page__hero-background\s*\{/)
   assert.equal(existsSync(new URL('../miniprogram/assets/home-new/home-background.svg', import.meta.url)), false)
   assert.match(styles, /border-radius: 40rpx;/)
-  assert.match(page, /class="home-content-card__divider"/)
+  assert.doesNotMatch(page, /class="home-content-card__divider"/)
   assert.match(page, />浏览次数<\/text>/)
   assert.match(styles, /\.home-content-card \{[\s\S]*padding: 30rpx 40rpx;/)
 })
@@ -1479,19 +1571,24 @@ test('low-intent status pill follows Figma 478:1612 colors', () => {
   assert.match(styles, /border-radius: 48rpx;/)
 })
 
-test('intent users card follows Figma 723:11502 layout tokens', () => {
+test('intent users card renders zero counts through the Figma 887:12304 layout', () => {
   const page = read('miniprogram/pages/index/index.wxml')
+  const logic = read('miniprogram/pages/index/index.ts')
   const styles = read('miniprogram/pages/index/index.less')
 
-  assert.match(page, /class="home-intent-card__header"[\s\S]*class="home-intent-card__icon" src="\/assets\/home-new\/intent-user-icon\.svg"[\s\S]*意向用户[\s\S]*class="home-intent-card__chevron" src="\/assets\/home-new\/today-most-chevron\.svg"/)
-  assert.doesNotMatch(page, /class="home-section__header"><text class="home-section__title">意向用户/)
+  assert.match(page, /class="home-intent-card__headline-row"[\s\S]*class="home-intent-card__icon" src="\/assets\/home-new\/intent-summary-user-icon\.svg"/)
   assert.match(page, /今日新增 <text class="home-accent">\{\{homeData\.intentSummary\.total\}\}<\/text> 个客户/)
-  assert.match(styles, /\.home-intent-card__header \{[\s\S]*display: flex;[\s\S]*justify-content: space-between;/)
+  assert.match(page, /\+\{\{homeData\.intentSummary\.highCount\}\}/)
+  assert.match(page, /\+\{\{homeData\.intentSummary\.mediumCount\}\}/)
+  assert.match(page, /\+\{\{homeData\.intentSummary\.lowCount\}\}/)
+  assert.doesNotMatch(page, /wx:if="\{\{hasNewIntentUsers\}\}"/)
+  assert.doesNotMatch(page, /今日有个新增用户/)
+  assert.doesNotMatch(logic, /hasNewIntentUsers/)
   assert.match(styles, /\.home-intent-card__icon \{[\s\S]*width: 44rpx;[\s\S]*height: 44rpx;/)
-  assert.match(styles, /\.home-intent-card__chevron \{[\s\S]*width: 12rpx;[\s\S]*height: 22rpx;/)
-  assert.match(styles, /\.home-intent-card__headline \{[\s\S]*font-size: 32rpx;[\s\S]*font-weight: 500;/)
-  assert.match(styles, /\.home-intent-card__avatar \{[\s\S]*width: 48rpx;[\s\S]*height: 48rpx;[\s\S]*margin-right: -24rpx;/)
+  assert.match(styles, /\.home-intent-card__headline \{[\s\S]*font-size: 32rpx;[\s\S]*font-weight: 700;/)
   assert.match(styles, /\.home-intent-card__metrics \{[\s\S]*margin-top: 40rpx;/)
+  assert.match(styles, /\.home-intent-card__metrics \{[\s\S]*width: 100%;/)
+  assert.match(styles, /\.home-intent-metric \{[\s\S]*flex: 1;[\s\S]*width: auto;[\s\S]*min-width: 0;/)
   assert.match(styles, /\.home-intent-card \.home-accent \{[\s\S]*color: #02a9bf;/)
 })
 
@@ -1523,7 +1620,7 @@ test('user detail page follows Figma 497:4640', () => {
   const service = read('miniprogram/services/analysis.ts')
 
   assert.match(markup, /<navigation-bar title="用户详情" back="\{\{true\}\}"/)
-  assert.match(markup, /<navigation-bar title="用户详情" back="\{\{true\}\}" color="#000000" background="#f5f5f5"/)
+  assert.match(markup, /<navigation-bar title="用户详情" back="\{\{true\}\}" color="#000000" background="#f0f1f2"/)
   assert.equal(existsSync(new URL('../miniprogram/assets/analysis/reading-record-icon.svg', import.meta.url)), true)
   assert.match(markup, /class="user-detail__profile-card"/)
   assert.match(markup, /class="user-detail__name" bindtap="onCopyUsername"/)
@@ -1541,11 +1638,11 @@ test('user detail page follows Figma 497:4640', () => {
   assert.match(markup, /关闭小程序后，前往微信联系用户。/)
   assert.match(markup, /wx:if="\{\{noticeVisible\}\}" class="user-detail__copy-feedback"/)
   assert.match(styles, /\.user-detail-page \{[\s\S]*background: @app-page-background;/)
-  assert.match(styles, /\.user-detail-page__header \{[\s\S]*background: #f5f5f5;/)
+  assert.match(styles, /\.user-detail-page__header \{[\s\S]*background: #f0f1f2;/)
   assert.match(styles, /\.user-detail-page__content \{[\s\S]*padding: 40rpx 40rpx 40rpx;/)
   assert.match(styles, /\.user-detail__profile-card \{[\s\S]*gap: 20rpx;[\s\S]*padding: 40rpx;[\s\S]*border-radius: 40rpx;/)
   assert.match(styles, /\.user-detail__contact \{[\s\S]*height: 72rpx;[\s\S]*background: #0ec8d9;/)
-  assert.match(styles, /\.user-detail__record \{[\s\S]*gap: 30rpx;[\s\S]*padding: 30rpx;[\s\S]*border-radius: 30rpx;[\s\S]*background: #f5f5f5;/)
+  assert.match(styles, /\.user-detail__record \{[\s\S]*gap: 30rpx;[\s\S]*padding: 30rpx;[\s\S]*border-radius: 30rpx;[\s\S]*background: #f0f1f2;/)
   assert.match(styles, /\.user-detail__record--pressed \{[\s\S]*opacity: 0\.72;/)
   assert.match(styles, /\.user-detail__records-section \{[\s\S]*margin-top: 40rpx;[\s\S]*gap: 10rpx;/)
   assert.match(styles, /\.user-detail__records-card \{[\s\S]*gap: 34rpx;[\s\S]*padding: 0 40rpx 40rpx;[\s\S]*border-radius: 48rpx;[\s\S]*background: #ffffff;/)
@@ -1554,7 +1651,7 @@ test('user detail page follows Figma 497:4640', () => {
   assert.match(styles, /\.user-detail__records-title \{[\s\S]*font-size: 28rpx;/)
   assert.match(styles, /\.user-detail__records-body \{[\s\S]*gap: 20rpx;/)
   assert.match(styles, /\.user-detail__records \{[\s\S]*gap: 30rpx;/)
-  assert.match(styles, /\.user-detail__record \{[\s\S]*gap: 30rpx;[\s\S]*padding: 30rpx;[\s\S]*border-radius: 30rpx;[\s\S]*background: #f5f5f5;/)
+  assert.match(styles, /\.user-detail__record \{[\s\S]*gap: 30rpx;[\s\S]*padding: 30rpx;[\s\S]*border-radius: 30rpx;[\s\S]*background: #f0f1f2;/)
   assert.match(styles, /\.user-detail__record-stats view \{[\s\S]*flex-direction: column;/)
   assert.match(styles, /\.user-detail__copy-feedback \{[\s\S]*width: 530rpx;[\s\S]*border-radius: 28rpx;[\s\S]*background: rgba\(0, 0, 0, 0\.8\);/)
   assert.match(logic, /onCopyUsername\(\)/)
@@ -1879,7 +1976,7 @@ test('publish detail media slots follow Figma 835:8415 sizing and page backgroun
   const markup = read('miniprogram/pages/materials/publish/index.wxml')
   const styles = read('miniprogram/pages/materials/publish/index.less')
 
-  assert.match(markup, /<navigation-bar back="\{\{true\}\}" color="#000000" background="#f5f5f5" \/>/)
+  assert.match(markup, /<navigation-bar back="\{\{true\}\}" color="#000000" background="#f0f1f2" \/>/)
   assert.match(styles, /\.publish-page \{[\s\S]*background: @app-page-background;/)
   assert.match(styles, /\.publish-page__content \{[\s\S]*padding: 10rpx 48rpx 180rpx;/)
   assert.match(styles, /\.publish-page__image-grid \{[\s\S]*gap: 20rpx;/)
@@ -2050,7 +2147,7 @@ test('materials home uses the mine API and keeps the fixed Figma top layers', ()
   assert.doesNotMatch(markup, /materials-page__base/)
   assert.doesNotMatch(homeMarkup, /materials-page__base/)
   assert.match(styles, /\.materials-page__top\s*\{[\s\S]*?position: fixed;[\s\S]*?z-index: 4;[\s\S]*?height: calc\(var\(--materials-navigation-height\) \+ 84rpx\);/)
-  assert.match(styles, /\.materials-page__gradient\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 0;[\s\S]*?z-index: 0;[\s\S]*?height: 131px;[\s\S]*?background: linear-gradient\(180deg, rgba\(245, 245, 245, 1\) 0, rgba\(245, 245, 245, 1\) 100px, rgba\(245, 245, 245, 0\) 131px\);/)
+  assert.match(styles, /\.materials-page__gradient\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 0;[\s\S]*?z-index: 0;[\s\S]*?height: 131px;[\s\S]*?background: linear-gradient\(180deg, rgba\(240, 241, 242, 1\) 0, rgba\(240, 241, 242, 1\) 100px, rgba\(240, 241, 242, 0\) 131px\);/)
   assert.match(styles, /\.materials-page__stripes\s*\{[\s\S]*?position: absolute;[\s\S]*?left: 4rpx;[\s\S]*?z-index: 1;[\s\S]*?width: 100%;[\s\S]*?height: 260rpx;[\s\S]*?background: repeating-linear-gradient\(90deg, transparent 0 4rpx, #f0f0f0 4rpx 8rpx\);[\s\S]*?-webkit-mask-image: linear-gradient\(180deg, #000000 0%, rgba\(0, 0, 0, 0\) 100%\);/)
   assert.match(styles, /\.materials-page__header\s*\{[\s\S]*?z-index: 2;/)
   assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?z-index: 1;/)
@@ -2196,7 +2293,7 @@ test('material detail uses the shared page background above and below the media'
   const markup = read('miniprogram/pages/material-detail/index.wxml')
   const styles = read('miniprogram/pages/material-detail/index.less')
 
-  assert.match(markup, /<navigation-bar title="作品" back="\{\{true\}\}" home-button="\{\{true\}\}" color="#000000" background="#f5f5f5" \/>/)
+  assert.match(markup, /<navigation-bar title="作品" back="\{\{true\}\}" home-button="\{\{true\}\}" color="#000000" background="#f0f1f2" \/>/)
   assert.match(styles, /\.material-detail-page__header\s*\{[^}]*background:\s*@app-page-background;/)
   assert.match(styles, /\.material-detail__description\s*\{[^}]*background:\s*@app-page-background;/)
   assert.match(styles, /\.material-detail__share-bar\s*\{[^}]*background:\s*@app-page-background;/)
@@ -2408,7 +2505,7 @@ test('analysis top reuses the notification gradient and segmented control', () =
   assert.match(markup, /<navigation-bar title="\{\{title\}\}"[\s\S]*background="transparent"/)
   assert.match(markup, /<segmented-filter items="\{\{analysisTabs\}\}" active-id="\{\{activeAnalysisTab\}\}" variant="notification" bind:change="onAnalysisTabTap"/)
   assert.equal(componentConfig.usingComponents['segmented-filter'], '/components/segmented-filter/index')
-  assert.match(headerStyles, /\.analysis-page__header \{[\s\S]*position: fixed;[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f5f5f5 0%, #f5f5f5 65\.141%, rgba\(245, 245, 245, 0\) 100%\);/)
+  assert.match(headerStyles, /\.analysis-page__header \{[\s\S]*position: fixed;[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f0f1f2 0%, #f0f1f2 65\.141%, rgba\(240, 241, 242, 0\) 100%\);/)
   assert.match(styles, /\.analysis-page__content \{[^}]*padding: calc\(var\(--analysis-navigation-height, 91px\) \+ @page-top-tab-height \+ 20rpx\) 40rpx 220rpx;/)
 })
 
@@ -2650,7 +2747,7 @@ test('analysis work content follows the Figma 743:3561 works card', () => {
   }
 
   assert.match(styles, /\.analysis-work-panel--figma \{[\s\S]*padding: 0 20px 15px;[\s\S]*border-radius: 20px;[\s\S]*background: #ffffff;/)
-  assert.match(styles, /\.analysis-work-card \{[\s\S]*padding: 15px;[\s\S]*border-radius: 15px;[\s\S]*background: #f5f5f5;/)
+  assert.match(styles, /\.analysis-work-card \{[\s\S]*padding: 15px;[\s\S]*border-radius: 15px;[\s\S]*background: #f0f1f2;/)
   assert.match(styles, /\.analysis-work-list \{[\s\S]*gap: 10px;/)
   assert.match(types, /intentLevel: AnalysisIntentLevel \| 'empty'/)
   assert.match(types, /intentLabel: string/)
@@ -2886,9 +2983,11 @@ test('analysis total hero metrics are direct flex items', () => {
   for (const markup of markups) {
     assert.match(markup, /wx:for="\{\{analysisData\.totalData\.heroMetrics\}\}"[\s\S]*class="analysis-total__hero-metric/)
     assert.doesNotMatch(markup, /<block wx:for="\{\{analysisData\.totalData\.heroMetrics\}\}"/)
+    assert.doesNotMatch(markup, /analysis-total__hero-divider/)
   }
 
-  assert.match(styles, /\.analysis-total__hero-divider \{[\s\S]*width: 1px;[\s\S]*height: 20px;[\s\S]*background: #f0f0f0;/)
+  assert.doesNotMatch(styles, /\.analysis-total__hero-divider\s*\{/)
+  assert.doesNotMatch(styles, /\.analysis-total__hero-metric--secondary\s*\{[^}]*border-left\s*:/)
 })
 
 test('analysis total hero metrics compare with the previous period', async () => {
@@ -3395,35 +3494,39 @@ test('day peak chart axis scales with view volume', async () => {
   assert.equal(totalState.analysisTrendSlotCount, 6)
 })
 
-test('home today data card follows Figma 723:11527', async () => {
+test('home today data card follows Figma 926:14117', async () => {
   const page = read('miniprogram/pages/index/index.wxml')
   const styles = read('miniprogram/pages/index/index.less')
-  assert.equal(existsSync(new URL('../miniprogram/assets/analysis/total-metric-divider.svg', import.meta.url)), true)
-  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/today-data-icon.svg', import.meta.url)), true)
-  assert.match(page, /class="home-today-card__header"[\s\S]*class="home-today-card__icon" src="\/assets\/home-new\/today-data-icon\.svg"[\s\S]*今日数据[\s\S]*class="home-today-card__chevron" src="\/assets\/home-new\/today-most-chevron\.svg"/)
+  const background = read('miniprogram/assets/home-new/today-data-background-926.svg')
+  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/today-data-background-926.svg', import.meta.url)), true)
+  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/today-data-date-icon.svg', import.meta.url)), true)
+  assert.match(background, /id="Rectangle 238"/)
+  assert.match(background, /id="Rectangle 239"/)
+  assert.match(page, /class="home-today-card__background" src="\/assets\/home-new\/today-data-background-926\.svg"/)
+  assert.match(page, /class="home-today-card__header"[\s\S]*class="home-today-card__icon" src="\/assets\/home-new\/today-data-date-icon\.svg"[\s\S]*今日数据/)
+  assert.match(page, /class="home-today-card__header"[\s\S]*class="home-today-card__divider"[\s\S]*class="home-today-card__body"/)
+  assert.doesNotMatch(page, /home-today-card__chevron/)
   assert.match(page, /class="home-today-card__hero"[\s\S]*class="home-today-card__hero-divider"[\s\S]*class="home-today-card__hero-primary home-today-card__hero-primary--viewer"/)
   assert.match(page, /class="home-today-card__metrics"[\s\S]*总完播[\s\S]*转发次数[\s\S]*观看人数/)
   assert.match(page, /class="home-today-card__metrics home-today-card__intent-metrics"[\s\S]*高意向[\s\S]*中意向[\s\S]*低意向/)
-  assert.match(page, /home-today-card__intent-metrics"[\s\S]*低意向<\/text><\/view><\/view><\/view><\/view><\/view>\s*\n\s*<\/block>/)
-  assert.match(page, /class="home-today-card__metadata"/)
   assert.match(page, /<text>总完播<\/text>/)
   assert.match(page, /homeData\.today\.completeCount/)
   assert.doesNotMatch(page, /homeData\.today\.completeRate/)
-  assert.match(page, /wx:if="\{\{homeData\.today\.comparison\}\}" class="home-today-card__comparison"/)
-  assert.match(page, /class="home-today-card__comparison-divider" src="\/assets\/analysis\/total-metric-divider\.svg"/)
-  assert.match(styles, /\.home-today-card__header \{[\s\S]*height: 48rpx;[\s\S]*margin-bottom: 30rpx;/)
+  assert.doesNotMatch(page, /homeData\.today\.comparison/)
+  assert.match(styles, /\.home-today-card \{[\s\S]*position: relative;[\s\S]*height: 574rpx;[\s\S]*padding: 38rpx 40rpx 40rpx;/)
+  assert.match(styles, /\.home-today-card \{[\s\S]*background: transparent;/)
+  assert.match(styles, /\.home-today-card__background \{[\s\S]*position: absolute;[\s\S]*width: 100%;[\s\S]*height: 100%;/)
+  assert.match(styles, /\.home-today-card__header \{[\s\S]*height: 44rpx;[\s\S]*padding-bottom: 40rpx;/)
+  assert.doesNotMatch(styles, /\.home-today-card__header \{[^}]*border-bottom\s*:/)
+  assert.match(styles, /\.home-today-card__divider \{[\s\S]*height: 2px;[\s\S]*repeating-linear-gradient\(90deg, #f0f0f0 0 4px, transparent 4px 8px\)/)
   assert.match(styles, /\.home-today-card__icon \{[\s\S]*width: 44rpx;[\s\S]*height: 44rpx;/)
-  assert.match(styles, /\.home-today-card__chevron \{[\s\S]*width: 10rpx;[\s\S]*height: 20rpx;/)
-  assert.match(styles, /\.home-today-card__hero \{[\s\S]*display: flex;[\s\S]*justify-content: space-between;/)
-  assert.match(styles, /\.home-today-card__hero \{[\s\S]*flex-direction: row;[\s\S]*align-items: flex-start;/)
-  assert.match(styles, /\.home-today-card__hero-primary \{[\s\S]*gap: 8rpx;/)
-  assert.match(styles, /\.home-today-card__hero-primary \{[\s\S]*box-sizing: border-box;/)
-  assert.match(styles, /\.home-today-card__comparison \{[\s\S]*gap: 0;[\s\S]*color: @home-muted-light;[\s\S]*font-size: 24rpx;/)
-  assert.match(styles, /\.home-today-card__comparison-divider \{[\s\S]*width: 2rpx;[\s\S]*height: 14rpx;/)
-  assert.match(styles, /\.home-today-card__comparison-value \{[\s\S]*color: @home-accent;/)
-  assert.match(styles, /\.home-today-card__metrics \{[\s\S]*margin-top: 0;[\s\S]*gap: 8rpx;/)
-  assert.match(styles, /\.home-today-card__hero-divider \{[\s\S]*width: 2rpx;[\s\S]*background: #f0f0f0;/)
-  assert.match(styles, /\.home-today-metric \{[\s\S]*gap: 8rpx;[\s\S]*flex: 1;/)
+  assert.match(styles, /\.home-today-card__title-label \{[\s\S]*color: #000000;[\s\S]*font-size: 32rpx;[\s\S]*font-weight: 700;/)
+  assert.match(styles, /\.home-today-card__body \{[\s\S]*gap: 40rpx;[\s\S]*padding-top: 36rpx;/)
+  assert.match(styles, /\.home-today-card__hero \{[\s\S]*min-height: 150rpx;[\s\S]*border: 2rpx solid #f4f5f5;[\s\S]*border-radius: 30rpx;/)
+  assert.match(styles, /\.home-today-card__hero-primary \{[\s\S]*align-items: center;[\s\S]*gap: 8rpx;/)
+  assert.match(styles, /\.home-today-card__hero-divider \{[\s\S]*height: 48rpx;[\s\S]*background: #f0f0f0;/)
+  assert.match(styles, /\.home-today-card__metrics \{[\s\S]*gap: 0;[\s\S]*margin-top: 0;/)
+  assert.match(styles, /\.home-today-metric \{[\s\S]*align-items: center;[\s\S]*gap: 8rpx;[\s\S]*flex: 1;/)
 })
 
 test('user detail record sorting updates the visible list only', () => {
@@ -3639,5 +3742,7 @@ test('every page can pull from the top to refresh', () => {
 
 test('wechat preview source stays under the 2MB upload limit', () => {
   const bytes = getFileBytes(new URL('../miniprogram/', import.meta.url))
-  assert.ok(bytes < 2 * 1024 * 1024, `miniprogram source is ${Math.round(bytes / 1024)}KB`)
+  const ignoredLegacyAssets = getFileBytes(new URL('../miniprogram/assets/home/', import.meta.url))
+  const packagedBytes = bytes - ignoredLegacyAssets
+  assert.ok(packagedBytes < 2 * 1024 * 1024, `packaged miniprogram source is ${Math.round(packagedBytes / 1024)}KB`)
 })

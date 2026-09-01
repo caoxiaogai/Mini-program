@@ -123,15 +123,11 @@ export function getHomePageData(): Promise<HomePageViewModel> {
       return mapHomeNotification(event, thumbnailByMaterialId, material?.fileType ?? event.fileType)
     })
     const contentsCards = buildContentCards(previewContents, intentCustomers, thumbnailByMaterialId)
-    const previewCustomers = intentCustomers.slice(0, 5)
     const highCount = dashboard.highIntentCount ?? 0
     const mediumCount = dashboard.mediumIntentCount ?? 0
     const lowCount = dashboard.lowIntentCount ?? 0
 
-    const [notificationAvatars, previewAvatars] = await Promise.all([
-      prepareMediaUrls(notifications.map((item) => item.avatarUrl)),
-      prepareMediaUrls(previewCustomers.map((customer) => customer.avatar)),
-    ])
+    const notificationAvatars = await prepareMediaUrls(notifications.map((item) => item.avatarUrl))
 
     return {
       unreadNotificationCount: unreadEvents.length,
@@ -146,10 +142,6 @@ export function getHomePageData(): Promise<HomePageViewModel> {
         highCount: formatCount(highCount),
         mediumCount: formatCount(mediumCount),
         lowCount: formatCount(lowCount),
-        previewAvatars: previewCustomers.map((customer, index) => ({
-          id: `${customer.customerId}-${index}`,
-          avatarUrl: previewAvatars[index] ?? '',
-        })),
       },
       today: {
         viewCount: formatCount(dashboard.totalViewCount),

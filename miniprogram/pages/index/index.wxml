@@ -1,11 +1,15 @@
 <view class="home-page" style="--analysis-navigation-height: {{analysisNavigationHeight}}px; --notification-navigation-height: {{analysisNavigationHeight}}px;">
   <view class="home-page__tabs">
     <view class="home-page__tab-panel" hidden="{{activeTabIndex !== 0}}">
+      <image class="home-page__header-background" src="/assets/home-new/home-header-background.svg" mode="scaleToFill" style="opacity: {{homeHeaderGradientOpacity}}" />
       <scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">
         <navigation-bar back="{{false}}" title="首页" color="rgba(0,0,0, {{homeHeaderOpacity}})" background="rgba(255,255,255, {{homeHeaderOpacity}})" />
         <view class="home-page__content">
           <view class="home-hero">
-            <view class="home-hero__copy"><text class="home-hero__headline">{{greetingHeadline}}</text><text class="home-hero__subtitle">{{greetingSubtitle}}</text></view>
+            <view class="home-hero__copy">
+              <view class="home-hero__line home-hero__headline-row"><text class="home-hero__headline">“{{greetingHeadline}}”</text><image class="home-hero__headline-icon" src="/assets/home-new/home-greeting-flame.png" mode="aspectFit" /></view>
+              <view class="home-hero__line home-hero__subtitle-row"><text class="home-hero__subtitle">{{greetingSubtitle}}</text><image class="home-hero__subtitle-icon" src="/assets/home-new/home-greeting-star.png" mode="aspectFit" /></view>
+            </view>
           </view>
           <view wx:if="{{isLoading}}" class="home-state home-state--loading"><text>正在加载首页数据</text></view>
           <view wx:elif="{{loadError}}" class="home-state"><text class="home-state__title">首页数据暂时不可用</text><text class="home-state__description">请检查网络后重试</text><button class="home-state__retry" bindtap="onRetryTap">重新加载</button></view>
@@ -35,7 +39,7 @@
               </view>
               <view wx:else class="home-empty home-empty--notification home-notification-empty-card"><image class="home-notification-empty-card__cloud" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" /><text class="home-notification-empty-card__message">暂时还没有人浏览你的作品</text></view>
             </view>
-            <view class="home-section home-section--ranking"><view class="home-ranking-entry" bindtap="onRankingEntryTap" hover-class="home-card--pressed"><view class="home-ranking-entry__copy"><image class="home-ranking-entry__title" src="/assets/ranking/ranking-title.png" mode="aspectFit" /><text class="home-ranking-entry__subtitle">看看谁的内容更受欢迎</text></view><image class="home-ranking-entry__trophy" src="/assets/ranking/ranking-trophy.png" mode="aspectFit" /></view></view>
+            <view class="home-section home-section--ranking"><view class="home-ranking-entry" bindtap="onRankingEntryTap" hover-class="home-card--pressed"><image class="home-ranking-entry__glow" src="/assets/ranking/ranking-bottom-glow.svg" mode="scaleToFill" /><image class="home-ranking-entry__texture" src="/assets/ranking/ranking-texture.svg" mode="scaleToFill" /><view class="home-ranking-entry__copy"><image class="home-ranking-entry__title" src="/assets/ranking/ranking-title.png" mode="aspectFit" /><text class="home-ranking-entry__subtitle">看看谁的内容更受欢迎</text><view class="home-ranking-entry__button"><text>查看详情</text></view></view><image class="home-ranking-entry__trophy" src="/assets/ranking/ranking-trophy.png" mode="aspectFit" /></view></view>
             <view class="home-section home-section--today-most">
               <view class="home-content-card">
                 <view class="home-today-most__header" bindtap="onTodayMostTap" hover-class="home-card--pressed">
@@ -51,15 +55,73 @@
                       </view>
                       <view class="home-content-card__stats"><view class="home-stat"><text>浏览次数</text><text class="home-stat__value">{{item.viewCount}}</text></view><view class="home-stat"><text>转发</text><text class="home-stat__value">{{item.forwardCount}}</text></view><view class="home-stat"><text>完播</text><text class="home-stat__value">{{item.completeCount}}</text></view></view>
                     </view>
-                    <view wx:if="{{index < homeData.contents.length - 1}}" class="home-content-card__divider" />
                   </block>
                 </view>
                 <view wx:else class="home-content-card__empty"><image class="home-empty__cloud" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" /><text class="home-empty__message">还没有作品，你可以发布一个</text><view class="home-empty-publish" bindtap="onPlusTap" hover-class="home-empty-publish--pressed"><text>立即发布</text><text class="home-empty-publish__plus">+</text></view></view>
                 <view class="home-today-most__more-button" bindtap="onTodayMostTap" hover-class="home-card--pressed"><text>查看更多</text></view>
               </view>
             </view>
-            <view class="home-section"><view class="home-intent-card" bindtap="onIntentSummaryTap" hover-class="home-card--pressed"><view class="home-intent-card__header"><view class="home-intent-card__title"><image class="home-intent-card__icon" src="/assets/home-new/intent-user-icon.svg" mode="aspectFit" /><text class="home-intent-card__label">意向用户</text></view><image class="home-intent-card__chevron" src="/assets/home-new/today-most-chevron.svg" mode="aspectFit" /></view><view class="home-intent-card__top"><text wx:if="{{hasNewIntentUsers}}" class="home-intent-card__headline">今日新增 <text class="home-accent">{{homeData.intentSummary.total}}</text> 个客户</text><text wx:else class="home-intent-card__headline">今日有个新增用户</text><view wx:if="{{homeData.intentSummary.previewAvatars.length}}" class="home-intent-card__avatars"><image wx:for="{{homeData.intentSummary.previewAvatars}}" wx:key="id" wx:if="{{item.avatarUrl}}" class="home-intent-card__avatar" src="{{item.avatarUrl}}" mode="aspectFill" /></view></view><view class="home-intent-card__metrics"><view class="home-intent-metric"><text>高意向</text><text class="home-intent-metric__value">+{{homeData.intentSummary.highCount}}</text></view><view class="home-intent-metric"><text>中意向</text><text class="home-intent-metric__value">+{{homeData.intentSummary.mediumCount}}</text></view><view class="home-intent-metric"><text>低意向</text><text class="home-intent-metric__value">+{{homeData.intentSummary.lowCount}}</text></view></view></view></view>
-            <view class="home-section"><view class="home-today-card" bindtap="onTodayDataTap" hover-class="home-card--pressed"><view class="home-today-card__header"><view class="home-today-card__title"><image class="home-today-card__icon" src="/assets/home-new/today-data-icon.svg" mode="aspectFit" /><text class="home-today-card__title-label">今日数据</text></view><image class="home-today-card__chevron" src="/assets/home-new/today-most-chevron.svg" mode="aspectFit" /></view><view class="home-today-card__body"><view class="home-today-card__hero"><view class="home-today-card__hero-primary"><text class="home-today-card__number">{{homeData.today.viewCount}}次</text><view class="home-today-card__metadata"><text class="home-today-card__label">浏览次数</text><image wx:if="{{homeData.today.comparison}}" class="home-today-card__comparison-divider" src="/assets/analysis/total-metric-divider.svg" mode="aspectFit" /><view wx:if="{{homeData.today.comparison}}" class="home-today-card__comparison"><text>{{homeData.today.comparison.label}}</text><text class="home-today-card__comparison-value">{{homeData.today.comparison.value}}</text></view></view></view><view class="home-today-card__hero-divider"></view><view class="home-today-card__hero-primary home-today-card__hero-primary--viewer"><text class="home-today-card__number">{{homeData.today.viewerCount}}人</text><view class="home-today-card__metadata"><text class="home-today-card__label">阅读人数</text><image wx:if="{{homeData.today.comparison}}" class="home-today-card__comparison-divider" src="/assets/analysis/total-metric-divider.svg" mode="aspectFit" /><view wx:if="{{homeData.today.comparison}}" class="home-today-card__comparison"><text>{{homeData.today.comparison.label}}</text><text class="home-today-card__comparison-value">{{homeData.today.comparison.value}}</text></view></view></view></view><view class="home-today-card__metrics"><view class="home-today-metric"><text class="home-today-metric__value">{{homeData.today.completeCount}}</text><text>总完播</text></view><view class="home-today-metric"><text class="home-today-metric__value">{{homeData.today.forwardCount}}</text><text>转发次数</text></view><view class="home-today-metric"><text class="home-today-metric__value">{{homeData.today.viewerCount}}</text><text>观看人数</text></view></view><view class="home-today-card__metrics home-today-card__intent-metrics"><view class="home-today-metric"><text class="home-today-metric__value">{{homeData.intentSummary.highCount}}</text><text>高意向</text></view><view class="home-today-metric"><text class="home-today-metric__value">{{homeData.intentSummary.mediumCount}}</text><text>中意向</text></view><view class="home-today-metric"><text class="home-today-metric__value">{{homeData.intentSummary.lowCount}}</text><text>低意向</text></view></view></view></view></view>
+            <view class="home-section">
+              <view class="home-intent-card" bindtap="onIntentSummaryTap" hover-class="home-card--pressed">
+                <image class="home-intent-card__background" src="/assets/home-new/intent-card-background.svg" mode="scaleToFill" />
+                <view class="home-intent-card__content">
+                  <view class="home-intent-card__headline-row">
+                    <image class="home-intent-card__icon" src="/assets/home-new/intent-summary-user-icon.svg" mode="aspectFit" />
+                    <text class="home-intent-card__headline">今日新增 <text class="home-accent">{{homeData.intentSummary.total}}</text> 个客户</text>
+                  </view>
+                  <view class="home-intent-card__metrics">
+                    <view class="home-intent-metric home-intent-metric--high">
+                      <image class="home-intent-metric__icon" src="/assets/home-new/intent-high-icon.svg" mode="aspectFit" />
+                      <view class="home-intent-metric__copy"><text class="home-intent-metric__value">+{{homeData.intentSummary.highCount}}</text><text class="home-intent-metric__label">高意向</text></view>
+                    </view>
+                    <view class="home-intent-metric home-intent-metric--medium">
+                      <view class="home-intent-metric__middle-icon"><view class="home-intent-metric__middle-line" /></view>
+                      <view class="home-intent-metric__copy"><text class="home-intent-metric__value">+{{homeData.intentSummary.mediumCount}}</text><text class="home-intent-metric__label">中意向</text></view>
+                    </view>
+                    <view class="home-intent-metric home-intent-metric--low">
+                      <image class="home-intent-metric__icon" src="/assets/home-new/intent-low-icon.svg" mode="aspectFit" />
+                      <view class="home-intent-metric__copy"><text class="home-intent-metric__value">+{{homeData.intentSummary.lowCount}}</text><text class="home-intent-metric__label">低意向</text></view>
+                    </view>
+                  </view>
+                  <view class="home-intent-card__more"><text>查看更多</text></view>
+                </view>
+              </view>
+            </view>
+            <view class="home-section">
+              <view class="home-today-card" bindtap="onTodayDataTap" hover-class="home-card--pressed">
+                <image class="home-today-card__background" src="/assets/home-new/today-data-background-926.svg" mode="scaleToFill" />
+                <view class="home-today-card__header">
+                  <view class="home-today-card__title">
+                    <image class="home-today-card__icon" src="/assets/home-new/today-data-date-icon.svg" mode="aspectFit" />
+                    <text class="home-today-card__title-label">今日数据</text>
+                  </view>
+                </view>
+                <view class="home-today-card__divider" aria-hidden="true" />
+                <view class="home-today-card__body">
+                  <view class="home-today-card__hero">
+                    <view class="home-today-card__hero-primary">
+                      <text class="home-today-card__number">{{homeData.today.viewCount}}次</text>
+                      <text class="home-today-card__label">浏览次数</text>
+                    </view>
+                    <view class="home-today-card__hero-divider"></view>
+                    <view class="home-today-card__hero-primary home-today-card__hero-primary--viewer">
+                      <text class="home-today-card__number">{{homeData.today.viewerCount}}人</text>
+                      <text class="home-today-card__label">阅读人数</text>
+                    </view>
+                  </view>
+                  <view class="home-today-card__metrics">
+                    <view class="home-today-metric"><text class="home-today-metric__value">{{homeData.today.completeCount}}</text><text>总完播</text></view>
+                    <view class="home-today-metric"><text class="home-today-metric__value">{{homeData.today.forwardCount}}</text><text>转发次数</text></view>
+                    <view class="home-today-metric"><text class="home-today-metric__value">{{homeData.today.viewerCount}}</text><text>观看人数</text></view>
+                  </view>
+                  <view class="home-today-card__metrics home-today-card__intent-metrics">
+                    <view class="home-today-metric"><text class="home-today-metric__value">{{homeData.intentSummary.highCount}}</text><text>高意向</text></view>
+                    <view class="home-today-metric"><text class="home-today-metric__value">{{homeData.intentSummary.mediumCount}}</text><text>中意向</text></view>
+                    <view class="home-today-metric"><text class="home-today-metric__value">{{homeData.intentSummary.lowCount}}</text><text>低意向</text></view>
+                  </view>
+                </view>
+              </view>
+            </view>
           </block>
         </view>
       </scroll-view>
