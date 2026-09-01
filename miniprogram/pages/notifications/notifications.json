@@ -5,5 +5,6 @@
     "notification-mark-all-read": "/components/notification-mark-all-read/index"
   },
   "enablePullDownRefresh": true,
+  "onReachBottomDistance": 80,
   "backgroundTextStyle": "dark"
 }

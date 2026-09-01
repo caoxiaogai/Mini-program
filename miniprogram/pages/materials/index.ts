@@ -1,4 +1,4 @@
-import { getMaterialDetail, getMaterials } from '../../services/materials'
+import { applyThumbnailMap, enrichThumbnailsByIds, getMaterialDetail, getMaterials } from '../../services/materials'
 import { runAuthed } from '../../services/auth'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { takePendingPublishReturn } from '../../utils/publish-return'
@@ -9,6 +9,7 @@ import { getNavigationBarLayout } from '../../utils/navigation-layout'
 import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
+import { LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 
 type MaterialsTabId = 'home' | 'notifications' | 'analysis' | 'profile'
 
@@ -56,6 +57,7 @@ Page({
     activeFilter: 'all' as MaterialsFilterId,
     visibleMaterials: [] as MaterialCardViewModel[],
     hasVisibleMaterials: false,
+    materialsVisibleCount: 0,
     materialsNavigationHeight: 91,
     isAndroid: false,
     showPublishSuccessModal: false,
@@ -99,14 +101,39 @@ Page({
   },
   loadMaterials() {
     return getMaterials().then((materials) => {
-      const visibleMaterials = getVisibleMaterials(materials.items, this.data.activeFilter)
-
+      this.setData({ materials })
+      this.applyMaterialsWindow(materials.items, this.data.activeFilter, LIST_PAGE_SIZE)
+    })
+  },
+  applyMaterialsWindow(items: MaterialCardViewModel[], filterId: MaterialsFilterId, visibleCount: number) {
+    const filtered = getVisibleMaterials(items, filterId)
+    const visibleMaterials = windowList(filtered, visibleCount)
+    this.setData({
+      visibleMaterials,
+      hasVisibleMaterials: filtered.length > 0,
+      materialsVisibleCount: visibleCount,
+    })
+    this.enrichVisibleMaterials(visibleMaterials)
+  },
+  enrichVisibleMaterials(items: MaterialCardViewModel[]) {
+    if (items.length === 0) return
+    enrichThumbnailsByIds(items.map((item) => item.id)).then((thumbs) => {
+      const materials = this.data.materials
+      if (!materials || thumbs.size === 0) return
       this.setData({
-        materials,
-        visibleMaterials,
-        hasVisibleMaterials: visibleMaterials.length > 0,
+        materials: { ...materials, items: applyThumbnailMap(materials.items, thumbs) },
+        visibleMaterials: applyThumbnailMap(this.data.visibleMaterials, thumbs),
       })
     })
+  },
+  loadMoreMaterials() {
+    const filtered = getVisibleMaterials(this.data.materials?.items ?? [], this.data.activeFilter)
+    const next = nextListWindow(this.data.materialsVisibleCount, filtered.length)
+    if (next === this.data.materialsVisibleCount) return
+    this.applyMaterialsWindow(this.data.materials?.items ?? [], this.data.activeFilter, next)
+  },
+  onMaterialsScrollToLower() {
+    this.loadMoreMaterials()
   },
   onPullRefresh() {
     this.setData({ pullRefreshing: true })
@@ -116,13 +143,8 @@ Page({
     const filterId = event.currentTarget.dataset.id as MaterialsFilterId
     if (!['all', 'image', 'video', 'pdf'].includes(filterId)) return
 
-    const visibleMaterials = getVisibleMaterials(this.data.materials?.items ?? [], filterId)
-
-    this.setData({
-      activeFilter: filterId,
-      visibleMaterials,
-      hasVisibleMaterials: visibleMaterials.length > 0,
-    })
+    this.setData({ activeFilter: filterId })
+    this.applyMaterialsWindow(this.data.materials?.items ?? [], filterId, LIST_PAGE_SIZE)
   },
   onMaterialCardTap(event: WechatMiniprogram.TouchEvent) {
     const materialId = event.currentTarget.dataset.id as string | undefined

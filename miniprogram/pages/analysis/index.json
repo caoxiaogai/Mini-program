@@ -6,5 +6,6 @@
     "date-range-picker": "/components/date-range-picker/index"
   },
   "enablePullDownRefresh": true,
+  "onReachBottomDistance": 80,
   "backgroundTextStyle": "dark"
 }

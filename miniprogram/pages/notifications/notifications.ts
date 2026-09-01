@@ -1,8 +1,9 @@
-import { getNotifications } from '../../services/notifications'
+import { enrichNotificationCards, getNotifications } from '../../services/notifications'
 import { runAuthed } from '../../services/auth'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
-import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed } from '../../utils/notifications'
+import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
+import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow } from '../../utils/list-window'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
@@ -16,15 +17,6 @@ const notificationTabItems = [
   { id: 'profile' as NotificationTabId, label: '我的', iconPath: '/assets/home-new/tab-profile.svg', activeIconPath: '/assets/home-new/tab-profile-selected.svg', active: false },
 ]
 
-function getVisibleNotificationGroups(groups: NotificationGroupViewModel[], filterId: NotificationFilterId): NotificationGroupViewModel[] {
-  return groups
-    .map((group) => ({
-      ...group,
-      items: filterId === 'all' ? group.items : group.items.filter((notification) => notification.intent === filterId),
-    }))
-    .filter((group) => group.items.length > 0)
-}
-
 Page({
   data: {
     notificationNavigationHeight: 91,
@@ -33,6 +25,7 @@ Page({
     tabItems: notificationTabItems,
     visibleGroups: [] as NotificationGroupViewModel[],
     hasVisibleGroups: false,
+    notificationVisibleCount: 0,
     unreadNotificationCount: 0,
   },
   authReady: false,
@@ -50,17 +43,48 @@ Page({
   onPullDownRefresh() {
     runPagePullRefresh(this.loadNotifications())
   },
+  onReachBottom() {
+    this.loadMoreNotifications()
+  },
   loadNotifications() {
     return getNotifications().then((notifications) => {
-      const visibleGroups = getVisibleNotificationGroups(notifications.groups, this.data.activeFilter)
-
+      this.setData({ notifications, unreadNotificationCount: countUnreadNotificationGroups(notifications.groups) })
+      this.applyNotificationWindow(notifications.groups, this.data.activeFilter, LIST_PAGE_SIZE)
+    })
+  },
+  applyNotificationWindow(groups: NotificationGroupViewModel[], filterId: NotificationFilterId, visibleCount: number) {
+    const windowed = buildNotificationListWindow(groups, filterId, visibleCount)
+    this.setData({
+      visibleGroups: windowed.visibleGroups,
+      hasVisibleGroups: windowed.hasVisibleGroups,
+      notificationVisibleCount: visibleCount,
+    })
+    this.enrichVisibleNotifications(windowed.visibleGroups)
+  },
+  enrichVisibleNotifications(visibleGroups: NotificationGroupViewModel[]) {
+    const cards = flattenNotificationCards(visibleGroups)
+    if (cards.length === 0) return
+    enrichNotificationCards(cards).then((patched) => {
+      const current = this.data.notifications
+      if (!current) return
+      const groups = patchNotificationGroupCards(current.groups, patched)
+      const windowed = buildNotificationListWindow(groups, this.data.activeFilter, this.data.notificationVisibleCount)
       this.setData({
-        notifications,
-        visibleGroups,
-        hasVisibleGroups: visibleGroups.length > 0,
-        unreadNotificationCount: countUnreadNotificationGroups(notifications.groups),
+        notifications: { ...current, groups },
+        visibleGroups: windowed.visibleGroups,
+        hasVisibleGroups: windowed.hasVisibleGroups,
       })
     })
+  },
+  loadMoreNotifications() {
+    const windowed = buildNotificationListWindow(
+      this.data.notifications?.groups ?? [],
+      this.data.activeFilter,
+      this.data.notificationVisibleCount,
+    )
+    const next = nextListWindow(this.data.notificationVisibleCount, windowed.totalCards)
+    if (next === this.data.notificationVisibleCount) return
+    this.applyNotificationWindow(this.data.notifications?.groups ?? [], this.data.activeFilter, next)
   },
   onFilterTap(event: WechatMiniprogram.TouchEvent) {
     const filterId = event.currentTarget.dataset.id as NotificationFilterId
@@ -68,9 +92,8 @@ Page({
       return
     }
 
-    const visibleGroups = getVisibleNotificationGroups(this.data.notifications?.groups ?? [], filterId)
-
-    this.setData({ activeFilter: filterId, visibleGroups, hasVisibleGroups: visibleGroups.length > 0 })
+    this.setData({ activeFilter: filterId })
+    this.applyNotificationWindow(this.data.notifications?.groups ?? [], filterId, LIST_PAGE_SIZE)
   },
   onNotificationCardTap(event: WechatMiniprogram.TouchEvent) {
     const userId = fromDatasetId(event.currentTarget.dataset.id)
@@ -80,13 +103,11 @@ Page({
     if (eventId && persistViewedNotification(eventId) && this.data.notifications) {
       const groups = markNotificationGroupsViewed(this.data.notifications.groups, eventId)
       const notifications = { ...this.data.notifications, groups }
-      const visibleGroups = getVisibleNotificationGroups(groups, this.data.activeFilter)
       this.setData({
         notifications,
-        visibleGroups,
-        hasVisibleGroups: visibleGroups.length > 0,
         unreadNotificationCount: countUnreadNotificationGroups(groups),
       })
+      this.applyNotificationWindow(groups, this.data.activeFilter, this.data.notificationVisibleCount)
     }
 
     wx.navigateTo({
@@ -101,8 +122,8 @@ Page({
     persistViewedNotifications(eventIds)
     const nextGroups = markAllNotificationGroupsViewed(groups)
     const notifications = this.data.notifications ? { ...this.data.notifications, groups: nextGroups } : null
-    const visibleGroups = getVisibleNotificationGroups(nextGroups, this.data.activeFilter)
-    this.setData({ notifications, visibleGroups, hasVisibleGroups: visibleGroups.length > 0, unreadNotificationCount: 0 })
+    this.setData({ notifications, unreadNotificationCount: 0 })
+    this.applyNotificationWindow(nextGroups, this.data.activeFilter, this.data.notificationVisibleCount)
   },
   onContactActionTap() {},
   onTabTap(event: WechatMiniprogram.CustomEvent<{ id: NotificationTabId }>) {

@@ -1,10 +1,12 @@
-import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
+import { enrichAnalysisCards, enrichAudienceUsers, getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
+import { applyThumbnailMap } from '../../services/materials'
 import { runAuthed } from '../../services/auth'
 import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
+import { LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import { buildReturnPath } from '../../utils/auth'
@@ -91,8 +93,11 @@ Page({
     activeAnalysisSortLabel: '浏览次数',
     analysisSortSheetVisible: false,
     visibleAnalysisUsers: [] as AnalysisAudienceUser[],
+    allAnalysisCards: [] as AnalysisViewModel['cards'],
     workSummary: [] as AnalysisViewModel['summary'],
     visibleAnalysisCards: [] as AnalysisViewModel['cards'],
+    analysisCardsVisibleCount: 0,
+    analysisUsersVisibleCount: 0,
     workCount: '0',
     hasAnalysisCards: false,
     hasAnalysisUsers: false,
@@ -140,40 +145,99 @@ Page({
       ? getAnalysisOverview(period, dateRange, this.data.activeAnalysisSort, trendPeriod)
       : getAnalysisOverview(period, undefined, this.data.activeAnalysisSort, trendPeriod)
     return request.then((analysisData) => {
-      const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
+      const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
       // Keep the chart tied to the latest peak selector choice even if an overview request resolves later.
       const currentTrendPeriod = this.data.activePeakPeriod || trendPeriod
       const resolvedTrendPeriod = currentTrendPeriod === 'custom' ? 'total' : currentTrendPeriod
       const trendState = buildTotalTrendState(resolvedTrendPeriod, analysisData.totalData.readTrends[getAnalysisReadRange(resolvedTrendPeriod)])
+      const allAnalysisCards = initializeWorkData ? analysisData.cards : this.data.allAnalysisCards
 
       this.setData({
         analysisData,
-        visibleAnalysisUsers,
+        allAnalysisCards,
         workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary,
-        visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards,
         workCount: initializeWorkData ? analysisData.workCount : this.data.workCount,
         hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards,
-        hasAnalysisUsers: visibleAnalysisUsers.length > 0,
         ...trendState,
       })
+      if (initializeWorkData) this.applyAnalysisCardsWindow(allAnalysisCards, LIST_PAGE_SIZE)
+      this.applyAnalysisUsersWindow(sortedUsers, LIST_PAGE_SIZE)
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
     return getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards, workCount }) => {
-      this.setData({ workSummary: summary, visibleAnalysisCards: cards, workCount, hasAnalysisCards: cards.length > 0 })
+      this.setData({
+        workSummary: summary,
+        workCount,
+        allAnalysisCards: cards,
+        analysisData: this.data.analysisData ? { ...this.data.analysisData, cards } : this.data.analysisData,
+        hasAnalysisCards: cards.length > 0,
+      })
+      this.applyAnalysisCardsWindow(cards, LIST_PAGE_SIZE)
     })
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
     return getAnalysisOverview(period, dateRange).then((analysisData) => {
-      const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
+      const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const currentAnalysisData = this.data.analysisData ?? analysisData
       this.setData({
         analysisData: { ...currentAnalysisData, userSummary: analysisData.userSummary, audienceUsers: analysisData.audienceUsers },
-        visibleAnalysisUsers,
-        hasAnalysisUsers: visibleAnalysisUsers.length > 0,
+      })
+      this.applyAnalysisUsersWindow(sortedUsers, LIST_PAGE_SIZE)
+    })
+  },
+  applyAnalysisCardsWindow(cards: AnalysisViewModel['cards'], visibleCount: number) {
+    const visibleAnalysisCards = windowList(cards, visibleCount)
+    this.setData({
+      visibleAnalysisCards,
+      analysisCardsVisibleCount: visibleCount,
+      hasAnalysisCards: cards.length > 0,
+    })
+    if (visibleAnalysisCards.length === 0) return
+    enrichAnalysisCards(visibleAnalysisCards).then((patched) => {
+      const byId = new Map(patched.map((card) => [card.id, card.thumbnailUrl]))
+      const allAnalysisCards = applyThumbnailMap(this.data.allAnalysisCards, byId)
+      this.setData({
+        allAnalysisCards,
+        visibleAnalysisCards: applyThumbnailMap(this.data.visibleAnalysisCards, byId),
+        analysisData: this.data.analysisData ? { ...this.data.analysisData, cards: allAnalysisCards } : this.data.analysisData,
       })
     })
+  },
+  applyAnalysisUsersWindow(users: AnalysisAudienceUser[], visibleCount: number) {
+    const visibleAnalysisUsers = windowList(users, visibleCount)
+    this.setData({
+      visibleAnalysisUsers,
+      analysisUsersVisibleCount: visibleCount,
+      hasAnalysisUsers: users.length > 0,
+    })
+    if (visibleAnalysisUsers.length === 0) return
+    enrichAudienceUsers(visibleAnalysisUsers).then((patched) => {
+      const byId = new Map(patched.map((user) => [user.id, user]))
+      const analysisData = this.data.analysisData
+      this.setData({
+        visibleAnalysisUsers: this.data.visibleAnalysisUsers.map((user) => byId.get(user.id) ?? user),
+        analysisData: analysisData
+          ? { ...analysisData, audienceUsers: analysisData.audienceUsers.map((user) => byId.get(user.id) ?? user) }
+          : analysisData,
+      })
+    })
+  },
+  loadMoreAnalysisCards() {
+    const next = nextListWindow(this.data.analysisCardsVisibleCount, this.data.allAnalysisCards.length)
+    if (next === this.data.analysisCardsVisibleCount) return
+    this.applyAnalysisCardsWindow(this.data.allAnalysisCards, next)
+  },
+  loadMoreAnalysisUsers() {
+    const users = sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], this.data.activeAnalysisSort)
+    const next = nextListWindow(this.data.analysisUsersVisibleCount, users.length)
+    if (next === this.data.analysisUsersVisibleCount) return
+    this.applyAnalysisUsersWindow(users, next)
+  },
+  onReachBottom() {
+    if (this.data.activeAnalysisTab === 'work') this.loadMoreAnalysisCards()
+    if (this.data.activeAnalysisTab === 'user') this.loadMoreAnalysisUsers()
   },
   onAnalysisTabTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) {
     this.setAnalysisTab(event.detail.index)
@@ -313,13 +377,17 @@ Page({
       activeAnalysisSort: sortOption.id,
       activeAnalysisSortLabel: sortOption.label,
       analysisSortSheetVisible: false,
-      visibleAnalysisCards: this.data.activeAnalysisTab === 'work'
-        ? sortAnalysisCards(this.data.visibleAnalysisCards, sortOption.id)
-        : this.data.visibleAnalysisCards,
-      visibleAnalysisUsers: this.data.activeAnalysisTab === 'user'
-        ? sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], sortOption.id)
-        : this.data.visibleAnalysisUsers,
     })
+    if (this.data.activeAnalysisTab === 'work') {
+      const cards = sortAnalysisCards(this.data.allAnalysisCards, sortOption.id)
+      this.setData({ allAnalysisCards: cards })
+      this.applyAnalysisCardsWindow(cards, LIST_PAGE_SIZE)
+      return
+    }
+    if (this.data.activeAnalysisTab === 'user') {
+      const users = sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], sortOption.id)
+      this.applyAnalysisUsersWindow(users, LIST_PAGE_SIZE)
+    }
   },
   onAnalysisSortMaskTap() {
     this.setData({ analysisSortSheetVisible: false })

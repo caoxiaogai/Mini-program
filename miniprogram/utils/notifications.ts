@@ -75,6 +75,7 @@ export function mapNotificationEvent(
   return {
     id: `notification-${event.id}`,
     eventId: String(event.id),
+    materialId: event.materialId ? String(event.materialId) : '',
     isUnread,
     userId: String(event.customerId),
     visitorName: event.nickname ?? '微信用户',
@@ -89,6 +90,18 @@ export function mapNotificationEvent(
     thumbnailUrl,
     statusLabel: buildNotificationStatus(event),
   }
+}
+
+export function patchNotificationGroupCards(
+  groups: NotificationGroupViewModel[],
+  patchedCards: NotificationCardViewModel[],
+): NotificationGroupViewModel[] {
+  if (patchedCards.length === 0) return groups
+  const byId = new Map(patchedCards.map((card) => [card.id, card]))
+  return groups.map((group) => ({
+    ...group,
+    items: group.items.map((item) => byId.get(item.id) ?? item),
+  }))
 }
 
 export function markNotificationGroupsViewed(

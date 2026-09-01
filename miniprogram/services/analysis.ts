@@ -38,7 +38,12 @@ import { aggregateCustomerHistoryByMaterial, resolveIntentLevelFromCounts } from
 import { prepareMediaUrls } from '../utils/media'
 import { DEV_UI_PREVIEW } from '../config/dev'
 import { getAnalysisContentDetailPreview, getAnalysisOverviewPreview, getAnalysisWorkListPreview } from './analysis-preview'
-import { prepareMaterialThumbnail, prepareMaterialThumbnailMap } from './materials'
+import {
+  enrichThumbnailsByIds,
+  prepareMaterialThumbnail,
+  rememberMaterialThumbnailSources,
+  resolveMaterialListThumbnail,
+} from './materials'
 import { request, resolveMediaUrl } from './request'
 
 /** 分析页时间筛选：日/周/月对应后端 today/week/month；日历自定义走 custom，范围限制为最近 62 天。 */
@@ -135,21 +140,26 @@ function buildWorkSummary(dashboard: ApiDashboard): AnalysisMetric[] {
   ]
 }
 
-async function mapContentCards(
+function mapContentCards(
   contents: ApiContentListItem[] | null | undefined,
   sortId: AnalysisWorkSortId,
   intentCustomers: ApiIntentCustomer[] = [],
-): Promise<AnalysisCard[]> {
+): AnalysisCard[] {
   const items = contents ?? []
   const intentByMaterial = buildContentDetailIntentMap(intentCustomers)
-  const thumbnailByMaterialId = await prepareMaterialThumbnailMap(items.map((item) => ({
+  const sources = items.map((item) => ({
     id: String(item.materialId),
     fileType: item.fileType,
     coverUrl: item.coverUrl,
-  })))
+  }))
+  rememberMaterialThumbnailSources(sources)
 
   return sortAnalysisCards(
-    items.map((item) => mapContentCard(item, thumbnailByMaterialId.get(String(item.materialId)) ?? '', intentByMaterial.get(String(item.materialId)))),
+    items.map((item, index) => mapContentCard(
+      item,
+      resolveMaterialListThumbnail(sources[index]),
+      intentByMaterial.get(String(item.materialId)),
+    )),
     sortId,
   )
 }
@@ -175,7 +185,7 @@ export function getAnalysisWorkList(
     ),
   ]).then(async ([dashboard, contents, intentCustomers]) => ({
     summary: buildWorkSummary(dashboard),
-    cards: await mapContentCards(contents, sortId, intentCustomers),
+    cards: mapContentCards(contents, sortId, intentCustomers),
     workCount: formatCount(dashboard.totalPublishCount),
   }))
 }
@@ -490,10 +500,7 @@ export function getAnalysisOverview(
     getReadTrends(),
   ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) => {
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
-    const [cards, avatarUrls] = await Promise.all([
-      mapContentCards(contents, sortId, intentCustomers),
-      prepareMediaUrls(customers.map((customer) => customer.avatar)),
-    ])
+    const cards = mapContentCards(contents, sortId, intentCustomers)
     const heroDashboard = totalDashboard ?? dashboard
 
     return {
@@ -505,14 +512,14 @@ export function getAnalysisOverview(
         { label: '中意向', value: formatCount(dashboard.mediumIntentCount), iconPath: '/assets/analysis/intent-middle-icon.svg' },
         { label: '低意向', value: formatCount(dashboard.lowIntentCount), iconPath: '/assets/analysis/intent-low-icon.svg' },
       ],
-      audienceUsers: customers.map((customer, index) => {
+      audienceUsers: customers.map((customer) => {
         const customerId = String(customer.customerId)
         const level = resolveIntentLevel(intentByCustomer, customerId, customer.viewCount ?? 0, customer.completeCount ?? 0)
         const intent = intentByCustomer.get(customerId)
 
         return {
           id: customerId,
-          avatarUrl: avatarUrls[index] ?? '',
+          avatarUrl: resolveMediaUrl(customer.avatar),
           name: customer.nickname ?? '微信用户',
           level,
           levelLabel: intentLevelLabels[level],
@@ -615,15 +622,12 @@ export function getAnalysisContentDetail(materialId: string): Promise<AnalysisCo
     if (!detail && !material) return null
 
     const audienceList = detail?.audienceList ?? []
-    const [thumbnailUrl, avatarUrls] = await Promise.all([
-      prepareMaterialThumbnail({
-        id: materialId,
-        fileType: material?.fileType ?? detail?.fileType,
-        coverUrl: material?.coverUrl ?? null,
-        fileUrl: material?.fileUrl ?? null,
-      }),
-      prepareMediaUrls(audienceList.map((item) => item.avatar)),
-    ])
+    const thumbnailUrl = await prepareMaterialThumbnail({
+      id: materialId,
+      fileType: material?.fileType ?? detail?.fileType,
+      coverUrl: material?.coverUrl ?? null,
+      fileUrl: material?.fileUrl ?? null,
+    })
 
     return {
       card: {
@@ -640,7 +644,7 @@ export function getAnalysisContentDetail(materialId: string): Promise<AnalysisCo
       },
       intentUsers: mapContentIntentUsers(
         audienceList,
-        avatarUrls,
+        audienceList.map((item) => resolveMediaUrl(item.avatar)),
         shareCountByCustomer(asList(intentCustomers), materialId),
       ),
     }
@@ -682,20 +686,27 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
       customer?.completeCount ?? intent?.completed ?? 0,
     )
     const intentByMaterial = buildMaterialIntentMap(intentCustomers, userId)
-    const [avatarUrl, recordThumbs] = await Promise.all([
-      prepareMediaUrls([customer?.avatar ?? intent?.avatar]).then((urls) => urls[0] ?? '').catch(() => ''),
-      prepareMediaUrls(aggregated.map((record) => resolveMediaUrl(materialById.get(record.materialId)?.coverUrl ?? ''))).catch(
-        () => aggregated.map(() => ''),
-      ),
-    ])
-    const records = aggregated.map((record, index) => {
+    rememberMaterialThumbnailSources(materials.map((material) => ({
+      id: String(material.id),
+      fileType: material.fileType,
+      coverUrl: material.coverUrl,
+      fileUrl: material.fileUrl,
+    })))
+    const avatarUrl = await prepareMediaUrls([customer?.avatar ?? intent?.avatar]).then((urls) => urls[0] ?? '').catch(() => '')
+    const records = aggregated.map((record) => {
+      const material = materialById.get(record.materialId)
       const recordLevel = intentByMaterial.get(record.materialId)
         ?? resolveIntentLevelFromCounts(record.viewCount, record.completeCount)
 
       return {
         id: record.materialId,
         contentId: record.materialId,
-        thumbnailUrl: recordThumbs[index] ?? '',
+        thumbnailUrl: resolveMaterialListThumbnail({
+          id: record.materialId,
+          fileType: material?.fileType ?? record.fileType,
+          coverUrl: material?.coverUrl,
+          fileUrl: material?.fileUrl,
+        }),
         title: record.title,
         date: formatMonthDay(record.viewTime),
         type: fileTypeLabels[record.fileType ?? ''] ?? '内容',
@@ -728,21 +739,15 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
   })
 }
 
-/** 浏览记录先用封面尽快展示；PDF/表格无封面时再补第一页，失败不影响已有列表 */
+/** 浏览记录先用封面尽快展示；可见窗口内再补第一页或本地下载，失败不影响已有列表 */
 export function enrichAnalysisUserDetailThumbnails(
   detail: AnalysisUserDetailViewModel,
+  contentIds?: string[],
 ): Promise<AnalysisUserDetailViewModel> {
-  const sources = detail.records
-    .filter((record) => (record.fileType === 'PDF' || record.fileType === 'TABLE') && !record.thumbnailUrl)
-    .map((record) => ({
-      id: record.contentId,
-      fileType: record.fileType,
-      coverUrl: null,
-    }))
+  const ids = contentIds ?? detail.records.map((record) => record.contentId)
+  if (ids.length === 0) return Promise.resolve(detail)
 
-  if (sources.length === 0) return Promise.resolve(detail)
-
-  return prepareMaterialThumbnailMap(sources)
+  return enrichThumbnailsByIds(ids)
     .then((thumbnailByMaterial) => ({
       ...detail,
       records: detail.records.map((record) => ({
@@ -751,4 +756,21 @@ export function enrichAnalysisUserDetailThumbnails(
       })),
     }))
     .catch(() => detail)
+}
+
+export function enrichAudienceUsers(users: AnalysisAudienceUser[]): Promise<AnalysisAudienceUser[]> {
+  if (users.length === 0) return Promise.resolve(users)
+  return prepareMediaUrls(users.map((user) => user.avatarUrl)).then((urls) => (
+    users.map((user, index) => ({ ...user, avatarUrl: urls[index] || user.avatarUrl }))
+  ))
+}
+
+export function enrichAnalysisCards(cards: AnalysisCard[]): Promise<AnalysisCard[]> {
+  if (cards.length === 0) return Promise.resolve(cards)
+  return enrichThumbnailsByIds(cards.map((card) => card.id)).then((thumbs) => (
+    cards.map((card) => ({
+      ...card,
+      thumbnailUrl: thumbs.get(card.id) || card.thumbnailUrl,
+    }))
+  ))
 }

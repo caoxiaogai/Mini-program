@@ -6,8 +6,13 @@ import {
 } from '../../services/membership'
 import { ApiError } from '../../services/request'
 import type { ApiMembershipPayParams } from '../../types/api'
-import type { MembershipPageViewModel, MembershipPlanId, MembershipPlanViewModel } from '../../types/membership'
-import { MEMBERSHIP_PAGE_PATH } from '../../types/membership'
+import {
+  MEMBERSHIP_IOS_MIN_AMOUNT_FEN,
+  MEMBERSHIP_PAGE_PATH,
+  type MembershipPageViewModel,
+  type MembershipPlanId,
+  type MembershipPlanViewModel,
+} from '../../types/membership'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 function isPlanId(value: string | undefined): value is MembershipPlanId {
@@ -26,6 +31,36 @@ function payLabel(plan: MembershipPlanViewModel | null): string {
 
 function isPayCancel(errMsg: string, errCode?: number): boolean {
   return errCode === -2 || /cancel|取消/.test(errMsg)
+}
+
+function isIosDevice(): boolean {
+  try {
+    return wx.getSystemInfoSync().platform === 'ios'
+  } catch {
+    return false
+  }
+}
+
+function readPayErrCode(error: object): number | undefined {
+  const raw =
+    'errCode' in error && (error as { errCode?: unknown }).errCode != null
+      ? (error as { errCode?: unknown }).errCode
+      : 'errno' in error
+        ? (error as { errno?: unknown }).errno
+        : undefined
+  if (raw == null || raw === '') return undefined
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : undefined
+}
+
+function iosWechatTooOld(): boolean {
+  try {
+    const info = wx.getSystemInfoSync()
+    if (info.platform !== 'ios') return false
+    return compareVersion(String(info.version || ''), '8.0.68') < 0
+  } catch {
+    return false
+  }
 }
 
 function supportsVirtualPayment(): boolean {
@@ -119,6 +154,22 @@ Page({
       wx.showToast({ title: '当前微信版本不支持虚拟支付', icon: 'none' })
       return
     }
+    if (iosWechatTooOld()) {
+      wx.showModal({
+        title: '微信版本过低',
+        content: 'iPhone 支付需要微信 8.0.68 及以上版本，请先升级微信。',
+        showCancel: false,
+      })
+      return
+    }
+    if (isIosDevice() && plan.amountFen < MEMBERSHIP_IOS_MIN_AMOUNT_FEN) {
+      wx.showModal({
+        title: '苹果支付最低 1 元',
+        content: `当前套餐是联调测试价 ${plan.priceLabel}。iPhone 必须走 Apple 支付，最低 1 元，这个金额无法在苹果手机上完成支付。请用安卓测试，或把套餐改到至少 1 元后再用 iPhone 付。`,
+        showCancel: false,
+      })
+      return
+    }
 
     this.setData({ paying: true })
     this.loginCode()
@@ -194,9 +245,9 @@ Page({
 
   showPayError(error: unknown) {
     const productId = this.data.selectedPlan?.id || ''
-    if (error && typeof error === 'object' && 'errMsg' in error) {
-      const errMsg = String((error as WechatMiniprogram.GeneralCallbackResult).errMsg || '')
-      const errCode = 'errCode' in error ? Number((error as { errCode?: number }).errCode) : undefined
+    if (error && typeof error === 'object' && ('errMsg' in error || 'errCode' in error || 'errno' in error)) {
+      const errMsg = 'errMsg' in error ? String((error as WechatMiniprogram.GeneralCallbackResult).errMsg || '') : ''
+      const errCode = readPayErrCode(error)
       if (isPayCancel(errMsg, errCode)) {
         wx.showToast({ title: '已取消支付', icon: 'none' })
         return
@@ -237,11 +288,28 @@ Page({
         wx.showToast({ title: '用户签名错误，请重新登录后再支付', icon: 'none' })
         return
       }
+      if (
+        errCode === 4 ||
+        errCode === -4 ||
+        /App Store|苹果支付|Apple/.test(errMsg)
+      ) {
+        wx.showModal({
+          title: '苹果支付未完成',
+          content:
+            'iPhone 走的是 Apple 支付。请确认：虚拟支付后台已打开「苹果支付」开关、小程序简称已审核通过、微信 8.0.68 以上、使用中国大陆 App Store 账号。当前测试价低于 1 元时苹果也会直接失败。',
+          showCancel: false,
+        })
+        return
+      }
       if (/支付能力已被限制|支付能力已经被限制/.test(errMsg)) {
         wx.showToast({ title: '当前仍走错支付通道，请重新编译后再试', icon: 'none' })
         return
       }
-      wx.showToast({ title: '支付失败，请稍后重试', icon: 'none' })
+      wx.showModal({
+        title: '支付失败',
+        content: `错误码 ${errCode ?? '未知'}。${errMsg || '请稍后重试'}`,
+        showCancel: false,
+      })
       return
     }
     if (error instanceof ApiError) {

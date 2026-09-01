@@ -1,11 +1,15 @@
 import type { ApiMaterial, ApiNotificationEvent } from '../types/api'
-import type { NotificationFilterViewModel, NotificationsViewModel } from '../types/notifications'
+import type { NotificationCardViewModel, NotificationFilterViewModel, NotificationsViewModel } from '../types/notifications'
 import { buildCustomRangeQuery } from '../utils/format'
 import { prepareMediaUrls } from '../utils/media'
 import { isViewedNotification, readViewedNotificationMap } from '../utils/notification-viewed'
 import { groupNotificationCards, mapNotificationEvent } from '../utils/notifications'
-import { prepareMaterialThumbnailMap } from './materials'
-import { request } from './request'
+import {
+  enrichThumbnailsByIds,
+  rememberMaterialThumbnailSources,
+  resolveMaterialListThumbnail,
+} from './materials'
+import { request, resolveMediaUrl } from './request'
 
 /** 后端查询时间范围上限（custom 最长 62 天） */
 export const NOTIFICATION_RANGE_DAYS = 62
@@ -27,34 +31,37 @@ export function getNotifications(): Promise<NotificationsViewModel> {
   return Promise.all([
     request<ApiNotificationEvent[]>({ method: 'GET', path: '/analysis/notify/list', query: { ...rangeQuery } }),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
-  ]).then(async ([events, materials]) => {
+  ]).then(([events, materials]) => {
     const visibleEvents = (events ?? []).filter((event) => event != null)
     const materialById = new Map((materials ?? []).map((material) => [String(material.id), material]))
-    const neededIds = [...new Set(visibleEvents
-      .map((event) => (event.materialId ? String(event.materialId) : ''))
-      .filter((id) => id !== ''))]
-    const thumbnailByMaterial = await prepareMaterialThumbnailMap(neededIds.map((id) => {
-      const material = materialById.get(id)
-      return material
+    const sources = [...materialById.values()].map((material) => ({
+      id: String(material.id),
+      fileType: material.fileType,
+      coverUrl: material.coverUrl,
+      fileUrl: material.fileUrl,
+    }))
+    rememberMaterialThumbnailSources(sources)
+    const viewedNotifications = readViewedNotificationMap()
+    const cards = visibleEvents.map((event) => {
+      const material = event.materialId ? materialById.get(String(event.materialId)) : undefined
+      const thumbnailSource = material
         ? {
-          id,
+          id: String(material.id),
           fileType: material.fileType,
           coverUrl: material.coverUrl,
           fileUrl: material.fileUrl,
         }
-        : { id }
-    }))
-    const avatarUrls = await prepareMediaUrls(visibleEvents.map((event) => event.avatar))
-    const viewedNotifications = readViewedNotificationMap()
-    const cards = visibleEvents.map((event, index) => {
-      const material = event.materialId ? materialById.get(String(event.materialId)) : undefined
+        : event.materialId
+          ? { id: String(event.materialId), fileType: event.fileType }
+          : null
+
       return mapNotificationEvent(
         {
           ...event,
           fileType: material?.fileType ?? event.fileType,
         },
-        event.materialId ? thumbnailByMaterial.get(String(event.materialId)) ?? '' : '',
-        avatarUrls[index] ?? '',
+        thumbnailSource ? resolveMaterialListThumbnail(thumbnailSource) : '',
+        resolveMediaUrl(event.avatar),
         !isViewedNotification(String(event.id ?? ''), viewedNotifications),
       )
     })
@@ -64,4 +71,18 @@ export function getNotifications(): Promise<NotificationsViewModel> {
       groups: groupNotificationCards(cards),
     }
   })
+}
+
+export function enrichNotificationCards(cards: NotificationCardViewModel[]): Promise<NotificationCardViewModel[]> {
+  if (cards.length === 0) return Promise.resolve(cards)
+
+  const materialIds = cards.map((card) => card.materialId).filter((id) => id !== '')
+  return Promise.all([
+    enrichThumbnailsByIds(materialIds),
+    prepareMediaUrls(cards.map((card) => card.avatarUrl)),
+  ]).then(([thumbs, avatarUrls]) => cards.map((card, index) => ({
+    ...card,
+    thumbnailUrl: (card.materialId && thumbs.get(card.materialId)) || card.thumbnailUrl,
+    avatarUrl: avatarUrls[index] || card.avatarUrl,
+  })))
 }

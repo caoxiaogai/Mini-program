@@ -1,6 +1,7 @@
 import { getRankingOverview, sortRankingEntries } from '../../services/ranking'
 import { runAuthed } from '../../services/auth'
 import type { RankingEntryViewModel, RankingMetric, RankingTab, RankingViewModel } from '../../types/ranking'
+import { LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
@@ -17,6 +18,7 @@ Page({
     activeRankingMetric: 'views' as RankingMetric,
     visibleRankingEntries: [] as RankingEntryViewModel[],
     hasRankingEntries: false,
+    rankingVisibleCount: 0,
     rankingHeaderOpacity: 0,
   },
   onLoad() {
@@ -27,14 +29,26 @@ Page({
   },
   loadRanking() {
     return getRankingOverview().then((rankingData) => {
-      const visibleRankingEntries = sortRankingEntries(rankingData.entries, this.data.activeRankingMetric)
-
+      const sorted = sortRankingEntries(rankingData.entries, this.data.activeRankingMetric)
       this.setData({
         rankingData,
-        visibleRankingEntries,
-        hasRankingEntries: visibleRankingEntries.length > 0,
+        hasRankingEntries: sorted.length > 0,
       })
+      this.applyRankingWindow(sorted, LIST_PAGE_SIZE)
     })
+  },
+  applyRankingWindow(entries: RankingEntryViewModel[], visibleCount: number) {
+    this.setData({
+      visibleRankingEntries: windowList(entries, visibleCount),
+      rankingVisibleCount: visibleCount,
+      hasRankingEntries: entries.length > 0,
+    })
+  },
+  onReachBottom() {
+    const sorted = sortRankingEntries(this.data.rankingData?.entries ?? [], this.data.activeRankingMetric)
+    const next = nextListWindow(this.data.rankingVisibleCount, sorted.length)
+    if (next === this.data.rankingVisibleCount) return
+    this.applyRankingWindow(sorted, next)
   },
   onPageScroll(event: WechatMiniprogram.PageScrollOption) {
     const rankingHeaderOpacity = calculateRankingHeaderOpacity(event.scrollTop)
@@ -48,12 +62,12 @@ Page({
 
     if (!rankingTabs.some((tab) => tab.id === metric) || !Number.isInteger(tabIndex)) return
 
-    const visibleRankingEntries = sortRankingEntries(this.data.rankingData?.entries ?? [], metric)
+    const sorted = sortRankingEntries(this.data.rankingData?.entries ?? [], metric)
 
     this.setData({
       activeRankingMetric: metric,
-      visibleRankingEntries,
-      hasRankingEntries: visibleRankingEntries.length > 0,
+      hasRankingEntries: sorted.length > 0,
     })
+    this.applyRankingWindow(sorted, LIST_PAGE_SIZE)
   },
 })

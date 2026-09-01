@@ -21,7 +21,7 @@
     </view>
     </view>
   </view>
-  <scroll-view scroll-y class="materials-page__scroll" show-scrollbar="{{false}}" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">
+  <scroll-view scroll-y class="materials-page__scroll" show-scrollbar="{{false}}" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh" lower-threshold="120" bindscrolltolower="onMaterialsScrollToLower">
     <view wx:if="{{materials}}" class="materials-page__content">
       <view wx:if="{{hasVisibleMaterials}}" class="materials-grid">
         <view

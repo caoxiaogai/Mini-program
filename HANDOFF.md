@@ -296,6 +296,13 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-09-01：长列表进入页面时先渲染一页，下滑再加载
+
+- 素材、通知、作品分析、用户分析、排行榜、内容分析意向用户、用户浏览记录均不再把全部卡片一次性挂到页面上。进入时先展示 10 条，滑到底部再追加下一批。
+- 后端列表接口仍一次返回完整数组（分页协议未确认）。缩略图、头像和 PDF 第一页只在当前可见窗口补全，避免进页时下载全部媒体。
+- 文档阅读页仍按可见页预加载图片；用户轨迹事件量小且底部有联系按钮，仍一次渲染全部事件，避免按钮随追加下移。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/list-window.test.mjs tests/home-page.test.mjs`。当前环境无微信开发者工具 GUI，长列表滑动需真机确认。
+
 ### 2026-09-01：将 origin/developer-v2 合入 main-v2
 
 - 已把 `origin/developer-v2`（`6876d4f`）合入当前 `main-v2`。
@@ -308,7 +315,7 @@ miniprogram/
 - 后端配置 `wechat.xpay.offer-id`、`app-key`（体验版/正式版 `env=0` 用现网 AppKey）。未填齐时下单返回「虚拟支付尚未配置」，不会假装支付成功。
 - 小程序后台需创建三个道具，**productId** 与套餐 id 一致：`month` / `quarter` / `half_year`，标价与 `amountFen` 一致（当前测试 1 / 2 / 3 分）。当前 `env=0`，必须点「发布到现网」；只上传开发版会报 `-15010`。刚发布约 10 分钟生效（`-15014`）。发货推送 URL：`https://host/api/pay/xpay/notify`（响应 `ErrCode`/`ErrMsg`，不是 `Result`）。
 - 支付成功后仍轮询 `POST /membership/orders/{outTradeNo}/sync`；本地无公网回调时可走 `xpay/query_order` 查单开通，并补调 `xpay/notify_provide_goods`，避免微信后台一直显示未发货。进入会员页也会对最近一笔已支付订单补发货通知。
-- iOS 虚拟支付最低约 ¥1，当前 ¥0.01 测试价请用安卓或开发者工具。体验版必须 `env=0`，否则 `-15011`。
+- iOS 虚拟支付最低 1 元，当前 ¥0.01 测试价在 iPhone 上会直接拦截；需微信 8.0.68+、虚拟支付后台打开「苹果支付」、小程序简称已审核。体验版必须 `env=0`，否则 `-15011`。
 - 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/membership-page.test.mjs`。真机需填 OfferId/AppKey、发布道具并重启后端后验收。
 
 ### 2026-09-01：微信支付改用商户平台公钥
@@ -2567,7 +2574,7 @@ miniprogram/
 - 高、中、低意向规则发生重叠时的后端优先级；设置页已展示单图 / 多图 / PDF / 视频的产品口径。
 - 会员开通后具体解锁哪些功能（当前只记录到期时间，不关闭现有分析能力）。
 - 小程序虚拟支付：后台填 OfferId / 现网 AppKey；创建道具 `month` / `quarter` / `half_year`（1 / 2 / 3 分）并**发布到现网**；发货推送指向公网 `https://host/api/pay/xpay/notify`。
-- iOS 虚拟支付最低约 ¥1，当前测试价 ¥0.01 不能在 iOS 上调起；上线前改回 29.9 / 79.9 / 139.9。
+- iOS 虚拟支付最低 1 元，当前测试价 ¥0.01 不能在 iPhone 上完成；需打开「苹果支付」、配置小程序简称。上线前改回 29.9 / 79.9 / 139.9。
 - 排行榜后端接口（当前 aisales 未提供销售排行榜数据，页面暂用 Figma 预览 mock）。
 - 分析页「总」时间范围口径：后端 custom 查询上限 62 天，暂按最近 62 天，需后端确认是否提供全量范围。
 - 后端待补能力：按日阅读趋势接口（当前由前端按日聚合 dashboard）、素材图片更新与素材删除接口（编辑草稿改图会产生新素材）、客户级转发次数（当前仅 0/1 标记）、未读通知/红点口径。

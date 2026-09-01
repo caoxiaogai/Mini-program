@@ -1,8 +1,9 @@
-import { getAnalysisContentDetail } from '../../services/analysis'
+import { enrichAudienceUsers, getAnalysisContentDetail } from '../../services/analysis'
 import { runAuthed } from '../../services/auth'
 import type { AnalysisAudienceUser, AnalysisContentDetailViewModel, AnalysisIntentLevel } from '../../types/analysis'
 import { buildReturnPath } from '../../utils/auth'
 import { fromDatasetId } from '../../utils/dataset-id'
+import { LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
@@ -31,6 +32,7 @@ Page({
     intentSwipeStartX: 0,
     visibleIntentUsers: [] as AnalysisAudienceUser[],
     hasVisibleIntentUsers: false,
+    intentUsersVisibleCount: 0,
   },
 
   materialId: '',
@@ -51,13 +53,36 @@ Page({
     if (!this.materialId) return Promise.resolve()
 
     return getAnalysisContentDetail(this.materialId).then((detail) => {
-      const visibleIntentUsers = detail ? getVisibleIntentUsers(detail.intentUsers, this.data.activeIntentLevel) : []
+      this.setData({ detail })
+      this.applyIntentUsersWindow(detail ? getVisibleIntentUsers(detail.intentUsers, this.data.activeIntentLevel) : [], LIST_PAGE_SIZE)
+    })
+  },
+  applyIntentUsersWindow(users: AnalysisAudienceUser[], visibleCount: number) {
+    const visibleIntentUsers = windowList(users, visibleCount)
+    this.setData({
+      visibleIntentUsers,
+      intentUsersVisibleCount: visibleCount,
+      hasVisibleIntentUsers: users.length > 0,
+    })
+    if (visibleIntentUsers.length === 0) return
+    enrichAudienceUsers(visibleIntentUsers).then((patched) => {
+      const byId = new Map(patched.map((user) => [user.id, user]))
+      const detail = this.data.detail
       this.setData({
-        detail,
-        visibleIntentUsers,
-        hasVisibleIntentUsers: visibleIntentUsers.length > 0,
+        visibleIntentUsers: this.data.visibleIntentUsers.map((user) => byId.get(user.id) ?? user),
+        detail: detail
+          ? { ...detail, intentUsers: detail.intentUsers.map((user) => byId.get(user.id) ?? user) }
+          : detail,
       })
     })
+  },
+  onReachBottom() {
+    const users = this.data.detail
+      ? getVisibleIntentUsers(this.data.detail.intentUsers, this.data.activeIntentLevel)
+      : []
+    const next = nextListWindow(this.data.intentUsersVisibleCount, users.length)
+    if (next === this.data.intentUsersVisibleCount) return
+    this.applyIntentUsersWindow(users, next)
   },
 
   onIntentTabTap(event: WechatMiniprogram.CustomEvent<{ id: IntentFilter; index: number }>) {
@@ -79,13 +104,11 @@ Page({
     const detail = this.data.detail
     if (!tab || !detail) return
 
-    const visibleIntentUsers = getVisibleIntentUsers(detail.intentUsers, tab.id)
     this.setData({
       activeIntentLevel: tab.id,
       activeIntentIndex: tabIndex,
-      visibleIntentUsers,
-      hasVisibleIntentUsers: visibleIntentUsers.length > 0,
     })
+    this.applyIntentUsersWindow(getVisibleIntentUsers(detail.intentUsers, tab.id), LIST_PAGE_SIZE)
   },
 
   onDetailUserTap(event: WechatMiniprogram.TouchEvent) {

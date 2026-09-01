@@ -39,6 +39,7 @@ const MATERIAL_DEFAULT_TITLES = {
 const MATERIAL_TITLE_MAX_LENGTH = 30
 const UPLOAD_CONCURRENCY = 3
 const THUMBNAIL_CONCURRENCY = 6
+const thumbnailSourceById = new Map<string, MaterialThumbnailSource>()
 
 /** fileUrl 为多图 JSON 数组字符串或单个 URL，统一解析为 URL 列表 */
 function parseImageUrls(fileUrl: string | null): string[] {
@@ -72,6 +73,38 @@ function isDocumentFileType(fileType: string | null | undefined): boolean {
 function resolveThumbnail(material: MaterialThumbnailSource): string {
   if (material.coverUrl) return resolveMediaUrl(material.coverUrl)
   return material.fileType === 'IMAGE' ? parseImageUrls(material.fileUrl ?? null)[0] ?? '' : ''
+}
+
+export function resolveMaterialListThumbnail(material: MaterialThumbnailSource): string {
+  return resolveThumbnail(material)
+}
+
+export function rememberMaterialThumbnailSources(sources: MaterialThumbnailSource[]): void {
+  for (const source of sources) {
+    const id = String(source.id ?? '')
+    if (!id) continue
+    thumbnailSourceById.set(id, { ...source, id })
+  }
+}
+
+export function enrichThumbnailsByIds(ids: string[]): Promise<Map<string, string>> {
+  const sources = [...new Set(ids)]
+    .map((id) => thumbnailSourceById.get(id))
+    .filter((source): source is MaterialThumbnailSource => source != null)
+
+  if (sources.length === 0) return Promise.resolve(new Map())
+  return prepareMaterialThumbnailMap(sources)
+}
+
+export function applyThumbnailMap<T extends { id: string; thumbnailUrl: string }>(
+  items: T[],
+  thumbs: Map<string, string>,
+): T[] {
+  if (thumbs.size === 0) return items
+  return items.map((item) => {
+    const thumbnailUrl = thumbs.get(item.id)
+    return thumbnailUrl ? { ...item, thumbnailUrl } : item
+  })
 }
 
 /** 图片/视频用封面；PDF/表格无封面时取第一页渲染图 */
@@ -120,13 +153,14 @@ function splitMaterialCopy(copy: string): string[] {
 }
 
 export function getMaterials(): Promise<MaterialsViewModel> {
-  return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }).then(async (materials) => {
-    const thumbnailUrls = await prepareMaterialThumbnails(materials.map((material) => ({
+  return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }).then((materials) => {
+    const sources = materials.map((material) => ({
       id: String(material.id),
       fileType: material.fileType,
       coverUrl: material.coverUrl,
       fileUrl: material.fileUrl,
-    })))
+    }))
+    rememberMaterialThumbnailSources(sources)
 
     return {
       filters: materialsFilters,
@@ -134,7 +168,7 @@ export function getMaterials(): Promise<MaterialsViewModel> {
         id: String(material.id),
         title: resolveMaterialCopy(material),
         date: formatDateKey(material.createTime),
-        thumbnailUrl: thumbnailUrls[index] ?? '',
+        thumbnailUrl: resolveThumbnail(sources[index]),
         kind: materialKinds[material.fileType] ?? 'pdf',
         isDraft: material.publishStatus === 0,
       })),

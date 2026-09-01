@@ -11,7 +11,7 @@ import { buildCustomRangeQuery, formatCount, formatDateKey } from '../utils/form
 import { prepareMediaUrls } from '../utils/media'
 import { readViewedNotificationMap, selectUnviewedNotificationEvents } from '../utils/notification-viewed'
 import { mapNotificationEvent } from '../utils/notifications'
-import { prepareMaterialThumbnailMap } from './materials'
+import { prepareMaterialThumbnailMap, rememberMaterialThumbnailSources } from './materials'
 import { NOTIFICATION_RANGE_DAYS } from './notifications'
 import { request, resolveMediaUrl } from './request'
 
@@ -95,11 +95,10 @@ export function getHomePageData(): Promise<HomePageViewModel> {
       .slice(0, HOME_CONTENT_LIMIT)
     const materialById = new Map((materials ?? []).map((material) => [String(material.id), material]))
     const contentById = new Map((contents ?? []).map((content) => [String(content.materialId), content]))
-    const neededIds = [...new Set([
+    const neededSources = [...new Set([
       ...previewEvents.map((event) => (event.materialId ? String(event.materialId) : '')),
       ...previewContents.map((content) => String(content.materialId)),
-    ].filter((id) => id !== ''))]
-    const thumbnailByMaterialId = await prepareMaterialThumbnailMap(neededIds.map((id) => {
+    ].filter((id) => id !== ''))].map((id) => {
       const material = materialById.get(id)
       if (material) {
         return {
@@ -116,7 +115,9 @@ export function getHomePageData(): Promise<HomePageViewModel> {
         fileType: content?.fileType,
         coverUrl: content?.coverUrl,
       }
-    }))
+    })
+    rememberMaterialThumbnailSources(neededSources)
+    const thumbnailByMaterialId = await prepareMaterialThumbnailMap(neededSources)
 
     const notifications = previewEvents.map((event) => {
       const material = event.materialId ? materialById.get(String(event.materialId)) : undefined

@@ -1,8 +1,8 @@
 import { runAuthed } from '../../services/auth'
-import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
+import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards, enrichAnalysisCards, enrichAudienceUsers } from '../../services/analysis'
 import { getHomePageData } from '../../services/home'
-import { getMaterialDetail, getMaterials } from '../../services/materials'
-import { getNotifications } from '../../services/notifications'
+import { applyThumbnailMap, enrichThumbnailsByIds, getMaterialDetail, getMaterials } from '../../services/materials'
+import { enrichNotificationCards, getNotifications } from '../../services/notifications'
 import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
 import type { HomePageViewModel } from '../../types/home'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
@@ -19,7 +19,8 @@ import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
-import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed } from '../../utils/notifications'
+import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
+import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed, markHomeNotificationsViewed } from './home-notification-preview'
 import { buildReturnPath } from '../../utils/auth'
@@ -75,12 +76,6 @@ const totalAnalysisPeriods = [
 
 const analysisSwipeThreshold = 40
 
-function getVisibleNotificationGroups(groups: NotificationGroupViewModel[], filterId: NotificationFilterId) {
-  return groups
-    .map((group) => ({ ...group, items: filterId === 'all' ? group.items : group.items.filter((notification) => notification.intent === filterId) }))
-    .filter((group) => group.items.length > 0)
-}
-
 function getVisibleMaterials(items: MaterialCardViewModel[], filterId: MaterialsFilterId): MaterialCardViewModel[] {
   return filterId === 'all' ? items : items.filter((item) => item.kind === filterId)
 }
@@ -106,11 +101,13 @@ Page({
     activeNotificationFilter: 'all' as NotificationFilterId,
     visibleNotificationGroups: [] as NotificationGroupViewModel[],
     hasVisibleNotificationGroups: false,
+    notificationVisibleCount: 0,
     unreadNotificationCount: 0,
     materials: null as MaterialsViewModel | null,
     activeMaterialFilter: 'all' as MaterialsFilterId,
     visibleMaterials: [] as MaterialCardViewModel[],
     hasVisibleMaterials: false,
+    materialsVisibleCount: 0,
     showPublishSuccessModal: false,
     publishTypeSheetVisible: false,
     publishSourceSheetVisible: false,
@@ -143,8 +140,11 @@ Page({
     activeAnalysisSortLabel: '浏览次数',
     analysisSortSheetVisible: false,
     visibleAnalysisUsers: [] as AnalysisAudienceUser[],
+    allAnalysisCards: [] as AnalysisViewModel['cards'],
     workSummary: [] as AnalysisViewModel['summary'],
     visibleAnalysisCards: [] as AnalysisViewModel['cards'],
+    analysisCardsVisibleCount: 0,
+    analysisUsersVisibleCount: 0,
     workCount: '0',
     hasAnalysisCards: false,
     hasAnalysisUsers: false,
@@ -211,20 +211,76 @@ Page({
   },
   loadNotifications() {
     return getNotifications().then((notifications) => {
-      const visibleNotificationGroups = getVisibleNotificationGroups(notifications.groups, this.data.activeNotificationFilter)
+      this.setData({ notifications, unreadNotificationCount: countUnreadNotificationGroups(notifications.groups) })
+      this.applyNotificationWindow(notifications.groups, this.data.activeNotificationFilter, LIST_PAGE_SIZE)
+    })
+  },
+  applyNotificationWindow(groups: NotificationGroupViewModel[], filterId: NotificationFilterId, visibleCount: number) {
+    const windowed = buildNotificationListWindow(groups, filterId, visibleCount)
+    this.setData({
+      visibleNotificationGroups: windowed.visibleGroups,
+      hasVisibleNotificationGroups: windowed.hasVisibleGroups,
+      notificationVisibleCount: visibleCount,
+    })
+    this.enrichVisibleNotifications(windowed.visibleGroups)
+  },
+  enrichVisibleNotifications(visibleGroups: NotificationGroupViewModel[]) {
+    const cards = flattenNotificationCards(visibleGroups)
+    if (cards.length === 0) return
+    enrichNotificationCards(cards).then((patched) => {
+      const current = this.data.notifications
+      if (!current) return
+      const groups = patchNotificationGroupCards(current.groups, patched)
+      const windowed = buildNotificationListWindow(groups, this.data.activeNotificationFilter, this.data.notificationVisibleCount)
       this.setData({
-        notifications,
-        visibleNotificationGroups,
-        hasVisibleNotificationGroups: visibleNotificationGroups.length > 0,
-        unreadNotificationCount: countUnreadNotificationGroups(notifications.groups),
+        notifications: { ...current, groups },
+        visibleNotificationGroups: windowed.visibleGroups,
+        hasVisibleNotificationGroups: windowed.hasVisibleGroups,
       })
     })
   },
+  loadMoreNotifications() {
+    const windowed = buildNotificationListWindow(
+      this.data.notifications?.groups ?? [],
+      this.data.activeNotificationFilter,
+      this.data.notificationVisibleCount,
+    )
+    const next = nextListWindow(this.data.notificationVisibleCount, windowed.totalCards)
+    if (next === this.data.notificationVisibleCount) return
+    this.applyNotificationWindow(this.data.notifications?.groups ?? [], this.data.activeNotificationFilter, next)
+  },
   loadMaterials() {
     return getMaterials().then((materials) => {
-      const visibleMaterials = getVisibleMaterials(materials.items, this.data.activeMaterialFilter)
-      this.setData({ materials, visibleMaterials, hasVisibleMaterials: visibleMaterials.length > 0 })
+      this.setData({ materials })
+      this.applyMaterialsWindow(materials.items, this.data.activeMaterialFilter, LIST_PAGE_SIZE)
     })
+  },
+  applyMaterialsWindow(items: MaterialCardViewModel[], filterId: MaterialsFilterId, visibleCount: number) {
+    const filtered = getVisibleMaterials(items, filterId)
+    const visibleMaterials = windowList(filtered, visibleCount)
+    this.setData({
+      visibleMaterials,
+      hasVisibleMaterials: filtered.length > 0,
+      materialsVisibleCount: visibleCount,
+    })
+    this.enrichVisibleMaterials(visibleMaterials)
+  },
+  enrichVisibleMaterials(items: MaterialCardViewModel[]) {
+    if (items.length === 0) return
+    enrichThumbnailsByIds(items.map((item) => item.id)).then((thumbs) => {
+      const materials = this.data.materials
+      if (!materials || thumbs.size === 0) return
+      this.setData({
+        materials: { ...materials, items: applyThumbnailMap(materials.items, thumbs) },
+        visibleMaterials: applyThumbnailMap(this.data.visibleMaterials, thumbs),
+      })
+    })
+  },
+  loadMoreMaterials() {
+    const filtered = getVisibleMaterials(this.data.materials?.items ?? [], this.data.activeMaterialFilter)
+    const next = nextListWindow(this.data.materialsVisibleCount, filtered.length)
+    if (next === this.data.materialsVisibleCount) return
+    this.applyMaterialsWindow(this.data.materials?.items ?? [], this.data.activeMaterialFilter, next)
   },
   loadShareMaterial(materialId: string) {
     getMaterialDetail(materialId).then((detail) => {
@@ -262,30 +318,94 @@ Page({
       ? getAnalysisOverview(period, dateRange, this.data.activeAnalysisSort, trendPeriod)
       : getAnalysisOverview(period, undefined, this.data.activeAnalysisSort, trendPeriod)
     return request.then((analysisData) => {
-      const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
+      const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
       // Keep the chart tied to the latest peak selector choice even if an overview request resolves later.
       const currentTrendPeriod = this.data.activePeakPeriod || trendPeriod
       const resolvedTrendPeriod = currentTrendPeriod === 'custom' ? 'total' : currentTrendPeriod
       const trendState = buildTotalTrendState(resolvedTrendPeriod, analysisData.totalData.readTrends[getAnalysisReadRange(resolvedTrendPeriod)])
-      this.setData({ analysisData, visibleAnalysisUsers, workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary, visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards, workCount: initializeWorkData ? analysisData.workCount : this.data.workCount, hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards, hasAnalysisUsers: visibleAnalysisUsers.length > 0, ...trendState })
+      const allAnalysisCards = initializeWorkData ? analysisData.cards : this.data.allAnalysisCards
+      this.setData({
+        analysisData,
+        allAnalysisCards,
+        workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary,
+        workCount: initializeWorkData ? analysisData.workCount : this.data.workCount,
+        hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards,
+        ...trendState,
+      })
+      if (initializeWorkData) this.applyAnalysisCardsWindow(allAnalysisCards, LIST_PAGE_SIZE)
+      this.applyAnalysisUsersWindow(sortedUsers, LIST_PAGE_SIZE)
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
     return getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards, workCount }) => {
-      this.setData({ workSummary: summary, visibleAnalysisCards: cards, workCount, hasAnalysisCards: cards.length > 0 })
+      this.setData({
+        workSummary: summary,
+        workCount,
+        allAnalysisCards: cards,
+        analysisData: this.data.analysisData ? { ...this.data.analysisData, cards } : this.data.analysisData,
+        hasAnalysisCards: cards.length > 0,
+      })
+      this.applyAnalysisCardsWindow(cards, LIST_PAGE_SIZE)
     })
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
     return getAnalysisOverview(period, dateRange).then((analysisData) => {
-      const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
+      const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const currentAnalysisData = this.data.analysisData ?? analysisData
       this.setData({
         analysisData: { ...currentAnalysisData, userSummary: analysisData.userSummary, audienceUsers: analysisData.audienceUsers },
-        visibleAnalysisUsers,
-        hasAnalysisUsers: visibleAnalysisUsers.length > 0,
+      })
+      this.applyAnalysisUsersWindow(sortedUsers, LIST_PAGE_SIZE)
+    })
+  },
+  applyAnalysisCardsWindow(cards: AnalysisViewModel['cards'], visibleCount: number) {
+    const visibleAnalysisCards = windowList(cards, visibleCount)
+    this.setData({
+      visibleAnalysisCards,
+      analysisCardsVisibleCount: visibleCount,
+      hasAnalysisCards: cards.length > 0,
+    })
+    if (visibleAnalysisCards.length === 0) return
+    enrichAnalysisCards(visibleAnalysisCards).then((patched) => {
+      const byId = new Map(patched.map((card) => [card.id, card]))
+      const allAnalysisCards = this.data.allAnalysisCards.map((card) => byId.get(card.id) ?? card)
+      this.setData({
+        allAnalysisCards,
+        visibleAnalysisCards: applyThumbnailMap(this.data.visibleAnalysisCards, new Map(patched.map((card) => [card.id, card.thumbnailUrl]))),
+        analysisData: this.data.analysisData ? { ...this.data.analysisData, cards: allAnalysisCards } : this.data.analysisData,
       })
     })
+  },
+  applyAnalysisUsersWindow(users: AnalysisAudienceUser[], visibleCount: number) {
+    const visibleAnalysisUsers = windowList(users, visibleCount)
+    this.setData({
+      visibleAnalysisUsers,
+      analysisUsersVisibleCount: visibleCount,
+      hasAnalysisUsers: users.length > 0,
+    })
+    if (visibleAnalysisUsers.length === 0) return
+    enrichAudienceUsers(visibleAnalysisUsers).then((patched) => {
+      const byId = new Map(patched.map((user) => [user.id, user]))
+      const analysisData = this.data.analysisData
+      this.setData({
+        visibleAnalysisUsers: this.data.visibleAnalysisUsers.map((user) => byId.get(user.id) ?? user),
+        analysisData: analysisData
+          ? { ...analysisData, audienceUsers: analysisData.audienceUsers.map((user) => byId.get(user.id) ?? user) }
+          : analysisData,
+      })
+    })
+  },
+  loadMoreAnalysisCards() {
+    const next = nextListWindow(this.data.analysisCardsVisibleCount, this.data.allAnalysisCards.length)
+    if (next === this.data.analysisCardsVisibleCount) return
+    this.applyAnalysisCardsWindow(this.data.allAnalysisCards, next)
+  },
+  loadMoreAnalysisUsers() {
+    const users = sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], this.data.activeAnalysisSort)
+    const next = nextListWindow(this.data.analysisUsersVisibleCount, users.length)
+    if (next === this.data.analysisUsersVisibleCount) return
+    this.applyAnalysisUsersWindow(users, next)
   },
   loadProfileData() {
     return getProfilePageData()
@@ -321,6 +441,16 @@ Page({
   onPullRefresh() {
     this.setData({ pullRefreshing: true })
     runPullRefresh(this.refreshActiveTab(), () => this.setData({ pullRefreshing: false }))
+  },
+  onNotificationsScrollToLower() {
+    this.loadMoreNotifications()
+  },
+  onMaterialsScrollToLower() {
+    this.loadMoreMaterials()
+  },
+  onAnalysisScrollToLower() {
+    if (this.data.activeAnalysisTab === 'work') this.loadMoreAnalysisCards()
+    if (this.data.activeAnalysisTab === 'user') this.loadMoreAnalysisUsers()
   },
   setActiveTab(index: number) {
     if (!Number.isInteger(index) || index < 0 || index >= rootTabIds.length) return
@@ -368,14 +498,12 @@ Page({
     const groups = this.data.notifications?.groups ?? []
     const nextGroups = markAllNotificationGroupsViewed(groups)
     const notifications = this.data.notifications ? { ...this.data.notifications, groups: nextGroups } : null
-    const visibleNotificationGroups = getVisibleNotificationGroups(nextGroups, this.data.activeNotificationFilter)
     this.setData({
       homeData: nextHomeData,
       notifications,
-      visibleNotificationGroups,
-      hasVisibleNotificationGroups: visibleNotificationGroups.length > 0,
       unreadNotificationCount: 0,
     })
+    this.applyNotificationWindow(nextGroups, this.data.activeNotificationFilter, this.data.notificationVisibleCount)
   },
   onRankingEntryTap() {
     wx.navigateTo({ url: '/pages/ranking/index' })
@@ -402,8 +530,8 @@ Page({
   onNotificationFilterTap(event: WechatMiniprogram.CustomEvent<{ filterId: NotificationFilterId }>) {
     const filterId = event.detail.filterId
     if (!['all', 'high', 'medium', 'low'].includes(filterId)) return
-    const visibleNotificationGroups = getVisibleNotificationGroups(this.data.notifications?.groups ?? [], filterId)
-    this.setData({ activeNotificationFilter: filterId, visibleNotificationGroups, hasVisibleNotificationGroups: visibleNotificationGroups.length > 0 })
+    this.setData({ activeNotificationFilter: filterId })
+    this.applyNotificationWindow(this.data.notifications?.groups ?? [], filterId, LIST_PAGE_SIZE)
   },
   onNotificationCardTap(event: WechatMiniprogram.CustomEvent<{ userId: string; eventId?: string }>) {
     const userId = event.detail.userId
@@ -414,13 +542,11 @@ Page({
       if (this.data.notifications) {
         const groups = markNotificationGroupsViewed(this.data.notifications.groups, eventId)
         const notifications = { ...this.data.notifications, groups }
-        const visibleNotificationGroups = getVisibleNotificationGroups(groups, this.data.activeNotificationFilter)
         this.setData({
           notifications,
-          visibleNotificationGroups,
-          hasVisibleNotificationGroups: visibleNotificationGroups.length > 0,
           unreadNotificationCount: countUnreadNotificationGroups(groups),
         })
+        this.applyNotificationWindow(groups, this.data.activeNotificationFilter, this.data.notificationVisibleCount)
       }
       if (this.data.homeData) {
         const homeData = markHomeNotificationViewed(this.data.homeData, eventId)
@@ -438,13 +564,8 @@ Page({
     persistViewedNotifications(eventIds)
     const nextGroups = markAllNotificationGroupsViewed(groups)
     const notifications = this.data.notifications ? { ...this.data.notifications, groups: nextGroups } : null
-    const visibleNotificationGroups = getVisibleNotificationGroups(nextGroups, this.data.activeNotificationFilter)
-    this.setData({
-      notifications,
-      visibleNotificationGroups,
-      hasVisibleNotificationGroups: visibleNotificationGroups.length > 0,
-      unreadNotificationCount: 0,
-    })
+    this.setData({ notifications, unreadNotificationCount: 0 })
+    this.applyNotificationWindow(nextGroups, this.data.activeNotificationFilter, this.data.notificationVisibleCount)
   },
   onNotificationContactAction() {},
   onAnalysisTabTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) { this.setAnalysisTab(event.detail.index) },
@@ -553,31 +674,30 @@ Page({
   onAnalysisSortTap() { this.setData({ analysisSortSheetVisible: !this.data.analysisSortSheetVisible }) },
   onAnalysisSortOptionTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisSortId }>) {
     const option = analysisSortOptions.find((item) => item.id === event.detail.id)
-    if (option) this.setData({
-      activeAnalysisSort: option.id,
-      activeAnalysisSortLabel: option.label,
-      analysisSortSheetVisible: false,
-      visibleAnalysisCards: this.data.activeAnalysisTab === 'work'
-        ? sortAnalysisCards(this.data.visibleAnalysisCards, option.id)
-        : this.data.visibleAnalysisCards,
-      visibleAnalysisUsers: this.data.activeAnalysisTab === 'user'
-        ? sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], option.id)
-        : this.data.visibleAnalysisUsers,
-    })
+    if (!option) return
+    this.applyAnalysisSort(option.id, option.label)
   },
   onHomeAnalysisSortOptionTap(event: WechatMiniprogram.TouchEvent) {
     const option = analysisSortOptions.find((item) => item.id === event.currentTarget.dataset.id as AnalysisSortId)
-    if (option) this.setData({
-      activeAnalysisSort: option.id,
-      activeAnalysisSortLabel: option.label,
+    if (!option) return
+    this.applyAnalysisSort(option.id, option.label)
+  },
+  applyAnalysisSort(sortId: AnalysisSortId, label: string) {
+    this.setData({
+      activeAnalysisSort: sortId,
+      activeAnalysisSortLabel: label,
       analysisSortSheetVisible: false,
-      visibleAnalysisCards: this.data.activeAnalysisTab === 'work'
-        ? sortAnalysisCards(this.data.visibleAnalysisCards, option.id)
-        : this.data.visibleAnalysisCards,
-      visibleAnalysisUsers: this.data.activeAnalysisTab === 'user'
-        ? sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], option.id)
-        : this.data.visibleAnalysisUsers,
     })
+    if (this.data.activeAnalysisTab === 'work') {
+      const cards = sortAnalysisCards(this.data.allAnalysisCards, sortId)
+      this.setData({ allAnalysisCards: cards })
+      this.applyAnalysisCardsWindow(cards, LIST_PAGE_SIZE)
+      return
+    }
+    if (this.data.activeAnalysisTab === 'user') {
+      const users = sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], sortId)
+      this.applyAnalysisUsersWindow(users, LIST_PAGE_SIZE)
+    }
   },
   onAnalysisSortMaskTap() { this.setData({ analysisSortSheetVisible: false }) },
   onAnalysisCardTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
@@ -593,8 +713,8 @@ Page({
     const filterId = event.currentTarget.dataset.id as MaterialsFilterId
     if (!['all', 'image', 'video', 'pdf'].includes(filterId)) return
 
-    const visibleMaterials = getVisibleMaterials(this.data.materials?.items ?? [], filterId)
-    this.setData({ activeMaterialFilter: filterId, visibleMaterials, hasVisibleMaterials: visibleMaterials.length > 0 })
+    this.setData({ activeMaterialFilter: filterId })
+    this.applyMaterialsWindow(this.data.materials?.items ?? [], filterId, LIST_PAGE_SIZE)
   },
   onMaterialCardTap(event: WechatMiniprogram.TouchEvent) {
     const materialId = event.currentTarget.dataset.id as string | undefined

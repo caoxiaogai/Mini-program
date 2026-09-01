@@ -1677,7 +1677,8 @@ test('user detail page follows Figma 497:4640', () => {
   assert.match(service, /readCount: formatCount\(record\.viewCount\)/)
   assert.match(service, /completionCount: formatCount\(record\.completeCount\)/)
   assert.match(service, /shareCount: formatCount\(record\.shareCount\)/)
-  assert.match(service, /prepareMediaUrls\(aggregated\.map/)
+  assert.match(service, /rememberMaterialThumbnailSources\(materials\.map/)
+  assert.match(service, /resolveMaterialListThumbnail/)
   assert.match(service, /export function enrichAnalysisUserDetailThumbnails/)
   assert.match(logic, /enrichAnalysisUserDetailThumbnails/)
   assert.match(markup, /class="user-detail__record-stats">[\s\S]*观看时长[\s\S]*完播数[\s\S]*浏览次数[\s\S]*转发/)
@@ -2313,8 +2314,9 @@ test('pdf first-page previews are used wherever thumbnails are shown', () => {
   assert.match(materials, /export function prepareMaterialThumbnail/)
   assert.match(materials, /prepareDocumentPageImage\(String\(material\.id\), 0\)/)
   assert.match(home, /prepareMaterialThumbnailMap/)
-  assert.match(notifications, /prepareMaterialThumbnailMap/)
-  assert.match(analysis, /prepareMaterialThumbnailMap/)
+  assert.match(notifications, /enrichThumbnailsByIds/)
+  assert.match(analysis, /enrichThumbnailsByIds/)
+  assert.match(analysis, /enrichAnalysisUserDetailThumbnails/)
   assert.doesNotMatch(home, /resolveMediaUrl\(item\.coverUrl\)/)
   assert.doesNotMatch(home, /resolveMediaUrl\(material\.coverUrl\)/)
   assert.doesNotMatch(notifications, /resolveMediaUrl\(material\.coverUrl\)/)
@@ -2587,7 +2589,7 @@ test('analysis work tab matches the revised Figma compact work list', () => {
   const types = read('miniprogram/types/analysis.ts')
   const service = read('miniprogram/services/analysis.ts')
   const homeLogic = read('miniprogram/pages/index/index.ts')
-  const workSummaryService = service.slice(service.indexOf('function buildWorkSummary'), service.indexOf('async function mapContentCards'))
+  const workSummaryService = service.slice(service.indexOf('function buildWorkSummary'), service.indexOf('function mapContentCards'))
 
   assert.match(markup, /analysis-page__content--work/)
   assert.match(markup, /analysis-summary--redesign/)
@@ -2621,10 +2623,10 @@ test('analysis work list re-sorts when the sort option changes', () => {
   const homeMarkup = read('miniprogram/pages/index/index.wxml')
   const analysisMarkup = read('miniprogram/pages/analysis/index.wxml')
 
-  assert.match(homeLogic, /sortAnalysisUsers\(this\.data\.analysisData\?\.audienceUsers \?\? \[\], option\.id\)/)
+  assert.match(homeLogic, /sortAnalysisUsers\(this\.data\.analysisData\?\.audienceUsers \?\? \[\], sortId\)/)
   assert.match(analysisLogic, /sortAnalysisUsers\(this\.data\.analysisData\?\.audienceUsers \?\? \[\], sortOption\.id\)/)
-  assert.match(homeLogic, /sortAnalysisCards\(this\.data\.visibleAnalysisCards, option\.id\)/)
-  assert.match(analysisLogic, /sortAnalysisCards\(this\.data\.visibleAnalysisCards, sortOption\.id\)/)
+  assert.match(homeLogic, /sortAnalysisCards\(this\.data\.allAnalysisCards, sortId\)/)
+  assert.match(analysisLogic, /sortAnalysisCards\(this\.data\.allAnalysisCards, sortOption\.id\)/)
   assert.match(homeMarkup, /visible-analysis-cards="\{\{visibleAnalysisCards\}\}"/)
   assert.match(analysisMarkup, /\{\{visibleAnalysisCards\}\}/)
   assert.match(homeLogic, /onAnalysisCardTap[\s\S]*\/pages\/analysis-detail\/index\?id=/)
@@ -3537,15 +3539,20 @@ test('home today data card follows Figma 926:14117', async () => {
 test('user detail record sorting updates the visible list only', () => {
   const page = loadPageDefinition('miniprogram/pages/analysis-user-detail/index.ts', {
     getAnalysisUserDetail: () => Promise.resolve(null),
+    LIST_PAGE_SIZE: 10,
+    windowList: (items, count) => items.slice(0, count),
+    nextListWindow: (visibleCount, total) => Math.min(total, visibleCount + 10),
+    enrichAnalysisUserDetailThumbnails: (detail) => Promise.resolve(detail),
   })
   const records = [
-    { id: 'first', readCount: '4', completionCount: '1', shareCount: '2' },
-    { id: 'second', readCount: '8', completionCount: '3', shareCount: '1' },
+    { id: 'first', contentId: 'first', readCount: '4', completionCount: '1', shareCount: '2' },
+    { id: 'second', contentId: 'second', readCount: '8', completionCount: '3', shareCount: '1' },
   ]
   const context = {
-    data: { detail: { records }, activeRecordSort: 'views' },
+    data: { detail: { records }, activeRecordSort: 'views', recordsVisibleCount: 10 },
     setData(update) { Object.assign(this.data, update) },
   }
+  context.applyUserRecordsWindow = page.applyUserRecordsWindow.bind(context)
 
   page.onRecordSortChange.call(context, { detail: { id: 'shares' } })
 
@@ -3557,9 +3564,10 @@ test('user detail record sorting updates the visible list only', () => {
     { id: 'counted', readCount: '8', completionCount: '3', shareCount: '1' },
   ]
   const incompleteContext = {
-    data: { detail: { records: incomplete }, activeRecordSort: 'shares' },
+    data: { detail: { records: incomplete }, activeRecordSort: 'shares', recordsVisibleCount: 10 },
     setData(update) { Object.assign(this.data, update) },
   }
+  incompleteContext.applyUserRecordsWindow = page.applyUserRecordsWindow.bind(incompleteContext)
 
   page.onRecordSortChange.call(incompleteContext, { detail: { id: 'views' } })
 

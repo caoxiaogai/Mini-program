@@ -4,5 +4,6 @@
     "segmented-filter": "/components/segmented-filter/index"
   },
   "enablePullDownRefresh": true,
+  "onReachBottomDistance": 80,
   "backgroundTextStyle": "dark"
 }

@@ -2,6 +2,7 @@ import { enrichAnalysisUserDetailThumbnails, getAnalysisUserDetail } from '../..
 import { runAuthed } from '../../services/auth'
 import type { AnalysisUserDetailViewModel, AnalysisUserRecord } from '../../types/analysis'
 import { fromDatasetId } from '../../utils/dataset-id'
+import { LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import { buildReturnPath } from '../../utils/auth'
 
@@ -34,6 +35,7 @@ Page({
     recordSortOptions,
     activeRecordSort: 'views' as RecordSortId,
     visibleUserRecords: [] as AnalysisUserRecord[],
+    recordsVisibleCount: 0,
     noticeVisible: false,
   },
   userId: '',
@@ -48,27 +50,44 @@ Page({
   onPullDownRefresh() {
     runPagePullRefresh(this.loadDetail())
   },
+  onReachBottom() {
+    const detail = this.data.detail
+    if (!detail) return
+    const sorted = sortUserRecords(detail.records, this.data.activeRecordSort)
+    const next = nextListWindow(this.data.recordsVisibleCount, sorted.length)
+    if (next === this.data.recordsVisibleCount) return
+    this.applyUserRecordsWindow(detail, sorted, next)
+  },
   loadDetail() {
     if (!this.userId) return Promise.resolve()
 
     return getAnalysisUserDetail(this.userId)
       .then((detail) => {
-        this.setData({
-          detail,
-          visibleUserRecords: detail ? sortUserRecords(detail.records, this.data.activeRecordSort) : [],
-        })
-        if (!detail) return
+        if (!detail) {
+          this.setData({ detail: null, visibleUserRecords: [], recordsVisibleCount: LIST_PAGE_SIZE })
+          return
+        }
 
-        return enrichAnalysisUserDetailThumbnails(detail).then((next) => {
-          this.setData({
-            detail: next,
-            visibleUserRecords: sortUserRecords(next.records, this.data.activeRecordSort),
-          })
-        })
+        this.setData({ detail })
+        this.applyUserRecordsWindow(detail, sortUserRecords(detail.records, this.data.activeRecordSort), LIST_PAGE_SIZE)
       })
       .catch((error) => {
         console.warn('[analysis-user-detail] load failed', error)
       })
+  },
+  applyUserRecordsWindow(detail: AnalysisUserDetailViewModel, records: AnalysisUserRecord[], visibleCount: number) {
+    const visibleUserRecords = windowList(records, visibleCount)
+    this.setData({
+      visibleUserRecords,
+      recordsVisibleCount: visibleCount,
+    })
+    if (visibleUserRecords.length === 0) return
+    enrichAnalysisUserDetailThumbnails(detail, visibleUserRecords.map((record) => record.contentId)).then((next) => {
+      this.setData({
+        detail: next,
+        visibleUserRecords: windowList(sortUserRecords(next.records, this.data.activeRecordSort), this.data.recordsVisibleCount),
+      })
+    })
   },
   onCopyUsername() {
     this.copyUsername()
@@ -93,10 +112,8 @@ Page({
     const detail = this.data.detail
     if (!detail || !recordSortOptions.some((option) => option.id === sortId)) return
 
-    this.setData({
-      activeRecordSort: sortId,
-      visibleUserRecords: sortUserRecords(detail.records, sortId),
-    })
+    this.setData({ activeRecordSort: sortId })
+    this.applyUserRecordsWindow(detail, sortUserRecords(detail.records, sortId), LIST_PAGE_SIZE)
   },
   onUserRecordTap(event: WechatMiniprogram.TouchEvent) {
     const dataset = event.currentTarget.dataset as WechatMiniprogram.IAnyObject
