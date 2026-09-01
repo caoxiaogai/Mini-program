@@ -141,6 +141,7 @@ export interface ApiNotificationEvent {
   avatar: string | null
   materialId: string | null
   materialTitle: string | null
+  fileType?: ApiMaterialFileType | null
   actionType: string | null
   duration: number | null
   progress: number | null

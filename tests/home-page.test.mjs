@@ -1199,12 +1199,44 @@ test('notification page keeps one card for each browse of the same user', async 
   assert.equal(second.eventId, '102')
   assert.notEqual(first.id, second.id)
   assert.equal(first.action, 'reading')
+  assert.equal(first.statusLabel, '未滑动看完所有图片')
   assert.equal(second.statusLabel, '该用户已完成浏览')
   assert.equal(forward.action, 'forward')
   assert.equal(groups.length, 2)
   assert.equal(groups[0].id, '2026-08-26')
   assert.equal(groups[0].items.length, 2)
   assert.equal(groups[1].items.length, 1)
+})
+
+test('notification incomplete status follows the work file type', async () => {
+  const { buildNotificationStatus, mapNotificationEvent } = await import('../miniprogram/utils/notifications.ts')
+  const unread = { actionType: 'play', completed: 0 }
+
+  assert.equal(buildNotificationStatus(unread), '未滑动看完所有图片')
+  assert.equal(buildNotificationStatus({ ...unread, fileType: 'IMAGE' }), '未滑动看完所有图片')
+  assert.equal(buildNotificationStatus({ ...unread, fileType: 'PDF' }), '未浏览完文件')
+  assert.equal(buildNotificationStatus({ ...unread, fileType: 'TABLE' }), '未浏览完文件')
+  assert.equal(buildNotificationStatus({ ...unread, fileType: 'VIDEO' }), '未完播视频')
+  assert.equal(buildNotificationStatus({ actionType: 'play', completed: 1, fileType: 'VIDEO' }), '该用户已完成浏览')
+  assert.equal(buildNotificationStatus({ actionType: 'forward', completed: 0, fileType: 'PDF' }), '该用户转发了你的作品')
+  assert.equal(
+    mapNotificationEvent({
+      id: '301',
+      customerId: 'c1',
+      nickname: '用户甲',
+      avatar: null,
+      materialId: '20',
+      materialTitle: '文档A',
+      fileType: 'PDF',
+      actionType: 'play',
+      duration: 8,
+      progress: 40,
+      completed: 0,
+      intentLevel: 'low',
+      viewTime: '2026-08-27 14:05:00',
+    }, '', '').statusLabel,
+    '未浏览完文件',
+  )
 })
 
 test('notification read state changes only for the opened event', async () => {

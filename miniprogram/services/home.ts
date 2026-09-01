@@ -21,9 +21,14 @@ const HOME_CONTENT_LIMIT = 2
 function mapHomeNotification(
   event: ApiNotificationEvent,
   thumbnailByMaterialId: Map<string, string>,
+  fileType?: ApiNotificationEvent['fileType'],
 ): HomeNotificationViewModel {
   const thumbnailUrl = event.materialId ? thumbnailByMaterialId.get(String(event.materialId)) ?? '' : ''
-  const card = mapNotificationEvent(event, thumbnailUrl, resolveMediaUrl(event.avatar))
+  const card = mapNotificationEvent(
+    { ...event, fileType: fileType ?? event.fileType },
+    thumbnailUrl,
+    resolveMediaUrl(event.avatar),
+  )
 
   return {
     ...card,
@@ -113,7 +118,10 @@ export function getHomePageData(): Promise<HomePageViewModel> {
       }
     }))
 
-    const notifications = previewEvents.map((event) => mapHomeNotification(event, thumbnailByMaterialId))
+    const notifications = previewEvents.map((event) => {
+      const material = event.materialId ? materialById.get(String(event.materialId)) : undefined
+      return mapHomeNotification(event, thumbnailByMaterialId, material?.fileType ?? event.fileType)
+    })
     const contentsCards = buildContentCards(previewContents, intentCustomers, thumbnailByMaterialId)
     const previewCustomers = intentCustomers.slice(0, 5)
     const highCount = dashboard.highIntentCount ?? 0

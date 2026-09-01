@@ -51,9 +51,15 @@ export function resolveNotificationIntent(level: string | null | undefined): Not
   return 'low'
 }
 
-export function buildNotificationStatus(event: Pick<ApiNotificationEvent, 'actionType' | 'completed'>): string {
+export function buildNotificationStatus(
+  event: Pick<ApiNotificationEvent, 'actionType' | 'completed' | 'fileType'>,
+): string {
   if ((event.actionType ?? '').toLowerCase() === 'forward') return '该用户转发了你的作品'
   if (event.completed === 1) return '该用户已完成浏览'
+
+  const fileType = (event.fileType ?? '').toUpperCase()
+  if (fileType === 'VIDEO') return '未完播视频'
+  if (fileType === 'PDF' || fileType === 'TABLE') return '未浏览完文件'
   return '未滑动看完所有图片'
 }
 

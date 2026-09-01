@@ -287,6 +287,12 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-09-01：通知未完成文案按素材类型区分
+
+- 未看完时：图片仍显示「未滑动看完所有图片」，PDF/表格显示「未浏览完文件」，视频显示「未完播视频」。转发和已完成浏览文案不变。
+- 类型优先用 `/material/mine` 的作品类型，通知接口也补了 `fileType`。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/home-page.test.mjs`。后端需重启。当前环境无微信开发者工具 GUI，需真机分别看图片/PDF/视频通知。
+
 ### 2026-08-31：视频素材进入详情后自动播放
 
 - 素材详情的视频加上 `autoplay`，数据渲染完成后立刻 `play()`，打开视频作品不必再点中间播放按钮。

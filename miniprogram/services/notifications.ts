@@ -46,14 +46,18 @@ export function getNotifications(): Promise<NotificationsViewModel> {
     }))
     const avatarUrls = await prepareMediaUrls(visibleEvents.map((event) => event.avatar))
     const viewedNotifications = readViewedNotificationMap()
-    const cards = visibleEvents.map((event, index) => (
-      mapNotificationEvent(
-        event,
+    const cards = visibleEvents.map((event, index) => {
+      const material = event.materialId ? materialById.get(String(event.materialId)) : undefined
+      return mapNotificationEvent(
+        {
+          ...event,
+          fileType: material?.fileType ?? event.fileType,
+        },
         event.materialId ? thumbnailByMaterial.get(String(event.materialId)) ?? '' : '',
         avatarUrls[index] ?? '',
         !isViewedNotification(String(event.id ?? ''), viewedNotifications),
       )
-    ))
+    })
 
     return {
       filters: notificationFilters,
