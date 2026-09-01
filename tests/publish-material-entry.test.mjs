@@ -41,7 +41,7 @@ test('home routes both publish entry points through the shared type sheet', () =
   assert.doesNotMatch(component, /onCancelTap|>取消<\/text>/)
   assert.doesNotMatch(componentLogic, /onCancelTap/)
   assert.match(componentStyles, /\.publish-type-sheet\s*\{[\s\S]*background:\s*transparent;/)
-  assert.doesNotMatch(componentStyles, /\.publish-type-sheet\s*\{[\s\S]*background:\s*#f5f5f5;/)
+  assert.doesNotMatch(componentStyles, /\.publish-type-sheet\s*\{[\s\S]*background:\s*#f0f1f2;/)
   assert.match(componentStyles, /\.publish-type-sheet__panel\s*\{[^}]*border-radius:\s*40rpx 40rpx 0 0;[^}]*background:\s*#ffffff;[^}]*overflow:\s*hidden;[^}]*padding-bottom:\s*env\(safe-area-inset-bottom\);/)
   assert.doesNotMatch(componentStyles, /publish-type-sheet__cancel|gap:\s*20rpx;/)
   assert.match(logic, /onMaterialPublishTap\(\)\s*\{[\s\S]*publishTypeSheetVisible: true/)

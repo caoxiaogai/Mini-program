@@ -1,6 +1,6 @@
 <view class="user-detail-page">
   <view class="user-detail-page__header">
-    <navigation-bar title="用户详情" back="{{true}}" color="#000000" background="#f5f5f5" />
+    <navigation-bar title="用户详情" back="{{true}}" color="#000000" background="#f0f1f2" />
   </view>
 
   <view wx:if="{{detail}}" class="user-detail-page__content">

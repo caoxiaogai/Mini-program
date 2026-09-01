@@ -1,5 +1,5 @@
 <view class="publish-page">
-  <navigation-bar back="{{true}}" color="#000000" background="#f5f5f5" />
+  <navigation-bar back="{{true}}" color="#000000" background="#f0f1f2" />
 
   <view class="publish-page__content">
     <view class="publish-page__image-grid">

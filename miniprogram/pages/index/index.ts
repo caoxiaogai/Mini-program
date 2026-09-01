@@ -10,7 +10,7 @@ import type { NotificationFilterId, NotificationGroupViewModel, NotificationsVie
 import type { ProfilePageViewModel } from '../../types/profile'
 import { getProfilePageData } from '../../services/profile'
 import { getHomeGreeting } from '../../utils/greeting'
-import { getHomeHeaderOpacity } from '../../utils/home-header'
+import { getHomeHeaderGradientOpacity, getHomeHeaderOpacity } from '../../utils/home-header'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
@@ -91,9 +91,8 @@ Page({
   data: {
     analysisNavigationHeight: 91,
     greetingHeadline: getHomeGreeting(),
-    greetingSubtitle: '今日阳光明媚，祝你好运☀️',
+    greetingSubtitle: '今日阳光明媚，祝你好运',
     homeData: null as HomePageViewModel | null,
-    hasNewIntentUsers: false,
     isLoading: true,
     loadError: false,
     tabItems,
@@ -101,6 +100,7 @@ Page({
     isAndroid: false,
     activeTabIndex: 0,
     homeHeaderOpacity: 0,
+    homeHeaderGradientOpacity: 1,
     notifications: null as NotificationsViewModel | null,
     activeNotificationFilter: 'all' as NotificationFilterId,
     visibleNotificationGroups: [] as NotificationGroupViewModel[],
@@ -194,14 +194,15 @@ Page({
   },
   onHomeScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
     const homeHeaderOpacity = getHomeHeaderOpacity(event.detail.scrollTop)
+    const homeHeaderGradientOpacity = getHomeHeaderGradientOpacity(event.detail.scrollTop)
     if (homeHeaderOpacity === this.data.homeHeaderOpacity) return
-    this.setData({ homeHeaderOpacity })
+    this.setData({ homeHeaderOpacity, homeHeaderGradientOpacity })
   },
   loadHomeData(silent = false) {
     if (!silent) this.setData({ isLoading: true, loadError: false })
     return getHomePageData()
       .then((homeData) => {
-        this.setData({ homeData, hasNewIntentUsers: homeData.intentSummary.total !== '0', isLoading: false, loadError: false })
+        this.setData({ homeData, isLoading: false, loadError: false })
       })
       .catch(() => {
         if (!silent) this.setData({ isLoading: false, loadError: true })
