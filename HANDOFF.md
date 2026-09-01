@@ -2509,6 +2509,13 @@ miniprogram/
 - 通知、分析和素材页顶部固定渐变同步替换为 `#F0F1F2` 的实色与透明端，保留原有层级、131px 高度和 100px 起始渐变断点。
 - 验证：`node --test tests/home-page.test.mjs tests/publish-material-entry.test.mjs`（161 tests passed）；生产代码未发现旧 `#F5F5F5` 或 `rgba(245,245,245,...)` 引用；`git diff --check` 通过。
 
+### 2026-09-01：修正分析总数据重复分隔线
+
+- 按用户确认，仅调整“分析 → 总数据”指标区域：移除指标左侧的绝对定位线、第二项指标的 `border-left` 以及重复分隔 SVG，保留两列指标的间距与内容布局。
+- 首页“今日数据”指标卡的外框保持 `2rpx` 描边与圆角，未再误改首页样式。
+- 验证：分析总数据与首页相关测试通过；联合测试 167 项中 166 项通过。唯一失败是用户此前将 `config/dev.ts` 的 `DEV_LAN_ORIGIN` 改为 `https://www.yjxzhang.com`，旧测试仍断言局域网地址；该用户改动未覆盖。
+- `git diff --check` 通过，已确认删除的 `total-metric-divider.svg` 无残留引用。
+
 ## 待确认事项
 
 - 设计稿基准设备尺寸和适配目标。

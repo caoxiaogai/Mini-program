@@ -2951,9 +2951,11 @@ test('analysis total hero metrics are direct flex items', () => {
   for (const markup of markups) {
     assert.match(markup, /wx:for="\{\{analysisData\.totalData\.heroMetrics\}\}"[\s\S]*class="analysis-total__hero-metric/)
     assert.doesNotMatch(markup, /<block wx:for="\{\{analysisData\.totalData\.heroMetrics\}\}"/)
+    assert.doesNotMatch(markup, /analysis-total__hero-divider/)
   }
 
-  assert.match(styles, /\.analysis-total__hero-divider \{[\s\S]*width: 1px;[\s\S]*height: 20px;[\s\S]*background: #f0f0f0;/)
+  assert.doesNotMatch(styles, /\.analysis-total__hero-divider\s*\{/)
+  assert.doesNotMatch(styles, /\.analysis-total__hero-metric--secondary\s*\{[^}]*border-left\s*:/)
 })
 
 test('analysis total hero metrics compare with the previous period', async () => {
