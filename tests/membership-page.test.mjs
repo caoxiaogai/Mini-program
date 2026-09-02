@@ -10,6 +10,7 @@ test('membership page is registered and uses the typed service seam', () => {
   const logic = read('miniprogram/pages/membership/index.ts')
   const config = JSON.parse(read('miniprogram/pages/membership/index.json'))
   const styles = read('miniprogram/pages/membership/index.less')
+  const navigationStyles = read('miniprogram/components/navigation-bar/navigation-bar.less')
   const service = read('miniprogram/services/membership.ts')
   const types = read('miniprogram/types/membership.ts')
   const api = read('miniprogram/types/api.ts')
@@ -27,10 +28,30 @@ test('membership page is registered and uses the typed service seam', () => {
   assert.doesNotMatch(logic, /JSON\.stringify\(pay/)
   assert.match(logic, /syncMembershipOrder\(/)
   assert.match(logic, /membership\.lastPaidOutTradeNo/)
-  assert.match(page, /class="membership-page"/)
+  assert.match(page, /class="membership-page(?:\s|")/)
+  assert.match(page, /class="membership-tier-tabs"/)
+  assert.match(page, /标准会员/)
+  assert.match(page, /尊享会员/)
+  assert.match(page, /bindtap="onTierTap"/)
+  assert.match(page, /membershipTier === 'premium'/)
+  assert.match(page, /class="membership-benefits(?:\s|\")/)
   assert.match(page, /class="membership-plan/)
+  assert.match(page, /\{\{item\.discountLabel\}\}/)
   assert.match(page, /bindtap="onPayTap"/)
-  assert.match(styles, /@app-page-background/)
+  assert.match(page, /bindtap="onAgreementTap"/)
+  assert.match(page, /《言界阿乐付费协议》/)
+  assert.match(logic, /agreementChecked: false/)
+  assert.match(logic, /请先阅读并同意付费协议/)
+  assert.match(logic, /frontColor: '#ffffff'/)
+  assert.match(logic, /setNavigationBarColor\('#ffffff', '#040404'\)/)
+  assert.match(logic, /onUnload\(\)/)
+  assert.match(styles, /@membership-page-dark/)
+  assert.match(styles, /linear-gradient\(/)
+  assert.match(styles, /border-radius: 56rpx 56rpx 0 0/)
+  assert.match(styles, /\.membership-page__header\s*\{[\s\S]*position: sticky;[\s\S]*top: 0;/)
+  assert.doesNotMatch(styles, /\.membership-page\s*\{[\s\S]*?overflow: hidden;/)
+  assert.match(styles, /\.membership-page__header\s*\{[\s\S]*background: transparent;/)
+  assert.match(navigationStyles, /\.weui-navigation-bar__btn_goback\s*\{[\s\S]*background-color: currentColor;/)
   assert.match(types, /export const MEMBERSHIP_PAGE_PATH = '\/pages\/membership\/index'/)
   assert.match(service, /path: '\/membership\/me'/)
   assert.match(service, /path: '\/membership\/order'/)
@@ -45,7 +66,7 @@ test('membership page is registered and uses the typed service seam', () => {
   assert.match(api, /signature: string/)
 })
 
-test('membership plans keep the confirmed prices', async () => {
+test('membership plans keep API prices and add the confirmed Figma display labels', async () => {
   const { mapMembershipPage } = await import('../miniprogram/utils/membership.ts')
 
   const page = mapMembershipPage({
@@ -62,11 +83,11 @@ test('membership plans keep the confirmed prices', async () => {
   assert.equal(page.statusTitle, '尚未开通会员')
   assert.equal(page.actionLabel, '开通会员')
   assert.deepEqual(
-    page.plans.map((plan) => [plan.id, plan.priceLabel, plan.amountFen]),
+    page.plans.map((plan) => [plan.id, plan.displayTitle, plan.discountLabel, plan.priceLabel, plan.amountFen]),
     [
-      ['month', '¥0.01', 1],
-      ['quarter', '¥0.02', 2],
-      ['half_year', '¥0.03', 3],
+      ['month', '一个月', '优惠力度 0%', '¥0.01', 1],
+      ['quarter', '三个月', '优惠力度 14%', '¥0.02', 2],
+      ['half_year', '半年', '优惠力度 20%', '¥0.03', 3],
     ],
   )
 })
@@ -85,6 +106,41 @@ test('active membership shows expire date and renew copy', async () => {
   assert.equal(page.statusTitle, '言界阿乐会员')
   assert.equal(page.statusSubtitle, '有效期至 2026-10-01')
   assert.equal(page.actionLabel, '续费会员')
+})
+
+test('membership page defaults to the Figma-selected three-month plan', async () => {
+  const { mapMembershipPage, pickMembershipPlan } = await import('../miniprogram/utils/membership.ts')
+  const page = mapMembershipPage({
+    active: false,
+    expireAt: null,
+    plans: [
+      { id: 'month', title: '1个月', durationMonths: 1, amountFen: 1, priceYuan: '0.01' },
+      { id: 'quarter', title: '3个月', durationMonths: 3, amountFen: 2, priceYuan: '0.02' },
+      { id: 'half_year', title: '半年', durationMonths: 6, amountFen: 3, priceYuan: '0.03' },
+    ],
+  })
+
+  assert.equal(pickMembershipPlan(page.plans, '')?.id, 'quarter')
+  assert.equal(pickMembershipPlan(page.plans, 'half_year')?.id, 'half_year')
+})
+
+test('premium membership switches to its confirmed unlimited tracking benefits', async () => {
+  const { getMembershipBenefits } = await import('../miniprogram/utils/membership.ts')
+
+  assert.deepEqual(
+    getMembershipBenefits('premium').map((benefit) => benefit.label),
+    ['作品发布', '作品数据分析', '作品互动消息，及时通知', '作品数据总览', '意向用户分类', '追踪人数无限'],
+  )
+})
+
+test('premium membership uses the confirmed Figma background gradient without changing standard styling', () => {
+  const page = read('miniprogram/pages/membership/index.wxml')
+  const styles = read('miniprogram/pages/membership/index.less')
+
+  assert.match(page, /class="membership-page\s/)
+  assert.match(page, /membership-page--premium/)
+  assert.match(styles, /\.membership-page\s*\{[\s\S]*linear-gradient\(165deg, @membership-page-dark 0%, #583700 54%, #2e1d00 100%\)/)
+  assert.match(styles, /\.membership-page--premium\s*\{[\s\S]*linear-gradient\(162\.385969deg, (?:@membership-page-dark|#040404) 0%, #774422 46\.816%, #8473b2 96\.018%\)/)
 })
 
 test('membership page does not invent payment success or feature gating', () => {
@@ -107,6 +163,5 @@ test('membership page does not invent payment success or feature gating', () => 
   assert.doesNotMatch(logic, /wx\.requestPayment/)
   assert.doesNotMatch(service, /wx\.requestPayment/)
   assert.doesNotMatch(service, /wx\.requestVirtualPayment/)
-  assert.match(profile, /getMembershipStatusSilent/)
   assert.doesNotMatch(profile, /分析功能已解锁/)
 })

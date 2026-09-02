@@ -12,21 +12,17 @@ import {
   type MembershipPageViewModel,
   type MembershipPlanId,
   type MembershipPlanViewModel,
+  type MembershipTier,
 } from '../../types/membership'
+import { getMembershipBenefits, pickMembershipPlan } from '../../utils/membership'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 function isPlanId(value: string | undefined): value is MembershipPlanId {
   return value === 'month' || value === 'quarter' || value === 'half_year'
 }
 
-function pickPlan(plans: MembershipPlanViewModel[], planId: MembershipPlanId | ''): MembershipPlanViewModel | null {
-  if (!planId) return plans[0] ?? null
-  return plans.find((plan) => plan.id === planId) ?? plans[0] ?? null
-}
-
-function payLabel(plan: MembershipPlanViewModel | null): string {
-  if (!plan) return '立即支付'
-  return `立即支付 ${plan.priceLabel}`
+function payLabel(membership: MembershipPageViewModel | null): string {
+  return membership?.active ? '立即续费' : '立即开通'
 }
 
 function isPayCancel(errMsg: string, errCode?: number): boolean {
@@ -91,12 +87,28 @@ Page({
     membership: null as MembershipPageViewModel | null,
     selectedPlanId: '' as MembershipPlanId | '',
     selectedPlan: null as MembershipPlanViewModel | null,
-    selectedPayLabel: '立即支付',
+    selectedPayLabel: '立即开通',
     paying: false,
+    agreementChecked: false,
+    membershipTier: 'standard' as MembershipTier,
+    membershipBenefits: getMembershipBenefits('standard'),
   },
 
   onLoad() {
+    this.setNavigationBarColor('#ffffff', '#040404')
     runAuthed(MEMBERSHIP_PAGE_PATH, () => this.loadMembership())
+  },
+
+  onShow() {
+    this.setNavigationBarColor('#ffffff', '#040404')
+  },
+
+  onUnload() {
+    this.setNavigationBarColor('#000000', '#ffffff')
+  },
+
+  setNavigationBarColor(frontColor: '#ffffff' | '#000000', backgroundColor: string) {
+    wx.setNavigationBarColor({ frontColor, backgroundColor })
   },
 
   onPullDownRefresh() {
@@ -112,13 +124,13 @@ Page({
 
     return getMembershipPageData()
       .then((membership) => {
-        const selectedPlan = pickPlan(membership.plans, this.data.selectedPlanId)
+        const selectedPlan = pickMembershipPlan(membership.plans, this.data.selectedPlanId)
         this.setData({
           status: 'success',
           membership,
           selectedPlanId: selectedPlan?.id ?? '',
           selectedPlan,
-          selectedPayLabel: payLabel(selectedPlan),
+          selectedPayLabel: payLabel(membership),
         })
         if (membership.lastPaidOutTradeNo) {
           return syncMembershipOrder(membership.lastPaidOutTradeNo).catch(() => undefined)
@@ -138,18 +150,34 @@ Page({
   onPlanTap(event: WechatMiniprogram.TouchEvent) {
     const planId = event.currentTarget.dataset.id as string | undefined
     if (!isPlanId(planId) || this.data.paying) return
-    const selectedPlan = pickPlan(this.data.membership?.plans ?? [], planId)
+    const selectedPlan = pickMembershipPlan(this.data.membership?.plans ?? [], planId)
     if (!selectedPlan) return
     this.setData({
       selectedPlanId: selectedPlan.id,
       selectedPlan,
-      selectedPayLabel: payLabel(selectedPlan),
+      selectedPayLabel: payLabel(this.data.membership),
     })
+  },
+
+  onTierTap(event: WechatMiniprogram.TouchEvent) {
+    if (this.data.paying) return
+    const tier = event.currentTarget.dataset.tier as MembershipTier | undefined
+    if (tier !== 'standard' && tier !== 'premium') return
+    this.setData({ membershipTier: tier, membershipBenefits: getMembershipBenefits(tier) })
+  },
+
+  onAgreementTap() {
+    if (this.data.paying) return
+    this.setData({ agreementChecked: !this.data.agreementChecked })
   },
 
   onPayTap() {
     const plan = this.data.selectedPlan
     if (!plan || this.data.paying) return
+    if (!this.data.agreementChecked) {
+      wx.showToast({ title: '请先阅读并同意付费协议', icon: 'none' })
+      return
+    }
     if (!supportsVirtualPayment()) {
       wx.showToast({ title: '当前微信版本不支持虚拟支付', icon: 'none' })
       return

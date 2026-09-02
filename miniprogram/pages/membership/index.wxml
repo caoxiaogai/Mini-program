@@ -1,51 +1,97 @@
-<view class="membership-page">
+<view class="membership-page {{membershipTier === 'premium' ? 'membership-page--premium' : ''}}">
   <view class="membership-page__header">
-    <navigation-bar title="会员" back="{{true}}" color="#000000" background="#ffffff" />
+    <navigation-bar ext-class="membership-navigation" back="{{true}}" color="#ffffff" background="transparent" />
   </view>
 
-  <view wx:if="{{status === 'loading'}}" class="membership-page__state">
-    <text>正在加载会员套餐</text>
-  </view>
-
-  <view wx:elif="{{status === 'error'}}" class="membership-page__state">
-    <text>{{errorMessage}}</text>
-    <view class="membership-page__retry" bindtap="onRetryTap" hover-class="membership-page__retry--pressed">重新加载</view>
-  </view>
-
-  <view wx:elif="{{status === 'success' && membership}}" class="membership-page__content">
-    <view class="membership-status">
-      <text class="membership-status__title">{{membership.statusTitle}}</text>
-      <text class="membership-status__subtitle">{{membership.statusSubtitle}}</text>
-    </view>
-
-    <view class="membership-plans">
-      <view
-        wx:for="{{membership.plans}}"
-        wx:key="id"
-        class="membership-plan {{selectedPlanId === item.id ? 'membership-plan--selected' : ''}}"
-        data-id="{{item.id}}"
-        bindtap="onPlanTap"
-        hover-class="membership-plan--pressed"
-        hover-stay-time="80"
-      >
-        <view class="membership-plan__copy">
-          <text class="membership-plan__title">{{item.title}}</text>
-          <text class="membership-plan__hint">支付成功后立即生效</text>
+  <block wx:if="{{status === 'success' && membership}}">
+    <view class="membership-page__hero">
+      <view class="membership-tier-tabs" aria-label="会员类型">
+        <view
+          class="membership-tier-tab {{membershipTier === 'standard' ? 'membership-tier-tab--selected' : ''}}"
+          data-tier="standard"
+          bindtap="onTierTap"
+          aria-current="{{membershipTier === 'standard'}}"
+        >
+          <text>标准会员</text>
         </view>
-        <text class="membership-plan__price">{{item.priceLabel}}</text>
+        <view
+          class="membership-tier-tab {{membershipTier === 'premium' ? 'membership-tier-tab--selected' : ''}}"
+          data-tier="premium"
+          bindtap="onTierTap"
+          aria-current="{{membershipTier === 'premium'}}"
+        >
+          <text>尊享会员</text>
+        </view>
+      </view>
+
+      <view class="membership-benefits {{membershipTier === 'premium' ? 'membership-benefits--premium' : ''}}">
+        <text class="membership-benefits__title">{{membershipTier === 'premium' ? '尊享会员' : '标准会员'}}</text>
+        <view class="membership-benefits__list">
+          <view wx:for="{{membershipBenefits}}" wx:key="id" class="membership-benefit">
+            <image class="membership-benefit__check" src="/assets/membership/check.svg" mode="aspectFit" aria-hidden="true" />
+            <text class="membership-benefit__label {{item.id === 'tracking' ? 'membership-benefit__label--tracking' : ''}}">{{item.label}}</text>
+          </view>
+        </view>
       </view>
     </view>
 
-    <text class="membership-page__note">支付未完成不会开通或续期。若支付成功后状态未更新，请下拉刷新。</text>
+    <view class="membership-page__surface">
+      <view class="membership-plans">
+        <view
+          wx:for="{{membership.plans}}"
+          wx:key="id"
+          class="membership-plan {{selectedPlanId === item.id ? 'membership-plan--selected' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onPlanTap"
+          hover-class="membership-plan--pressed"
+          hover-stay-time="80"
+          aria-role="radio"
+          aria-checked="{{selectedPlanId === item.id}}"
+        >
+          <view class="membership-plan__copy">
+            <text class="membership-plan__title">{{item.displayTitle}}</text>
+            <text class="membership-plan__discount">{{item.discountLabel}}</text>
+          </view>
+          <text class="membership-plan__price">{{item.priceLabel}}</text>
+        </view>
+      </view>
+
+      <view
+        wx:if="{{selectedPlan}}"
+        class="membership-pay {{paying ? 'membership-pay--disabled' : ''}}"
+        bindtap="onPayTap"
+        hover-class="{{paying ? '' : 'membership-pay--pressed'}}"
+        aria-role="button"
+      >
+        <text>{{paying ? '正在支付' : selectedPayLabel}}</text>
+      </view>
+
+      <view
+        class="membership-agreement"
+        bindtap="onAgreementTap"
+        hover-class="membership-agreement--pressed"
+        aria-role="checkbox"
+        aria-checked="{{agreementChecked}}"
+      >
+        <view class="membership-agreement__checkbox {{agreementChecked ? 'membership-agreement__checkbox--checked' : ''}}">
+          <image wx:if="{{agreementChecked}}" class="membership-agreement__check" src="/assets/membership/check.svg" mode="aspectFit" aria-hidden="true" />
+        </view>
+        <text class="membership-agreement__prefix">已阅读并同意</text>
+        <text class="membership-agreement__link">《言界阿乐付费协议》</text>
+      </view>
+    </view>
+  </block>
+
+  <view wx:elif="{{status === 'loading'}}" class="membership-page__state-surface">
+    <view class="membership-page__state">
+      <text>正在加载会员套餐</text>
+    </view>
   </view>
 
-  <view wx:if="{{status === 'success' && selectedPlan}}" class="membership-page__footer">
-    <view
-      class="membership-pay {{paying ? 'membership-pay--disabled' : ''}}"
-      bindtap="onPayTap"
-      hover-class="{{paying ? '' : 'membership-pay--pressed'}}"
-    >
-      <text>{{paying ? '正在支付' : selectedPayLabel}}</text>
+  <view wx:else class="membership-page__state-surface">
+    <view class="membership-page__state">
+      <text>{{errorMessage}}</text>
+      <view class="membership-page__retry" bindtap="onRetryTap" hover-class="membership-page__retry--pressed">重新加载</view>
     </view>
   </view>
 </view>

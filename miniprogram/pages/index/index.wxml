@@ -14,6 +14,7 @@
           <view wx:if="{{isLoading}}" class="home-state home-state--loading"><text>正在加载首页数据</text></view>
           <view wx:elif="{{loadError}}" class="home-state"><text class="home-state__title">首页数据暂时不可用</text><text class="home-state__description">请检查网络后重试</text><button class="home-state__retry" bindtap="onRetryTap">重新加载</button></view>
           <block wx:else>
+            <view class="home-membership-limit"><membership-limit-prompt bind:upgrade="onHomeMembershipLimitTap" /></view>
             <view class="home-section home-section--notifications">
               <view class="home-section__header">
                 <view class="home-section__title-row"><text class="home-section__title">互动消息</text><text wx:if="{{homeData.unreadNotificationCount}}" class="home-section__badge">{{homeData.unreadNotificationCount}}</text></view>
@@ -126,12 +127,12 @@
         </view>
       </scroll-view>
     </view>
-    <view class="home-page__tab-panel home-page__notification-panel" hidden="{{activeTabIndex !== 1}}"><notification-header embedded="{{true}}" navigation-height="{{analysisNavigationHeight}}" filters="{{notifications.filters}}" active-filter="{{activeNotificationFilter}}" bind:filtertap="onNotificationFilterTap" /><scroll-view scroll-y class="home-page__tab-scroll home-page__notification-scroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh" lower-threshold="120" bindscrolltolower="onNotificationsScrollToLower"><home-notifications notifications="{{notifications}}" active-filter="{{activeNotificationFilter}}" visible-groups="{{visibleNotificationGroups}}" has-visible-groups="{{hasVisibleNotificationGroups}}" bind:cardtap="onNotificationCardTap" bind:contactaction="onNotificationContactAction" /></scroll-view></view>
+    <view class="home-page__tab-panel home-page__notification-panel" hidden="{{activeTabIndex !== 1}}"><notification-header embedded="{{true}}" navigation-height="{{analysisNavigationHeight}}" filters="{{notifications.filters}}" active-filter="{{activeNotificationFilter}}" bind:filtertap="onNotificationFilterTap" /><scroll-view scroll-y class="home-page__tab-scroll home-page__notification-scroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh" lower-threshold="120" bindscrolltolower="onNotificationsScrollToLower"><home-notifications notifications="{{notifications}}" active-filter="{{activeNotificationFilter}}" visible-groups="{{visibleNotificationGroups}}" has-visible-groups="{{hasVisibleNotificationGroups}}" bind:cardtap="onNotificationCardTap" bind:contactaction="onNotificationContactAction" bind:upgrade="onHomeMembershipLimitTap" /></scroll-view></view>
     <view class="home-page__tab-panel home-page__materials-panel" hidden="{{activeTabIndex !== 2}}">
       <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{analysisNavigationHeight}}px;">
         <view class="materials-page__top">
-          <view class="materials-page__gradient" />
-          <view class="materials-page__stripes" />
+          <image class="materials-page__gradient" src="/assets/home-new/home-header-background.svg" mode="scaleToFill" />
+          <image class="materials-page__stripes" src="/assets/line-bg.svg" mode="scaleToFill" />
           <view class="materials-page__header">
           <navigation-bar back="{{false}}" title="素材" color="#000000" background="transparent" />
           <view wx:if="{{materials}}" class="materials-filter" role="tablist">

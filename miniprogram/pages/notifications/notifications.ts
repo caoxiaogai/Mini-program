@@ -10,6 +10,8 @@ import { getNavigationBarLayout } from '../../utils/navigation-layout'
 
 type NotificationTabId = 'home' | 'notifications' | 'analysis' | 'profile'
 
+const MEMBERSHIP_PAGE_PATH = '/pages/membership/index'
+
 const notificationTabItems = [
   { id: 'home' as NotificationTabId, label: '首页', iconPath: '/assets/home-new/tab-home.svg', activeIconPath: '/assets/home-new/tab-home-selected.svg', active: false },
   { id: 'notifications' as NotificationTabId, label: '通知', iconPath: '/assets/home-new/tab-notification.svg', activeIconPath: '/assets/home-new/tab-notification-selected.svg', active: true },
@@ -94,6 +96,9 @@ Page({
 
     this.setData({ activeFilter: filterId })
     this.applyNotificationWindow(this.data.notifications?.groups ?? [], filterId, LIST_PAGE_SIZE)
+  },
+  onMembershipLimitUpgrade() {
+    wx.navigateTo({ url: MEMBERSHIP_PAGE_PATH })
   },
   onNotificationCardTap(event: WechatMiniprogram.TouchEvent) {
     const userId = fromDatasetId(event.currentTarget.dataset.id)

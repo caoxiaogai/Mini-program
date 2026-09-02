@@ -418,6 +418,9 @@ Page({
   onProfileMembershipTap() {
     wx.navigateTo({ url: MEMBERSHIP_PAGE_PATH })
   },
+  onHomeMembershipLimitTap() {
+    wx.navigateTo({ url: MEMBERSHIP_PAGE_PATH })
+  },
   refreshActiveTab() {
     const tab = rootTabIds[this.data.activeTabIndex]
     if (tab === 'notifications') return this.loadNotifications()

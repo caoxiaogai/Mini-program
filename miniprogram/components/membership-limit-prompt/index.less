@@ -1,0 +1,78 @@
+.membership-limit-prompt {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 40rpx;
+}
+
+.membership-limit-prompt__background {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.membership-limit-prompt__rings {
+  position: absolute;
+  top: -126rpx;
+  left: 468rpx;
+  display: block;
+  width: 480rpx;
+  height: 480rpx;
+}
+
+.membership-limit-prompt__content {
+  position: absolute;
+  top: 46rpx;
+  left: 28rpx;
+  display: flex;
+  gap: 20rpx;
+  align-items: center;
+}
+
+.membership-limit-prompt__crown {
+  display: block;
+  flex: none;
+  width: 82rpx;
+  height: 82rpx;
+}
+
+.membership-limit-prompt__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  align-items: flex-start;
+}
+
+.membership-limit-prompt__message {
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 32rpx;
+  white-space: nowrap;
+}
+
+.membership-limit-prompt__upgrade {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64rpx;
+  padding: 0 28rpx;
+  border: 2rpx solid #ffffff;
+  border-radius: 140rpx;
+  background: linear-gradient(180deg, #ffdcae 0%, #feb500 100%);
+  box-shadow: 0 4rpx 4rpx rgba(0, 0, 0, 0.1);
+  color: #000000;
+  font-size: 24rpx;
+  font-weight: 510;
+  line-height: 24rpx;
+  box-sizing: border-box;
+}
+
+.membership-limit-prompt--pressed {
+  opacity: 0.72;
+  transform: scale(0.96);
+}
