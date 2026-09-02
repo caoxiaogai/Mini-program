@@ -129,19 +129,23 @@
 .notification-mark-all-read--compact .notification-mark-all-read__close-hit {
   position: absolute;
   top: 50%;
-  right: -8rpx;
+  left: 50%;
+  right: auto;
   width: 64rpx;
   height: 64rpx;
-  margin-top: -32rpx;
+  transform: translate(-50%, -50%);
   z-index: 1;
 }
 
 .notification-mark-all-read--compact .notification-mark-all-read__close {
   position: absolute;
-  top: 20rpx;
-  left: 20rpx;
+  top: 50%;
+  left: 50%;
   width: 24rpx;
   height: 24rpx;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .notification-mark-all-read__close-line {

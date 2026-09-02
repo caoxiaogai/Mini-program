@@ -344,6 +344,9 @@ test('home interaction messages expose the compact mark-all-read action', async 
   assert.match(componentStyles, /notification-mark-all-read__dismiss \{[\s\S]*position: fixed;[\s\S]*top: 0;[\s\S]*right: 0;[\s\S]*bottom: 0;[\s\S]*left: 0;[\s\S]*z-index: 0;/)
   assert.match(componentStyles, /notification-mark-all-read__close-hit \{[\s\S]*width: 32rpx;[\s\S]*height: 32rpx;/)
   assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__close-hit \{[\s\S]*width: 64rpx;[\s\S]*height: 64rpx;/)
+  assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__close-hit \{[\s\S]*left: 50%;[\s\S]*right: auto;[\s\S]*transform: translate\(-50%, -50%\);/)
+  assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__close \{[\s\S]*width: 24rpx;[\s\S]*height: 24rpx;[\s\S]*border-radius: 50%;[\s\S]*overflow: hidden;/)
+  assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__close \{[\s\S]*top: 50%;[\s\S]*left: 50%;[\s\S]*transform: translate\(-50%, -50%\);/)
 })
 
 test('home greeting follows the device local time', async () => {
