@@ -1,5 +1,5 @@
 <view class="home-profile">
-  <image class="home-profile__gradient" src="/assets/home-new/home-header-background.svg" mode="scaleToFill" />
+  <view class="home-profile__gradient" />
   <image class="home-profile__stripes" src="/assets/line-bg.svg" mode="scaleToFill" />
   <navigation-bar class="home-profile__navigation" back="{{false}}" title="" color="#000000" background="transparent" />
   <view wx:if="{{profile}}" class="home-profile__content">

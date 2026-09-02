@@ -1,4 +1,7 @@
 Component({
+  data: {
+    compactExpanded: false,
+  },
   properties: {
     unreadCount: {
       type: Number,
@@ -10,7 +13,24 @@ Component({
     },
   },
   methods: {
+    onCompactCloseTap() {
+      if (!this.data.compact || this.data.compactExpanded) return
+      this.setData({ compactExpanded: true })
+    },
+    onCompactMarkAllReadTap() {
+      if (!this.data.compact || !this.data.compactExpanded) return
+      this.setData({ compactExpanded: false })
+      this.triggerEvent('markallread')
+    },
+    onCompactDismissTap() {
+      if (!this.data.compact || !this.data.compactExpanded) return
+      this.setData({ compactExpanded: false })
+    },
     onMarkAllReadTap() {
+      if (this.data.compact) {
+        if (this.data.compactExpanded) this.setData({ compactExpanded: false })
+        return
+      }
       this.triggerEvent('markallread')
     },
   },
