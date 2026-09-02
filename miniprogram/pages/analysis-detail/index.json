@@ -2,5 +2,7 @@
   "usingComponents": {
     "analysis-header": "/components/analysis-header/index",
     "segmented-filter": "/components/segmented-filter/index"
-  }
+  },
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
 }

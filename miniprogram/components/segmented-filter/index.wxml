@@ -1,4 +1,4 @@
-<view class="segmented-filter" style="{{controlWidthStyle}}" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">
+<view class="segmented-filter segmented-filter--{{variant}}" style="{{controlWidthStyle}}" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">
   <view wx:if="{{items.length}}" class="segmented-filter__selection" style="width: {{selectionWidth}}; transform: translateX({{selectionOffset}}%);"></view>
   <view wx:for="{{items}}" wx:key="id" class="segmented-filter__item {{item.id === activeId ? 'segmented-filter__item--active' : ''}}" bindtap="onItemTap" data-id="{{item.id}}" data-index="{{index}}"><image wx:if="{{item.iconPath}}" class="segmented-filter__icon" src="{{item.iconPath}}" mode="aspectFit" /><text wx:else>{{item.label}}</text></view>
 </view>

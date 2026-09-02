@@ -1,0 +1,98 @@
+.notification-mark-all-read {
+  position: fixed;
+  bottom: calc(max(24px, env(safe-area-inset-bottom)) + 132rpx);
+  left: 50%;
+  z-index: 1001;
+  display: flex;
+  height: 88rpx;
+  align-items: center;
+  gap: 8rpx;
+  padding: 0 32rpx;
+  border: 1px solid #e0e0e0;
+  border-radius: 106rpx;
+  color: #333333;
+  background: #ffffff;
+  box-shadow: 0 0 20rpx rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  font-size: 28rpx;
+  line-height: 36rpx;
+  transform: translateX(-50%);
+}
+
+.notification-mark-all-read--pressed {
+  opacity: 0.72;
+  transform: translateX(-50%) scale(0.96);
+}
+
+.notification-mark-all-read--compact {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  z-index: auto;
+  height: 48rpx;
+  gap: 8rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 136rpx;
+  color: #8a8e94;
+  box-shadow: none;
+  font-size: 24rpx;
+  line-height: normal;
+  transform: none;
+}
+
+.notification-mark-all-read--compact::after {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  bottom: -8rpx;
+  left: -8rpx;
+  content: '';
+}
+
+.notification-mark-all-read--compact.notification-mark-all-read--pressed {
+  transform: scale(0.96);
+}
+
+.notification-mark-all-read__label {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.notification-mark-all-read__close {
+  position: relative;
+  width: 32rpx;
+  height: 32rpx;
+  flex: none;
+  border-radius: 50%;
+  background: #333333;
+}
+
+.notification-mark-all-read--compact .notification-mark-all-read__close {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.notification-mark-all-read__close-line {
+  position: absolute;
+  top: 15rpx;
+  left: 8rpx;
+  width: 16rpx;
+  height: 2rpx;
+  border-radius: 44rpx;
+  background: #ffffff;
+}
+
+.notification-mark-all-read--compact .notification-mark-all-read__close-line {
+  top: 11rpx;
+  left: 4rpx;
+  width: 16rpx;
+  height: 1.5px;
+}
+
+.notification-mark-all-read__close-line--first {
+  transform: rotate(45deg);
+}
+
+.notification-mark-all-read__close-line--second {
+  transform: rotate(-45deg);
+}

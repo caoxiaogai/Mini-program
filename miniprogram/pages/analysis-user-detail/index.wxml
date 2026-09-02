@@ -1,6 +1,6 @@
 <view class="user-detail-page">
   <view class="user-detail-page__header">
-    <navigation-bar title="用户详情" back="{{true}}" color="#000000" background="#ffffff" />
+    <navigation-bar title="用户详情" back="{{true}}" color="#000000" background="#f0f1f2" />
   </view>
 
   <view wx:if="{{detail}}" class="user-detail-page__content">
@@ -10,7 +10,7 @@
         <view class="user-detail__profile-body">
           <view class="user-detail__identity">
             <text class="user-detail__name" bindtap="onCopyUsername">{{detail.profile.name}}</text>
-            <text wx:if="{{detail.profile.highIntentContentCount}}" class="user-detail__high-intent">#对{{detail.profile.highIntentContentCount}}个高意向</text>
+            <text wx:if="{{detail.profile.highIntentContentCount}}" class="user-detail__high-intent">#对{{detail.profile.highIntentContentCount}}个作品高意向</text>
           </view>
         </view>
       </view>
@@ -26,24 +26,30 @@
     </view>
 
     <view class="user-detail__records-section">
-      <text class="user-detail__title">浏览记录</text>
       <view class="user-detail__records-card">
-        <segmented-filter items="{{recordSortOptions}}" active-id="{{activeRecordSort}}" bind:change="onRecordSortChange" />
-        <view class="user-detail__records">
-          <view wx:for="{{visibleUserRecords}}" wx:key="id" class="user-detail__record" bindtap="onUserRecordTap" data-content-id="{{item.contentId}}" hover-class="user-detail__record--pressed">
-            <view class="user-detail__record-head">
-              <image class="user-detail__record-thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
-              <view class="user-detail__record-body">
-                <text class="user-detail__record-title">{{item.title}}</text>
-                <text class="user-detail__record-meta">{{item.date}}</text>
-                <text wx:if="{{item.intentLevel}}" class="user-detail__record-intent user-detail__record-intent--{{item.intentLevel}}">#{{item.intentLabel}}</text>
+        <view class="user-detail__records-header">
+          <image class="user-detail__records-icon" src="/assets/analysis/reading-record-icon.svg" mode="aspectFit" />
+          <text class="user-detail__records-title">浏览记录</text>
+        </view>
+        <view class="user-detail__records-body">
+          <segmented-filter items="{{recordSortOptions}}" active-id="{{activeRecordSort}}" bind:change="onRecordSortChange" />
+          <view class="user-detail__records">
+            <view wx:for="{{visibleUserRecords}}" wx:key="id" class="user-detail__record" bindtap="onUserRecordTap" data-content-id="id:{{item.contentId}}" hover-class="user-detail__record--pressed">
+              <view class="user-detail__record-head">
+                <image class="user-detail__record-thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+                <view class="user-detail__record-body">
+                  <text class="user-detail__record-title">{{item.title}}</text>
+                  <text class="user-detail__record-meta">{{item.date}}</text>
+                  <text wx:if="{{item.intentLevel}}" class="user-detail__record-intent user-detail__record-intent--{{item.intentLevel}}">#{{item.intentLabel}}</text>
+                </view>
               </view>
-            </view>
-            <view class="user-detail__record-stats">
-              <view><text>进度</text><text>{{item.progress}}</text></view>
-              <view><text>观看时长</text><text>{{item.viewDuration}}</text></view>
-              <view><text>浏览次数</text><text>{{item.readCount}}</text></view>
-              <view><text>转发</text><text>{{item.shareCount}}</text></view>
+              <view class="user-detail__record-stats">
+                <view><text>进度</text><text>{{item.progress}}</text></view>
+                <view><text>观看时长</text><text>{{item.viewDuration}}</text></view>
+                <view><text>完播数</text><text>{{item.completionCount}}</text></view>
+                <view><text>浏览次数</text><text>{{item.readCount}}</text></view>
+                <view><text>转发</text><text>{{item.shareCount}}</text></view>
+              </view>
             </view>
           </view>
         </view>

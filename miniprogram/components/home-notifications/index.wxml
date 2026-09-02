@@ -1,41 +1,44 @@
 <view class="notification-page notification-page--embedded">
   <view wx:if="{{notifications}}" class="notification-page__content">
+    <view class="notification-membership-limit"><membership-limit-prompt bind:upgrade="onMembershipLimitUpgrade" /></view>
     <view wx:if="{{hasVisibleGroups}}">
-      <view wx:for="{{visibleGroups}}" wx:key="id" class="notification-group">
+      <view wx:for="{{visibleGroups}}" wx:key="id" class="notification-group {{index > 0 ? 'notification-group--spaced' : ''}}">
         <text class="notification-group__date">{{item.label}}</text>
+        <view class="notification-group__cards">
         <view
           wx:for="{{item.items}}"
           wx:for-item="notification"
           wx:key="id"
-          class="notification-card"
-          data-id="{{notification.userId}}"
+          class="home-notification-card"
+          data-id="id:{{notification.userId}}"
+          data-event-id="{{notification.eventId}}"
           bindtap="onNotificationCardTap"
-          hover-class="notification-card--pressed"
+          hover-class="home-card--pressed"
           hover-start-time="80"
           hover-stay-time="120"
         >
-          <view class="notification-card__header">
-            <view class="notification-card__identity">
-              <view class="notification-card__avatar-wrap">
-                <image class="notification-card__avatar" src="{{notification.avatarUrl}}" mode="aspectFill" />
-                <image class="notification-card__action-icon" src="{{notification.actionIconPath}}" mode="aspectFit" />
+          <view wx:if="{{notification.isUnread}}" class="home-notification-card__unread-dot" />
+          <view class="home-notification-card__main">
+            <view class="home-notification-card__identity">
+              <view class="home-avatar-wrap">
+                <image class="home-avatar" src="{{notification.avatarUrl}}" mode="aspectFill" />
+                <image class="home-action-icon" src="{{notification.actionIconPath}}" mode="aspectFit" />
               </view>
-              <view class="notification-card__copy">
-                <view class="notification-card__name-row">
-                  <text class="notification-card__name">{{notification.visitorName}}</text>
-                  <text class="notification-card__intent notification-card__intent--{{notification.intent}}">{{notification.intentLabel}}</text>
+              <view class="home-notification-card__copy">
+                <view class="home-notification-card__name-row">
+                  <text class="home-notification-card__name">{{notification.visitorName}}</text>
+                  <text class="home-intent-tag home-intent-tag--{{notification.intent}}">{{notification.intentLabel}}</text>
                 </view>
-                <view class="notification-card__action-row">
-                  <text class="notification-card__action">{{notification.actionLabel}}</text>
-                  <text class="notification-card__date">{{notification.actionDate}}</text>
+                <view class="home-notification-card__action-row">
+                  <text class="home-notification-card__action">{{notification.actionLabel}}</text>
+                  <text class="home-notification-card__date">{{notification.actionDate}}</text>
                 </view>
+                <text class="home-status-tag home-status-tag--{{notification.intent}}">{{notification.statusLabel}}</text>
               </view>
             </view>
-            <view class="notification-card__thumbnail-wrap">
-              <image class="notification-card__thumbnail" src="{{notification.thumbnailUrl}}" mode="aspectFill" />
-            </view>
+            <image class="home-notification-card__thumbnail" src="{{notification.thumbnailUrl}}" mode="aspectFill" />
           </view>
-          <text class="notification-card__status notification-card__status--{{notification.intent}}">{{notification.statusLabel}}</text>
+        </view>
         </view>
       </view>
     </view>

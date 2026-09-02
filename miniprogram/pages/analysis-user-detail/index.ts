@@ -1,5 +1,9 @@
-import { getAnalysisUserDetail } from '../../services/analysis'
+import { enrichAnalysisUserDetailThumbnails, getAnalysisUserDetail } from '../../services/analysis'
+import { runAuthed } from '../../services/auth'
 import type { AnalysisUserDetailViewModel, AnalysisUserRecord } from '../../types/analysis'
+import { fromDatasetId } from '../../utils/dataset-id'
+import { runPagePullRefresh } from '../../utils/pull-refresh'
+import { buildReturnPath } from '../../utils/auth'
 
 type RecordSortId = 'views' | 'completion' | 'shares'
 
@@ -10,13 +14,13 @@ const recordSortOptions: Array<{ id: RecordSortId; label: string }> = [
 ]
 
 const getRecordSortValue = (record: AnalysisUserRecord, sortId: RecordSortId) => {
-  const valueBySort: Record<RecordSortId, string> = {
-    views: record.readCount,
-    completion: record.completionCount,
-    shares: record.shareCount,
-  }
+  const raw = sortId === 'views'
+    ? record.readCount
+    : sortId === 'completion'
+      ? record.completionCount
+      : record.shareCount
 
-  return Number(valueBySort[sortId].replace(/[^\d.-]/g, '')) || 0
+  return Number(String(raw ?? '').replace(/[^\d.-]/g, '')) || 0
 }
 
 const sortUserRecords = (records: AnalysisUserRecord[], sortId: RecordSortId) => {
@@ -32,16 +36,47 @@ Page({
     visibleUserRecords: [] as AnalysisUserRecord[],
     noticeVisible: false,
   },
+  userId: '',
   onLoad(options: Record<string, string | undefined>) {
-    const userId = options.id
-    if (!userId) return
+    runAuthed(buildReturnPath('/pages/analysis-user-detail/index', options), () => {
+      this.userId = options.id ?? ''
+      if (!this.userId) return
 
-    getAnalysisUserDetail(userId).then((detail) => this.setData({
-      detail,
-      visibleUserRecords: detail ? sortUserRecords(detail.records, this.data.activeRecordSort) : [],
-    }))
+      this.loadDetail()
+    })
+  },
+  onPullDownRefresh() {
+    runPagePullRefresh(this.loadDetail())
+  },
+  loadDetail() {
+    if (!this.userId) return Promise.resolve()
+
+    return getAnalysisUserDetail(this.userId)
+      .then((detail) => {
+        this.setData({
+          detail,
+          visibleUserRecords: detail ? sortUserRecords(detail.records, this.data.activeRecordSort) : [],
+        })
+        if (!detail) return
+
+        return enrichAnalysisUserDetailThumbnails(detail).then((next) => {
+          this.setData({
+            detail: next,
+            visibleUserRecords: sortUserRecords(next.records, this.data.activeRecordSort),
+          })
+        })
+      })
+      .catch((error) => {
+        console.warn('[analysis-user-detail] load failed', error)
+      })
   },
   onCopyUsername() {
+    this.copyUsername()
+  },
+  onContactTap() {
+    this.copyUsername()
+  },
+  copyUsername() {
     const username = this.data.detail?.profile.name
     if (!username) return
 
@@ -52,9 +87,6 @@ Page({
         this.showNotice()
       },
     })
-  },
-  onContactTap() {
-    this.showNotice()
   },
   onRecordSortChange(event: WechatMiniprogram.CustomEvent<{ id: RecordSortId }>) {
     const sortId = event.detail.id
@@ -67,10 +99,13 @@ Page({
     })
   },
   onUserRecordTap(event: WechatMiniprogram.TouchEvent) {
-    const contentId = event.currentTarget.dataset.contentId as string | undefined
-    if (!contentId) return
+    const dataset = event.currentTarget.dataset as WechatMiniprogram.IAnyObject
+    const contentId = fromDatasetId(dataset.contentId ?? dataset['content-id'])
+    if (!contentId || !this.userId) return
 
-    wx.navigateTo({ url: `/pages/analysis-detail/index?id=${contentId}` })
+    wx.navigateTo({
+      url: `/pages/analysis-user-journey/index?userId=${encodeURIComponent(this.userId)}&materialId=${encodeURIComponent(contentId)}`,
+    })
   },
   showNotice() {
     if (this.noticeTimer !== null) {

@@ -4,6 +4,7 @@ export type HomeNotificationAction = 'forward' | 'reading'
 
 export interface HomeNotificationViewModel {
   id: string
+  eventId: string
   userId: string
   visitorName: string
   intent: HomeIntentLevel
@@ -11,6 +12,7 @@ export interface HomeNotificationViewModel {
   action: HomeNotificationAction
   actionLabel: string
   actionDate: string
+  lastViewTime: string
   actionIconPath: string
   avatarUrl: string
   thumbnailUrl: string
@@ -24,7 +26,10 @@ export interface HomeContentViewModel {
   thumbnailUrl: string
   viewCount: string
   forwardCount: string
+  completeCount: string
   highIntentCount: string
+  highIntentLevel: 'high' | 'empty'
+  highIntentLabel: string
 }
 
 export interface HomeIntentSummaryViewModel {
@@ -32,7 +37,6 @@ export interface HomeIntentSummaryViewModel {
   highCount: string
   mediumCount: string
   lowCount: string
-  previewAvatars: Array<{ id: string; avatarUrl: string }>
 }
 
 export interface HomeTodayViewModel {
@@ -41,13 +45,14 @@ export interface HomeTodayViewModel {
     label: string
     value: string
   }
-  completeRate: string
+  completeCount: string
   forwardCount: string
   viewerCount: string
 }
 
 export interface HomePageViewModel {
   unreadNotificationCount: number
+  unreadNotificationEventIds: string[]
   notifications: HomeNotificationViewModel[]
   contents: HomeContentViewModel[]
   intentSummary: HomeIntentSummaryViewModel

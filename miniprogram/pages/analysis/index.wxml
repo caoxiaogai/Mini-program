@@ -1,47 +1,60 @@
-<view class="analysis-page">
-  <analysis-header back="{{true}}" analysis-tabs="{{analysisTabs}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-tab-offset="{{analysisTabOffset}}" bind:analysistabtap="onAnalysisTabTap" bind:analysistouchstart="onAnalysisTouchStart" bind:analysistouchend="onAnalysisTouchEnd" />
+<view class="analysis-page" style="--analysis-navigation-height: {{analysisNavigationHeight}}px;">
+  <analysis-header back="{{false}}" title-weight="600" navigation-height="{{analysisNavigationHeight}}" analysis-tabs="{{analysisTabs}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-tab-offset="{{analysisTabOffset}}" bind:analysistabtap="onAnalysisTabTap" bind:analysistouchstart="onAnalysisTouchStart" bind:analysistouchend="onAnalysisTouchEnd" />
   <view wx:if="{{analysisData && activeAnalysisTab === 'work'}}" class="analysis-page__content analysis-page__content--work">
-    <view class="analysis-work-panel analysis-work-panel--redesign">
+    <view class="analysis-work-panel analysis-work-panel--figma">
       <view class="analysis-summary analysis-summary--redesign">
-        <view wx:for="{{workSummary}}" wx:key="label" class="analysis-summary__card"><text class="analysis-summary__label">{{item.label}}</text><text class="analysis-summary__value">{{item.value}}</text></view>
+        <view wx:for="{{workSummary}}" wx:key="label" class="analysis-summary__card"><image class="analysis-summary__icon" src="{{item.iconPath}}" mode="aspectFit" /><view class="analysis-summary__copy"><text class="analysis-summary__value">{{item.value}}</text><text class="analysis-summary__label">{{item.label}}</text></view></view>
       </view>
-      <view wx:if="{{hasAnalysisCards}}" class="analysis-work-list">
-        <view class="analysis-filters analysis-filters--redesign">
-          <segmented-filter items="{{analysisPeriods}}" active-id="{{activePeriod}}" item-width="68" bind:change="onPeriodTap" />
-          <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
+      <view class="analysis-work-list">
+        <view class="analysis-work-header">
+          <image class="analysis-work-header__icon" src="/assets/analysis/my-works-icon.svg" mode="aspectFit" />
+          <text class="analysis-work-header__title">我的作品 <text class="analysis-work-count">（{{workCount}}）</text></text>
         </view>
-        <view class="analysis-work-list__inner">
-          <block wx:for="{{visibleAnalysisCards}}" wx:key="id">
-            <view class="analysis-work-row" hover-class="analysis-card--pressed" hover-stay-time="120" bindtap="onCardTap" data-id="{{item.id}}">
-              <view class="analysis-work-row__head">
-                <image class="analysis-work-row__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
-                <view class="analysis-work-row__identity"><text class="analysis-work-row__title">{{item.title}}</text><text class="analysis-work-row__date">{{item.publishedAt}}</text></view>
+        <view class="analysis-work-body">
+          <view class="analysis-filters analysis-filters--redesign">
+            <segmented-filter items="{{analysisPeriods}}" active-id="{{activePeriod}}" item-width="68" bind:change="onPeriodTap" />
+            <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
+          </view>
+          <view wx:if="{{hasAnalysisCards}}" class="analysis-work-list__cards">
+            <view wx:for="{{visibleAnalysisCards}}" wx:key="id" class="analysis-work-card" hover-class="analysis-card--pressed" hover-stay-time="120" bindtap="onCardTap" data-id="id:{{item.id}}">
+              <view class="analysis-work-card__top">
+                <image wx:if="{{item.thumbnailUrl}}" class="analysis-work-card__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+                <view wx:else class="analysis-work-card__thumbnail analysis-work-card__thumbnail--empty"></view>
+                <view class="analysis-work-card__copy">
+                  <view class="analysis-work-card__heading">
+                    <text class="analysis-work-card__title">{{item.title}}</text>
+                    <text class="analysis-work-card__date">{{item.publishedAt}}</text>
+                  </view>
+                  <text class="analysis-work-card__intent analysis-work-card__intent--{{item.intentLevel}}">{{item.intentLabel}}</text>
+                </view>
               </view>
-              <view class="analysis-work-row__metrics"><view wx:for="{{item.compactMetrics}}" wx:key="label" class="analysis-work-row__metric"><text class="analysis-work-row__metric-label">{{item.label}}</text><text class="analysis-work-row__metric-value">{{item.value}}</text></view></view>
+              <view class="analysis-work-card__metrics"><view wx:for="{{item.compactMetrics}}" wx:key="label" class="analysis-work-card__metric"><text>{{item.label}}</text><text class="analysis-work-card__metric-value">{{item.value}}</text></view></view>
             </view>
-            <view wx:if="{{index < visibleAnalysisCards.length - 1}}" class="analysis-work-row__divider"></view>
-          </block>
+          </view>
+          <view wx:else class="analysis-empty-state analysis-empty-state--work">
+            <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+            <text>还没有作品，你可以发布一个</text>
+          </view>
         </view>
-      </view>
-      <view wx:else class="analysis-empty-state analysis-empty-state--work">
-        <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
-        <text>还没有作品，你可以发布一个</text>
       </view>
     </view>
   </view>
   <view wx:if="{{analysisData && activeAnalysisTab === 'user'}}" class="analysis-page__content">
     <view class="analysis-user-panel">
       <view class="analysis-user__summary">
-        <view wx:for="{{analysisData.userSummary}}" wx:key="label" class="analysis-user__summary-card"><text class="analysis-user__summary-label">{{item.label}}</text><text class="analysis-user__summary-value">{{item.value}}</text></view>
+        <view wx:for="{{analysisData.userSummary}}" wx:key="label" class="analysis-user__summary-card">
+          <image class="analysis-user__summary-icon" src="{{item.iconPath}}" mode="aspectFit" />
+          <view class="analysis-user__summary-copy"><text class="analysis-user__summary-value">{{item.value}}</text><text class="analysis-user__summary-label">{{item.label}}</text></view>
+        </view>
       </view>
       <text class="analysis-user__title">意向用户</text>
-      <view wx:if="{{hasAnalysisUsers}}" class="analysis-user__list-panel">
+      <view class="analysis-user__list-panel">
         <view class="analysis-filters analysis-filters--redesign">
           <segmented-filter items="{{analysisPeriods}}" active-id="{{activePeriod}}" item-width="68" bind:change="onPeriodTap" />
           <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
         </view>
-        <view class="analysis-user__list">
-          <view wx:for="{{visibleAnalysisUsers}}" wx:key="id" class="analysis-user" bindtap="onAnalysisUserTap" data-id="{{item.id}}" hover-class="analysis-user--pressed">
+        <view wx:if="{{hasAnalysisUsers}}" class="analysis-user__list">
+          <view wx:for="{{visibleAnalysisUsers}}" wx:key="id" class="analysis-user" bindtap="onAnalysisUserTap" data-id="id:{{item.id}}" hover-class="analysis-user--pressed">
             <image class="analysis-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
             <view class="analysis-user__body">
               <view class="analysis-user__summary-line">
@@ -52,22 +65,27 @@
             </view>
           </view>
         </view>
-      </view>
-      <view wx:else class="analysis-empty-state analysis-empty-state--user">
-        <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
-        <text>还没用户，快去发布作品吧</text>
+        <view wx:else class="analysis-empty-state analysis-empty-state--user">
+          <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+          <text>还没用户，快去发布作品吧</text>
+        </view>
       </view>
     </view>
   </view>
   <view wx:if="{{analysisData && activeAnalysisTab === 'total'}}" class="analysis-page__content">
-    <segmented-filter items="{{totalAnalysisPeriods}}" active-id="{{activeTotalPeriod}}" bind:change="onTotalPeriodTap" />
     <view class="analysis-total-panel">
       <view class="analysis-total__overview-card">
-        <text class="analysis-total__title">数据总览</text>
+        <view class="analysis-total__overview-header">
+          <view class="analysis-total__overview-title">
+            <image class="analysis-total__overview-icon" src="/assets/analysis/data-overview-icon.svg" mode="aspectFit" />
+            <text class="analysis-total__title">数据总览</text>
+          </view>
+          <segmented-filter items="{{totalAnalysisPeriods}}" active-id="{{activeOverviewPeriod}}" item-width="68" bind:change="onTotalOverviewPeriodTap" />
+        </view>
         <view class="analysis-total__hero-metrics">
-          <view wx:for="{{analysisData.totalData.heroMetrics}}" wx:key="label" class="analysis-total__hero-metric {{index === 0 ? '' : 'analysis-total__hero-metric--secondary'}}">
+          <view wx:for="{{analysisData.totalData.heroMetrics}}" wx:key="renderKey" class="analysis-total__hero-metric {{index === 0 ? '' : 'analysis-total__hero-metric--secondary'}}">
             <text class="analysis-total__hero-value">{{item.value}}</text>
-            <view class="analysis-total__hero-meta"><text>{{item.label}}</text><image class="analysis-total__hero-divider" src="/assets/analysis/total-metric-divider.svg" mode="aspectFit" /><view class="analysis-total__hero-comparison"><text>较昨日</text><text class="analysis-total__hero-delta">{{item.delta}}</text></view></view>
+            <view class="analysis-total__hero-meta"><text class="analysis-total__hero-label">{{item.label}}</text><view class="analysis-total__hero-comparison"><text class="analysis-total__hero-caption">{{item.comparisonLabel}}</text><view wx:if="{{item.deltaTone === 'down'}}" class="analysis-total__hero-delta--down"><text class="analysis-total__hero-delta--down">{{item.delta}}</text></view><view wx:else class="analysis-total__hero-delta--up"><text class="analysis-total__hero-delta--up">{{item.delta}}</text></view></view></view>
           </view>
         </view>
         <view class="analysis-total__overview-grid">
@@ -75,13 +93,16 @@
         </view>
       </view>
       <view class="analysis-total__chart-card">
-        <text class="analysis-total__title">浏览峰值</text>
-        <view class="analysis-total__chart {{activeAnalysisReadRange === 'month' ? 'analysis-total__chart--month' : ''}}">
-          <view class="analysis-total__chart-gridline analysis-total__chart-gridline--top"><text>1500</text></view>
-          <view class="analysis-total__chart-gridline analysis-total__chart-gridline--upper"><text>1000</text></view>
-          <view class="analysis-total__chart-gridline analysis-total__chart-gridline--lower"><text>500</text></view>
-          <view class="analysis-total__chart-gridline analysis-total__chart-gridline--bottom"><text>0</text></view>
-          <analysis-trend-chart host-class="analysis-total__trend-chart" points="{{visibleAnalysisReadTrend}}" slot-count="{{analysisTrendSlotCount}}" />
+        <view class="analysis-total__chart-header">
+          <view class="analysis-total__chart-title">
+            <image class="analysis-total__chart-icon" src="/assets/analysis/peak-data-icon.svg" mode="aspectFit" />
+            <text class="analysis-total__title">浏览峰值</text>
+          </view>
+          <segmented-filter items="{{totalAnalysisPeriods}}" active-id="{{activePeakPeriod}}" item-width="68" bind:change="onTotalPeakPeriodTap" />
+        </view>
+        <view class="analysis-total__chart {{chartAxisScale ? 'analysis-total__chart--axis' : ''}}">
+          <view wx:for="{{chartAxisTicks}}" wx:key="id" class="analysis-total__chart-gridline analysis-total__chart-gridline--{{item.position}}"><text>{{item.value}}</text></view>
+          <analysis-trend-chart host-class="analysis-total__trend-chart" points="{{visibleAnalysisReadTrend}}" slot-count="{{analysisTrendSlotCount}}" axis-max="{{chartAxisMax}}" axis-scale="{{chartAxisScale}}" />
         </view>
       </view>
     </view>
@@ -92,5 +113,5 @@
       <view wx:for="{{analysisSortOptions}}" wx:key="id" class="analysis-sort-sheet__option" bindtap="onAnalysisSortOptionTap" data-id="{{item.id}}">{{item.label}}</view>
     </view>
   </view>
-  <date-range-picker visible="{{dateRangePickerVisible}}" start-date="{{customStartDate}}" end-date="{{customEndDate}}" min-date="{{twoMonthsAgoDate}}" max-date="{{todayDate}}" bind:confirm="onDateRangeConfirm" bind:cancel="onDateRangeCancel" />
+  <date-range-picker visible="{{dateRangePickerVisible}}" start-date="{{datePickerStartDate}}" end-date="{{datePickerEndDate}}" min-date="{{twoMonthsAgoDate}}" max-date="{{todayDate}}" bind:confirm="onDateRangeConfirm" bind:cancel="onDateRangeCancel" />
 </view>

@@ -1,5 +1,9 @@
 {
   "usingComponents": {
-    "navigation-bar": "/components/navigation-bar/navigation-bar"
-  }
+    "navigation-bar": "/components/navigation-bar/navigation-bar",
+    "publish-type-sheet": "/components/publish-type-sheet/index"
+  },
+  "renderer": "webview",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
 }

@@ -1,55 +1,64 @@
-<view class="detail-page">
+<view class="detail-page" style="--analysis-navigation-height: {{analysisNavigationHeight}}px;">
   <view class="detail-page__header">
-    <analysis-header title="内容分析" back="{{true}}" title-weight="600" />
+    <analysis-header title="内容分析" back="{{true}}" title-weight="600" navigation-height="{{analysisNavigationHeight}}" />
   </view>
+
   <view wx:if="{{detail}}" class="detail-page__content">
     <view class="detail-card">
-      <view class="detail-card__inner">
-        <view class="detail-card__head">
-          <image class="detail-card__thumbnail" src="{{detail.card.thumbnailUrl}}" mode="aspectFill" />
-          <view class="detail-card__identity">
-            <text class="detail-card__title">{{detail.card.title}}</text>
-            <text class="detail-card__date">{{detail.card.date}}</text>
-          </view>
+      <view class="detail-card__head">
+        <image wx:if="{{detail.card.thumbnailUrl}}" class="detail-card__thumbnail" src="{{detail.card.thumbnailUrl}}" mode="aspectFill" />
+        <view wx:else class="detail-card__thumbnail detail-card__thumbnail--empty"></view>
+        <view class="detail-card__identity">
+          <text class="detail-card__title">{{detail.card.title}}</text>
+          <text class="detail-card__date">{{detail.card.date}}</text>
         </view>
-        <view class="detail-card__metrics">
-          <view wx:for="{{detail.card.metrics}}" wx:key="label" class="detail-card__metric">
-            <text class="detail-card__metric-label">{{item.label}}</text>
-            <text class="detail-card__metric-value">{{item.value}}</text>
-          </view>
+      </view>
+      <view class="detail-card__metrics">
+        <view wx:for="{{detail.card.metrics}}" wx:key="label" class="detail-card__metric">
+          <text class="detail-card__metric-value">{{item.value}}</text>
+          <text class="detail-card__metric-label">{{item.label}}</text>
         </view>
       </view>
     </view>
+
     <view class="detail-intent">
       <text class="detail-intent__title">意向用户</text>
       <view class="detail-intent__panel">
-        <segmented-filter items="{{intentTabs}}" active-id="{{activeIntentLevel}}" bind:change="onIntentTabTap" bind:touchstart="onIntentTouchStart" bind:touchend="onIntentTouchEnd" />
+        <segmented-filter items="{{intentTabs}}" active-id="{{activeIntentLevel}}" variant="notification" bind:change="onIntentTabTap" bind:touchstart="onIntentTouchStart" bind:touchend="onIntentTouchEnd" />
         <view wx:if="{{hasVisibleIntentUsers}}" class="detail-users">
-          <view wx:for="{{visibleIntentUsers}}" wx:key="id" class="detail-user" bindtap="onDetailUserTap" data-id="{{item.id}}">
+          <view
+            wx:for="{{visibleIntentUsers}}"
+            wx:key="id"
+            class="detail-user"
+            hover-class="detail-user--pressed"
+            hover-stay-time="80"
+            bindtap="onDetailUserTap"
+            data-id="id:{{item.userId}}"
+          >
             <image class="detail-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
             <view class="detail-user__body">
-              <view class="detail-user__summary">
-                <view class="detail-user__identity">
-                  <text class="detail-user__name">{{item.name}}</text>
-                  <text class="detail-user__tag detail-user__tag--{{item.level}}">#{{item.levelLabel}}</text>
-                </view>
-                <view class="detail-user__stats">
-                  <view class="detail-user__stat"><text>浏览</text><text>{{item.readCount}}</text></view>
-                  <view class="detail-user__divider"></view>
-                  <view class="detail-user__stat"><text>完播</text><text>{{item.completionCount}}</text></view>
-                  <view class="detail-user__divider"></view>
-                  <view class="detail-user__stat"><text>转发</text><text>{{item.shareCount}}</text></view>
-                </view>
+              <view class="detail-user__identity">
+                <text class="detail-user__name">{{item.name}}</text>
+                <text class="detail-user__tag detail-user__tag--{{item.level}}">#{{item.levelLabel}}</text>
               </view>
-              <view wx:if="{{index < visibleIntentUsers.length - 1}}" class="detail-user__line"></view>
+              <view class="detail-user__stats">
+                <view class="detail-user__stat"><text>浏览</text><text>{{item.readCount}}</text></view>
+                <view class="detail-user__divider"></view>
+                <view class="detail-user__stat"><text>完播</text><text>{{item.completionCount}}</text></view>
+                <view class="detail-user__divider"></view>
+                <view class="detail-user__stat"><text>转发</text><text>{{item.shareCount}}</text></view>
+              </view>
+              <view class="detail-user__line detail-user__line--{{item.level}}"></view>
             </view>
           </view>
         </view>
-        <view wx:else class="detail-intent__empty-state">
-          <image class="detail-intent__empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+        <view wx:else class="detail-intent__empty">
+          <image class="detail-intent__empty-icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
           <text>没有意向用户</text>
         </view>
       </view>
     </view>
   </view>
+
+  <view wx:else class="detail-page__loading">正在加载内容分析</view>
 </view>

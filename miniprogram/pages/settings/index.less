@@ -1,0 +1,122 @@
+page {
+  min-height: 100vh;
+  background: @app-page-background;
+}
+
+.settings-page {
+  min-height: 100vh;
+  background: @app-page-background;
+  color: #000000;
+}
+
+.settings-page__header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #ffffff;
+}
+
+.settings-page__content {
+  padding: 40rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  padding: 40rpx;
+  border-radius: 40rpx;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.settings-card__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.settings-card__title-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.settings-card__title {
+  color: #000000;
+  font-size: 32rpx;
+  font-weight: 500;
+  line-height: 44rpx;
+}
+
+.settings-card__rules {
+  padding: 8rpx 0 8rpx 8rpx;
+  margin: -8rpx 0;
+}
+
+.settings-card__rules--pressed {
+  opacity: 0.5;
+}
+
+.settings-card__rules-text {
+  color: #0ec8d9;
+  font-size: 28rpx;
+  font-weight: 500;
+  line-height: 44rpx;
+}
+
+.settings-card__hint {
+  color: #8a8e94;
+  font-size: 24rpx;
+  line-height: 34rpx;
+}
+
+.settings-rules-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  box-sizing: border-box;
+}
+
+.settings-rules-modal__mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.settings-rules-modal__card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  max-height: 80vh;
+  flex-direction: column;
+  gap: 24rpx;
+  padding: 48rpx 40rpx;
+  border-radius: 32rpx;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.settings-rules-modal__title {
+  color: #000000;
+  font-size: 32rpx;
+  font-weight: 500;
+  line-height: 44rpx;
+}
+
+.settings-rules-modal__section {
+  margin: 0;
+}
+
+.settings-rules-modal__section-text {
+  color: #000000;
+  font-size: 28rpx;
+  line-height: 40rpx;
+}

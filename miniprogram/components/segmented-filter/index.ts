@@ -21,6 +21,7 @@ Component({
     items: { type: Array, value: [] },
     activeId: { type: String, value: '' },
     itemWidth: { type: Number, value: 0 },
+    variant: { type: String, value: 'default' },
   },
   data: {
     controlWidthStyle: '',

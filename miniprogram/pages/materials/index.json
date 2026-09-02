@@ -2,6 +2,10 @@
   "usingComponents": {
     "navigation-bar": "/components/navigation-bar/navigation-bar",
     "bottom-tab-bar": "/components/bottom-tab-bar/bottom-tab-bar",
-    "publish-success-modal": "/components/publish-success-modal/index"
-  }
+    "publish-success-modal": "/components/publish-success-modal/index",
+    "publish-type-sheet": "/components/publish-type-sheet/index"
+  },
+  "disableScroll": true,
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true
 }

@@ -1,11 +1,11 @@
 page {
   min-height: 100vh;
-  background: #ffffff;
+  background: @app-page-background;
 }
 
 .material-detail-page {
   min-height: 100vh;
-  background: #ffffff;
+  background: @app-page-background;
   color: #000000;
 }
 
@@ -13,7 +13,7 @@ page {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: #ffffff;
+  background: @app-page-background;
 }
 
 .material-detail-page__content {
@@ -26,6 +26,80 @@ page {
   width: 100%;
   height: 1052rpx;
   background: #DEE2E7;
+}
+
+.material-detail__media {
+  position: relative;
+  width: 100%;
+  height: 1052rpx;
+  background: #dee2e7;
+}
+
+.material-detail__media--video {
+  overflow: hidden;
+}
+
+.material-detail__media--pdf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.material-detail__media--pressed {
+  opacity: 0.88;
+}
+
+.material-detail__pdf-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.material-detail__pdf-card {
+  display: flex;
+  width: 100%;
+  max-width: 560rpx;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24rpx;
+  margin: 40rpx;
+  padding: 64rpx 40rpx;
+  border-radius: 24rpx;
+  background: #f7f9fb;
+  box-sizing: border-box;
+}
+
+.material-detail__pdf-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 24rpx;
+  background: #ffe8e8;
+  color: #e54545;
+  font-size: 32rpx;
+  font-weight: 600;
+  line-height: 40rpx;
+}
+
+.material-detail__pdf-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: #000000;
+  font-size: 30rpx;
+  line-height: 44rpx;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.material-detail__video {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .material-detail__image {
@@ -60,6 +134,7 @@ page {
   flex-direction: column;
   gap: 0;
   padding: 24rpx 40rpx 0;
+  background: @app-page-background;
   box-sizing: border-box;
 }
 
@@ -81,7 +156,7 @@ page {
   align-items: center;
   height: 164rpx;
   padding: 20rpx 40rpx calc(20rpx + env(safe-area-inset-bottom));
-  background: #ffffff;
+  background: @app-page-background;
   box-sizing: border-box;
 }
 
@@ -92,6 +167,8 @@ page {
   align-items: center;
   justify-content: center;
   gap: 20rpx;
+  margin: 0;
+  padding: 0;
   border-radius: 110rpx;
   box-sizing: border-box;
   font-size: 28rpx;
@@ -100,12 +177,17 @@ page {
   transition: opacity 120ms ease-out, transform 120ms ease-out;
 }
 
-.material-detail__share-button--friend {
-  border: 2rpx solid #f0f0f0;
-  background: #ffffff;
+.material-detail__share-button::after {
+  display: none;
 }
 
-.material-detail__share-button--moments {
+.material-detail__share-button--friend {
+  background: #ffffff;
+  color: #000000;
+}
+
+.material-detail__share-button--moments,
+.material-detail__share-button--edit {
   background: #0db6c5;
   color: #ffffff;
 }
@@ -134,4 +216,44 @@ page {
 .material-detail__moments-icon image {
   width: 36rpx;
   height: 36rpx;
+}
+
+.material-detail-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: #000000;
+}
+
+.material-detail-preview__swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.material-detail-preview__area,
+.material-detail-preview__view,
+.material-detail-preview__image {
+  width: 100%;
+  height: 100%;
+}
+
+.material-detail-preview__view {
+  display: block;
+}
+
+.material-detail-preview__image {
+  display: block;
+}
+
+.material-detail-preview__counter {
+  position: absolute;
+  right: 0;
+  bottom: calc(48rpx + env(safe-area-inset-bottom));
+  left: 0;
+  z-index: 1;
+  color: #ffffff;
+  font-size: 26rpx;
+  line-height: 36rpx;
+  text-align: center;
+  pointer-events: none;
 }

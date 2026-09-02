@@ -1,48 +1,70 @@
 <view class="publish-page">
-  <navigation-bar back="{{true}}" color="#000000" background="#ffffff" />
+  <navigation-bar back="{{true}}" color="#000000" background="#f0f1f2" />
 
   <view class="publish-page__content">
     <view class="publish-page__image-grid">
       <view
-        wx:for="{{images}}"
+        wx:for="{{media}}"
         wx:key="id"
         class="publish-page__image-slot publish-page__image-slot--filled"
       >
-        <image class="publish-page__image" src="{{item.path}}" mode="aspectFill" />
+        <image
+          wx:if="{{item.kind !== 'pdf'}}"
+          class="publish-page__image"
+          src="{{item.kind === 'video' && item.previewPath ? item.previewPath : item.path}}"
+          mode="aspectFill"
+        />
+        <image
+          wx:if="{{item.kind === 'video'}}"
+          class="publish-page__video-play"
+          src="/assets/materials/material-play.svg"
+          mode="aspectFit"
+        />
+        <view wx:if="{{item.kind === 'pdf'}}" class="publish-page__pdf-slot">
+          <text class="publish-page__pdf-badge">PDF</text>
+          <text class="publish-page__pdf-name">{{item.name}}</text>
+        </view>
         <view
           class="publish-page__image-delete"
           data-id="{{item.id}}"
-          catchtap="onDeleteImageTap"
+          catchtap="onDeleteMediaTap"
           hover-class="publish-page__image-delete--pressed"
           hover-stay-time="80"
           aria-role="button"
-          aria-label="删除图片"
+          aria-label="删除素材"
         >
           <image class="publish-page__image-delete-icon" src="/assets/materials/publish-delete.svg" mode="aspectFit" />
         </view>
       </view>
       <view
-        wx:if="{{canAddImage}}"
+        wx:if="{{canAddMedia}}"
         class="publish-page__image-slot publish-page__image-slot--add"
-        bindtap="onAddImageTap"
+        bindtap="onAddMediaTap"
         hover-class="publish-page__image-slot--pressed"
         hover-stay-time="80"
         aria-role="button"
-        aria-label="添加图片"
+        aria-label="添加素材"
       >
-        <text class="publish-page__add-icon">+</text>
+        <view class="publish-page__add-icon" aria-hidden="true">
+          <view class="publish-page__add-icon-horizontal"></view>
+          <view class="publish-page__add-icon-vertical"></view>
+        </view>
       </view>
     </view>
 
-    <textarea
-      class="publish-page__copy"
-      value="{{copy}}"
-      maxlength="-1"
-      auto-height="true"
-      placeholder="添加文案"
-      placeholder-class="publish-page__copy-placeholder"
-      bindinput="onCopyInput"
-    />
+    <view class="publish-page__copy-area" bindtap="onCopyAreaTap">
+      <textarea
+        class="publish-page__copy"
+        value="{{copy}}"
+        maxlength="-1"
+        auto-height="true"
+        focus="{{copyFocused}}"
+        placeholder="添加文案"
+        placeholder-class="publish-page__copy-placeholder"
+        bindinput="onCopyInput"
+        bindblur="onCopyBlur"
+      />
+    </view>
   </view>
 
   <view class="publish-page__actions">
@@ -54,4 +76,6 @@
     </view>
   </view>
 
+  <publish-type-sheet visible="{{publishTypeSheetVisible}}" bind:select="onPublishTypeSelect" bind:cancel="onPublishTypeCancel" />
+  <publish-type-sheet kind="source" visible="{{publishSourceSheetVisible}}" bind:select="onPublishSourceSelect" bind:cancel="onPublishSourceCancel" />
 </view>

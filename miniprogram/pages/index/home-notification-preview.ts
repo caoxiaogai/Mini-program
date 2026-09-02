@@ -2,15 +2,27 @@ import type { HomePageViewModel } from '../../types/home'
 
 export function markHomeNotificationViewed(
   homeData: HomePageViewModel,
-  notificationId: string,
+  eventId: string,
 ): HomePageViewModel {
-  const notifications = homeData.notifications.filter((notification) => notification.id !== notificationId)
+  if (!eventId) return homeData
 
-  if (notifications.length === homeData.notifications.length) return homeData
+  const notifications = homeData.notifications.filter(
+    (notification) => notification.eventId !== eventId && notification.id !== `home-notification-${eventId}`,
+  )
 
   return {
     ...homeData,
     unreadNotificationCount: Math.max(homeData.unreadNotificationCount - 1, 0),
+    unreadNotificationEventIds: homeData.unreadNotificationEventIds.filter((id) => id !== eventId),
     notifications,
+  }
+}
+
+export function markHomeNotificationsViewed(homeData: HomePageViewModel): HomePageViewModel {
+  return {
+    ...homeData,
+    unreadNotificationCount: 0,
+    unreadNotificationEventIds: [],
+    notifications: [],
   }
 }

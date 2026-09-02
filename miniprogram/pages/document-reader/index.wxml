@@ -1,0 +1,48 @@
+<view class="document-reader">
+  <view class="document-reader__header">
+    <navigation-bar title="{{navTitle}}" back="{{true}}" color="#000000" background="#ffffff" />
+  </view>
+
+  <view wx:if="{{status === 'loading'}}" class="document-reader__state">
+    <text>正在加载文档...</text>
+  </view>
+
+  <view wx:elif="{{status === 'error'}}" class="document-reader__state">
+    <text>{{errorMessage}}</text>
+    <view class="document-reader__retry" bindtap="onRetryTap">重新加载</view>
+  </view>
+
+  <scroll-view
+    wx:elif="{{status === 'success'}}"
+    class="document-reader__scroll"
+    type="list"
+    scroll-y
+    show-scrollbar="{{false}}"
+    refresher-enabled="{{true}}"
+    refresher-triggered="{{pullRefreshing}}"
+    bindrefresherrefresh="onPullRefresh"
+    bindscroll="onDocumentScroll"
+  >
+    <view
+      wx:for="{{pages}}"
+      wx:key="index"
+      id="doc-page-{{item.index}}"
+      class="document-reader__page"
+      data-page="{{item.index}}"
+    >
+      <image
+        wx:if="{{item.url}}"
+        class="document-reader__image"
+        src="{{item.url}}"
+        mode="widthFix"
+        data-page="{{item.index}}"
+        bindload="onPageImageLoad"
+        bindtap="onPageTap"
+      />
+      <view wx:else class="document-reader__placeholder">
+        <text>第 {{item.pageNo}} 页加载中</text>
+      </view>
+    </view>
+    <view class="document-reader__end">— 文档结束 —</view>
+  </scroll-view>
+</view>

@@ -1,7 +1,6 @@
-<view class="analysis-page__header {{embedded ? 'analysis-page__header--embedded' : ''}}">
-  <navigation-bar title="{{title}}" title-weight="{{titleWeight}}" back="{{back}}" color="#000000" background="#ffffff" />
-  <view wx:if="{{analysisTabs.length}}" class="analysis-tabs" bindtouchstart="onAnalysisTouchStart" bindtouchend="onAnalysisTouchEnd">
-    <view class="analysis-tabs__selection" style="transform: translateX({{analysisTabOffset}}%);"></view>
-    <view wx:for="{{analysisTabs}}" wx:key="id" class="analysis-tabs__item {{item.id === activeAnalysisTab ? 'analysis-tabs__item--active' : ''}}" bindtap="onAnalysisTabTap" data-index="{{index}}">{{item.label}}</view>
+<view class="analysis-page__header {{embedded ? 'analysis-page__header--embedded' : ''}} {{navigationHeight > 0 ? 'analysis-page__header--measured' : ''}} {{analysisTabs.length ? '' : 'analysis-page__header--title-only'}}" style="--analysis-navigation-height: {{navigationHeight}}px;">
+  <navigation-bar title="{{title}}" title-weight="{{titleWeight}}" back="{{back}}" color="#000000" background="transparent" />
+  <view wx:if="{{analysisTabs.length}}" class="analysis-page__filter">
+    <segmented-filter items="{{analysisTabs}}" active-id="{{activeAnalysisTab}}" variant="notification" bind:change="onAnalysisTabTap" bind:touchstart="onAnalysisTouchStart" bind:touchend="onAnalysisTouchEnd" />
   </view>
 </view>

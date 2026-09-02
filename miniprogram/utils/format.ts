@@ -8,16 +8,31 @@ export function formatCount(value: number | null | undefined): string {
   return String(count).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
+/** 环比差值：增加带 +，减少带 -，例如 6 -> '+6'，-3 -> '-3' */
+export function formatSignedCountDelta(value: number | null | undefined): string {
+  const delta = Math.trunc(Number(value) || 0)
+  if (delta < 0) return `-${formatCount(-delta)}`
+  return `+${formatCount(delta)}`
+}
+
 /** 秒数转展示时长，例如 56 -> '56s' */
 export function formatSeconds(value: number | null | undefined): string {
   return `${value ?? 0}s`
 }
 
-/** 解析后端 'yyyy-MM-dd HH:mm:ss' 字符串；无法解析时返回 null */
+/** 解析后端 'yyyy-MM-dd HH:mm:ss' 为本地墙上时间，不把无时区字符串当 UTC */
 export function parseDateTime(value: string | null | undefined): Date | null {
   if (!value) return null
-  const date = new Date(value.replace(' ', 'T'))
-  return Number.isNaN(date.getTime()) ? null : date
+  const match = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(value.trim())
+  if (!match) return null
+  return new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4]),
+    Number(match[5]),
+    Number(match[6]),
+  )
 }
 
 /** Date 转后端要求的 'yyyy-MM-dd HH:mm:ss' */
@@ -45,6 +60,20 @@ export function formatMonthDayTime(value: string | null | undefined): string {
   if (!date) return ''
 
   return `${formatMonthDay(value)} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`
+}
+
+/** 后端日期时间转相对日+时分，例如今天 → '今天 16:14'，昨天 → '昨天 15:30' */
+export function formatRelativeDayTime(value: string | null | undefined, now = new Date()): string {
+  const date = parseDateTime(value)
+  if (!date) return ''
+
+  const time = `${pad2(date.getHours())}:${pad2(date.getMinutes())}`
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const startOfThatDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+  const dayDiff = Math.round((startOfToday - startOfThatDay) / 86400000)
+  if (dayDiff === 0) return `今天 ${time}`
+  if (dayDiff === 1) return `昨天 ${time}`
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${time}`
 }
 
 /** 后端日期时间转 'MM月DD日'，例如 '2026-08-20 10:00:00' -> '08月20日' */

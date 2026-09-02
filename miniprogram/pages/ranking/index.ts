@@ -1,6 +1,8 @@
 import { getRankingOverview, sortRankingEntries } from '../../services/ranking'
+import { runAuthed } from '../../services/auth'
 import type { RankingEntryViewModel, RankingMetric, RankingTab, RankingViewModel } from '../../types/ranking'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
+import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 const rankingTabs: RankingTab[] = [
   { id: 'views', label: '浏览量' },
@@ -18,7 +20,13 @@ Page({
     rankingHeaderOpacity: 0,
   },
   onLoad() {
-    getRankingOverview().then((rankingData) => {
+    runAuthed('/pages/ranking/index', () => this.loadRanking())
+  },
+  onPullDownRefresh() {
+    runPagePullRefresh(this.loadRanking())
+  },
+  loadRanking() {
+    return getRankingOverview().then((rankingData) => {
       const visibleRankingEntries = sortRankingEntries(rankingData.entries, this.data.activeRankingMetric)
 
       this.setData({

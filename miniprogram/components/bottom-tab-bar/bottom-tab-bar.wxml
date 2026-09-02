@@ -4,6 +4,8 @@
   </view>
   <view class="bottom-tab-bar__scrim-tail" />
   <view class="bottom-tab-bar__inner">
+    <view class="bottom-tab-bar__glass" />
+    <view class="bottom-tab-bar__effects" />
     <view class="bottom-tab-bar__selection" style="transform: translateX({{activeIndicatorOffset}});" />
     <block wx:for="{{items}}" wx:key="id">
       <view
@@ -14,7 +16,7 @@
         aria-role="button"
         aria-label="发布素材"
       >
-        <image wx:if="{{plusActive}}" class="bottom-tab-bar__create-icon" src="/assets/home-new/tab-publish-active.svg" mode="aspectFit" />
+        <image wx:if="{{plusActive}}" class="bottom-tab-bar__create-icon" src="/assets/home-new/tab-publish-selected.svg" mode="aspectFit" />
         <image wx:else class="bottom-tab-bar__create-icon" src="/assets/home-new/tab-publish-frame-61.svg" mode="aspectFit" />
         <text class="bottom-tab-bar__label">发布</text>
       </view>
@@ -27,7 +29,6 @@
       >
         <view class="bottom-tab-bar__icon-wrap">
           <image class="bottom-tab-bar__icon" src="{{item.active ? item.activeIconPath : item.iconPath}}" mode="aspectFit" />
-          <view wx:if="{{item.badgeCount}}" class="bottom-tab-bar__badge">{{item.badgeCount}}</view>
         </view>
         <text class="bottom-tab-bar__label">{{item.label}}</text>
       </view>

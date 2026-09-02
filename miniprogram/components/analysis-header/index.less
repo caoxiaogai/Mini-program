@@ -1,2 +1,38 @@
-.analysis-tabs { border-bottom: 2rpx solid #f4f5f5; }
-.analysis-tabs__selection { background: #000000; }
+.analysis-page__header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1001;
+  width: 100%;
+  height: calc(@notification-header-height + 20rpx);
+  background: linear-gradient(180deg, #f0f1f2 0%, #f0f1f2 65.141%, rgba(240, 241, 242, 0) 100%);
+  box-sizing: border-box;
+}
+
+.analysis-page__header .weui-navigation-bar__center {
+  font-size: 32rpx;
+}
+
+.analysis-page__header--measured {
+  height: calc(var(--analysis-navigation-height) + 84rpx);
+}
+
+.analysis-page__header--title-only {
+  height: calc(env(safe-area-inset-top, 47px) + 44px);
+}
+
+.analysis-page__header--title-only.analysis-page__header--measured {
+  height: var(--analysis-navigation-height);
+}
+
+.analysis-page__header--embedded {
+  position: relative;
+  top: auto;
+  left: auto;
+  z-index: 2;
+  width: 100%;
+}
+
+.analysis-page__filter {
+  margin: 20rpx 40rpx 0;
+}

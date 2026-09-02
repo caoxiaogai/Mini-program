@@ -1,14 +1,18 @@
 // Segmented controls use a 2px visual inset at the 750rpx design scale.
 @segmented-filter-vertical-inset: 4rpx;
 
-// Shared outline for page-level content cards and boxes.
-@content-box-border: #ebebeb;
+// Shared canvas background for every page.
+@app-page-background: #f0f1f2;
+
+// Home ranking card outline.
+@home-ranking-border: #ffffff;
 
 // Notification and analysis share the same 32px top-tab height.
 @page-top-tab-height: 64rpx;
-@notification-header-height: 264rpx;
+@notification-header-height: calc(env(safe-area-inset-top, 47px) + 44px + @page-top-tab-height);
 
 page {
+  background: @app-page-background;
   color: #000000;
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Microsoft YaHei", sans-serif;
 }

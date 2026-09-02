@@ -1,13 +1,10 @@
-<view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}">
-  <view class="materials-page__base"></view>
-  <image class="materials-page__status-glow" src="/assets/materials/materials-stripes.svg" mode="scaleToFill" />
-
-  <view class="materials-page__header" style="background: rgba(255, 255, 255, {{materialsHeaderOpacity}});">
+<view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{materialsNavigationHeight}}px;">
+  <view class="materials-page__top">
+    <image class="materials-page__gradient" src="/assets/home-new/home-header-background.svg" mode="scaleToFill" />
+    <image class="materials-page__stripes" src="/assets/line-bg.svg" mode="scaleToFill" />
+    <view class="materials-page__header">
     <navigation-bar back="{{true}}" title="素材" color="#000000" background="transparent" />
-  </view>
-
-  <view wx:if="{{materials}}" class="materials-page__content">
-    <view class="materials-filter" role="tablist">
+    <view wx:if="{{materials}}" class="materials-filter" role="tablist">
       <view
         wx:for="{{materials.filters}}"
         wx:key="id"
@@ -22,34 +19,38 @@
         <text>{{item.label}}</text>
       </view>
     </view>
-
-    <view wx:if="{{hasVisibleMaterials}}" class="materials-grid">
-      <view
-        wx:for="{{visibleMaterials}}"
-        wx:key="id"
-        class="materials-card"
-        bindtap="onMaterialCardTap"
-        data-id="{{item.id}}"
-        hover-class="materials-card--pressed"
-        hover-start-time="80"
-        hover-stay-time="120"
-      >
-        <view class="materials-card__preview">
-          <image class="materials-card__image" src="{{item.thumbnailUrl}}" mode="aspectFill" />
-          <view wx:if="{{item.isDraft}}" class="materials-card__draft">草稿</view>
-          <image wx:if="{{item.kind === 'video'}}" class="materials-card__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
-        </view>
-        <view class="materials-card__info">
-          <text class="materials-card__title">{{item.title}}</text>
-          <text class="materials-card__date">{{item.date}}</text>
-        </view>
-      </view>
-    </view>
-    <view wx:else class="materials-empty-state">
-      <image class="materials-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
-      <text>还没有素材，发布一个吧</text>
     </view>
   </view>
+  <scroll-view scroll-y class="materials-page__scroll" show-scrollbar="{{false}}" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">
+    <view wx:if="{{materials}}" class="materials-page__content">
+      <view wx:if="{{hasVisibleMaterials}}" class="materials-grid">
+        <view
+          wx:for="{{visibleMaterials}}"
+          wx:key="id"
+          class="materials-card"
+          bindtap="onMaterialCardTap"
+          data-id="{{item.id}}"
+          hover-class="materials-card--pressed"
+          hover-start-time="80"
+          hover-stay-time="120"
+        >
+          <view class="materials-card__preview">
+            <image class="materials-card__image" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+            <view wx:if="{{item.isDraft}}" class="materials-card__draft">草稿</view>
+            <image wx:if="{{item.kind === 'video'}}" class="materials-card__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
+          </view>
+          <view class="materials-card__info">
+            <text class="materials-card__title">{{item.title}}</text>
+            <text class="materials-card__date">{{item.date}}</text>
+          </view>
+        </view>
+      </view>
+      <view wx:else class="materials-empty-state">
+        <image class="materials-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
+        <text>还没有素材，发布一个吧</text>
+      </view>
+    </view>
+  </scroll-view>
 
   <view class="materials-publish-bar">
     <view class="materials-publish-button" bindtap="onPublishTap" hover-class="materials-publish-button--pressed" hover-stay-time="80">
@@ -60,10 +61,14 @@
 
   <bottom-tab-bar items="{{tabItems}}" plus-active="{{true}}" bind:tabtap="onTabTap" bind:plus="onPlusTap" />
 
+  <publish-type-sheet visible="{{publishTypeSheetVisible}}" bind:select="onPublishTypeSelect" bind:cancel="onPublishTypeCancel" />
+  <publish-type-sheet kind="source" visible="{{publishSourceSheetVisible}}" bind:select="onPublishSourceSelect" bind:cancel="onPublishSourceCancel" />
+
   <publish-success-modal
     visible="{{showPublishSuccessModal}}"
+    share-ready="{{shareImageUrl ? true : false}}"
+    share-image-url="{{shareImageUrl}}"
     bind:close="onPublishSuccessClose"
-    bind:sharefriends="onShareFriendsTap"
     bind:sharemoments="onShareMomentsTap"
   />
 </view>

@@ -2,44 +2,81 @@
 // 页面不直接使用本文件；所有数据访问经由 services/ 下的业务 service。
 
 import type { ApiLoginData, ApiResponse } from '../types/api'
-import { DEV_LAN_ORIGIN } from '../config/dev'
+import { DEV_LAN_ORIGIN, DEVTOOLS_ORIGIN } from '../config/dev'
 
-const DEVTOOLS_API_BASE_URL = `${DEV_LAN_ORIGIN}/api`
+let cachedApiBaseUrl: string | null = null
 
-/** 开发者工具和真机预览统一访问运行后端电脑的局域网地址 */
-function resolveApiBaseUrl(): string {
+/**
+ * 开发者工具、真机调试和体验版都走当前配置的局域网 IP（与 caoxiaogai-aisales 一致）。
+ * 延迟到首次请求再判定，避免模块加载时读不到运行环境。
+ */
+export function getApiBaseUrl(): string {
+  if (cachedApiBaseUrl) return cachedApiBaseUrl
+
   try {
     if (wx.getSystemInfoSync().platform === 'devtools') {
-      return DEVTOOLS_API_BASE_URL
+      cachedApiBaseUrl = `${DEVTOOLS_ORIGIN}/api`
+      return cachedApiBaseUrl
     }
   } catch {
     // 非小程序环境（如单元测试）回退局域网地址
   }
-  return `${DEV_LAN_ORIGIN}/api`
+
+  cachedApiBaseUrl = `${DEV_LAN_ORIGIN}/api`
+  return cachedApiBaseUrl
 }
 
-const API_BASE_URL = resolveApiBaseUrl()
 const REQUEST_TIMEOUT_MS = 15000
 const UPLOAD_TIMEOUT_MS = 60000
 
 const STORAGE_KEY_USER_ID = 'auth.userId'
 const STORAGE_KEY_OPENID = 'auth.openid'
+const STORAGE_KEY_AUTHORIZED = 'auth.authorized'
+const STORAGE_KEY_NICKNAME = 'auth.nickname'
+const STORAGE_KEY_AVATAR = 'auth.avatar'
 
-/** 当前 API 基址的 origin（不含 /api），例如 http://192.168.31.225:8080 */
+/** 当前 API 基址的 origin（不含 /api） */
 export function getApiOrigin(): string {
-  const schemeEnd = API_BASE_URL.indexOf('://')
-  const pathStart = API_BASE_URL.indexOf('/', schemeEnd + 3)
-  return pathStart === -1 ? API_BASE_URL : API_BASE_URL.slice(0, pathStart)
+  const apiBaseUrl = getApiBaseUrl()
+  const schemeEnd = apiBaseUrl.indexOf('://')
+  const pathStart = apiBaseUrl.indexOf('/', schemeEnd + 3)
+  return pathStart === -1 ? apiBaseUrl : apiBaseUrl.slice(0, pathStart)
 }
 
 /**
- * 将后端返回的文件 URL 主机对齐到当前 API 基址。
- * 后端 minio.public-base-url 可能固定为局域网 IP；这里将返回地址主机对齐到当前后端地址。
+ * 将后端返回的文件 URL 归一化为当前环境可访问的代理地址。
+ * - MinIO 直连（:9000/sales-materials/...）→ /api/files/sales-materials/...
+ * - 缺 /api/files 的 /sales-materials/... → 补全代理前缀
+ * - 已是代理 URL → 仅对齐主机（模拟器本机 / 真机与体验版局域网 IP）
  */
 export function resolveMediaUrl(url: string | null | undefined): string {
   if (!url) return ''
-  if (!/^https?:\/\//.test(url)) return url
-  return url.replace(/^https?:\/\/[^/]+/, getApiOrigin())
+  const trimmed = url.trim()
+  if (!trimmed) return ''
+  if (!/^https?:\/\//.test(trimmed)) {
+    if (trimmed.startsWith('/api/files/')) {
+      return `${getApiOrigin()}${trimmed}`
+    }
+    return trimmed
+  }
+
+  const origin = getApiOrigin()
+
+  const minioDirect = trimmed.match(/^https?:\/\/[^/]+:9000\/sales-materials\/(.+)$/i)
+  if (minioDirect) {
+    return `${origin}/api/files/sales-materials/${minioDirect[1]}`
+  }
+
+  if (trimmed.includes('/api/files/')) {
+    return trimmed.replace(/^https?:\/\/[^/]+/, origin)
+  }
+
+  const bareBucket = trimmed.match(/^https?:\/\/[^/]+\/sales-materials\/(.+)$/i)
+  if (bareBucket) {
+    return `${origin}/api/files/sales-materials/${bareBucket[1]}`
+  }
+
+  return trimmed.replace(/^https?:\/\/[^/]+/, origin)
 }
 
 /** 归一化后的接口错误；code 为后端业务码，网络层失败时为 -1 */
@@ -59,8 +96,10 @@ export interface RequestOptions {
   data?: Record<string, unknown>
   /** 跳过登录态（仅登录接口本身使用） */
   skipAuth?: boolean
-  /** 静默模式：失败时不弹提示，用于可降级的聚合子请求 */
+  /** 静默模式：不弹 loading、失败不弹提示；用于可降级的子请求和埋点上报 */
   silent?: boolean
+  /** 覆盖默认超时（毫秒），文档页数等慢请求使用 */
+  timeout?: number
 }
 
 let pendingRequestCount = 0
@@ -80,20 +119,20 @@ function endLoading(): void {
 }
 
 function showErrorToast(error: ApiError): void {
-  // 不透出原始后端错误，统一转换为稳定的用户文案
+  if (error.code === 401) return
   const title = error.code === -1 ? '网络异常，请稍后重试' : '请求失败，请稍后重试'
   wx.showToast({ title, icon: 'none' })
 }
 
 function buildUrl(path: string, query?: RequestOptions['query']): string {
   const entries = Object.entries(query ?? {}).filter(([, value]) => value !== undefined && value !== '')
-  if (entries.length === 0) return `${API_BASE_URL}${path}`
+  if (entries.length === 0) return `${getApiBaseUrl()}${path}`
 
   const queryString = entries
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
     .join('&')
 
-  return `${API_BASE_URL}${path}?${queryString}`
+  return `${getApiBaseUrl()}${path}?${queryString}`
 }
 
 function buildAuthHeader(): Record<string, string> {
@@ -108,11 +147,12 @@ function buildAuthHeader(): Record<string, string> {
 }
 
 function rawRequest<T>(options: RequestOptions): Promise<T> {
-  beginLoading()
+  const showLoading = !options.silent
+  if (showLoading) beginLoading()
 
   return new Promise<T>((resolve, reject) => {
     const finish = (error: ApiError | null, value?: T): void => {
-      endLoading()
+      if (showLoading) endLoading()
       if (!error) {
         resolve(value as T)
         return
@@ -129,7 +169,9 @@ function rawRequest<T>(options: RequestOptions): Promise<T> {
         'content-type': 'application/json',
         ...(options.skipAuth ? {} : buildAuthHeader()),
       },
-      timeout: REQUEST_TIMEOUT_MS,
+      timeout: options.timeout ?? REQUEST_TIMEOUT_MS,
+      enableHttp2: false,
+      enableQuic: false,
       success: (response) => {
         const result = response.data as ApiResponse<T> | undefined
         if (response.statusCode === 200 && result && result.code === 200) {
@@ -144,6 +186,16 @@ function rawRequest<T>(options: RequestOptions): Promise<T> {
 }
 
 let loginPromise: Promise<ApiLoginData> | null = null
+let cachedUser: ApiLoginData | null = null
+
+function persistLogin(data: ApiLoginData): ApiLoginData {
+  cachedUser = data
+  wx.setStorageSync(STORAGE_KEY_USER_ID, data.userId)
+  wx.setStorageSync(STORAGE_KEY_OPENID, data.openid)
+  wx.setStorageSync(STORAGE_KEY_NICKNAME, data.nickname ?? '')
+  wx.setStorageSync(STORAGE_KEY_AVATAR, data.avatar ?? '')
+  return data
+}
 
 function requestLogin(): Promise<ApiLoginData> {
   return new Promise<ApiLoginData>((resolve, reject) => {
@@ -155,11 +207,7 @@ function requestLogin(): Promise<ApiLoginData> {
           query: { code: loginResult.code },
           skipAuth: true,
         })
-          .then((data) => {
-            wx.setStorageSync(STORAGE_KEY_USER_ID, data.userId)
-            wx.setStorageSync(STORAGE_KEY_OPENID, data.openid)
-            resolve(data)
-          })
+          .then((data) => resolve(persistLogin(data)))
           .catch(reject)
       },
       fail: (error) => {
@@ -170,25 +218,66 @@ function requestLogin(): Promise<ApiLoginData> {
   })
 }
 
+export function hasAuthorizedLogin(): boolean {
+  return wx.getStorageSync(STORAGE_KEY_AUTHORIZED) === '1'
+}
+
+export function authorizeLogin(): Promise<ApiLoginData> {
+  wx.setStorageSync(STORAGE_KEY_AUTHORIZED, '1')
+  loginPromise = null
+  cachedUser = null
+  return ensureLogin()
+}
+
+export function patchCachedLogin(patch: Partial<Pick<ApiLoginData, 'nickname' | 'avatar'>>): void {
+  const next: ApiLoginData = {
+    userId: cachedUser?.userId ?? String(wx.getStorageSync(STORAGE_KEY_USER_ID) ?? ''),
+    openid: cachedUser?.openid ?? String(wx.getStorageSync(STORAGE_KEY_OPENID) ?? ''),
+    phone: cachedUser?.phone ?? null,
+    nickname: patch.nickname !== undefined ? patch.nickname : cachedUser?.nickname ?? null,
+    avatar: patch.avatar !== undefined ? patch.avatar : cachedUser?.avatar ?? null,
+  }
+  persistLogin(next)
+  loginPromise = Promise.resolve(next)
+}
+
 /** 登录（code 换 userId），应用生命周期内复用同一登录态；失败后下次调用会重试 */
 export function ensureLogin(): Promise<ApiLoginData> {
+  if (cachedUser && loginPromise) return loginPromise
   if (!loginPromise) {
     loginPromise = requestLogin().catch((error: ApiError) => {
       loginPromise = null
+      cachedUser = null
       throw error
     })
   }
   return loginPromise
 }
 
+function rejectUnauthorized<T>(): Promise<T> {
+  return Promise.reject(new ApiError(401, '请先登录'))
+}
+
 /** 统一请求入口：默认先确保登录，再携带登录态请求头发起请求 */
 export function request<T>(options: RequestOptions): Promise<T> {
   if (options.skipAuth) return rawRequest<T>(options)
+  if (!hasAuthorizedLogin()) return rejectUnauthorized<T>()
   return ensureLogin().then(() => rawRequest<T>(options))
+}
+
+function readUploadedUrl(data: unknown): string {
+  if (typeof data === 'string' && data.trim() !== '') return data
+  if (data && typeof data === 'object') {
+    const record = data as { url?: string; avatar?: string; fileUrl?: string }
+    const url = record.avatar ?? record.url ?? record.fileUrl
+    if (typeof url === 'string' && url.trim() !== '') return url
+  }
+  return ''
 }
 
 /** 上传单个文件，返回后端存储 URL（对应 POST /material/upload-file 一类接口） */
 export function uploadFile(path: string, filePath: string): Promise<string> {
+  if (!hasAuthorizedLogin()) return rejectUnauthorized<string>()
   return ensureLogin().then(
     () =>
       new Promise<string>((resolve, reject) => {
@@ -212,13 +301,14 @@ export function uploadFile(path: string, filePath: string): Promise<string> {
           timeout: UPLOAD_TIMEOUT_MS,
           success: (response) => {
             try {
-              const result = JSON.parse(response.data) as ApiResponse<string>
-              if (result.code === 200) {
-                finish(null, result.data)
+              const result = JSON.parse(response.data) as ApiResponse<unknown>
+              const uploadedUrl = result.code === 200 ? readUploadedUrl(result.data) : ''
+              if (uploadedUrl) {
+                finish(null, uploadedUrl)
                 return
               }
-              finish(new ApiError(result.code, result.message))
-            } catch (error) {
+              finish(new ApiError(result.code, result.message || '上传失败'))
+            } catch {
               finish(new ApiError(-1, '上传响应解析失败'))
             }
           },

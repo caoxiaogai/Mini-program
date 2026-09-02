@@ -1,5 +1,10 @@
-import { getAnalysisDetail } from '../../services/analysis'
-import type { AnalysisDetailViewModel, AnalysisIntentLevel, AnalysisIntentUser } from '../../types/analysis'
+import { getAnalysisContentDetail } from '../../services/analysis'
+import { runAuthed } from '../../services/auth'
+import type { AnalysisAudienceUser, AnalysisContentDetailViewModel, AnalysisIntentLevel } from '../../types/analysis'
+import { buildReturnPath } from '../../utils/auth'
+import { fromDatasetId } from '../../utils/dataset-id'
+import { getNavigationBarLayout } from '../../utils/navigation-layout'
+import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 type IntentFilter = 'all' | AnalysisIntentLevel
 
@@ -12,64 +17,80 @@ const intentTabs: Array<{ id: IntentFilter; label: string }> = [
 
 const intentSwipeThreshold = 40
 
-const getVisibleIntentUsers = (users: AnalysisIntentUser[], filter: IntentFilter) => {
+function getVisibleIntentUsers(users: AnalysisAudienceUser[], filter: IntentFilter): AnalysisAudienceUser[] {
   return filter === 'all' ? users : users.filter((user) => user.level === filter)
 }
 
 Page({
   data: {
-    detail: null as AnalysisDetailViewModel | null,
+    analysisNavigationHeight: 91,
+    detail: null as AnalysisContentDetailViewModel | null,
     intentTabs,
     activeIntentLevel: 'all' as IntentFilter,
     activeIntentIndex: 0,
     intentSwipeStartX: 0,
-    visibleIntentUsers: [] as AnalysisIntentUser[],
+    visibleIntentUsers: [] as AnalysisAudienceUser[],
     hasVisibleIntentUsers: false,
   },
+
+  materialId: '',
+
   onLoad(options: Record<string, string | undefined>) {
-    const cardId = options.id
-    if (!cardId) return
+    this.setData({ analysisNavigationHeight: getNavigationBarLayout().totalHeight })
+    runAuthed(buildReturnPath('/pages/analysis-detail/index', options), () => {
+      this.materialId = options.id ?? ''
+      this.loadDetail()
+    })
+  },
 
-    getAnalysisDetail(cardId).then((detail) => {
-      const visibleUsers = detail ? detail.intentUsers : []
+  onPullDownRefresh() {
+    runPagePullRefresh(this.loadDetail())
+  },
 
+  loadDetail() {
+    if (!this.materialId) return Promise.resolve()
+
+    return getAnalysisContentDetail(this.materialId).then((detail) => {
+      const visibleIntentUsers = detail ? getVisibleIntentUsers(detail.intentUsers, this.data.activeIntentLevel) : []
       this.setData({
         detail,
-        visibleIntentUsers: visibleUsers,
-        hasVisibleIntentUsers: visibleUsers.length > 0,
+        visibleIntentUsers,
+        hasVisibleIntentUsers: visibleIntentUsers.length > 0,
       })
     })
   },
-  onIntentTabTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) {
+
+  onIntentTabTap(event: WechatMiniprogram.CustomEvent<{ id: IntentFilter; index: number }>) {
     this.setIntentFilter(event.detail.index)
   },
+
   onIntentTouchStart(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
     this.setData({ intentSwipeStartX: event.detail.clientX })
   },
+
   onIntentTouchEnd(event: WechatMiniprogram.CustomEvent<{ clientX: number }>) {
     const distance = event.detail.clientX - this.data.intentSwipeStartX
     if (Math.abs(distance) < intentSwipeThreshold) return
-
-    const direction = distance < 0 ? 1 : -1
-    this.setIntentFilter(this.data.activeIntentIndex + direction)
+    this.setIntentFilter(this.data.activeIntentIndex + (distance < 0 ? 1 : -1))
   },
+
   setIntentFilter(tabIndex: number) {
     const tab = intentTabs[tabIndex]
     const detail = this.data.detail
     if (!tab || !detail) return
 
-    const visibleUsers = getVisibleIntentUsers(detail.intentUsers, tab.id)
-
+    const visibleIntentUsers = getVisibleIntentUsers(detail.intentUsers, tab.id)
     this.setData({
       activeIntentLevel: tab.id,
       activeIntentIndex: tabIndex,
-      visibleIntentUsers: visibleUsers,
-      hasVisibleIntentUsers: visibleUsers.length > 0,
+      visibleIntentUsers,
+      hasVisibleIntentUsers: visibleIntentUsers.length > 0,
     })
   },
-  onDetailUserTap(event: WechatMiniprogram.TouchEvent) {
-    const userId = event.currentTarget.dataset.id as string
 
-    wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
+  onDetailUserTap(event: WechatMiniprogram.TouchEvent) {
+    const userId = fromDatasetId(event.currentTarget.dataset.id)
+    if (!userId) return
+    wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${encodeURIComponent(userId)}` })
   },
 })

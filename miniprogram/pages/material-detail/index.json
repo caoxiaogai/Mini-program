@@ -1,5 +1,9 @@
 {
   "usingComponents": {
     "navigation-bar": "/components/navigation-bar/navigation-bar"
-  }
+  },
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true,
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
 }

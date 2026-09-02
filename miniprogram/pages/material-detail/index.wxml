@@ -1,28 +1,75 @@
 <view class="material-detail-page">
   <view class="material-detail-page__header">
-    <navigation-bar title="作品" back="{{true}}" color="#000000" background="#ffffff" />
+    <navigation-bar title="作品" back="{{true}}" home-button="{{true}}" color="#000000" background="#f0f1f2" />
   </view>
 
   <view wx:if="{{detail}}" class="material-detail-page__content">
-    <swiper
-      class="material-detail__swiper"
-      current="{{activeImageIndex}}"
-      duration="180"
-      indicator-dots="{{false}}"
-      bindchange="onSwiperChange"
-    >
-      <swiper-item wx:for="{{detail.images}}" wx:key="*this">
-        <image class="material-detail__image" src="{{item}}" mode="aspectFit" />
-      </swiper-item>
-    </swiper>
-
-    <view class="material-detail__indicators" aria-label="图片页码">
+    <block wx:if="{{detail.fileType === 'VIDEO'}}">
       <view
-        wx:for="{{detail.images}}"
-        wx:key="*this"
-        class="material-detail__indicator {{index === activeImageIndex ? 'material-detail__indicator--active' : ''}}"
-      ></view>
-    </view>
+        class="material-detail__media material-detail__media--video"
+        bindtouchstart="onVideoTouchStart"
+        bindtouchend="onVideoTouchEnd"
+        bindtouchcancel="onVideoTouchEnd"
+      >
+        <video
+          id="materialVideo"
+          class="material-detail__video"
+          src="{{detail.videoUrl}}"
+          poster="{{detail.previewUrl}}"
+          autoplay
+          controls
+          show-center-play-btn
+          show-fullscreen-btn
+          show-play-btn
+          show-progress
+          enable-play-gesture
+          enable-progress-gesture
+          object-fit="contain"
+          bindplay="onVideoPlay"
+          bindpause="onVideoPause"
+          bindended="onVideoEnded"
+          bindtimeupdate="onVideoTimeUpdate"
+        />
+      </view>
+    </block>
+
+    <block wx:elif="{{detail.fileType === 'PDF' || detail.fileType === 'TABLE'}}">
+      <view class="material-detail__media material-detail__media--pdf" bindtap="onPdfOpenTap" hover-class="material-detail__media--pressed" hover-stay-time="80">
+        <image wx:if="{{detail.previewUrl}}" class="material-detail__pdf-preview" src="{{detail.previewUrl}}" mode="aspectFit" />
+        <view wx:else class="material-detail__pdf-card">
+          <view class="material-detail__pdf-badge">{{detail.fileType === 'TABLE' ? '表格' : 'PDF'}}</view>
+          <text class="material-detail__pdf-name">{{detail.pdfFileName}}</text>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <swiper
+        class="material-detail__swiper"
+        current="{{activeImageIndex}}"
+        duration="180"
+        indicator-dots="{{false}}"
+        bindchange="onSwiperChange"
+      >
+        <swiper-item wx:for="{{detail.images}}" wx:key="*this">
+          <image
+            class="material-detail__image"
+            src="{{item}}"
+            mode="aspectFit"
+            data-index="{{index}}"
+            bindtap="onImageTap"
+          />
+        </swiper-item>
+      </swiper>
+
+      <view class="material-detail__indicators" aria-label="图片页码">
+        <view
+          wx:for="{{detail.images}}"
+          wx:key="*this"
+          class="material-detail__indicator {{index === activeImageIndex ? 'material-detail__indicator--active' : ''}}"
+        ></view>
+      </view>
+    </block>
 
     <view class="material-detail__description">
       <text wx:for="{{detail.descriptionLines}}" wx:key="*this" class="material-detail__description-line">{{item}}</text>
@@ -30,15 +77,78 @@
   </view>
 
   <view wx:if="{{detail}}" class="material-detail__share-bar">
-    <view class="material-detail__share-button material-detail__share-button--friend" hover-class="material-detail__share-button--pressed" hover-stay-time="80" role="button">
+    <button class="material-detail__share-button material-detail__share-button--friend" open-type="share" hover-class="material-detail__share-button--pressed" hover-stay-time="80">
       <text>分享给好友</text>
       <image class="material-detail__share-icon" src="/assets/materials/detail-share.svg" mode="aspectFit" />
-    </view>
-    <view class="material-detail__share-button material-detail__share-button--moments" hover-class="material-detail__share-button--pressed" hover-stay-time="80" role="button">
+    </button>
+    <button
+      wx:if="{{detail.isOwner}}"
+      class="material-detail__share-button material-detail__share-button--edit"
+      bindtap="onSecondaryEditTap"
+      hover-class="material-detail__share-button--pressed"
+      hover-stay-time="80"
+    >
+      <text>二次编辑</text>
+      <image class="material-detail__share-icon" src="/assets/materials/detail-edit.svg" mode="aspectFit" />
+    </button>
+    <button
+      wx:else
+      class="material-detail__share-button material-detail__share-button--moments"
+      bindtap="onShareMomentsTap"
+      hover-class="material-detail__share-button--pressed"
+      hover-stay-time="80"
+    >
       <text>分享到朋友圈</text>
       <view class="material-detail__moments-icon">
         <image src="/assets/materials/detail-moments.png" mode="aspectFit" />
       </view>
-    </view>
+    </button>
+  </view>
+
+  <view
+    wx:if="{{detail && imagePreviewVisible}}"
+    class="material-detail-preview"
+    aria-role="dialog"
+    aria-label="图片预览"
+  >
+    <swiper
+      class="material-detail-preview__swiper"
+      current="{{activeImageIndex}}"
+      duration="180"
+      disable-touch="{{previewZoomed}}"
+      bindchange="onPreviewSwiperChange"
+    >
+      <swiper-item wx:for="{{detail.images}}" wx:key="*this">
+        <movable-area class="material-detail-preview__area" scale-area>
+          <movable-view
+            class="material-detail-preview__view"
+            direction="all"
+            inertia
+            out-of-bounds="{{false}}"
+            scale
+            scale-min="1"
+            scale-max="4"
+            scale-value="{{previewScale}}"
+            animation
+            bindscale="onPreviewScale"
+            bindtouchstart="onPreviewTouchStart"
+            bindtouchend="onPreviewTouchEnd"
+            bindtouchcancel="onPreviewTouchEnd"
+            bindtap="onPreviewImageTap"
+          >
+            <image
+              class="material-detail-preview__image"
+              src="{{item}}"
+              mode="aspectFit"
+              show-menu-by-longpress="{{!previewPinching}}"
+              bindtouchstart="onPreviewTouchStart"
+              bindtouchend="onPreviewTouchEnd"
+              bindtouchcancel="onPreviewTouchEnd"
+            />
+          </movable-view>
+        </movable-area>
+      </swiper-item>
+    </swiper>
+    <text class="material-detail-preview__counter">{{activeImageIndex + 1}} / {{detail.images.length}}</text>
   </view>
 </view>

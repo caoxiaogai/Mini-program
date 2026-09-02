@@ -1,31 +1,45 @@
-import { getAnalysisOverview } from '../../services/analysis'
+import { runAuthed } from '../../services/auth'
+import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
 import { getHomePageData } from '../../services/home'
-import { getMaterials } from '../../services/materials'
+import { getMaterialDetail, getMaterials } from '../../services/materials'
 import { getNotifications } from '../../services/notifications'
-import type { AnalysisAudienceUser, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
+import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
 import type { HomePageViewModel } from '../../types/home'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
 import type { ProfilePageViewModel } from '../../types/profile'
 import { getProfilePageData } from '../../services/profile'
 import { getHomeGreeting } from '../../utils/greeting'
-import { getHomeHeaderOpacity } from '../../utils/home-header'
-import { calculateRankingHeaderOpacity } from '../../utils/ranking'
+import { getHomeHeaderGradientOpacity, getHomeHeaderOpacity } from '../../utils/home-header'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
-import { markHomeNotificationViewed } from './home-notification-preview'
+import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
+import { takePendingPublishReturn } from '../../utils/publish-return'
+import { runPullRefresh } from '../../utils/pull-refresh'
+import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
+import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed } from '../../utils/notifications'
+import { fromDatasetId } from '../../utils/dataset-id'
+import { markHomeNotificationViewed, markHomeNotificationsViewed } from './home-notification-preview'
+import { buildReturnPath } from '../../utils/auth'
+import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
+import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
+import { setPendingPublishSelection } from '../../utils/publish-selection'
+import { getNavigationBarLayout } from '../../utils/navigation-layout'
+import { MEMBERSHIP_PAGE_PATH } from '../../types/membership'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
 type AnalysisSortId = 'completion' | 'share' | 'view'
 type AnalysisTabId = 'work' | 'user' | 'total'
+type TotalDateRangeTarget = 'work' | 'overview' | 'peak'
 
 const tabItems = [
-  { id: 'home' as HomeTabId, label: '首页', iconPath: '/assets/home-new/tab-home.svg', activeIconPath: '/assets/home-new/tab-home-active.svg', active: true },
-  { id: 'notifications' as HomeTabId, label: '通知', iconPath: '/assets/home-new/tab-notification.svg', activeIconPath: '/assets/home-new/tab-notification-active.svg', badgeCount: 0, active: false },
-  { id: 'analysis' as HomeTabId, label: '分析', iconPath: '/assets/home-new/tab-analysis.svg', activeIconPath: '/assets/home-new/tab-analysis-active.svg', active: false },
-  { id: 'profile' as HomeTabId, label: '我的', iconPath: '/assets/home-new/tab-profile.svg', activeIconPath: '/assets/home-new/tab-profile-active.svg', active: false },
+  { id: 'home' as HomeTabId, label: '首页', iconPath: '/assets/home-new/tab-home.svg', activeIconPath: '/assets/home-new/tab-home-selected.svg', active: true },
+  { id: 'notifications' as HomeTabId, label: '通知', iconPath: '/assets/home-new/tab-notification.svg', activeIconPath: '/assets/home-new/tab-notification-selected.svg', active: false },
+  { id: 'analysis' as HomeTabId, label: '分析', iconPath: '/assets/home-new/tab-analysis.svg', activeIconPath: '/assets/home-new/tab-analysis-selected.svg', active: false },
+  { id: 'profile' as HomeTabId, label: '我的', iconPath: '/assets/home-new/tab-profile.svg', activeIconPath: '/assets/home-new/tab-profile-selected.svg', active: false },
 ]
 
 const rootTabIds: HomeTabId[] = ['home', 'notifications', 'materials', 'analysis', 'profile']
@@ -54,17 +68,10 @@ const analysisTabs = [
 
 const totalAnalysisPeriods = [
   { id: 'day' as AnalysisPeriodId, label: '日' },
-  { id: 'week' as AnalysisPeriodId, label: '本周' },
-  { id: 'month' as AnalysisPeriodId, label: '本月' },
-  { id: 'total' as AnalysisPeriodId, label: '总' },
+  { id: 'week' as AnalysisPeriodId, label: '周' },
+  { id: 'month' as AnalysisPeriodId, label: '月' },
+  { id: 'custom' as AnalysisPeriodId, label: '', iconPath: '/assets/analysis/calendar-filter.svg' },
 ]
-
-function getAnalysisTrendSlotCount(period: AnalysisPeriodId): number {
-  if (period === 'day') return 24
-  if (period === 'week') return 7
-  if (period === 'month') return 30
-  return 0
-}
 
 const analysisSwipeThreshold = 40
 
@@ -79,11 +86,14 @@ function getVisibleMaterials(items: MaterialCardViewModel[], filterId: Materials
 }
 
 Page({
+  publishSuccessShared: false,
+  authReady: false,
+  pendingPublishType: null as 'image' | 'video' | null,
   data: {
+    analysisNavigationHeight: 91,
     greetingHeadline: getHomeGreeting(),
-    greetingSubtitle: '今日阳光明媚，祝你好运☀️',
+    greetingSubtitle: '今日阳光明媚，祝你好运',
     homeData: null as HomePageViewModel | null,
-    hasNewIntentUsers: false,
     isLoading: true,
     loadError: false,
     tabItems,
@@ -91,16 +101,23 @@ Page({
     isAndroid: false,
     activeTabIndex: 0,
     homeHeaderOpacity: 0,
+    homeHeaderGradientOpacity: 1,
     notifications: null as NotificationsViewModel | null,
     activeNotificationFilter: 'all' as NotificationFilterId,
     visibleNotificationGroups: [] as NotificationGroupViewModel[],
     hasVisibleNotificationGroups: false,
+    unreadNotificationCount: 0,
     materials: null as MaterialsViewModel | null,
     activeMaterialFilter: 'all' as MaterialsFilterId,
     visibleMaterials: [] as MaterialCardViewModel[],
     hasVisibleMaterials: false,
-    materialsHeaderOpacity: 0,
     showPublishSuccessModal: false,
+    publishTypeSheetVisible: false,
+    publishSourceSheetVisible: false,
+    shareMaterialId: '',
+    shareTrackingId: '',
+    shareTitle: '',
+    shareImageUrl: '',
     analysisData: null as AnalysisViewModel | null,
     analysisTabs,
     activeAnalysisTab: 'work' as AnalysisTabId,
@@ -110,8 +127,15 @@ Page({
     analysisPeriods,
     activePeriod: 'day' as AnalysisPeriodId,
     dateRangePickerVisible: false,
+    dateRangePickerTarget: 'work' as TotalDateRangeTarget,
     customStartDate: defaultDateRange.startDate,
     customEndDate: defaultDateRange.endDate,
+    overviewCustomStartDate: defaultDateRange.startDate,
+    overviewCustomEndDate: defaultDateRange.endDate,
+    peakCustomStartDate: defaultDateRange.startDate,
+    peakCustomEndDate: defaultDateRange.endDate,
+    datePickerStartDate: defaultDateRange.startDate,
+    datePickerEndDate: defaultDateRange.endDate,
     todayDate: dateRangeLimits.maxDate,
     twoMonthsAgoDate: dateRangeLimits.minDate,
     analysisSortOptions,
@@ -121,69 +145,139 @@ Page({
     visibleAnalysisUsers: [] as AnalysisAudienceUser[],
     workSummary: [] as AnalysisViewModel['summary'],
     visibleAnalysisCards: [] as AnalysisViewModel['cards'],
+    workCount: '0',
     hasAnalysisCards: false,
     hasAnalysisUsers: false,
     totalAnalysisPeriods,
-    activeTotalPeriod: 'total' as AnalysisPeriodId,
-    activeAnalysisReadRange: 'week' as AnalysisReadRange,
-    visibleAnalysisReadTrend: [] as AnalysisViewModel['totalData']['readTrends']['week'],
-    analysisTrendSlotCount: getAnalysisTrendSlotCount('total'),
+    activeOverviewPeriod: 'day' as AnalysisPeriodId,
+    activePeakPeriod: 'day' as AnalysisPeriodId,
+    ...buildTotalTrendState('day'),
     profileData: null as ProfilePageViewModel | null,
+    pullRefreshing: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     const { platform } = wx.getSystemInfoSync()
-    this.setData({ isAndroid: platform === 'android' || platform === 'devtools' })
+    this.setData({
+      analysisNavigationHeight: getNavigationBarLayout().totalHeight,
+      isAndroid: platform === 'android' || platform === 'devtools',
+    })
+    runAuthed(buildReturnPath(HOME_PAGE_PATH, options), () => this.startHome(options))
+  },
+  startHome(options: Record<string, string | undefined>) {
+    this.authReady = true
 
     if (options.tab === 'materials') {
-      this.setData({ showPublishSuccessModal: options.publishSuccess === '1' })
+      const shareMaterialId = options.id ?? ''
+      this.setData({
+        showPublishSuccessModal: options.publishSuccess === '1',
+        shareMaterialId,
+      })
       this.setActiveTab(2)
+      if (shareMaterialId) this.loadShareMaterial(shareMaterialId)
     }
     this.loadHomeData()
     this.loadProfileData()
+    this.refreshAuthenticatedHome()
   },
   onShow() {
+    if (!this.authReady) return
+    this.refreshAuthenticatedHome()
+  },
+  refreshAuthenticatedHome() {
     this.setData({ greetingHeadline: getHomeGreeting() })
+    enableMaterialShareMenu()
+    this.applyPendingPublishReturn()
+    this.closePublishSuccessModalAfterShareReturn()
+    this.loadHomeData(true)
+    if (rootTabIds[this.data.activeTabIndex] === 'notifications') {
+      this.loadNotifications()
+    }
   },
   onHomeScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
     const homeHeaderOpacity = getHomeHeaderOpacity(event.detail.scrollTop)
+    const homeHeaderGradientOpacity = getHomeHeaderGradientOpacity(event.detail.scrollTop)
     if (homeHeaderOpacity === this.data.homeHeaderOpacity) return
-    this.setData({ homeHeaderOpacity })
+    this.setData({ homeHeaderOpacity, homeHeaderGradientOpacity })
   },
-  loadHomeData() {
-    this.setData({ isLoading: true, loadError: false })
-    getHomePageData()
+  loadHomeData(silent = false) {
+    if (!silent) this.setData({ isLoading: true, loadError: false })
+    return getHomePageData()
       .then((homeData) => {
-        const tabItemsWithBadge = this.data.tabItems.map((item) => item.id === 'notifications' ? { ...item, badgeCount: homeData.unreadNotificationCount } : item)
-        this.setData({ homeData, hasNewIntentUsers: homeData.intentSummary.total !== '0', tabItems: tabItemsWithBadge, isLoading: false })
+        this.setData({ homeData, isLoading: false, loadError: false })
       })
-      .catch(() => this.setData({ isLoading: false, loadError: true }))
+      .catch(() => {
+        if (!silent) this.setData({ isLoading: false, loadError: true })
+      })
   },
   loadNotifications() {
-    getNotifications().then((notifications) => {
+    return getNotifications().then((notifications) => {
       const visibleNotificationGroups = getVisibleNotificationGroups(notifications.groups, this.data.activeNotificationFilter)
-      this.setData({ notifications, visibleNotificationGroups, hasVisibleNotificationGroups: visibleNotificationGroups.length > 0 })
+      this.setData({
+        notifications,
+        visibleNotificationGroups,
+        hasVisibleNotificationGroups: visibleNotificationGroups.length > 0,
+        unreadNotificationCount: countUnreadNotificationGroups(notifications.groups),
+      })
     })
   },
   loadMaterials() {
-    getMaterials().then((materials) => {
+    return getMaterials().then((materials) => {
       const visibleMaterials = getVisibleMaterials(materials.items, this.data.activeMaterialFilter)
       this.setData({ materials, visibleMaterials, hasVisibleMaterials: visibleMaterials.length > 0 })
     })
   },
-  loadAnalysis(period: AnalysisPeriodId = this.data.activePeriod) {
-    getAnalysisOverview(period).then((analysisData) => {
+  loadShareMaterial(materialId: string) {
+    getMaterialDetail(materialId).then((detail) => {
+      if (!detail) return
+      this.setData({
+        shareMaterialId: detail.id,
+        shareTrackingId: detail.trackingId,
+        shareTitle: buildMaterialShareTitle(detail.descriptionLines),
+        shareImageUrl: detail.previewUrl || this.data.shareImageUrl,
+      })
+    })
+  },
+  applyPendingPublishReturn() {
+    const pending = takePendingPublishReturn()
+    if (!pending) return
+
+    this.publishSuccessShared = false
+    this.setData({
+      showPublishSuccessModal: pending.showSuccessModal,
+      shareMaterialId: pending.materialId,
+      shareTitle: pending.shareTitle || this.data.shareTitle,
+      shareImageUrl: pending.shareImageUrl || this.data.shareImageUrl,
+      shareTrackingId: pending.shareTrackingId || this.data.shareTrackingId,
+    })
+    this.setActiveTab(2)
+    this.loadMaterials()
+    if (pending.showSuccessModal && pending.materialId) this.loadShareMaterial(pending.materialId)
+  },
+  resolveWorkDateRange(period: AnalysisPeriodId, dateRange?: DateRange): DateRange | undefined {
+    if (period !== 'custom') return dateRange
+    return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
+  },
+  loadAnalysis(period: AnalysisPeriodId = this.data.activePeriod, trendPeriod: AnalysisPeriodId = this.data.activePeakPeriod, dateRange?: DateRange) {
+    const request = dateRange
+      ? getAnalysisOverview(period, dateRange, this.data.activeAnalysisSort, trendPeriod)
+      : getAnalysisOverview(period, undefined, this.data.activeAnalysisSort, trendPeriod)
+    return request.then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
-      this.setData({ analysisData, visibleAnalysisUsers, workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary, visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards, hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards, hasAnalysisUsers: visibleAnalysisUsers.length > 0, visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange] })
+      // Keep the chart tied to the latest peak selector choice even if an overview request resolves later.
+      const currentTrendPeriod = this.data.activePeakPeriod || trendPeriod
+      const resolvedTrendPeriod = currentTrendPeriod === 'custom' ? 'total' : currentTrendPeriod
+      const trendState = buildTotalTrendState(resolvedTrendPeriod, analysisData.totalData.readTrends[getAnalysisReadRange(resolvedTrendPeriod)])
+      this.setData({ analysisData, visibleAnalysisUsers, workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary, visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards, workCount: initializeWorkData ? analysisData.workCount : this.data.workCount, hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards, hasAnalysisUsers: visibleAnalysisUsers.length > 0, ...trendState })
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
-    getAnalysisOverview(period, dateRange).then((analysisData) => {
-      this.setData({ visibleAnalysisCards: analysisData.cards, hasAnalysisCards: analysisData.cards.length > 0 })
+    return getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards, workCount }) => {
+      this.setData({ workSummary: summary, visibleAnalysisCards: cards, workCount, hasAnalysisCards: cards.length > 0 })
     })
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
-    getAnalysisOverview(period, dateRange).then((analysisData) => {
+    return getAnalysisOverview(period, dateRange).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const currentAnalysisData = this.data.analysisData ?? analysisData
       this.setData({
@@ -194,9 +288,42 @@ Page({
     })
   },
   loadProfileData() {
-    getProfilePageData()
+    return getProfilePageData()
       .then((profileData) => this.setData({ profileData }))
       .catch(() => this.setData({ profileData: null }))
+  },
+  onProfileSettingsTap() {
+    wx.navigateTo({ url: '/pages/settings/index' })
+  },
+  onProfileMembershipTap() {
+    wx.navigateTo({ url: MEMBERSHIP_PAGE_PATH })
+  },
+  onHomeMembershipLimitTap() {
+    wx.navigateTo({ url: MEMBERSHIP_PAGE_PATH })
+  },
+  refreshActiveTab() {
+    const tab = rootTabIds[this.data.activeTabIndex]
+    if (tab === 'notifications') return this.loadNotifications()
+    if (tab === 'materials') return this.loadMaterials()
+    if (tab === 'analysis') {
+      if (this.data.activeAnalysisTab === 'user') {
+        return this.loadAudienceUsers(this.data.activePeriod, this.resolveWorkDateRange(this.data.activePeriod))
+      }
+      if (this.data.activeAnalysisTab === 'total') {
+        const customRange = this.data.activeOverviewPeriod === 'custom'
+          ? { startDate: this.data.overviewCustomStartDate, endDate: this.data.overviewCustomEndDate }
+          : undefined
+        const trendPeriod = this.data.activePeakPeriod === 'custom' ? 'total' : this.data.activePeakPeriod
+        return this.loadAnalysis(this.data.activeOverviewPeriod, trendPeriod, customRange)
+      }
+      return this.loadWorkCards(this.data.activePeriod)
+    }
+    if (tab === 'profile') return this.loadProfileData()
+    return this.loadHomeData(true)
+  },
+  onPullRefresh() {
+    this.setData({ pullRefreshing: true })
+    runPullRefresh(this.refreshActiveTab(), () => this.setData({ pullRefreshing: false }))
   },
   setActiveTab(index: number) {
     if (!Number.isInteger(index) || index < 0 || index >= rootTabIds.length) return
@@ -204,7 +331,7 @@ Page({
     const id = rootTabIds[index]
     const activeItems = this.data.tabItems.map((item) => ({ ...item, active: item.id === id }))
     this.setData({ activeTabIndex: nextIndex, tabItems: activeItems, plusActive: id === 'materials' })
-    if (id === 'notifications' && !this.data.notifications) this.loadNotifications()
+    if (id === 'notifications') this.loadNotifications()
     if (id === 'materials' && !this.data.materials) this.loadMaterials()
     if (id === 'analysis' && !this.data.analysisData) this.loadAnalysis()
   },
@@ -218,22 +345,47 @@ Page({
   },
   onNotificationTap(event: WechatMiniprogram.TouchEvent) {
     const notificationId = event.currentTarget.dataset.id as string | undefined
-    const userId = event.currentTarget.dataset.userId as string | undefined
+    const userId = fromDatasetId(event.currentTarget.dataset.userId)
 
     if (notificationId && this.data.homeData) {
-      const homeData = markHomeNotificationViewed(this.data.homeData, notificationId)
-      const tabItems = this.data.tabItems.map((item) => item.id === 'notifications' ? { ...item, badgeCount: homeData.unreadNotificationCount } : item)
-      this.setData({ homeData, tabItems })
+      const notification = this.data.homeData.notifications.find((item) => item.id === notificationId)
+      const eventId = notification?.eventId
+      if (eventId && persistViewedNotification(eventId)) {
+        const homeData = markHomeNotificationViewed(this.data.homeData, eventId)
+        this.setData({ homeData })
+      }
     }
 
     if (userId) wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
   },
+  onHomeMarkAllReadTap() {
+    const homeData = this.data.homeData
+    if (!homeData || homeData.unreadNotificationCount === 0) return
+
+    const eventIds = homeData.unreadNotificationEventIds.length > 0
+      ? homeData.unreadNotificationEventIds
+      : homeData.notifications.map((notification) => notification.eventId)
+    persistViewedNotifications(eventIds)
+
+    const nextHomeData = markHomeNotificationsViewed(homeData)
+    const groups = this.data.notifications?.groups ?? []
+    const nextGroups = markAllNotificationGroupsViewed(groups)
+    const notifications = this.data.notifications ? { ...this.data.notifications, groups: nextGroups } : null
+    const visibleNotificationGroups = getVisibleNotificationGroups(nextGroups, this.data.activeNotificationFilter)
+    this.setData({
+      homeData: nextHomeData,
+      notifications,
+      visibleNotificationGroups,
+      hasVisibleNotificationGroups: visibleNotificationGroups.length > 0,
+      unreadNotificationCount: 0,
+    })
+  },
   onRankingEntryTap() {
     wx.navigateTo({ url: '/pages/ranking/index' })
   },
-  onTodayMostItemTap(event: WechatMiniprogram.TouchEvent) {
-    const id = event.currentTarget.dataset.id as string | undefined
-    if (id) wx.navigateTo({ url: `/pages/analysis-detail/index?id=${id}` })
+  onTodayMostTap() {
+    this.setActiveTab(3)
+    this.setAnalysisTab(0)
   },
   onIntentSummaryTap() {
     this.setActiveTab(3)
@@ -241,10 +393,14 @@ Page({
   },
   onTodayDataTap() {
     const hasAnalysisData = Boolean(this.data.analysisData)
-    this.setData({ activeTotalPeriod: 'day', activeAnalysisReadRange: 'week', analysisTrendSlotCount: getAnalysisTrendSlotCount('day') })
+    this.setData({
+      activeOverviewPeriod: 'day',
+      activePeakPeriod: 'day',
+      ...buildTotalTrendState('day', this.data.analysisData?.totalData?.readTrends?.day ?? []),
+    })
     this.setActiveTab(3)
     this.setAnalysisTab(2)
-    if (hasAnalysisData) this.loadAnalysis('day')
+    if (hasAnalysisData) this.loadAnalysis('day', 'day')
   },
   onNotificationFilterTap(event: WechatMiniprogram.CustomEvent<{ filterId: NotificationFilterId }>) {
     const filterId = event.detail.filterId
@@ -252,8 +408,46 @@ Page({
     const visibleNotificationGroups = getVisibleNotificationGroups(this.data.notifications?.groups ?? [], filterId)
     this.setData({ activeNotificationFilter: filterId, visibleNotificationGroups, hasVisibleNotificationGroups: visibleNotificationGroups.length > 0 })
   },
-  onNotificationCardTap(event: WechatMiniprogram.CustomEvent<{ userId: string }>) {
-    if (event.detail.userId) wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${event.detail.userId}` })
+  onNotificationCardTap(event: WechatMiniprogram.CustomEvent<{ userId: string; eventId?: string }>) {
+    const userId = event.detail.userId
+    const eventId = event.detail.eventId
+    if (!userId) return
+
+    if (eventId && persistViewedNotification(eventId)) {
+      if (this.data.notifications) {
+        const groups = markNotificationGroupsViewed(this.data.notifications.groups, eventId)
+        const notifications = { ...this.data.notifications, groups }
+        const visibleNotificationGroups = getVisibleNotificationGroups(groups, this.data.activeNotificationFilter)
+        this.setData({
+          notifications,
+          visibleNotificationGroups,
+          hasVisibleNotificationGroups: visibleNotificationGroups.length > 0,
+          unreadNotificationCount: countUnreadNotificationGroups(groups),
+        })
+      }
+      if (this.data.homeData) {
+        const homeData = markHomeNotificationViewed(this.data.homeData, eventId)
+        this.setData({ homeData })
+      }
+    }
+
+    wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
+  },
+  onMarkAllReadTap() {
+    const groups = this.data.notifications?.groups ?? []
+    const eventIds = getUnreadNotificationEventIds(groups)
+    if (eventIds.length === 0) return
+
+    persistViewedNotifications(eventIds)
+    const nextGroups = markAllNotificationGroupsViewed(groups)
+    const notifications = this.data.notifications ? { ...this.data.notifications, groups: nextGroups } : null
+    const visibleNotificationGroups = getVisibleNotificationGroups(nextGroups, this.data.activeNotificationFilter)
+    this.setData({
+      notifications,
+      visibleNotificationGroups,
+      hasVisibleNotificationGroups: visibleNotificationGroups.length > 0,
+      unreadNotificationCount: 0,
+    })
   },
   onNotificationContactAction() {},
   onAnalysisTabTap(event: WechatMiniprogram.CustomEvent<{ index: number }>) { this.setAnalysisTab(event.detail.index) },
@@ -269,7 +463,12 @@ Page({
   onAnalysisPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
     if (!analysisPeriods[event.detail.index]) return
     if (event.detail.id === 'custom') {
-      this.setData({ dateRangePickerVisible: true })
+      this.setData({
+        dateRangePickerVisible: true,
+        dateRangePickerTarget: 'work',
+        datePickerStartDate: this.data.customStartDate,
+        datePickerEndDate: this.data.customEndDate,
+      })
       return
     }
     this.setData({ activePeriod: event.detail.id })
@@ -283,11 +482,31 @@ Page({
   onDateRangeConfirm(event: WechatMiniprogram.CustomEvent<{ startDate: string; endDate: string }>) {
     const dateRange = event.detail
 
+    const target = this.data.dateRangePickerTarget || (this.data.activeAnalysisTab === 'total' ? 'overview' : 'work')
+    this.setData({ dateRangePickerVisible: false })
+    if (target === 'overview') {
+      this.setData({
+        activeOverviewPeriod: 'custom',
+        overviewCustomStartDate: dateRange.startDate,
+        overviewCustomEndDate: dateRange.endDate,
+      })
+      const trendPeriod = this.data.activePeakPeriod === 'custom' ? 'total' : this.data.activePeakPeriod
+      this.loadAnalysis('custom', trendPeriod, dateRange)
+      return
+    }
+    if (target === 'peak') {
+      this.setData({
+        activePeakPeriod: 'custom',
+        peakCustomStartDate: dateRange.startDate,
+        peakCustomEndDate: dateRange.endDate,
+        ...buildTotalTrendState('total', this.data.analysisData?.totalData?.readTrends?.total ?? []),
+      })
+      return
+    }
     this.setData({
       activePeriod: 'custom',
       customStartDate: dateRange.startDate,
       customEndDate: dateRange.endDate,
-      dateRangePickerVisible: false,
     })
     if (this.data.activeAnalysisTab === 'user') {
       this.loadAudienceUsers('custom', dateRange)
@@ -299,16 +518,40 @@ Page({
   onDateRangeCancel() {
     this.setData({ dateRangePickerVisible: false })
   },
-  onTotalAnalysisPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
+  onTotalOverviewPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
     if (!totalAnalysisPeriods[event.detail.index]) return
-    const readRange: AnalysisReadRange = event.detail.id === 'month' ? 'month' : 'week'
+    const periodId = event.detail.id
+    if (periodId === 'custom') {
+      this.setData({
+        dateRangePickerVisible: true,
+        dateRangePickerTarget: 'overview',
+        datePickerStartDate: this.data.overviewCustomStartDate,
+        datePickerEndDate: this.data.overviewCustomEndDate,
+      })
+      return
+    }
+
+    this.setData({ activeOverviewPeriod: periodId })
+    const trendPeriod = this.data.activePeakPeriod === 'custom' ? 'total' : this.data.activePeakPeriod
+    this.loadAnalysis(periodId, trendPeriod)
+  },
+  onTotalPeakPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
+    if (!totalAnalysisPeriods[event.detail.index]) return
+    const periodId = event.detail.id
+    if (periodId === 'custom') {
+      this.setData({
+        dateRangePickerVisible: true,
+        dateRangePickerTarget: 'peak',
+        datePickerStartDate: this.data.peakCustomStartDate,
+        datePickerEndDate: this.data.peakCustomEndDate,
+      })
+      return
+    }
 
     this.setData({
-      activeTotalPeriod: event.detail.id,
-      activeAnalysisReadRange: readRange,
-      analysisTrendSlotCount: getAnalysisTrendSlotCount(event.detail.id),
+      activePeakPeriod: periodId,
+      ...buildTotalTrendState(periodId, this.data.analysisData?.totalData?.readTrends?.[getAnalysisReadRange(periodId)] ?? []),
     })
-    this.loadAnalysis(event.detail.id)
   },
   onAnalysisSortTap() { this.setData({ analysisSortSheetVisible: !this.data.analysisSortSheetVisible }) },
   onAnalysisSortOptionTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisSortId }>) {
@@ -317,6 +560,9 @@ Page({
       activeAnalysisSort: option.id,
       activeAnalysisSortLabel: option.label,
       analysisSortSheetVisible: false,
+      visibleAnalysisCards: this.data.activeAnalysisTab === 'work'
+        ? sortAnalysisCards(this.data.visibleAnalysisCards, option.id)
+        : this.data.visibleAnalysisCards,
       visibleAnalysisUsers: this.data.activeAnalysisTab === 'user'
         ? sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], option.id)
         : this.data.visibleAnalysisUsers,
@@ -328,6 +574,9 @@ Page({
       activeAnalysisSort: option.id,
       activeAnalysisSortLabel: option.label,
       analysisSortSheetVisible: false,
+      visibleAnalysisCards: this.data.activeAnalysisTab === 'work'
+        ? sortAnalysisCards(this.data.visibleAnalysisCards, option.id)
+        : this.data.visibleAnalysisCards,
       visibleAnalysisUsers: this.data.activeAnalysisTab === 'user'
         ? sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], option.id)
         : this.data.visibleAnalysisUsers,
@@ -335,16 +584,13 @@ Page({
   },
   onAnalysisSortMaskTap() { this.setData({ analysisSortSheetVisible: false }) },
   onAnalysisCardTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
-    if (event.detail.id) wx.navigateTo({ url: `/pages/analysis-detail/index?id=${event.detail.id}` })
+    const cardId = event.detail.id
+    if (!cardId) return
+    wx.navigateTo({ url: `/pages/analysis-detail/index?id=${encodeURIComponent(cardId)}` })
   },
   onAnalysisUserTap(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
     if (!event.detail.id) return
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${event.detail.id}` })
-  },
-  onMaterialsScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
-    const materialsHeaderOpacity = calculateRankingHeaderOpacity(event.detail.scrollTop)
-    if (materialsHeaderOpacity === this.data.materialsHeaderOpacity) return
-    this.setData({ materialsHeaderOpacity })
   },
   onMaterialFilterTap(event: WechatMiniprogram.TouchEvent) {
     const filterId = event.currentTarget.dataset.id as MaterialsFilterId
@@ -361,23 +607,121 @@ Page({
     if (!material) return
 
     const url = material.isDraft
-      ? `/pages/materials/publish/index?id=${materialId}`
-      : `/pages/material-detail/index?id=${materialId}`
+      ? buildMaterialPublishPath(materialId)
+      : buildMaterialDetailPath(materialId)
     wx.navigateTo({ url })
   },
   onMaterialPublishTap() {
-    wx.navigateTo({ url: '/pages/materials/publish/index' })
+    this.setData({ publishTypeSheetVisible: true })
+  },
+  onPublishTypeSelect(event: WechatMiniprogram.CustomEvent<{ type: PublishEntryType }>) {
+    const type = event.detail.type
+    this.setData({ publishTypeSheetVisible: false }, () => {
+      if (type === 'pdf') {
+        this.choosePdfForPublish()
+        return
+      }
+      if (type !== 'image' && type !== 'video') return
+      this.pendingPublishType = type
+      this.setData({ publishSourceSheetVisible: true })
+    })
+  },
+  onPublishSourceSelect(event: WechatMiniprogram.CustomEvent<{ source: PublishMediaSource }>) {
+    const type = this.pendingPublishType
+    const source = event.detail.source
+    this.setData({ publishSourceSheetVisible: false }, () => {
+      if (!type) return
+      if (source !== 'camera' && source !== 'album') return
+      this.openPublishEditorFromPicker(type, source)
+    })
+  },
+  openPublishEditorFromPicker(type: 'image' | 'video', source: PublishMediaSource) {
+    choosePublishImageOrVideo({
+      type,
+      source,
+      count: type === 'image' ? MAX_IMAGE_COUNT : 1,
+    })
+      .then((media) => {
+        setPendingPublishSelection({ type, media })
+        wx.navigateTo({ url: `/pages/materials/publish/index?type=${type}` })
+      })
+      .catch((error: WechatMiniprogram.GeneralCallbackResult) => {
+        showPublishPickerError(error.errMsg)
+      })
+  },
+  choosePdfForPublish() {
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      extension: ['pdf'],
+      success: (result) => {
+        const file = result.tempFiles[0]
+        if (!file) return
+        if (!isPdfFileName(file.name)) {
+          wx.showToast({ title: '请选择 PDF 文件', icon: 'none' })
+          return
+        }
+
+        setPendingPublishSelection({
+          type: 'pdf',
+          media: [{ id: file.path, path: file.path, kind: 'pdf', previewPath: '', name: file.name, duration: 0 }],
+        })
+        wx.navigateTo({ url: '/pages/materials/publish/index?type=pdf' })
+      },
+      fail: (error) => {
+        showPublishPickerError(error.errMsg)
+      },
+    })
+  },
+  onPublishTypeCancel() {
+    this.setData({ publishTypeSheetVisible: false })
+  },
+  onPublishSourceCancel() {
+    this.setData({ publishSourceSheetVisible: false })
   },
   onPublishSuccessClose() {
-    this.setData({ showPublishSuccessModal: false })
+    this.setData({
+      showPublishSuccessModal: false,
+      shareMaterialId: '',
+      shareTrackingId: '',
+      shareTitle: '',
+      shareImageUrl: '',
+    })
   },
-  onShareFriendsTap() {
-    this.setData({ showPublishSuccessModal: false })
-    wx.showToast({ title: '分享功能待接入', icon: 'none' })
+  closePublishSuccessModalAfterShare() {
+    if (!this.data.showPublishSuccessModal) return
+    this.publishSuccessShared = true
+  },
+  closePublishSuccessModalAfterShareReturn() {
+    if (!this.publishSuccessShared) return
+
+    this.publishSuccessShared = false
+    this.onPublishSuccessClose()
+  },
+  onShareAppMessage() {
+    const imageUrl = pickShareImageUrl(this.data.shareImageUrl, this.data.materials?.items ?? [], this.data.shareMaterialId)
+    if (!this.data.shareMaterialId || !imageUrl) return
+
+    this.closePublishSuccessModalAfterShare()
+    return {
+      title: this.data.shareTitle || buildMaterialShareTitle([]),
+      path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId),
+      imageUrl,
+    }
+  },
+  onShareTimeline() {
+    const imageUrl = pickShareImageUrl(this.data.shareImageUrl, this.data.materials?.items ?? [], this.data.shareMaterialId)
+    if (!this.data.shareMaterialId || !imageUrl) return
+
+    this.closePublishSuccessModalAfterShare()
+    return {
+      title: this.data.shareTitle || buildMaterialShareTitle([]),
+      query: buildMaterialShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
+      imageUrl,
+    }
   },
   onShareMomentsTap() {
-    this.setData({ showPublishSuccessModal: false })
-    wx.showToast({ title: '分享功能待接入', icon: 'none' })
+    showMomentsShareGuide()
   },
   onPlusTap() {
     this.setActiveTab(2)

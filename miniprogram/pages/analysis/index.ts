@@ -1,8 +1,14 @@
-import { getAnalysisOverview } from '../../services/analysis'
-import type { AnalysisAudienceUser, AnalysisReadRange, AnalysisViewModel } from '../../types/analysis'
+import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
+import { runAuthed } from '../../services/auth'
+import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
+import { fromDatasetId } from '../../utils/dataset-id'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
+import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
+import { runPagePullRefresh } from '../../utils/pull-refresh'
+import { buildReturnPath } from '../../utils/auth'
+import { getNavigationBarLayout } from '../../utils/navigation-layout'
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
 
@@ -31,17 +37,10 @@ const dateRangeLimits = getDateRangeLimits()
 
 const totalAnalysisPeriods: AnalysisPeriodOption[] = [
   { id: 'day', label: '日' },
-  { id: 'week', label: '本周' },
-  { id: 'month', label: '本月' },
-  { id: 'total', label: '总' },
+  { id: 'week', label: '周' },
+  { id: 'month', label: '月' },
+  { id: 'custom', label: '', iconPath: '/assets/analysis/calendar-filter.svg' },
 ]
-
-function getAnalysisTrendSlotCount(period: AnalysisPeriodId): number {
-  if (period === 'day') return 24
-  if (period === 'week') return 7
-  if (period === 'month') return 30
-  return 0
-}
 
 const analysisSortOptions: AnalysisSortOption[] = [
   { id: 'completion', label: '完播数' },
@@ -50,6 +49,7 @@ const analysisSortOptions: AnalysisSortOption[] = [
 ]
 
 type AnalysisTabId = 'work' | 'user' | 'total'
+type TotalDateRangeTarget = 'work' | 'overview' | 'peak'
 interface AnalysisTabOption {
   id: AnalysisTabId
   label: string
@@ -65,6 +65,7 @@ const analysisSwipeThreshold = 40
 
 Page({
   data: {
+    analysisNavigationHeight: 91,
     analysisData: null as AnalysisViewModel | null,
     analysisTabs,
     activeAnalysisTab: 'work' as AnalysisTabId,
@@ -74,8 +75,15 @@ Page({
     analysisPeriods,
     activePeriod: 'day' as AnalysisPeriodId,
     dateRangePickerVisible: false,
+    dateRangePickerTarget: 'work' as TotalDateRangeTarget,
     customStartDate: defaultDateRange.startDate,
     customEndDate: defaultDateRange.endDate,
+    overviewCustomStartDate: defaultDateRange.startDate,
+    overviewCustomEndDate: defaultDateRange.endDate,
+    peakCustomStartDate: defaultDateRange.startDate,
+    peakCustomEndDate: defaultDateRange.endDate,
+    datePickerStartDate: defaultDateRange.startDate,
+    datePickerEndDate: defaultDateRange.endDate,
     todayDate: dateRangeLimits.maxDate,
     twoMonthsAgoDate: dateRangeLimits.minDate,
     analysisSortOptions,
@@ -85,48 +93,79 @@ Page({
     visibleAnalysisUsers: [] as AnalysisAudienceUser[],
     workSummary: [] as AnalysisViewModel['summary'],
     visibleAnalysisCards: [] as AnalysisViewModel['cards'],
+    workCount: '0',
     hasAnalysisCards: false,
     hasAnalysisUsers: false,
     totalAnalysisPeriods,
-    activeTotalPeriod: 'total' as AnalysisPeriodId,
-    activeAnalysisReadRange: 'week' as AnalysisReadRange,
-    visibleAnalysisReadTrend: [] as AnalysisViewModel['totalData']['readTrends']['week'],
-    analysisTrendSlotCount: getAnalysisTrendSlotCount('total'),
+    activeOverviewPeriod: 'day' as AnalysisPeriodId,
+    activePeakPeriod: 'day' as AnalysisPeriodId,
+    ...buildTotalTrendState('day'),
   },
   onLoad(options: Record<string, string | undefined>) {
-    const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
+    this.setData({ analysisNavigationHeight: getNavigationBarLayout().totalHeight })
+    runAuthed(buildReturnPath('/pages/analysis/index', options), () => {
+      const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
 
-    this.setData({
-      activeAnalysisTab: analysisTabs[analysisTabIndex].id,
-      activeAnalysisTabIndex: analysisTabIndex,
-      analysisTabOffset: analysisTabIndex * 100,
+      this.setData({
+        activeAnalysisTab: analysisTabs[analysisTabIndex].id,
+        activeAnalysisTabIndex: analysisTabIndex,
+        analysisTabOffset: analysisTabIndex * 100,
+      })
+
+      this.loadAnalysis(this.data.activePeriod)
     })
-
-    this.loadAnalysis(this.data.activePeriod)
   },
-  loadAnalysis(period: AnalysisPeriodId) {
-    getAnalysisOverview(period).then((analysisData) => {
+  onPullDownRefresh() {
+    runPagePullRefresh(this.refreshCurrentView())
+  },
+  refreshCurrentView() {
+    if (this.data.activeAnalysisTab === 'user') {
+      return this.loadAudienceUsers(this.data.activePeriod, this.resolveWorkDateRange(this.data.activePeriod))
+    }
+    if (this.data.activeAnalysisTab === 'total') {
+      const customRange = this.data.activeOverviewPeriod === 'custom'
+        ? { startDate: this.data.overviewCustomStartDate, endDate: this.data.overviewCustomEndDate }
+        : undefined
+      const trendPeriod = this.data.activePeakPeriod === 'custom' ? 'total' : this.data.activePeakPeriod
+      return this.loadAnalysis(this.data.activeOverviewPeriod, trendPeriod, customRange)
+    }
+    return this.loadWorkCards(this.data.activePeriod)
+  },
+  resolveWorkDateRange(period: AnalysisPeriodId, dateRange?: DateRange): DateRange | undefined {
+    if (period !== 'custom') return dateRange
+    return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
+  },
+  loadAnalysis(period: AnalysisPeriodId, trendPeriod: AnalysisPeriodId = this.data.activePeakPeriod, dateRange?: DateRange) {
+    const request = dateRange
+      ? getAnalysisOverview(period, dateRange, this.data.activeAnalysisSort, trendPeriod)
+      : getAnalysisOverview(period, undefined, this.data.activeAnalysisSort, trendPeriod)
+    return request.then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
+      // Keep the chart tied to the latest peak selector choice even if an overview request resolves later.
+      const currentTrendPeriod = this.data.activePeakPeriod || trendPeriod
+      const resolvedTrendPeriod = currentTrendPeriod === 'custom' ? 'total' : currentTrendPeriod
+      const trendState = buildTotalTrendState(resolvedTrendPeriod, analysisData.totalData.readTrends[getAnalysisReadRange(resolvedTrendPeriod)])
 
       this.setData({
         analysisData,
         visibleAnalysisUsers,
         workSummary: initializeWorkData ? analysisData.summary : this.data.workSummary,
         visibleAnalysisCards: initializeWorkData ? analysisData.cards : this.data.visibleAnalysisCards,
+        workCount: initializeWorkData ? analysisData.workCount : this.data.workCount,
         hasAnalysisCards: initializeWorkData ? analysisData.cards.length > 0 : this.data.hasAnalysisCards,
         hasAnalysisUsers: visibleAnalysisUsers.length > 0,
-        visibleAnalysisReadTrend: analysisData.totalData.readTrends[this.data.activeAnalysisReadRange],
+        ...trendState,
       })
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
-    getAnalysisOverview(period, dateRange).then((analysisData) => {
-      this.setData({ visibleAnalysisCards: analysisData.cards, hasAnalysisCards: analysisData.cards.length > 0 })
+    return getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards, workCount }) => {
+      this.setData({ workSummary: summary, visibleAnalysisCards: cards, workCount, hasAnalysisCards: cards.length > 0 })
     })
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
-    getAnalysisOverview(period, dateRange).then((analysisData) => {
+    return getAnalysisOverview(period, dateRange).then((analysisData) => {
       const visibleAnalysisUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const currentAnalysisData = this.data.analysisData ?? analysisData
       this.setData({
@@ -159,25 +198,54 @@ Page({
       analysisTabOffset: index * 100,
     })
   },
-  onTotalPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
+  onTotalOverviewPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
     const { id: periodId, index: periodIndex } = event.detail
-    const readRange: AnalysisReadRange = periodId === 'month' ? 'month' : 'week'
 
     if (!totalAnalysisPeriods[periodIndex]) return
+    if (periodId === 'custom') {
+      this.setData({
+        dateRangePickerVisible: true,
+        dateRangePickerTarget: 'overview',
+        datePickerStartDate: this.data.overviewCustomStartDate,
+        datePickerEndDate: this.data.overviewCustomEndDate,
+      })
+      return
+    }
+
+    this.setData({ activeOverviewPeriod: periodId })
+    const trendPeriod = this.data.activePeakPeriod === 'custom' ? 'total' : this.data.activePeakPeriod
+    this.loadAnalysis(periodId, trendPeriod)
+  },
+  onTotalPeakPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
+    const { id: periodId, index: periodIndex } = event.detail
+
+    if (!totalAnalysisPeriods[periodIndex]) return
+    if (periodId === 'custom') {
+      this.setData({
+        dateRangePickerVisible: true,
+        dateRangePickerTarget: 'peak',
+        datePickerStartDate: this.data.peakCustomStartDate,
+        datePickerEndDate: this.data.peakCustomEndDate,
+      })
+      return
+    }
 
     this.setData({
-      activeTotalPeriod: periodId,
-      activeAnalysisReadRange: readRange,
-      analysisTrendSlotCount: getAnalysisTrendSlotCount(periodId),
+      activePeakPeriod: periodId,
+      ...buildTotalTrendState(periodId, this.data.analysisData?.totalData?.readTrends?.[getAnalysisReadRange(periodId)] ?? []),
     })
-    this.loadAnalysis(periodId)
   },
   onPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
     const { id: periodId, index: periodIndex } = event.detail
 
     if (!Number.isInteger(periodIndex) || periodIndex < 0 || periodIndex >= analysisPeriods.length) return
     if (periodId === 'custom') {
-      this.setData({ dateRangePickerVisible: true })
+      this.setData({
+        dateRangePickerVisible: true,
+        dateRangePickerTarget: 'work',
+        datePickerStartDate: this.data.customStartDate,
+        datePickerEndDate: this.data.customEndDate,
+      })
       return
     }
 
@@ -195,11 +263,32 @@ Page({
   onDateRangeConfirm(event: WechatMiniprogram.CustomEvent<{ startDate: string; endDate: string }>) {
     const dateRange = event.detail
 
+    const target = this.data.dateRangePickerTarget || (this.data.activeAnalysisTab === 'total' ? 'overview' : 'work')
+    this.setData({ dateRangePickerVisible: false })
+    if (target === 'overview') {
+      this.setData({
+        activeOverviewPeriod: 'custom',
+        overviewCustomStartDate: dateRange.startDate,
+        overviewCustomEndDate: dateRange.endDate,
+      })
+      const trendPeriod = this.data.activePeakPeriod === 'custom' ? 'total' : this.data.activePeakPeriod
+      this.loadAnalysis('custom', trendPeriod, dateRange)
+      return
+    }
+    if (target === 'peak') {
+      this.setData({
+        activePeakPeriod: 'custom',
+        peakCustomStartDate: dateRange.startDate,
+        peakCustomEndDate: dateRange.endDate,
+        ...buildTotalTrendState('total', this.data.analysisData?.totalData?.readTrends?.total ?? []),
+      })
+      return
+    }
+
     this.setData({
       activePeriod: 'custom',
       customStartDate: dateRange.startDate,
       customEndDate: dateRange.endDate,
-      dateRangePickerVisible: false,
     })
     if (this.data.activeAnalysisTab === 'user') {
       this.loadAudienceUsers('custom', dateRange)
@@ -224,6 +313,9 @@ Page({
       activeAnalysisSort: sortOption.id,
       activeAnalysisSortLabel: sortOption.label,
       analysisSortSheetVisible: false,
+      visibleAnalysisCards: this.data.activeAnalysisTab === 'work'
+        ? sortAnalysisCards(this.data.visibleAnalysisCards, sortOption.id)
+        : this.data.visibleAnalysisCards,
       visibleAnalysisUsers: this.data.activeAnalysisTab === 'user'
         ? sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], sortOption.id)
         : this.data.visibleAnalysisUsers,
@@ -233,12 +325,13 @@ Page({
     this.setData({ analysisSortSheetVisible: false })
   },
   onCardTap(event: WechatMiniprogram.TouchEvent) {
-    const cardId = event.currentTarget.dataset.id as string
-
-    wx.navigateTo({ url: `/pages/analysis-detail/index?id=${cardId}` })
+    const cardId = fromDatasetId(event.currentTarget.dataset.id)
+    if (!cardId) return
+    wx.navigateTo({ url: `/pages/analysis-detail/index?id=${encodeURIComponent(cardId)}` })
   },
   onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) {
-    const userId = event.currentTarget.dataset.id as string
+    const userId = fromDatasetId(event.currentTarget.dataset.id)
+    if (!userId) return
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${userId}` })
   },
 })

@@ -31,6 +31,10 @@ export interface ApiDashboard {
   highIntentCount: number | null
   mediumIntentCount: number | null
   lowIntentCount: number | null
+  /** 浏览次数较上期差值（日=较昨日，周/月=等长上一段，总=较上两月） */
+  totalViewCountDelta: number | null
+  /** 浏览人数较上期差值 */
+  totalViewerCountDelta: number | null
 }
 
 /** GET /analysis/content/list 响应项（ContentListVO） */
@@ -56,6 +60,7 @@ export interface ApiAudience {
   viewCount: number | null
   duration: number | null
   completed: number | null
+  intentLevel: ApiIntentLevel | null
   lastViewTime: string | null
 }
 
@@ -84,6 +89,13 @@ export interface ApiCustomerListItem {
   lastViewTime: string | null
 }
 
+/** GET /analysis/trend 响应项（DailyViewVO） */
+export interface ApiDailyView {
+  date: string | null
+  hour: number | null
+  viewCount: number | null
+}
+
 /** GET /analysis/customer/history 响应项（CustomerViewHistoryVO） */
 export interface ApiCustomerViewHistory {
   materialId: string
@@ -94,9 +106,18 @@ export interface ApiCustomerViewHistory {
   progress: number | null
   completed: number | null
   viewTime: string | null
+  actionType: string | null
 }
 
 export type ApiIntentLevel = 'high' | 'medium' | 'low'
+
+/** GET/PUT /user/notify-settings 的推送意向门槛 */
+export type ApiNotifyIntentLevel = 'low' | 'medium' | 'high'
+
+/** GET/PUT /user/notify-settings 响应（NotifySettingsVO） */
+export interface ApiNotifySettings {
+  notifyIntentLevel: ApiNotifyIntentLevel | null
+}
 
 /** GET /analysis/intent/list 响应项（IntentCustomerVO，一名客户一行） */
 export interface ApiIntentCustomer {
@@ -110,6 +131,88 @@ export interface ApiIntentCustomer {
   materialTitle: string | null
   intentLevel: ApiIntentLevel
   lastViewTime: string | null
+}
+
+/** GET /analysis/notify/list 响应项（NotificationEventVO，每一次浏览或转发一行） */
+export interface ApiNotificationEvent {
+  id: string
+  customerId: string
+  nickname: string | null
+  avatar: string | null
+  materialId: string | null
+  materialTitle: string | null
+  fileType?: ApiMaterialFileType | null
+  actionType: string | null
+  duration: number | null
+  progress: number | null
+  completed: number | null
+  intentLevel: ApiIntentLevel | null
+  viewTime: string | null
+}
+
+/** GET /analysis/customer/journey 响应项（UserJourneyEventVO） */
+export interface ApiUserJourneyEvent {
+  id: string
+  occurredAt: string | null
+  actionType: string | null
+  completed: number | null
+  duration: number | null
+  progress: number | null
+  viewedPages: number | null
+  forwardIndex: number | null
+}
+
+/** GET /analysis/customer/journey 响应（UserJourneyVO） */
+export interface ApiUserJourney {
+  customerId: string
+  nickname: string | null
+  materialId: string
+  title: string | null
+  coverUrl: string | null
+  fileUrl: string | null
+  fileType: string | null
+  pageCount: number | null
+  intentLevel: ApiIntentLevel | null
+  events: ApiUserJourneyEvent[] | null
+}
+
+export type ApiMembershipPlanId = 'month' | 'quarter' | 'half_year'
+
+export type ApiMembershipOrderStatus = 'pending' | 'paid' | 'closed'
+
+/** GET /membership/me 套餐项（MembershipPlanVO） */
+export interface ApiMembershipPlan {
+  id: ApiMembershipPlanId
+  title: string
+  durationMonths: number
+  amountFen: number
+  priceYuan: string
+}
+
+/** GET /membership/me 响应（MembershipStatusVO） */
+export interface ApiMembershipStatus {
+  active: boolean
+  expireAt: string | null
+  plans: ApiMembershipPlan[] | null
+  lastPaidOutTradeNo?: string | null
+}
+
+/** POST /membership/order 响应（MembershipPayParamsVO，虚拟支付） */
+export interface ApiMembershipPayParams {
+  outTradeNo: string
+  signData: string
+  paySig: string
+  signature: string
+  mode: string
+}
+
+/** GET /membership/orders/:outTradeNo 与 POST /membership/orders/:outTradeNo/sync 响应（MembershipOrderVO） */
+export interface ApiMembershipOrder {
+  outTradeNo: string
+  planId: ApiMembershipPlanId
+  status: ApiMembershipOrderStatus
+  amountFen: number
+  expireAt: string | null
 }
 
 export type ApiMaterialFileType = 'PDF' | 'IMAGE' | 'VIDEO' | 'TABLE'

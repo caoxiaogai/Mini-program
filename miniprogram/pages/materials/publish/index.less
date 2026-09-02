@@ -1,43 +1,51 @@
 @publish-muted: #8a8e94;
-@publish-border: @content-box-border;
 @publish-accent: #0db6c5;
 
 page {
   min-height: 100vh;
-  background: #ffffff;
+  background: @app-page-background;
 }
 
 .publish-page {
+  display: flex;
   min-height: 100vh;
-  background: #ffffff;
+  flex-direction: column;
+  background: @app-page-background;
   color: #000000;
 }
 
 .publish-page__content {
-  padding: 10rpx 40rpx 180rpx;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  padding: 10rpx 48rpx 180rpx;
   box-sizing: border-box;
 }
 
 .publish-page__image-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 10rpx;
+  gap: 20rpx;
+  width: 100%;
 }
 
 .publish-page__image-slot {
   position: relative;
-  width: 140rpx;
-  height: 140rpx;
-  border: 2rpx solid @publish-border;
+  width: calc((100% - 40rpx) / 3);
+  aspect-ratio: 1 / 1;
   border-radius: 16rpx;
   box-sizing: border-box;
 }
 
+.publish-page__image-slot--filled {
+  border: 2rpx solid #e5e5e5;
+}
+
 .publish-page__image-slot--add {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: #f7f7f7;
+  border: 2rpx solid #e5e5e5;
+  border-radius: 20rpx;
 }
 
 .publish-page__image-slot--pressed {
@@ -45,6 +53,11 @@ page {
 }
 
 .publish-page__image {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -72,19 +85,98 @@ page {
 }
 
 .publish-page__add-icon {
-  color: #cccccc;
-  font-size: 52rpx;
-  font-weight: 200;
-  line-height: 52rpx;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26%;
+  height: 26%;
+  transform: translate(-50%, -50%);
+}
+
+.publish-page__add-icon-horizontal,
+.publish-page__add-icon-vertical {
+  position: absolute;
+  border-radius: 46rpx;
+  background: #8a8e94;
+}
+
+.publish-page__add-icon-horizontal {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 4rpx;
+  margin-top: -2rpx;
+}
+
+.publish-page__add-icon-vertical {
+  top: 0;
+  left: 50%;
+  width: 4rpx;
+  height: 100%;
+  margin-left: -2rpx;
+}
+
+.publish-page__video-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36rpx;
+  height: 36rpx;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.publish-page__pdf-slot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 12rpx;
+  border-radius: 14rpx;
+  background: #f7f7f7;
+  box-sizing: border-box;
+}
+
+.publish-page__pdf-badge {
+  color: @publish-accent;
+  font-size: 20rpx;
+  font-weight: 600;
+  line-height: 24rpx;
+}
+
+.publish-page__pdf-name {
+  display: -webkit-box;
+  overflow: hidden;
+  width: 100%;
+  color: #000000;
+  font-size: 18rpx;
+  line-height: 24rpx;
+  text-align: center;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.publish-page__copy-area {
+  flex: 1;
+  width: 100%;
+  min-height: 200rpx;
+  margin-top: 40rpx;
 }
 
 .publish-page__copy {
   display: block;
   width: 100%;
   min-height: 80rpx;
-  margin-top: 20rpx;
   padding: 0;
   color: #000000;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Microsoft YaHei", sans-serif;
   font-size: 32rpx;
   line-height: 44rpx;
   box-sizing: border-box;
@@ -107,7 +199,7 @@ page {
   align-items: center;
   height: 152rpx;
   padding: 0 40rpx calc(40rpx + env(safe-area-inset-bottom));
-  background: #ffffff;
+  background: transparent;
   box-sizing: border-box;
 }
 
@@ -126,7 +218,7 @@ page {
 
 .publish-page__draft-button {
   flex: 0 0 202rpx;
-  border: 2rpx solid #eff0f0;
+  border: 2rpx solid #e5e5e5;
   color: #000000;
 }
 

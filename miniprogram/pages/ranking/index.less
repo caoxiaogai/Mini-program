@@ -1,9 +1,9 @@
-@ranking-background: #ffffff;
+@ranking-background: @app-page-background;
 @ranking-muted: #8a8e94;
 
 page {
   min-height: 100vh;
-  background: #ffffff;
+  background: @app-page-background;
 }
 
 .ranking-page {
@@ -11,7 +11,7 @@ page {
   display: flex;
   min-height: 100vh;
   flex-direction: column;
-  background: #ffffff;
+  background: @app-page-background;
   color: #000000;
   isolation: isolate;
 }
@@ -52,7 +52,7 @@ page {
   flex-direction: column;
   z-index: 1001;
   padding: 70rpx 40rpx 48rpx;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 13.976%, #ffffff 100%);
+  background: linear-gradient(180deg, rgba(237, 240, 245, 0) 0%, @app-page-background 13.976%, @app-page-background 100%);
   box-sizing: border-box;
 }
 
@@ -102,10 +102,8 @@ page {
   flex-direction: column;
   margin-top: 20rpx;
   padding: 40rpx;
-  border: 2rpx solid @content-box-border;
   border-radius: 40rpx;
   background: #ffffff;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
 }
 

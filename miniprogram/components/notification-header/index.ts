@@ -3,12 +3,17 @@ import type { NotificationFilterId } from '../../types/notifications'
 Component({
   properties: {
     embedded: { type: Boolean, value: false },
+    navigationHeight: { type: Number, value: 0 },
     filters: { type: Array, value: [] },
     activeFilter: { type: String, value: 'all' },
   },
   methods: {
-    onFilterTap(event: WechatMiniprogram.TouchEvent) {
-      this.triggerEvent('filtertap', { filterId: event.currentTarget.dataset.id as NotificationFilterId })
+    onFilterChange(event: WechatMiniprogram.CustomEvent<{ id?: string }>) {
+      const filterId = event.detail?.id as NotificationFilterId | undefined
+      if (!filterId || !['all', 'high', 'medium', 'low'].includes(filterId)) return
+
+      wx.vibrateShort({ type: 'light' })
+      this.triggerEvent('filtertap', { filterId })
     },
   },
 })
