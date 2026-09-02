@@ -91,6 +91,8 @@
   left: 20rpx;
   display: block;
   width: 88rpx;
+  height: 64rpx;
+  line-height: 64rpx;
   max-width: 0;
   overflow: hidden;
   opacity: 0;
@@ -108,6 +110,13 @@
   text-align: center;
 }
 
+.notification-mark-all-read__close-hit {
+  position: relative;
+  width: 32rpx;
+  height: 32rpx;
+  flex: none;
+}
+
 .notification-mark-all-read__close {
   position: relative;
   width: 32rpx;
@@ -117,14 +126,22 @@
   background: #333333;
 }
 
-.notification-mark-all-read--compact .notification-mark-all-read__close {
+.notification-mark-all-read--compact .notification-mark-all-read__close-hit {
   position: absolute;
   top: 50%;
-  right: 12rpx;
+  right: -8rpx;
+  width: 64rpx;
+  height: 64rpx;
+  margin-top: -32rpx;
+  z-index: 1;
+}
+
+.notification-mark-all-read--compact .notification-mark-all-read__close {
+  position: absolute;
+  top: 20rpx;
+  left: 20rpx;
   width: 24rpx;
   height: 24rpx;
-  margin-top: -12rpx;
-  z-index: 1;
 }
 
 .notification-mark-all-read__close-line {

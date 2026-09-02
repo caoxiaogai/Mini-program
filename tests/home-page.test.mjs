@@ -317,6 +317,7 @@ test('home interaction messages expose the compact mark-all-read action', async 
   assert.match(component, /compactExpanded \? 'notification-mark-all-read--compact-expanded' : ''/)
   assert.match(component, /bindtouchmove="onCompactTouchMove"/)
   assert.match(component, /catchtap="onCompactCloseTap"/)
+  assert.match(component, /class="notification-mark-all-read__close-hit" catchtap="onCompactCloseTap"/)
   assert.match(component, /catchtap="onCompactMarkAllReadTap"/)
   assert.match(component, /wx:if="\{\{compact && compactExpanded\}\}" class="notification-mark-all-read__dismiss" catchtap="onCompactDismissTap" bindtouchmove="onCompactTouchMove"/)
   assert.match(component, /wx:if="\{\{!compact \|\| !compactExpanded\}\}"/)
@@ -334,12 +335,15 @@ test('home interaction messages expose the compact mark-all-read action', async 
   assert.match(componentStyles, /notification-mark-all-read--compact \{[\s\S]*transition: width 300ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/)
   assert.match(componentStyles, /notification-mark-all-read--compact-expanded \{[\s\S]*width: 144rpx;[\s\S]*min-width: 0;[\s\S]*flex: 0 0 144rpx;/)
   assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__label \{[\s\S]*max-width: 0;[\s\S]*opacity: 0;/)
+  assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__label \{[\s\S]*height: 64rpx;[\s\S]*line-height: 64rpx;/)
   assert.match(componentStyles, /notification-mark-all-read--compact-expanded \{[\s\S]*padding: 0;/)
   assert.match(componentStyles, /notification-mark-all-read--compact-expanded \.notification-mark-all-read__label \{[\s\S]*left: 50%;[\s\S]*width: 88rpx;[\s\S]*max-width: 88rpx;[\s\S]*opacity: 1;[\s\S]*text-align: center;/)
   assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__label \{[\s\S]*transition: [^;]*max-width 300ms cubic-bezier\(0\.22, 1, 0\.36, 1\), opacity 300ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/)
   assert.match(componentStyles, /notification-mark-all-read--compact::after \{[\s\S]*pointer-events: none;/)
   assert.match(componentStyles, /notification-mark-all-read--compact-expanded \{[\s\S]*z-index: 1002;/)
   assert.match(componentStyles, /notification-mark-all-read__dismiss \{[\s\S]*position: fixed;[\s\S]*top: 0;[\s\S]*right: 0;[\s\S]*bottom: 0;[\s\S]*left: 0;[\s\S]*z-index: 0;/)
+  assert.match(componentStyles, /notification-mark-all-read__close-hit \{[\s\S]*width: 32rpx;[\s\S]*height: 32rpx;/)
+  assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__close-hit \{[\s\S]*width: 64rpx;[\s\S]*height: 64rpx;/)
 })
 
 test('home greeting follows the device local time', async () => {

@@ -1,8 +1,10 @@
 <view class="notification-mark-all-read {{compact ? 'notification-mark-all-read--compact' : ''}} {{compact && compactExpanded ? 'notification-mark-all-read--compact-expanded' : ''}}" bindtap="onMarkAllReadTap" bindtouchmove="onCompactTouchMove" hover-class="notification-mark-all-read--pressed" hover-start-time="80" hover-stay-time="120" aria-role="button" aria-label="一键已读">
   <view wx:if="{{compact && compactExpanded}}" class="notification-mark-all-read__dismiss" catchtap="onCompactDismissTap" bindtouchmove="onCompactTouchMove" aria-hidden="true" />
   <text class="notification-mark-all-read__label" catchtap="onCompactMarkAllReadTap">一键已读<text wx:if="{{!compact}}">({{unreadCount}})</text></text>
-  <view wx:if="{{!compact || !compactExpanded}}" class="notification-mark-all-read__close" catchtap="onCompactCloseTap" aria-hidden="true">
-    <view class="notification-mark-all-read__close-line notification-mark-all-read__close-line--first" />
-    <view class="notification-mark-all-read__close-line notification-mark-all-read__close-line--second" />
+  <view wx:if="{{!compact || !compactExpanded}}" class="notification-mark-all-read__close-hit" catchtap="onCompactCloseTap" aria-hidden="true">
+    <view class="notification-mark-all-read__close">
+      <view class="notification-mark-all-read__close-line notification-mark-all-read__close-line--first" />
+      <view class="notification-mark-all-read__close-line notification-mark-all-read__close-line--second" />
+    </view>
   </view>
 </view>
