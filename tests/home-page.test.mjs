@@ -676,6 +676,21 @@ test('profile tab exposes the Figma 519:5031 structure through a typed service s
   assert.match(component, /bindtap="onMembershipTap"/)
 })
 
+test('active standard membership content shares the Figma card inset', () => {
+  const component = read('miniprogram/components/home-profile/index.wxml')
+  const styles = read('miniprogram/components/home-profile/index.less')
+
+  assert.match(component, /class="home-profile__membership-active-copy"[\s\S]*class="home-profile__membership-active-header"[\s\S]*class="home-profile__membership-active-tracking"/)
+  assert.match(styles, /.home-profile__membership-active-copy \{[\s\S]*top: 40rpx;[\s\S]*bottom: 40rpx;[\s\S]*right: 40rpx;[\s\S]*left: 40rpx;/)
+})
+
+test('active standard membership uses the Figma tracking bars', () => {
+  const styles = read('miniprogram/components/home-profile/index.less')
+
+  assert.match(styles, /.home-profile__membership-active-progress \{[^}]*gap: 4rpx;[^}]*justify-content: space-between;/)
+  assert.match(styles, /.home-profile__membership-active-segment \{[^}]*width: 4rpx;[^}]*height: 12rpx;/)
+})
+
 test('profile settings sits on the nickname row with matching side insets', () => {
   const component = read('miniprogram/components/home-profile/index.wxml')
   const styles = read('miniprogram/components/home-profile/index.less')
@@ -798,11 +813,96 @@ test('primary page backgrounds stay fixed while first-screen content pulls down'
   const materialsStyles = read('miniprogram/pages/materials/index.less')
   const rankingStyles = read('miniprogram/pages/ranking/index.less')
   const profileStyles = read('miniprogram/components/home-profile/index.less')
+  const profileMarkup = read('miniprogram/components/home-profile/index.wxml')
 
   assert.match(materialsStyles, /\.materials-page__top\s*\{[^}]*position: fixed;/)
   assert.match(rankingStyles, /\.ranking-page__base\s*\{[^}]*position: fixed;/)
   assert.match(rankingStyles, /\.ranking-page__status-glow\s*\{[^}]*position: fixed;/)
+  assert.match(profileStyles, /\.home-profile__gradient\s*\{[^}]*position: fixed;[^}]*z-index: 0;[^}]*height: 274rpx;/)
   assert.match(profileStyles, /\.home-profile__stripes\s*\{[^}]*position: fixed;/)
+  assert.match(profileMarkup, /<image class="home-profile__gradient" src="\/assets\/home-new\/home-header-background\.svg" mode="scaleToFill" \/>[\s\S]*?<image class="home-profile__stripes" src="\/assets\/line-bg\.svg" mode="scaleToFill" \/>/)
+})
+
+test('home renders the fixed Figma 949:2077 membership tracking-limit prompt', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+  const prompt = read('miniprogram/components/membership-limit-prompt/index.wxml')
+  const promptStyles = read('miniprogram/components/membership-limit-prompt/index.less')
+
+  assert.match(page, /class="home-membership-limit"><membership-limit-prompt bind:upgrade="onHomeMembershipLimitTap" \/>/)
+  assert.match(prompt, /membership-limit-prompt__background" src="\/assets\/home-new\/membership-limit-background\.svg"/)
+  assert.match(prompt, /membership-limit-prompt__rings" src="\/assets\/home-new\/membership-limit-rings\.svg"/)
+  assert.match(prompt, /最终已达上线，升级\/开通会员触达更多客户/)
+  assert.match(prompt, /<text>立即升级<\/text>/)
+  assert.match(styles, /\.home-membership-limit\s*\{[\s\S]*?height: 200rpx;/)
+  assert.match(promptStyles, /\.membership-limit-prompt__content\s*\{[\s\S]*?top: 46rpx;[\s\S]*?left: 28rpx;/)
+  assert.match(promptStyles, /\.membership-limit-prompt__message\s*\{[\s\S]*?font-weight: 600;/)
+  assert.match(promptStyles, /\.membership-limit-prompt__upgrade\s*\{[\s\S]*?height: 64rpx;[\s\S]*?border: 2rpx solid #ffffff;[\s\S]*?background: linear-gradient\(180deg, #ffdcae 0%, #feb500 100%\);/)
+})
+
+test('profile membership card uses the original Figma 911:13452 vector layers', () => {
+  const markup = read('miniprogram/components/home-profile/index.wxml')
+  const styles = read('miniprogram/components/home-profile/index.less')
+
+  assert.match(markup, /membership-card-outer\.svg/)
+  assert.match(markup, /membership-card-mask\.svg/)
+  assert.match(markup, /membership-card-rings\.svg/)
+  assert.match(markup, /membership-card-crown\.svg/)
+  assert.match(markup, /membership-card-arrow\.svg/)
+  assert.doesNotMatch(markup, /src="\/assets\/profile\/membership-(base|outline|rings|crown|chevron)\.svg"/)
+  assert.match(styles, /\.home-profile__membership\s*\{[\s\S]*?z-index: 4;[\s\S]*?height: 190rpx;[\s\S]*?margin-top: 40rpx;[\s\S]*?overflow: hidden;/)
+  assert.match(styles, /\.home-profile__membership-outer\s*\{[\s\S]*?top: 20rpx;[\s\S]*?transform: rotate\(-6\.5deg\);[\s\S]*?transform-origin: right center;/)
+  assert.match(styles, /\.home-profile__membership-card\s*\{[\s\S]*?top: 54rpx;[\s\S]*?height: 136rpx;/)
+})
+
+test('profile uses Figma 949:2541 for the standard membership card', () => {
+  const markup = read('miniprogram/components/home-profile/index.wxml')
+  const styles = read('miniprogram/components/home-profile/index.less')
+  const profileType = read('miniprogram/types/profile.ts')
+  const service = read('miniprogram/services/profile.ts')
+
+  assert.match(markup, /profile\.membership\.active/)
+  assert.match(markup, /membership-card-active\.svg/)
+  assert.equal(existsSync(new URL('../miniprogram/assets/profile/membership-card-active.svg', import.meta.url)), true)
+  assert.match(markup, /标准会员/)
+  assert.match(markup, /{{profile\.membership\.expireLabel}} 到期/)
+  assert.match(markup, /升级尊享会员，畅享无限人数追踪/)
+  assert.match(markup, /剩余追踪人数|trackingSegments/)
+  assert.match(styles, /\.home-profile__membership--active\s*\{[\s\S]*?height: 320rpx;/)
+  assert.match(styles, /\.home-profile__membership-active-copy\s*\{[\s\S]*?top: 40rpx;[\s\S]*?bottom: 40rpx;[\s\S]*?left: 40rpx;/)
+  assert.match(styles, /\.home-profile__membership-active-title\s*\{[\s\S]*?font-size: 44rpx;/)
+  assert.match(styles, /\.home-profile__membership-active-progress\s*\{[\s\S]*?gap: 4rpx;/)
+  assert.match(profileType, /interface ProfileMembershipViewModel/)
+  assert.match(profileType, /trackingLabel: string/)
+  assert.match(profileType, /trackingSegments: ProfileMembershipTrackingSegment\[\]/)
+  assert.match(service, /FIGMA_STANDARD_MEMBER_EXPIRE_LABEL = '2026\.11\.20'/)
+  assert.match(service, /active: true/)
+})
+
+test('profile feature list follows Figma 917:13737', () => {
+  const markup = read('miniprogram/components/home-profile/index.wxml')
+  const styles = read('miniprogram/components/home-profile/index.less')
+
+  assert.match(markup, /profile-list-wallet\.svg/)
+  assert.match(markup, /profile-list-collect\.svg/)
+  assert.match(markup, /profile-list-other\.svg/)
+  assert.match(markup, /profile-list-arrow\.svg/)
+  assert.match(markup, /<text>钱包中心<\/text>/)
+  assert.equal((markup.match(/<text>我的收藏<\/text>/g) || []).length, 2)
+  assert.match(styles, /\.home-profile__features\s*\{[\s\S]*?gap: 60rpx;/)
+  assert.match(styles, /\.home-profile__feature\s*\{[\s\S]*?height: 40rpx;[\s\S]*?font-size: 26rpx;/)
+  assert.match(styles, /\.home-profile__feature-leading\s*\{[\s\S]*?gap: 20rpx;/)
+  assert.doesNotMatch(styles, /home-profile__features::after|filter: blur\(1\.5rpx\)/)
+})
+
+test('profile feature mask begins directly below the membership card', () => {
+  const markup = read('miniprogram/components/home-profile/index.wxml')
+  const styles = read('miniprogram/components/home-profile/index.less')
+
+  assert.match(markup, /class="home-profile__feature-mask \{\{profile\.membership\.active \? 'home-profile__feature-mask--active' : ''\}\}" aria-hidden="true"/)
+  assert.match(styles, /\.home-profile__feature-mask\s*\{[\s\S]*?top: 370rpx;[\s\S]*?bottom: 0;[\s\S]*?backdrop-filter: blur\(8px\);/)
+  assert.match(styles, /\.home-profile__feature-mask--active\s*\{[\s\S]*?top: 500rpx;/)
+  assert.match(styles, /\.home-profile__pending\s*\{[\s\S]*?z-index: 4;/)
 })
 
 test('home page places a high-resolution ranking entry between notifications and today-most', () => {
@@ -1183,6 +1283,26 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   ]) {
     assert.equal(existsSync(new URL(`../${asset}`, import.meta.url)), true, asset)
   }
+})
+
+test('notification surfaces reuse the membership tracking-limit prompt with 20px spacing', () => {
+  const notificationPage = read('miniprogram/pages/notifications/notifications.wxml')
+  const notificationConfig = JSON.parse(read('miniprogram/pages/notifications/notifications.json'))
+  const embeddedNotifications = read('miniprogram/components/home-notifications/index.wxml')
+  const embeddedConfig = JSON.parse(read('miniprogram/components/home-notifications/index.json'))
+  const prompt = read('miniprogram/components/membership-limit-prompt/index.wxml')
+  const promptLogic = read('miniprogram/components/membership-limit-prompt/index.ts')
+  const promptStyles = read('miniprogram/components/membership-limit-prompt/index.less')
+  const styles = read('miniprogram/pages/notifications/notifications.less')
+
+  assert.equal(notificationConfig.usingComponents['membership-limit-prompt'], '/components/membership-limit-prompt/index')
+  assert.equal(embeddedConfig.usingComponents['membership-limit-prompt'], '/components/membership-limit-prompt/index')
+  assert.match(notificationPage, /class="notification-membership-limit"[\s\S]*?<membership-limit-prompt bind:upgrade="onMembershipLimitUpgrade" \/>/)
+  assert.match(embeddedNotifications, /class="notification-membership-limit"[\s\S]*?<membership-limit-prompt bind:upgrade="onMembershipLimitUpgrade" \/>/)
+  assert.match(prompt, /最终已达上线，升级\/开通会员触达更多客户/)
+  assert.match(promptLogic, /triggerEvent\('upgrade'\)/)
+  assert.match(promptStyles, /\.membership-limit-prompt\s*\{[\s\S]*?height: 100%;[\s\S]*?border-radius: 40rpx;/)
+  assert.match(styles, /\.notification-membership-limit\s*\{[\s\S]*?height: 200rpx;[\s\S]*?margin-bottom: 40rpx;/)
 })
 
 test('notifications map each browse from the notify list API', () => {
@@ -2142,8 +2262,8 @@ test('materials home uses the mine API and keeps the fixed Figma top layers', ()
   assert.match(service, /resolveMaterialCopy/)
   assert.match(service, /title: resolveMaterialCopy\(material\)/)
   assert.doesNotMatch(service, /from '\.\.\/mocks\//)
-  assert.match(markup, /<view class="materials-page__top">[\s\S]*?<view class="materials-page__gradient" \/>[\s\S]*?<view class="materials-page__stripes" \/>[\s\S]*?<view class="materials-page__header">/)
-  assert.match(homeMarkup, /<view class="materials-page__top">[\s\S]*?<view class="materials-page__gradient" \/>[\s\S]*?<view class="materials-page__stripes" \/>[\s\S]*?<view class="materials-page__header">/)
+  assert.match(markup, /<view class="materials-page__top">[\s\S]*?<image class="materials-page__gradient" src="\/assets\/home-new\/home-header-background\.svg" mode="scaleToFill" \/>[\s\S]*?<image class="materials-page__stripes" src="\/assets\/line-bg\.svg" mode="scaleToFill" \/>[\s\S]*?<view class="materials-page__header">/)
+  assert.match(homeMarkup, /<view class="materials-page__top">[\s\S]*?<image class="materials-page__gradient" src="\/assets\/home-new\/home-header-background\.svg" mode="scaleToFill" \/>[\s\S]*?<image class="materials-page__stripes" src="\/assets\/line-bg\.svg" mode="scaleToFill" \/>[\s\S]*?<view class="materials-page__header">/)
   assert.doesNotMatch(markup, /materials-stripes\.svg/)
   assert.doesNotMatch(homeMarkup, /materials-stripes\.svg/)
   assert.match(markup, /class="materials-card__image" src="\{\{item\.thumbnailUrl\}\}" mode="aspectFill"/)
@@ -2152,8 +2272,8 @@ test('materials home uses the mine API and keeps the fixed Figma top layers', ()
   assert.doesNotMatch(markup, /materials-page__base/)
   assert.doesNotMatch(homeMarkup, /materials-page__base/)
   assert.match(styles, /\.materials-page__top\s*\{[\s\S]*?position: fixed;[\s\S]*?z-index: 4;[\s\S]*?height: calc\(var\(--materials-navigation-height\) \+ 84rpx\);/)
-  assert.match(styles, /\.materials-page__gradient\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 0;[\s\S]*?z-index: 0;[\s\S]*?height: 131px;[\s\S]*?background: linear-gradient\(180deg, rgba\(240, 241, 242, 1\) 0, rgba\(240, 241, 242, 1\) 100px, rgba\(240, 241, 242, 0\) 131px\);/)
-  assert.match(styles, /\.materials-page__stripes\s*\{[\s\S]*?position: absolute;[\s\S]*?left: 4rpx;[\s\S]*?z-index: 1;[\s\S]*?width: 100%;[\s\S]*?height: 260rpx;[\s\S]*?background: repeating-linear-gradient\(90deg, transparent 0 4rpx, #f0f0f0 4rpx 8rpx\);[\s\S]*?-webkit-mask-image: linear-gradient\(180deg, #000000 0%, rgba\(0, 0, 0, 0\) 100%\);/)
+  assert.match(styles, /\.materials-page__gradient\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 0;[\s\S]*?z-index: 0;[\s\S]*?display: block;[\s\S]*?width: 100%;[\s\S]*?height: 274rpx;/)
+  assert.match(styles, /\.materials-page__stripes\s*\{[\s\S]*?position: absolute;[\s\S]*?left: 4rpx;[\s\S]*?z-index: 1;[\s\S]*?display: block;[\s\S]*?width: 100%;[\s\S]*?height: 260rpx;/)
   assert.match(styles, /\.materials-page__header\s*\{[\s\S]*?z-index: 2;/)
   assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?z-index: 1;/)
   assert.match(styles, /\.materials-grid\s*\{[\s\S]*?gap: 20rpx 18rpx;[\s\S]*?margin-top: 0;/)
@@ -2177,7 +2297,7 @@ test('materials list scrolls behind the fixed gradient instead of starting below
   const homeStyles = read('miniprogram/pages/index/index.less')
 
   for (const markup of markups) {
-    assert.match(markup, /<view class="materials-page__top">[\s\S]*?<view class="materials-page__gradient" \/>[\s\S]*?<view class="materials-page__stripes" \/>[\s\S]*?<view class="materials-page__header">[\s\S]*class="materials-filter"/)
+    assert.match(markup, /<view class="materials-page__top">[\s\S]*?<image class="materials-page__gradient" src="\/assets\/home-new\/home-header-background\.svg" mode="scaleToFill" \/>[\s\S]*?<image class="materials-page__stripes" src="\/assets\/line-bg\.svg" mode="scaleToFill" \/>[\s\S]*?<view class="materials-page__header">[\s\S]*class="materials-filter"/)
     assert.doesNotMatch(markup, /materials-page__top-spacer/)
     assert.doesNotMatch(markup, /class="materials-page__header" style=/)
     assert.doesNotMatch(markup, /materialsHeaderOpacity/)

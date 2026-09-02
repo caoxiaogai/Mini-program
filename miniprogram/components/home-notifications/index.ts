@@ -8,6 +8,9 @@ Component({
     hasVisibleGroups: { type: Boolean, value: false },
   },
   methods: {
+    onMembershipLimitUpgrade() {
+      this.triggerEvent('upgrade')
+    },
     onNotificationCardTap(event: WechatMiniprogram.TouchEvent) {
       this.triggerEvent('cardtap', {
         userId: fromDatasetId(event.currentTarget.dataset.id),

@@ -1,58 +1,92 @@
 <view class="home-profile">
-  <view class="home-profile__stripes" />
+  <image class="home-profile__gradient" src="/assets/home-new/home-header-background.svg" mode="scaleToFill" />
+  <image class="home-profile__stripes" src="/assets/line-bg.svg" mode="scaleToFill" />
   <navigation-bar class="home-profile__navigation" back="{{false}}" title="" color="#000000" background="transparent" />
   <view wx:if="{{profile}}" class="home-profile__content">
     <view class="home-profile__identity">
       <image class="home-profile__avatar" src="{{profile.avatarUrl}}" mode="aspectFill" />
       <text class="home-profile__nickname">{{profile.nickname}}</text>
-      <view
-        class="home-profile__settings"
-        bindtap="onSettingsTap"
-        hover-class="home-profile__settings--pressed"
-        hover-stay-time="80"
-      >
-        <text>设置</text>
-      </view>
-    </view>
-
-    <view class="home-profile__balance">
-      <view class="home-profile__balance-copy">
-        <text class="home-profile__balance-value">{{profile.balance}}</text>
-        <text class="home-profile__balance-label">{{profile.balanceLabel}}</text>
-      </view>
-      <view class="home-profile__withdraw" hover-class="home-profile__withdraw--pressed">
-        <text>{{profile.withdrawLabel}}</text>
-      </view>
     </view>
 
     <view
-      class="home-profile__membership"
+      class="home-profile__membership {{profile.membership.active ? 'home-profile__membership--active' : 'home-profile__membership--inactive'}}"
       bindtap="onMembershipTap"
       hover-class="home-profile__membership--pressed"
       hover-stay-time="80"
     >
-      <view class="home-profile__membership-art">
-        <image class="home-profile__membership-base" src="/assets/profile/membership-base.svg" mode="scaleToFill" />
-        <image class="home-profile__membership-glow home-profile__membership-glow--cyan" src="/assets/profile/profile-glow-cyan.svg" mode="scaleToFill" />
-        <image class="home-profile__membership-glow home-profile__membership-glow--purple" src="/assets/profile/profile-glow-purple.svg" mode="scaleToFill" />
-        <image class="home-profile__membership-glow home-profile__membership-glow--lilac" src="/assets/profile/profile-glow-lilac.svg" mode="scaleToFill" />
-        <image class="home-profile__membership-glow home-profile__membership-glow--coral" src="/assets/profile/profile-glow-coral.svg" mode="scaleToFill" />
-        <image class="home-profile__membership-fill" src="/assets/profile/membership-fill.svg" mode="scaleToFill" />
-        <image class="home-profile__membership-outline" src="/assets/profile/membership-outline.svg" mode="scaleToFill" />
+      <block wx:if="{{profile.membership.active}}">
+        <image class="home-profile__membership-active-background" src="/assets/profile/membership-card-active.svg" mode="scaleToFill" aria-hidden="true" />
+        <view class="home-profile__membership-active-copy">
+          <view class="home-profile__membership-active-header">
+            <text class="home-profile__membership-active-title">标准会员</text>
+            <text class="home-profile__membership-active-expire">{{profile.membership.expireLabel}} 到期</text>
+          </view>
+          <view class="home-profile__membership-active-upgrade">
+            <text>升级尊享会员，畅享无限人数追踪</text>
+            <image class="home-profile__membership-active-arrow" src="/assets/profile/membership-card-arrow.svg" mode="aspectFit" aria-hidden="true" />
+          </view>
+          <view class="home-profile__membership-active-tracking">
+            <view class="home-profile__membership-active-tracking-label">
+              <text>剩余追踪人数</text>
+              <text>{{profile.membership.trackingLabel}}</text>
+            </view>
+            <view class="home-profile__membership-active-progress">
+              <view
+                wx:for="{{profile.membership.trackingSegments}}"
+                wx:key="id"
+                class="home-profile__membership-active-segment {{item.active ? 'home-profile__membership-active-segment--active' : ''}}"
+              />
+            </view>
+          </view>
+        </view>
+      </block>
+      <block wx:else>
+        <image class="home-profile__membership-outer" src="/assets/profile/membership-card-outer.svg" mode="scaleToFill" aria-hidden="true" />
+        <view class="home-profile__membership-card">
+          <image class="home-profile__membership-mask" src="/assets/profile/membership-card-mask.svg" mode="scaleToFill" aria-hidden="true" />
+          <image class="home-profile__membership-rings" src="/assets/profile/membership-card-rings.svg" mode="scaleToFill" aria-hidden="true" />
+          <image class="home-profile__membership-crown" src="/assets/profile/membership-card-crown.svg" mode="aspectFit" aria-hidden="true" />
+          <view class="home-profile__membership-copy">
+            <view class="home-profile__membership-text">
+              <text class="home-profile__membership-title">解锁言界阿乐会员</text>
+              <text class="home-profile__membership-subtitle">专属分析功能，不漏掉任何潜在用户</text>
+            </view>
+            <view class="home-profile__membership-action">
+              <text>开通会员</text>
+              <image class="home-profile__membership-arrow" src="/assets/profile/membership-card-arrow.svg" mode="aspectFit" aria-hidden="true" />
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="home-profile__feature-mask {{profile.membership.active ? 'home-profile__feature-mask--active' : ''}}" aria-hidden="true" />
+
+    <view class="home-profile__features" aria-label="会员功能列表">
+      <view class="home-profile__feature">
+        <view class="home-profile__feature-leading">
+          <image class="home-profile__feature-icon" src="/assets/profile/profile-list-wallet.svg" mode="aspectFit" />
+          <text>钱包中心</text>
+        </view>
+        <image class="home-profile__feature-arrow" src="/assets/profile/profile-list-arrow.svg" mode="aspectFit" />
       </view>
-      <view class="home-profile__membership-copy">
-        <view class="home-profile__membership-text">
-          <text class="home-profile__membership-title">{{profile.membershipTitle}}</text>
-          <text class="home-profile__membership-subtitle">{{profile.membershipSubtitle}}</text>
+      <view class="home-profile__feature">
+        <view class="home-profile__feature-leading">
+          <image class="home-profile__feature-icon" src="/assets/profile/profile-list-collect.svg" mode="aspectFit" />
+          <text>我的收藏</text>
         </view>
-        <view class="home-profile__membership-action">
-          <text>{{profile.membershipActionLabel}}</text>
-          <text class="home-profile__membership-arrow">›</text>
+        <image class="home-profile__feature-arrow" src="/assets/profile/profile-list-arrow.svg" mode="aspectFit" />
+      </view>
+      <view class="home-profile__feature">
+        <view class="home-profile__feature-leading">
+          <image class="home-profile__feature-icon" src="/assets/profile/profile-list-other.svg" mode="aspectFit" />
+          <text>我的收藏</text>
         </view>
+        <image class="home-profile__feature-arrow" src="/assets/profile/profile-list-arrow.svg" mode="aspectFit" />
       </view>
     </view>
 
-    <view class="home-profile__pending" data-node-id="594:8711">
+    <view class="home-profile__pending" data-node-id="902:12850">
       <view class="home-profile__pending-button"><text>{{profile.pendingTitle}}</text></view>
       <text class="home-profile__pending-description">{{profile.pendingDescription}}</text>
     </view>

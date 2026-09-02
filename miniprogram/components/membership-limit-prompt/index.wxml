@@ -1,0 +1,11 @@
+<view class="membership-limit-prompt" bindtap="onUpgradeTap" hover-class="membership-limit-prompt--pressed" hover-start-time="80" hover-stay-time="120">
+  <image class="membership-limit-prompt__background" src="/assets/home-new/membership-limit-background.svg" mode="scaleToFill" />
+  <image class="membership-limit-prompt__rings" src="/assets/home-new/membership-limit-rings.svg" mode="scaleToFill" />
+  <view class="membership-limit-prompt__content">
+    <image class="membership-limit-prompt__crown" src="/assets/profile/membership-card-crown.svg" mode="aspectFit" />
+    <view class="membership-limit-prompt__copy">
+      <text class="membership-limit-prompt__message">最终已达上线，升级/开通会员触达更多客户</text>
+      <view class="membership-limit-prompt__upgrade"><text>立即升级</text></view>
+    </view>
+  </view>
+</view>

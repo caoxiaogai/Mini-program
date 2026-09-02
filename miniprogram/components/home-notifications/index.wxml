@@ -1,5 +1,6 @@
 <view class="notification-page notification-page--embedded">
   <view wx:if="{{notifications}}" class="notification-page__content">
+    <view class="notification-membership-limit"><membership-limit-prompt bind:upgrade="onMembershipLimitUpgrade" /></view>
     <view wx:if="{{hasVisibleGroups}}">
       <view wx:for="{{visibleGroups}}" wx:key="id" class="notification-group {{index > 0 ? 'notification-group--spaced' : ''}}">
         <text class="notification-group__date">{{item.label}}</text>
