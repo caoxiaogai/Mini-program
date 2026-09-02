@@ -129,6 +129,8 @@ export type AnalysisViewModel = {
   workCount: string
   userSummary: AnalysisMetric[]
   audienceUsers: AnalysisAudienceUser[]
+  /** 用户分析列表可展示的访客上限；null 表示不限制 */
+  visitorLimit: number | null
   totalData: AnalysisTotalViewModel
 }
 

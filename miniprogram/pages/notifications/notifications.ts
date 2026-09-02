@@ -5,12 +5,11 @@ import { persistViewedNotification, persistViewedNotifications } from '../../uti
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
 import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow } from '../../utils/list-window'
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
+import { membershipPageUrl } from '../../types/membership'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
 
 type NotificationTabId = 'home' | 'notifications' | 'analysis' | 'profile'
-
-const MEMBERSHIP_PAGE_PATH = '/pages/membership/index'
 
 const notificationTabItems = [
   { id: 'home' as NotificationTabId, label: '首页', iconPath: '/assets/home-new/tab-home.svg', activeIconPath: '/assets/home-new/tab-home-selected.svg', active: false },
@@ -98,7 +97,7 @@ Page({
     this.applyNotificationWindow(this.data.notifications?.groups ?? [], filterId, LIST_PAGE_SIZE)
   },
   onMembershipLimitUpgrade() {
-    wx.navigateTo({ url: MEMBERSHIP_PAGE_PATH })
+    wx.navigateTo({ url: membershipPageUrl(this.data.notifications?.limitPromptTargetTier ?? 'standard') })
   },
   onNotificationCardTap(event: WechatMiniprogram.TouchEvent) {
     const userId = fromDatasetId(event.currentTarget.dataset.id)

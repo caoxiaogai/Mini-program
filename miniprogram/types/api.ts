@@ -1,6 +1,8 @@
 // 后端 aisales 项目（Spring Boot，context-path /api）的响应类型。
 // 字段与后端 VO / Entity 一一对应；Long 类型 ID 由后端序列化为字符串。
 
+import type { MembershipPlanId } from './membership'
+
 /** 统一响应包装（对应后端 common/Result.java，成功码 200） */
 export interface ApiResponse<T> {
   code: number
@@ -176,7 +178,7 @@ export interface ApiUserJourney {
   events: ApiUserJourneyEvent[] | null
 }
 
-export type ApiMembershipPlanId = 'month' | 'quarter' | 'half_year'
+export type ApiMembershipPlanId = MembershipPlanId
 
 export type ApiMembershipOrderStatus = 'pending' | 'paid' | 'closed'
 
@@ -192,7 +194,15 @@ export interface ApiMembershipPlan {
 /** GET /membership/me 响应（MembershipStatusVO） */
 export interface ApiMembershipStatus {
   active: boolean
+  /** none / regular / pro；过期时为 none */
+  tier?: string | null
   expireAt: string | null
+  /** 可展示访客上限；尊享会员为 null */
+  visitorLimit?: number | null
+  /** 当前档位已展示的独立访客数 */
+  usedVisitorCount?: number | null
+  /** 独立访客总数超过当前档位上限，存在未展示的人 */
+  hasUnshownVisitors?: boolean | null
   plans: ApiMembershipPlan[] | null
   lastPaidOutTradeNo?: string | null
 }

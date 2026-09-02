@@ -11,7 +11,9 @@ import { buildCustomRangeQuery, formatCount, formatDateKey } from '../utils/form
 import { prepareMediaUrls } from '../utils/media'
 import { readViewedNotificationMap, selectUnviewedNotificationEvents } from '../utils/notification-viewed'
 import { mapNotificationEvent } from '../utils/notifications'
+import { keepEventsForVisitorLimit, shouldShowVisitorLimitPrompt, visitorLimitPromptActionLabel, visitorLimitPromptTargetTier } from '../utils/membership'
 import { prepareMaterialThumbnailMap, rememberMaterialThumbnailSources } from './materials'
+import { getMembershipAccessSilent } from './membership'
 import { NOTIFICATION_RANGE_DAYS } from './notifications'
 import { request, resolveMediaUrl } from './request'
 
@@ -81,9 +83,13 @@ export function getHomePageData(): Promise<HomePageViewModel> {
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: { timeRange: 'today' } }),
     request<ApiNotificationEvent[]>({ method: 'GET', path: '/analysis/notify/list', query: { ...notifyRange } }),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
-  ]).then(async ([dashboard, customers, contents, intentCustomers, notifyEvents, materials]) => {
+    getMembershipAccessSilent(),
+  ]).then(async ([dashboard, , contents, intentCustomers, notifyEvents, materials, membershipAccess]) => {
     const unreadEvents = selectUnviewedNotificationEvents(
-      (notifyEvents ?? []).filter((event) => event != null),
+      keepEventsForVisitorLimit(
+        (notifyEvents ?? []).filter((event) => event != null),
+        membershipAccess.visitorLimit,
+      ),
       readViewedNotificationMap(),
     )
     const previewEvents = unreadEvents
@@ -133,13 +139,16 @@ export function getHomePageData(): Promise<HomePageViewModel> {
     return {
       unreadNotificationCount: unreadEvents.length,
       unreadNotificationEventIds: unreadEvents.map((event) => String(event.id)),
+      showVisitorLimitPrompt: shouldShowVisitorLimitPrompt(membershipAccess),
+      limitPromptActionLabel: visitorLimitPromptActionLabel(membershipAccess.tier),
+      limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
       notifications: notifications.map((item, index) => ({
         ...item,
         avatarUrl: notificationAvatars[index] ?? '',
       })),
       contents: contentsCards,
       intentSummary: {
-        total: formatCount(dashboard.totalViewerCount ?? customers.length),
+        total: formatCount(dashboard.totalViewerCount),
         highCount: formatCount(highCount),
         mediumCount: formatCount(mediumCount),
         lowCount: formatCount(lowCount),
@@ -148,7 +157,7 @@ export function getHomePageData(): Promise<HomePageViewModel> {
         viewCount: formatCount(dashboard.totalViewCount),
         completeCount: formatCount(dashboard.totalCompleteCount),
         forwardCount: formatCount(dashboard.totalForwardCount),
-        viewerCount: formatCount(dashboard.totalViewerCount ?? customers.length),
+        viewerCount: formatCount(dashboard.totalViewerCount),
       },
     }
   })

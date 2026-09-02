@@ -4,8 +4,8 @@
   <view class="membership-limit-prompt__content">
     <image class="membership-limit-prompt__crown" src="/assets/profile/membership-card-crown.svg" mode="aspectFit" />
     <view class="membership-limit-prompt__copy">
-      <text class="membership-limit-prompt__message">最终已达上线，升级/开通会员触达更多客户</text>
-      <view class="membership-limit-prompt__upgrade"><text>立即升级</text></view>
+      <text class="membership-limit-prompt__message">追踪已达上限，开通/升级会员触达更多客户</text>
+      <view class="membership-limit-prompt__upgrade"><text>{{actionLabel}}</text></view>
     </view>
   </view>
 </view>

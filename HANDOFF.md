@@ -248,7 +248,8 @@ miniprogram/
 | 所有页面下拉刷新 | done | 滑到顶部再下拉刷新当前页数据；发布页只收起动画，不覆盖未保存编辑 |
 | 分享素材浏览埋点 | done | 朋友打开素材详情/文档阅读页上报 `POST /tracking/event`，转发上报 `POST /tracking/forward`；浏览次数与意向由后端统计 |
 | 推送意向门槛自定义 | done | 默认高意向；「我的」进入设置页三选一（低/中/高），经 `GET/PUT /user/notify-settings` 读写 `notifyIntentLevel` |
-| 会员套餐与微信支付 | done | 联调测试价：1个月 ¥0.01 / 3个月 ¥0.02 / 半年 ¥0.03（上线前改回 29.9 / 79.9 / 139.9）；「我的」会员卡进入 `/pages/membership/index`，经小程序虚拟支付（道具直购）开通。未配置 OfferId/AppKey 时明确失败。本期不按会员身份关闭分析等功能 |
+| 会员套餐与微信支付 | done | 六档：month / quarter / half_year / month_pro / quarter_pro / half_year_pro；「我的」会员卡进入 `/pages/membership/index`，经小程序虚拟支付开通。档位写入 `sales_user.member_tier` |
+| 会员访客展示上限 | done | 非会员 8 人、普通会员 80 人、Pro 不限制；作用于首页互动消息、通知列表、用户分析访客列表。浏览量/完播/转发等统计不受限 |
 | 设置页意向规则说明 | done | 「推送意向门槛」后「规则」打开意向判断标准弹窗，点空白关闭 |
 | 总数据按日浏览峰值坐标轴 | done | 横轴 0/4/8/12/16/20/24，纵轴随浏览量取整；小时数据走 `GET /analysis/trend?timeRange=today` |
 | 总数据按周浏览峰值坐标轴 | done | 横轴周一到周日用 1–7，纵轴随浏览量取整；数据走 `GET /analysis/trend?timeRange=week` |
@@ -298,6 +299,40 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-09-02：未开通会员卡副标题按字上色
+
+- Skyline 不支持 `background-clip: text`，渐变会铺成色块、文字透明看不见。副标题改为按 Figma 三色停（`#ffebb0` / `#ea83ff` / `#189e91`）给每个字上色，保留渐变观感。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "profile membership card uses the original Figma 911:13452" tests/home-page.test.mjs`。
+
+### 2026-09-02：会员开通页一屏适配
+
+- 标准/尊享开通页改为视口高度弹性布局：去掉 Figma 锁死的 `878rpx` 顶部高度，页面 `100vh` + `disableScroll`，权益区和套餐区按剩余高度伸缩。
+- 套餐卡在空间不足时从 `134rpx` 收到 `96rpx`，底部安全区仍保留。两种档位同一套布局，无需滑动即可看完整页。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "membership page is registered" tests/membership-page.test.mjs`。在真机或模拟器用短屏（如 iPhone SE）打开标准/尊享开通页确认不滚动且内容完整。
+
+### 2026-09-02：将 origin/developer-v2 合入 main-v2
+
+- 已把 `origin/developer-v2`（`28af0b8`）合入当前 `main-v2`。
+- 首页一键已读：滚动收起、扩大点击热区、关闭按钮居中，来自 developer-v2。
+- 长列表进入时先渲染一页、下滑再加载，以及「我的」设置入口，仍保留 main-v2 的实现。
+
+### 2026-09-02：标准会员权益追踪人数跟配置
+
+- 开通页标准档「追踪人数 N 人」改为读取 `MEMBERSHIP_VISITOR_LIMIT_REGULAR`，当前联调值为 10，不再写死 Figma 的 80。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "premium membership switches to its confirmed unlimited tracking benefits" tests/membership-page.test.mjs`。
+
+### 2026-09-02：上限卡「立即开通」进入标准会员页
+
+- 「追踪已达上限」显示「立即开通」（未开通）时，首页互动消息、通知页和通知 Tab 都进入标准档（`/pages/membership/index?tier=standard`）。
+- 显示「立即升级」（标准会员）时仍进入尊享档。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "membership visitor limits|profile tab exposes|home renders the Figma 949:2077|notification surfaces reuse" tests/membership-page.test.mjs tests/home-page.test.mjs`。
+
+### 2026-09-02：「我的」未开通会员卡下移，避开头像
+
+- 未开通「解锁言界阿乐会员」卡的倾斜装饰层会探到头像底部。仅给 `.home-profile__membership--inactive` 增加上边距到 `88rpx`，标准/尊享卡仍用 `40rpx`。
+- 权益蒙层起点同步下移到 `418rpx`，仍紧贴未开通卡下方。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "profile membership card uses the original Figma 911:13452|profile feature mask begins" tests/home-page.test.mjs`。
+
 ### 2026-09-02：将 origin/developer-v2 合入 main-v2
 
 - 已把 `origin/developer-v2`（`ad8e5b3`）合入当前 `main-v2`。
@@ -328,6 +363,80 @@ miniprogram/
 - 已把 `origin/developer-v2`（`68d8d35`）合入当前 `main-v2`。
 - 会员限制提示、会员开通页深色权益区和标准会员卡视觉更新来自 developer-v2。
 - 长列表进入时先渲染一页、下滑再加载仍保留 main-v2 的实现。
+- 「我的」会员卡沿用 developer-v2 的 Figma 标准会员卡（剩余追踪人数与进度条），不在个人中心另放已用/可用追踪人数块。昵称行右侧保留「设置」入口，进入推送意向门槛页。
+
+### 2026-09-02：会员卡标题在 Skyline 下可见
+
+- 「我的」尊享/标准会员卡标题不再用 `background-clip: text` + 透明字（Skyline 会裁成空白或渐变色块）。改为实体色显示「尊享会员」「标准会员」。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "profile uses Figma 949:2541|profile uses Figma 953:4412" tests/home-page.test.mjs`。
+
+### 2026-09-02：开通/升级/续费按钮按当前档位变化
+
+- 追踪上限卡：标准会员显示「立即升级」，未开通显示「立即开通」。
+- 会员开通页：当前档与所在页一致时显示「立即续费」，否则「立即开通」。尊享会员进入标准档时，套餐、开通按钮和协议勾选全部置灰且不可点。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/membership-page.test.mjs --test-name-pattern "home renders the Figma 949:2077|notification surfaces reuse" tests/home-page.test.mjs`。
+
+### 2026-09-02：升级入口打开尊享会员开通页
+
+- 「追踪已达上限」的「立即升级」，以及「我的」标准会员卡，都进入会员页尊享档（`/pages/membership/index?tier=premium`），展示尊享套餐。
+- 「追踪已达上限」的「立即开通」、以及「我的」未开通卡，进入标准档。尊享卡续费落在尊享档。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/membership-page.test.mjs --test-name-pattern "profile tab exposes" tests/home-page.test.mjs`。
+
+### 2026-09-02：追踪上限卡只在有未展示访客时出现
+
+- 首页「追踪已达上限」卡移入「互动消息」区块，通知页仍放在通知列表顶部。
+- 仅当当前档位有上限，且独立访客总数超过上限（确实有未展示的人）时展示；人数刚好用满但没有被截掉的人不展示。尊享会员不展示。
+- `GET /membership/me` 增加 `hasUnshownVisitors`；查询失败时不展示该卡。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/membership-page.test.mjs --test-name-pattern "membership tracking-limit|visitor limits|membership access" tests/home-page.test.mjs`。重启 aisales 后看首页互动消息与通知页。
+
+### 2026-09-02：会员页按档位拆开套餐
+
+- 标准会员只展示 `month` / `quarter` / `half_year`（一个月会员、季度会员、半年会员）。
+- 尊享会员只展示 `month_pro` / `quarter_pro` / `half_year_pro`（一个月会员pro、季度会员pro、半年会员pro）。
+- 切换档位时套餐列表一起切换，并尽量保留同时长选项；尊享会员进入页面时默认落在尊享档。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/membership-page.test.mjs`。
+
+### 2026-09-02：尊享会员固定走尊享卡
+
+- 「我的」尊享卡不再用 WXML 字符串 `cardKind === 'premium'` 判断（Skyline 下会落到非会员解锁卡）。改由页面把 `isPremium` 算成布尔值，组件 observer 切到 Figma `953:4412` 卡片。
+- 尊享卡背景改用 Figma `953:4413` 导出的 `membership-premium-card.png`；文案仍为「尊享会员」「你是尊贵的尊享会员，享无限追踪人数」和「续费」。
+- 回到首页或切到「我的」时重新拉 `GET /membership/me`，避免开通后仍显示开通前的解锁卡。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "profile" tests/home-page.test.mjs`。
+
+### 2026-09-02：尊享会员展示尊享卡
+
+- 「我的」页按档位切换会员卡：未开通用解锁卡，标准会员用 Figma `949:2541`，尊享会员用 Figma `953:4412`。
+- 会员状态重新走 `GET /membership/me`；尊享卡展示到期日、无限追踪说明和续费按钮。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "profile" tests/home-page.test.mjs`。
+
+### 2026-09-02：标准/尊享会员展示、升级改期与追踪人数
+
+- 「我的」与会员页：标准会员 / 尊享会员；未开通在「我的」仍为「解锁言界阿乐会员」。
+- 标准会员升级尊享时，有效期从开通当天重算套餐时长，不叠加上一档剩余天数。尊享续费仍从当前到期日叠加。
+- 未开通和标准会员在「我的」展示已用追踪人数（三页已展示的独立访客）和可用追踪人数（上限 8 / 10）。尊享不展示该项。
+- 验证：重启 aisales；重新编译小程序后看「我的」档位文案与人数。
+
+### 2026-09-02：会员升级后按新档位补出原先未展示的访客
+
+- 埋点始终完整记录。展示和推送按「首次浏览顺序 × 当前档位上限」：非会员 8 人，普通会员 10 人（联调暂值，正式 80），Pro 不限制。
+- 未开通时第 9 人浏览不进互动消息、通知、用户分析，也不推服务号。开通普通会员后补出第 9、10 人已有记录；再开通 Pro 后解限后续访客。
+- `GET /analysis/notify/list` 与 `GET /analysis/customer/list` 都按当前档位过滤。浏览量、完播、转发、意向汇总仍用完整统计。
+- 验证：重启 aisales；先用非会员看满 8 人，再让第 9 人浏览（应不出现），开通普通会员后刷新应看到第 9 人。
+
+### 2026-09-02：按会员档位限制访客展示
+
+- 非会员最多展示 8 个独立访客，普通会员 80 个，Pro 展示全部。作用于首页互动消息、通知页，以及分析页/首页分析 Tab 的用户分析列表。
+- 限额按 `customerId` 去重：通知、互动消息和用户分析都只展示**最先出现**的 N 个访客；升级会员后按新上限补出后面的人。超限访客不推服务号。下滑加载不能超过上限。
+- 浏览量、完播数、转发数、意向汇总和今日数据等统计仍用完整数据，不按会员裁剪。
+- 后端 `GET /membership/me` 增加 `tier`：`none` / `regular` / `pro`。开通时写入 `sales_user.member_tier`；已有库执行 `sql/upgrade_member_tier.sql`。未写档位的有效会员按最近一笔已支付订单回填。查询会员失败时按非会员（8 人）处理。
+- 内容分析意向用户、用户详情、作品分析卡片不在本期范围。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/membership-page.test.mjs tests/home-page.test.mjs`。
+
+### 2026-09-02：会员增加三个 Pro 档位
+
+- 套餐 id 新增 `month_pro` / `quarter_pro` / `half_year_pro`，时长分别为 1 / 3 / 6 个月，与普通档并存。开通后仍只延长 `member_expire_at`，不区分 Pro 权益。
+- Pro 价格尚未确认，后端暂用联调占位价 0.03 / 0.04 / 0.05 元。改价只改 `MembershipPlan.java`，并在虚拟支付后台创建同 id 道具后发布到现网。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/membership-page.test.mjs`。
 
 ### 2026-09-01：长列表进入页面时先渲染一页，下滑再加载
 
@@ -2710,8 +2819,9 @@ miniprogram/
 - 页面间哪些交互仅做视觉效果，哪些需要可点击跳转。
 - 访问者身份识别、授权提示、匿名访问和数据留存的后端与合规方案。
 - 高、中、低意向规则发生重叠时的后端优先级；设置页已展示单图 / 多图 / PDF / 视频的产品口径。
-- 会员开通后具体解锁哪些功能（当前只记录到期时间，不关闭现有分析能力）。
-- 小程序虚拟支付：后台填 OfferId / 现网 AppKey；创建道具 `month` / `quarter` / `half_year`（1 / 2 / 3 分）并**发布到现网**；发货推送指向公网 `https://host/api/pay/xpay/notify`。
+- 内容分析意向用户、用户详情是否也按会员访客上限裁剪（当前仅首页互动消息、通知、用户分析列表）。
+- 小程序虚拟支付：后台填 OfferId / 现网 AppKey；创建道具 `month` / `quarter` / `half_year` / `month_pro` / `quarter_pro` / `half_year_pro` 并**发布到现网**；发货推送指向公网 `https://host/api/pay/xpay/notify`。
+- 三个 Pro 档位的正式价格待确认（当前后端占位 0.03 / 0.04 / 0.05 元）。
 - iOS 虚拟支付最低 1 元，当前测试价 ¥0.01 不能在 iPhone 上完成；需打开「苹果支付」、配置小程序简称。上线前改回 29.9 / 79.9 / 139.9。
 - 排行榜后端接口（当前 aisales 未提供销售排行榜数据，页面暂用 Figma 预览 mock）。
 - 分析页「总」时间范围口径：后端 custom 查询上限 62 天，暂按最近 62 天，需后端确认是否提供全量范围。

@@ -1,3 +1,5 @@
+import type { MembershipUiTier } from './membership'
+
 export type NotificationFilterId = 'all' | 'high' | 'medium' | 'low'
 
 export type NotificationIntent = Exclude<NotificationFilterId, 'all'>
@@ -37,4 +39,7 @@ export interface NotificationGroupViewModel {
 export interface NotificationsViewModel {
   filters: NotificationFilterViewModel[]
   groups: NotificationGroupViewModel[]
+  showVisitorLimitPrompt: boolean
+  limitPromptActionLabel: string
+  limitPromptTargetTier: MembershipUiTier
 }

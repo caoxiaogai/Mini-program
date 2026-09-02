@@ -65,6 +65,7 @@
 }
 
 .home-profile__nickname {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   color: #000000;
@@ -72,6 +73,19 @@
   line-height: 56rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.home-profile__settings {
+  flex: none;
+  margin-left: auto;
+  padding: 16rpx 0 16rpx 24rpx;
+  color: #8a8e94;
+  font-size: 28rpx;
+  line-height: 40rpx;
+}
+
+.home-profile__settings--pressed {
+  opacity: 0.65;
 }
 
 .home-profile__membership {
@@ -82,11 +96,19 @@
   overflow: hidden;
 }
 
+.home-profile__membership--inactive {
+  margin-top: 88rpx;
+}
+
 .home-profile__membership--pressed {
   opacity: 0.85;
 }
 
 .home-profile__membership--active {
+  height: 320rpx;
+}
+
+.home-profile__membership--premium {
   height: 320rpx;
 }
 
@@ -115,9 +137,7 @@
 }
 
 .home-profile__membership-active-title {
-  background: linear-gradient(90deg, #d99b26 0%, #fff2c5 100%);
-  background-clip: text;
-  color: transparent;
+  color: #fff2c5;
   font-size: 44rpx;
   font-weight: 700;
   line-height: 52rpx;
@@ -183,6 +203,72 @@
 
 .home-profile__membership-active-segment--active {
   background: #0ec8d9;
+}
+
+.home-profile__membership-premium-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 320rpx;
+}
+
+.home-profile__membership-premium-copy {
+  position: absolute;
+  top: 40rpx;
+  right: 40rpx;
+  bottom: 40rpx;
+  left: 40rpx;
+}
+
+.home-profile__membership-premium-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52rpx;
+}
+
+.home-profile__membership-premium-title {
+  color: #ffa283;
+  font-size: 44rpx;
+  font-weight: 700;
+  line-height: 52rpx;
+}
+
+.home-profile__membership-premium-expire {
+  color: #8a8e94;
+  font-size: 24rpx;
+  line-height: 32rpx;
+}
+
+.home-profile__membership-premium-subtitle {
+  display: block;
+  margin-top: 20rpx;
+  color: #adb4b4;
+  font-size: 24rpx;
+  line-height: 32rpx;
+  white-space: nowrap;
+}
+
+.home-profile__membership-premium-renew {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64rpx;
+  padding: 0 28rpx;
+  border: 2rpx solid #ffffff;
+  border-radius: 140rpx;
+  background: linear-gradient(180deg, #d16100 0%, #feefd5 100%);
+  box-shadow: 0 4rpx 4rpx rgba(0, 0, 0, 0.1);
+  color: #000000;
+  font-size: 24rpx;
+  font-weight: 510;
+  line-height: 24rpx;
+  box-sizing: border-box;
 }
 
 .home-profile__membership-outer {
@@ -259,12 +345,16 @@
 }
 
 .home-profile__membership-subtitle {
-  background: linear-gradient(90deg, #ffebb0 0%, #ea83ff 39.904%, #189e91 100%);
-  background-clip: text;
-  color: transparent;
+  display: flex;
+  flex-direction: row;
   font-size: 22rpx;
   line-height: 26rpx;
   white-space: nowrap;
+}
+
+.home-profile__membership-subtitle-char {
+  font-size: 22rpx;
+  line-height: 26rpx;
 }
 
 .home-profile__membership-action {
@@ -295,7 +385,7 @@
 
 .home-profile__feature-mask {
   position: absolute;
-  top: 370rpx;
+  top: 418rpx;
   right: -40rpx;
   bottom: 0;
   left: -40rpx;

@@ -14,6 +14,7 @@ import { getHomeHeaderGradientOpacity, getHomeHeaderOpacity } from '../../utils/
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
+import { capAudienceUsers, resolveVisitorLimit } from '../../utils/membership'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
@@ -28,7 +29,7 @@ import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishP
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
-import { MEMBERSHIP_PAGE_PATH } from '../../types/membership'
+import { MEMBERSHIP_PAGE_PATH, membershipPageUrl } from '../../types/membership'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
@@ -194,6 +195,9 @@ Page({
     if (rootTabIds[this.data.activeTabIndex] === 'notifications') {
       this.loadNotifications()
     }
+    if (rootTabIds[this.data.activeTabIndex] === 'profile') {
+      this.loadProfileData()
+    }
   },
   onHomeScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
     const scrollTop = event.detail.scrollTop
@@ -327,7 +331,10 @@ Page({
       ? getAnalysisOverview(period, dateRange, this.data.activeAnalysisSort, trendPeriod)
       : getAnalysisOverview(period, undefined, this.data.activeAnalysisSort, trendPeriod)
     return request.then((analysisData) => {
-      const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
+      const sortedUsers = capAudienceUsers(
+        sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort),
+        resolveVisitorLimit(analysisData.visitorLimit),
+      )
       const initializeWorkData = !this.data.analysisData
       // Keep the chart tied to the latest peak selector choice even if an overview request resolves later.
       const currentTrendPeriod = this.data.activePeakPeriod || trendPeriod
@@ -360,10 +367,18 @@ Page({
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
     return getAnalysisOverview(period, dateRange).then((analysisData) => {
-      const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
+      const sortedUsers = capAudienceUsers(
+        sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort),
+        resolveVisitorLimit(analysisData.visitorLimit),
+      )
       const currentAnalysisData = this.data.analysisData ?? analysisData
       this.setData({
-        analysisData: { ...currentAnalysisData, userSummary: analysisData.userSummary, audienceUsers: analysisData.audienceUsers },
+        analysisData: {
+          ...currentAnalysisData,
+          userSummary: analysisData.userSummary,
+          audienceUsers: analysisData.audienceUsers,
+          visitorLimit: analysisData.visitorLimit,
+        },
       })
       this.applyAnalysisUsersWindow(sortedUsers, LIST_PAGE_SIZE)
     })
@@ -411,7 +426,10 @@ Page({
     this.applyAnalysisCardsWindow(this.data.allAnalysisCards, next)
   },
   loadMoreAnalysisUsers() {
-    const users = sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], this.data.activeAnalysisSort)
+    const users = capAudienceUsers(
+      sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], this.data.activeAnalysisSort),
+      resolveVisitorLimit(this.data.analysisData?.visitorLimit),
+    )
     const next = nextListWindow(this.data.analysisUsersVisibleCount, users.length)
     if (next === this.data.analysisUsersVisibleCount) return
     this.applyAnalysisUsersWindow(users, next)
@@ -424,11 +442,16 @@ Page({
   onProfileSettingsTap() {
     wx.navigateTo({ url: '/pages/settings/index' })
   },
-  onProfileMembershipTap() {
-    wx.navigateTo({ url: MEMBERSHIP_PAGE_PATH })
+  onProfileMembershipTap(event: WechatMiniprogram.CustomEvent<{ cardKind?: string }>) {
+    const cardKind = event.detail?.cardKind
+    wx.navigateTo({
+      url: cardKind === 'standard' || cardKind === 'premium' ? membershipPageUrl('premium') : MEMBERSHIP_PAGE_PATH,
+    })
   },
   onHomeMembershipLimitTap() {
-    wx.navigateTo({ url: MEMBERSHIP_PAGE_PATH })
+    const targetTier =
+      this.data.homeData?.limitPromptTargetTier ?? this.data.notifications?.limitPromptTargetTier ?? 'standard'
+    wx.navigateTo({ url: membershipPageUrl(targetTier) })
   },
   refreshActiveTab() {
     const tab = rootTabIds[this.data.activeTabIndex]
@@ -473,6 +496,7 @@ Page({
     if (id === 'notifications') this.loadNotifications()
     if (id === 'materials' && !this.data.materials) this.loadMaterials()
     if (id === 'analysis' && !this.data.analysisData) this.loadAnalysis()
+    if (id === 'profile') this.loadProfileData()
   },
   onTabTap(event: WechatMiniprogram.CustomEvent<{ id?: HomeTabId }>) {
     const id = event.detail?.id ?? (event.currentTarget.dataset.id as HomeTabId | undefined)
@@ -707,7 +731,10 @@ Page({
       return
     }
     if (this.data.activeAnalysisTab === 'user') {
-      const users = sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], sortId)
+      const users = capAudienceUsers(
+        sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], sortId),
+        resolveVisitorLimit(this.data.analysisData?.visitorLimit),
+      )
       this.applyAnalysisUsersWindow(users, LIST_PAGE_SIZE)
     }
   },

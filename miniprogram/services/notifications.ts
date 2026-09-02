@@ -9,6 +9,8 @@ import {
   rememberMaterialThumbnailSources,
   resolveMaterialListThumbnail,
 } from './materials'
+import { keepEventsForVisitorLimit, shouldShowVisitorLimitPrompt, visitorLimitPromptActionLabel, visitorLimitPromptTargetTier } from '../utils/membership'
+import { getMembershipAccessSilent } from './membership'
 import { request, resolveMediaUrl } from './request'
 
 /** 后端查询时间范围上限（custom 最长 62 天） */
@@ -31,8 +33,12 @@ export function getNotifications(): Promise<NotificationsViewModel> {
   return Promise.all([
     request<ApiNotificationEvent[]>({ method: 'GET', path: '/analysis/notify/list', query: { ...rangeQuery } }),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
-  ]).then(([events, materials]) => {
-    const visibleEvents = (events ?? []).filter((event) => event != null)
+    getMembershipAccessSilent(),
+  ]).then(([events, materials, membershipAccess]) => {
+    const visibleEvents = keepEventsForVisitorLimit(
+      (events ?? []).filter((event) => event != null),
+      membershipAccess.visitorLimit,
+    )
     const materialById = new Map((materials ?? []).map((material) => [String(material.id), material]))
     const sources = [...materialById.values()].map((material) => ({
       id: String(material.id),
@@ -69,6 +75,9 @@ export function getNotifications(): Promise<NotificationsViewModel> {
     return {
       filters: notificationFilters,
       groups: groupNotificationCards(cards),
+      showVisitorLimitPrompt: shouldShowVisitorLimitPrompt(membershipAccess),
+      limitPromptActionLabel: visitorLimitPromptActionLabel(membershipAccess.tier),
+      limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
     }
   })
 }

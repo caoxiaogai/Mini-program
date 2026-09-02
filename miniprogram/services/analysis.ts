@@ -38,6 +38,7 @@ import { aggregateCustomerHistoryByMaterial, resolveIntentLevelFromCounts } from
 import { prepareMediaUrls } from '../utils/media'
 import { DEV_UI_PREVIEW } from '../config/dev'
 import { getAnalysisContentDetailPreview, getAnalysisOverviewPreview, getAnalysisWorkListPreview } from './analysis-preview'
+import { getMembershipAccessSilent } from './membership'
 import {
   enrichThumbnailsByIds,
   prepareMaterialThumbnail,
@@ -498,7 +499,8 @@ export function getAnalysisOverview(
       ? Promise.resolve(null)
       : request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: totalQuery }),
     getReadTrends(),
-  ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends]) => {
+    getMembershipAccessSilent(),
+  ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends, membershipAccess]) => {
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
     const cards = mapContentCards(contents, sortId, intentCustomers)
     const heroDashboard = totalDashboard ?? dashboard
@@ -512,7 +514,7 @@ export function getAnalysisOverview(
         { label: '中意向', value: formatCount(dashboard.mediumIntentCount), iconPath: '/assets/analysis/intent-middle-icon.svg' },
         { label: '低意向', value: formatCount(dashboard.lowIntentCount), iconPath: '/assets/analysis/intent-low-icon.svg' },
       ],
-      audienceUsers: customers.map((customer) => {
+      audienceUsers: (customers ?? []).map((customer) => {
         const customerId = String(customer.customerId)
         const level = resolveIntentLevel(intentByCustomer, customerId, customer.viewCount ?? 0, customer.completeCount ?? 0)
         const intent = intentByCustomer.get(customerId)
@@ -528,6 +530,7 @@ export function getAnalysisOverview(
           shareCount: intent?.hasForwarded === 1 ? '1' : '0',
         }
       }),
+      visitorLimit: membershipAccess.visitorLimit,
       totalData: {
         heroMetrics: buildHeroMetrics(heroDashboard, resolvedTotalPeriod),
         overview: [

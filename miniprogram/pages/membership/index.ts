@@ -8,22 +8,24 @@ import { ApiError } from '../../services/request'
 import type { ApiMembershipPayParams } from '../../types/api'
 import {
   MEMBERSHIP_IOS_MIN_AMOUNT_FEN,
-  MEMBERSHIP_PAGE_PATH,
+  MEMBERSHIP_TIER_QUERY,
+  membershipPageUrl,
+  parseMembershipUiTier,
   type MembershipPageViewModel,
   type MembershipPlanId,
   type MembershipPlanViewModel,
-  type MembershipTier,
+  type MembershipUiTier,
 } from '../../types/membership'
-import { getMembershipBenefits, pickMembershipPlan } from '../../utils/membership'
+import {
+  getMembershipBenefits,
+  isMembershipPlanId,
+  isStandardMembershipLocked,
+  membershipPayLabel,
+  pairedPlanId,
+  pickMembershipPlan,
+  plansForUiTier,
+} from '../../utils/membership'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
-
-function isPlanId(value: string | undefined): value is MembershipPlanId {
-  return value === 'month' || value === 'quarter' || value === 'half_year'
-}
-
-function payLabel(membership: MembershipPageViewModel | null): string {
-  return membership?.active ? '立即续费' : '立即开通'
-}
 
 function isPayCancel(errMsg: string, errCode?: number): boolean {
   return errCode === -2 || /cancel|取消/.test(errMsg)
@@ -90,13 +92,24 @@ Page({
     selectedPayLabel: '立即开通',
     paying: false,
     agreementChecked: false,
-    membershipTier: 'standard' as MembershipTier,
+    membershipTier: 'standard' as MembershipUiTier,
     membershipBenefits: getMembershipBenefits('standard'),
+    visiblePlans: [] as MembershipPlanViewModel[],
+    requestedTier: '' as MembershipUiTier | '',
+    standardActionsDisabled: false,
   },
 
-  onLoad() {
+  onLoad(options: Record<string, string | undefined>) {
+    const requestedTier = parseMembershipUiTier(options[MEMBERSHIP_TIER_QUERY])
+    if (requestedTier) {
+      this.setData({
+        requestedTier,
+        membershipTier: requestedTier,
+        membershipBenefits: getMembershipBenefits(requestedTier),
+      })
+    }
     this.setNavigationBarColor('#ffffff', '#040404')
-    runAuthed(MEMBERSHIP_PAGE_PATH, () => this.loadMembership())
+    runAuthed(membershipPageUrl(requestedTier), () => this.loadMembership())
   },
 
   onShow() {
@@ -124,13 +137,13 @@ Page({
 
     return getMembershipPageData()
       .then((membership) => {
-        const selectedPlan = pickMembershipPlan(membership.plans, this.data.selectedPlanId)
+        const membershipTier = this.data.membership
+          ? this.data.membershipTier
+          : this.data.requestedTier || (membership.tier === 'pro' ? 'premium' : 'standard')
         this.setData({
           status: 'success',
           membership,
-          selectedPlanId: selectedPlan?.id ?? '',
-          selectedPlan,
-          selectedPayLabel: payLabel(membership),
+          ...this.selectionForTier(membership, membershipTier, this.data.selectedPlanId),
         })
         if (membership.lastPaidOutTradeNo) {
           return syncMembershipOrder(membership.lastPaidOutTradeNo).catch(() => undefined)
@@ -143,37 +156,60 @@ Page({
           errorMessage: '无法加载会员套餐，请稍后重试',
           membership: null,
           selectedPlan: null,
+          visiblePlans: [],
+          standardActionsDisabled: false,
         })
       })
   },
 
+  selectionForTier(
+    membership: MembershipPageViewModel,
+    membershipTier: MembershipUiTier,
+    planId: MembershipPlanId | '',
+  ) {
+    const visiblePlans = plansForUiTier(membership.plans, membershipTier)
+    const selectedPlan = pickMembershipPlan(membership.plans, pairedPlanId(planId, membershipTier), membershipTier)
+    const selectedPlanId: MembershipPlanId | '' = selectedPlan?.id ?? ''
+    const standardActionsDisabled = isStandardMembershipLocked(membership.tier, membershipTier)
+    return {
+      membershipTier,
+      membershipBenefits: getMembershipBenefits(membershipTier),
+      visiblePlans,
+      selectedPlanId,
+      selectedPlan,
+      selectedPayLabel: membershipPayLabel(membership.tier, membershipTier),
+      standardActionsDisabled,
+    }
+  },
+
   onPlanTap(event: WechatMiniprogram.TouchEvent) {
     const planId = event.currentTarget.dataset.id as string | undefined
-    if (!isPlanId(planId) || this.data.paying) return
-    const selectedPlan = pickMembershipPlan(this.data.membership?.plans ?? [], planId)
-    if (!selectedPlan) return
+    if (!isMembershipPlanId(planId) || this.data.paying || this.data.standardActionsDisabled || !this.data.membership) return
+    const selectedPlan = pickMembershipPlan(this.data.membership.plans, planId, this.data.membershipTier)
+    if (!selectedPlan || selectedPlan.id !== planId) return
     this.setData({
       selectedPlanId: selectedPlan.id,
       selectedPlan,
-      selectedPayLabel: payLabel(this.data.membership),
+      selectedPayLabel: membershipPayLabel(this.data.membership.tier, this.data.membershipTier),
     })
   },
 
   onTierTap(event: WechatMiniprogram.TouchEvent) {
-    if (this.data.paying) return
-    const tier = event.currentTarget.dataset.tier as MembershipTier | undefined
+    if (this.data.paying || !this.data.membership) return
+    const tier = event.currentTarget.dataset.tier as MembershipUiTier | undefined
     if (tier !== 'standard' && tier !== 'premium') return
-    this.setData({ membershipTier: tier, membershipBenefits: getMembershipBenefits(tier) })
+    if (tier === this.data.membershipTier) return
+    this.setData(this.selectionForTier(this.data.membership, tier, this.data.selectedPlanId))
   },
 
   onAgreementTap() {
-    if (this.data.paying) return
+    if (this.data.paying || this.data.standardActionsDisabled) return
     this.setData({ agreementChecked: !this.data.agreementChecked })
   },
 
   onPayTap() {
     const plan = this.data.selectedPlan
-    if (!plan || this.data.paying) return
+    if (!plan || this.data.paying || this.data.standardActionsDisabled) return
     if (!this.data.agreementChecked) {
       wx.showToast({ title: '请先阅读并同意付费协议', icon: 'none' })
       return
@@ -283,7 +319,7 @@ Page({
       if (errCode === -15010) {
         wx.showModal({
           title: '道具未发布到现网',
-          content: `当前购买的道具 ID 是 ${productId || '未知'}。请到小程序后台「虚拟支付 → 道具管理」创建 ID 为 month / quarter / half_year 的道具（价格 1 / 2 / 3 分），并点「发布到现网」。只上传开发版不够。`,
+          content: `当前购买的道具 ID 是 ${productId || '未知'}。请到小程序后台「虚拟支付 → 道具管理」创建同名道具（month / quarter / half_year / month_pro / quarter_pro / half_year_pro），标价与套餐金额一致，并点「发布到现网」。只上传开发版不够。`,
           showCancel: false,
         })
         return
@@ -303,7 +339,7 @@ Page({
       if (errCode === -15013) {
         wx.showModal({
           title: '价格与后台不一致',
-          content: `道具 ${productId || ''} 的后台标价必须与下单金额一致：month=1分，quarter=2分，half_year=3分。改价后需重新发布到现网。`,
+          content: `道具 ${productId || ''} 的后台标价必须与当前套餐金额一致。改价后需重新发布到现网。`,
           showCancel: false,
         })
         return

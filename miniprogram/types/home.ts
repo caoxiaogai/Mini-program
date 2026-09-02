@@ -1,3 +1,5 @@
+import type { MembershipUiTier } from './membership'
+
 export type HomeIntentLevel = 'high' | 'medium' | 'low'
 
 export type HomeNotificationAction = 'forward' | 'reading'
@@ -53,6 +55,9 @@ export interface HomeTodayViewModel {
 export interface HomePageViewModel {
   unreadNotificationCount: number
   unreadNotificationEventIds: string[]
+  showVisitorLimitPrompt: boolean
+  limitPromptActionLabel: string
+  limitPromptTargetTier: MembershipUiTier
   notifications: HomeNotificationViewModel[]
   contents: HomeContentViewModel[]
   intentSummary: HomeIntentSummaryViewModel

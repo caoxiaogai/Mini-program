@@ -6,6 +6,7 @@ import { fromDatasetId } from '../../utils/dataset-id'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
+import { capAudienceUsers, resolveVisitorLimit } from '../../utils/membership'
 import { LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
@@ -145,7 +146,10 @@ Page({
       ? getAnalysisOverview(period, dateRange, this.data.activeAnalysisSort, trendPeriod)
       : getAnalysisOverview(period, undefined, this.data.activeAnalysisSort, trendPeriod)
     return request.then((analysisData) => {
-      const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
+      const sortedUsers = capAudienceUsers(
+        sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort),
+        resolveVisitorLimit(analysisData.visitorLimit),
+      )
       const initializeWorkData = !this.data.analysisData
       // Keep the chart tied to the latest peak selector choice even if an overview request resolves later.
       const currentTrendPeriod = this.data.activePeakPeriod || trendPeriod
@@ -179,10 +183,18 @@ Page({
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
     return getAnalysisOverview(period, dateRange).then((analysisData) => {
-      const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
+      const sortedUsers = capAudienceUsers(
+        sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort),
+        resolveVisitorLimit(analysisData.visitorLimit),
+      )
       const currentAnalysisData = this.data.analysisData ?? analysisData
       this.setData({
-        analysisData: { ...currentAnalysisData, userSummary: analysisData.userSummary, audienceUsers: analysisData.audienceUsers },
+        analysisData: {
+          ...currentAnalysisData,
+          userSummary: analysisData.userSummary,
+          audienceUsers: analysisData.audienceUsers,
+          visitorLimit: analysisData.visitorLimit,
+        },
       })
       this.applyAnalysisUsersWindow(sortedUsers, LIST_PAGE_SIZE)
     })
@@ -230,7 +242,10 @@ Page({
     this.applyAnalysisCardsWindow(this.data.allAnalysisCards, next)
   },
   loadMoreAnalysisUsers() {
-    const users = sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], this.data.activeAnalysisSort)
+    const users = capAudienceUsers(
+      sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], this.data.activeAnalysisSort),
+      resolveVisitorLimit(this.data.analysisData?.visitorLimit),
+    )
     const next = nextListWindow(this.data.analysisUsersVisibleCount, users.length)
     if (next === this.data.analysisUsersVisibleCount) return
     this.applyAnalysisUsersWindow(users, next)
@@ -385,7 +400,10 @@ Page({
       return
     }
     if (this.data.activeAnalysisTab === 'user') {
-      const users = sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], sortOption.id)
+      const users = capAudienceUsers(
+        sortAnalysisUsers(this.data.analysisData?.audienceUsers ?? [], sortOption.id),
+        resolveVisitorLimit(this.data.analysisData?.visitorLimit),
+      )
       this.applyAnalysisUsersWindow(users, LIST_PAGE_SIZE)
     }
   },

@@ -47,6 +47,7 @@ export const analysisOverviewPreview: AnalysisViewModel = {
     { label: '低意向', value: '1,223', iconPath: '/assets/analysis/intent-low-icon.svg' },
   ],
   audienceUsers: analysisContentDetailPreview.intentUsers,
+  visitorLimit: null,
   totalData: {
     heroMetrics: [
       { label: '阅读总次数', value: '122,100次', delta: '+30' },

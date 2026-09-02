@@ -3,7 +3,7 @@
     <navigation-bar ext-class="membership-navigation" back="{{true}}" color="#ffffff" background="transparent" />
   </view>
 
-  <block wx:if="{{status === 'success' && membership}}">
+  <view wx:if="{{status === 'success' && membership}}" class="membership-page__body">
     <view class="membership-page__hero">
       <view class="membership-tier-tabs" aria-label="会员类型">
         <view
@@ -38,15 +38,16 @@
     <view class="membership-page__surface">
       <view class="membership-plans">
         <view
-          wx:for="{{membership.plans}}"
+          wx:for="{{visiblePlans}}"
           wx:key="id"
-          class="membership-plan {{selectedPlanId === item.id ? 'membership-plan--selected' : ''}}"
+          class="membership-plan {{selectedPlanId === item.id ? 'membership-plan--selected' : ''}} {{standardActionsDisabled ? 'membership-plan--disabled' : ''}}"
           data-id="{{item.id}}"
           bindtap="onPlanTap"
-          hover-class="membership-plan--pressed"
+          hover-class="{{standardActionsDisabled ? '' : 'membership-plan--pressed'}}"
           hover-stay-time="80"
           aria-role="radio"
           aria-checked="{{selectedPlanId === item.id}}"
+          aria-disabled="{{standardActionsDisabled}}"
         >
           <view class="membership-plan__copy">
             <text class="membership-plan__title">{{item.displayTitle}}</text>
@@ -58,20 +59,22 @@
 
       <view
         wx:if="{{selectedPlan}}"
-        class="membership-pay {{paying ? 'membership-pay--disabled' : ''}}"
+        class="membership-pay {{paying || standardActionsDisabled ? 'membership-pay--disabled' : ''}}"
         bindtap="onPayTap"
-        hover-class="{{paying ? '' : 'membership-pay--pressed'}}"
+        hover-class="{{paying || standardActionsDisabled ? '' : 'membership-pay--pressed'}}"
         aria-role="button"
+        aria-disabled="{{paying || standardActionsDisabled}}"
       >
         <text>{{paying ? '正在支付' : selectedPayLabel}}</text>
       </view>
 
       <view
-        class="membership-agreement"
+        class="membership-agreement {{standardActionsDisabled ? 'membership-agreement--disabled' : ''}}"
         bindtap="onAgreementTap"
-        hover-class="membership-agreement--pressed"
+        hover-class="{{standardActionsDisabled ? '' : 'membership-agreement--pressed'}}"
         aria-role="checkbox"
         aria-checked="{{agreementChecked}}"
+        aria-disabled="{{standardActionsDisabled}}"
       >
         <view class="membership-agreement__checkbox {{agreementChecked ? 'membership-agreement__checkbox--checked' : ''}}">
           <image wx:if="{{agreementChecked}}" class="membership-agreement__check" src="/assets/membership/check.svg" mode="aspectFit" aria-hidden="true" />
@@ -80,7 +83,7 @@
         <text class="membership-agreement__link">《言界阿乐付费协议》</text>
       </view>
     </view>
-  </block>
+  </view>
 
   <view wx:elif="{{status === 'loading'}}" class="membership-page__state-surface">
     <view class="membership-page__state">
