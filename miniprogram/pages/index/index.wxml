@@ -18,7 +18,7 @@
             <view class="home-section home-section--notifications">
               <view class="home-section__header">
                 <view class="home-section__title-row"><text class="home-section__title">互动消息</text><text wx:if="{{homeData.unreadNotificationCount}}" class="home-section__badge">{{homeData.unreadNotificationCount}}</text></view>
-                <notification-mark-all-read wx:if="{{homeData.unreadNotificationCount}}" compact="{{true}}" unread-count="{{homeData.unreadNotificationCount}}" bind:markallread="onHomeMarkAllReadTap" />
+                <notification-mark-all-read wx:if="{{homeData.unreadNotificationCount}}" compact="{{true}}" unread-count="{{homeData.unreadNotificationCount}}" collapse-key="{{homeNotificationMarkAllReadCollapseKey}}" bind:markallread="onHomeMarkAllReadTap" />
               </view>
               <view wx:if="{{homeData.notifications.length}}" class="home-notification-list">
                 <view wx:for="{{homeData.notifications}}" wx:key="id" wx:if="{{index < 5}}" class="home-notification-card-stack {{homeData.unreadNotificationCount > 3 && index === 2 ? 'home-notification-card-stack--with-more' : ''}} {{index === 3 ? 'home-notification-card-stack--overflow home-notification-card-stack--overflow-first' : index === 4 ? 'home-notification-card-stack--overflow home-notification-card-stack--overflow-second' : ''}}">

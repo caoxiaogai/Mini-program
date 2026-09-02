@@ -102,6 +102,8 @@ Page({
     activeTabIndex: 0,
     homeHeaderOpacity: 0,
     homeHeaderGradientOpacity: 1,
+    homeScrollTop: 0,
+    homeNotificationMarkAllReadCollapseKey: 0,
     notifications: null as NotificationsViewModel | null,
     activeNotificationFilter: 'all' as NotificationFilterId,
     visibleNotificationGroups: [] as NotificationGroupViewModel[],
@@ -194,10 +196,17 @@ Page({
     }
   },
   onHomeScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
-    const homeHeaderOpacity = getHomeHeaderOpacity(event.detail.scrollTop)
-    const homeHeaderGradientOpacity = getHomeHeaderGradientOpacity(event.detail.scrollTop)
-    if (homeHeaderOpacity === this.data.homeHeaderOpacity) return
-    this.setData({ homeHeaderOpacity, homeHeaderGradientOpacity })
+    const scrollTop = event.detail.scrollTop
+    const homeHeaderOpacity = getHomeHeaderOpacity(scrollTop)
+    const homeHeaderGradientOpacity = getHomeHeaderGradientOpacity(scrollTop)
+    const scrollChanged = scrollTop !== this.data.homeScrollTop
+    if (homeHeaderOpacity === this.data.homeHeaderOpacity && homeHeaderGradientOpacity === this.data.homeHeaderGradientOpacity && !scrollChanged) return
+    this.setData({
+      homeHeaderOpacity,
+      homeHeaderGradientOpacity,
+      homeScrollTop: scrollTop,
+      ...(scrollChanged ? { homeNotificationMarkAllReadCollapseKey: this.data.homeNotificationMarkAllReadCollapseKey + 1 } : {}),
+    })
   },
   loadHomeData(silent = false) {
     if (!silent) this.setData({ isLoading: true, loadError: false })
