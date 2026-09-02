@@ -131,7 +131,7 @@
     <view class="home-page__tab-panel home-page__materials-panel" hidden="{{activeTabIndex !== 2}}">
       <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{analysisNavigationHeight}}px;">
         <view class="materials-page__top">
-          <image class="materials-page__gradient" src="/assets/home-new/home-header-background.svg" mode="scaleToFill" />
+          <view class="materials-page__gradient" />
           <image class="materials-page__stripes" src="/assets/line-bg.svg" mode="scaleToFill" />
           <view class="materials-page__header">
           <navigation-bar back="{{false}}" title="素材" color="#000000" background="transparent" />
