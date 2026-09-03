@@ -339,7 +339,7 @@ test('home interaction messages expose the compact mark-all-read action', async 
   assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__label \{[\s\S]*max-width: 0;[\s\S]*opacity: 0;/)
   assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__label \{[\s\S]*height: 48rpx;[\s\S]*line-height: 48rpx;/)
   assert.match(componentStyles, /notification-mark-all-read--compact-expanded \{[\s\S]*padding: 0;/)
-  assert.match(componentStyles, /notification-mark-all-read--compact-expanded \.notification-mark-all-read__label \{[\s\S]*left: 50%;[\s\S]*width: 104rpx;[\s\S]*max-width: 104rpx;[\s\S]*opacity: 1;[\s\S]*text-align: center;/)
+  assert.match(componentStyles, /notification-mark-all-read--compact-expanded \.notification-mark-all-read__label \{[\s\S]*left: 50%;[\s\S]*width: 112rpx;[\s\S]*max-width: 112rpx;[\s\S]*opacity: 1;[\s\S]*text-align: center;/)
   assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__label \{[\s\S]*transition: [^;]*max-width 300ms cubic-bezier\(0\.22, 1, 0\.36, 1\), opacity 300ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/)
   assert.match(componentStyles, /notification-mark-all-read--compact::after \{[\s\S]*pointer-events: none;/)
   assert.match(componentStyles, /notification-mark-all-read--compact-expanded \{[\s\S]*z-index: 1002;/)

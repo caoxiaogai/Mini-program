@@ -301,7 +301,7 @@ miniprogram/
 
 ### 2026-09-03：首页一键已读展开后四字完整显示
 
-- 紧凑胶囊从 `144rpx` 加到 `168rpx`，文案从 `88rpx` 加到 `104rpx`，避免「一键已读」最后一个字被裁切。
+- 紧凑胶囊从 `144rpx` 加到 `168rpx`，文案从 `88rpx` 加到 `112rpx`，避免「一键已读」最后一个字被裁切。
 - 组件开启 `virtualHost`，互动消息标题栏改为 `min-height: 48rpx` 且 `overflow: visible`，展开时不再被 34rpx 标题行和外层盒子裁掉。
 - 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home interaction messages expose the compact mark-all-read" tests/home-page.test.mjs`。需真机点标题右侧 ×，确认四字完整露出。
 
@@ -374,6 +374,7 @@ miniprogram/
 - 修复 compact 点击扩展层覆盖叉 icon 导致无法展开的问题，扩展层改为不拦截子元素事件。
 - 展开态胶囊取消隐藏叉 icon留下的不对称预留，文案在 144rpx 胶囊内水平居中，左右间距一致。
 - “一键已读”和 X 使用独立的透明触控层，点击目标补足到 32px，视觉尺寸不变。
+- 展开态“一键已读”文案容器调整为 `112rpx`，保证四字文案在当前字号下完整显示。
 - 验证：首页互动消息与通知页一键已读定向测试 3 项通过；组件交互 harness 与 `git diff --check` 通过。
 
 ### 2026-09-02：发布与我的顶部背景恢复旧样式
