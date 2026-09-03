@@ -299,6 +299,12 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-09-03：标准/尊享套餐选择互不影响
+
+- 尊享页改选一个月、三个月或半年，不再同步改标准页的选中项；两档各自记住上次选择，默认仍是三个月。
+- 已开通尊享后进入标准页：套餐全部置灰且不出现选中蓝底，表示不可选。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/membership-page.test.mjs`。
+
 ### 2026-09-02：未开通会员卡副标题按字上色
 
 - Skyline 不支持 `background-clip: text`，渐变会铺成色块、文字透明看不见。副标题改为按 Figma 三色停（`#ffebb0` / `#ea83ff` / `#189e91`）给每个字上色，保留渐变观感。

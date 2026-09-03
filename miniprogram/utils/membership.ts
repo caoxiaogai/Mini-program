@@ -51,15 +51,6 @@ const DEFAULT_PLAN_ID: Record<MembershipUiTier, MembershipPlanId> = {
   standard: 'quarter',
   premium: 'quarter_pro',
 }
-const PAIRED_PLAN_ID: Record<MembershipPlanId, MembershipPlanId> = {
-  month: 'month_pro',
-  quarter: 'quarter_pro',
-  half_year: 'half_year_pro',
-  month_pro: 'month',
-  quarter_pro: 'quarter',
-  half_year_pro: 'half_year',
-}
-
 export function uiTierForPlanId(planId: MembershipPlanId): MembershipUiTier {
   return PREMIUM_PLAN_IDS.includes(planId) ? 'premium' : 'standard'
 }
@@ -70,11 +61,6 @@ export function plansForUiTier(
 ): MembershipPlanViewModel[] {
   const allowed = tier === 'premium' ? PREMIUM_PLAN_IDS : STANDARD_PLAN_IDS
   return plans.filter((plan) => allowed.includes(plan.id))
-}
-
-export function pairedPlanId(planId: MembershipPlanId | '', targetTier: MembershipUiTier): MembershipPlanId | '' {
-  if (!planId) return ''
-  return uiTierForPlanId(planId) === targetTier ? planId : PAIRED_PLAN_ID[planId]
 }
 
 export function getMembershipBenefits(tier: MembershipUiTier): MembershipBenefitViewModel[] {

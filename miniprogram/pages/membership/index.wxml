@@ -40,13 +40,13 @@
         <view
           wx:for="{{visiblePlans}}"
           wx:key="id"
-          class="membership-plan {{selectedPlanId === item.id ? 'membership-plan--selected' : ''}} {{standardActionsDisabled ? 'membership-plan--disabled' : ''}}"
+          class="membership-plan {{selectedPlanId === item.id && !standardActionsDisabled ? 'membership-plan--selected' : ''}} {{standardActionsDisabled ? 'membership-plan--disabled' : ''}}"
           data-id="{{item.id}}"
           bindtap="onPlanTap"
           hover-class="{{standardActionsDisabled ? '' : 'membership-plan--pressed'}}"
           hover-stay-time="80"
           aria-role="radio"
-          aria-checked="{{selectedPlanId === item.id}}"
+          aria-checked="{{selectedPlanId === item.id && !standardActionsDisabled}}"
           aria-disabled="{{standardActionsDisabled}}"
         >
           <view class="membership-plan__copy">

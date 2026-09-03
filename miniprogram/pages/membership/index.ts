@@ -21,7 +21,6 @@ import {
   isMembershipPlanId,
   isStandardMembershipLocked,
   membershipPayLabel,
-  pairedPlanId,
   pickMembershipPlan,
   plansForUiTier,
 } from '../../utils/membership'
@@ -88,6 +87,8 @@ Page({
     errorMessage: '会员信息加载失败',
     membership: null as MembershipPageViewModel | null,
     selectedPlanId: '' as MembershipPlanId | '',
+    selectedStandardPlanId: '' as MembershipPlanId | '',
+    selectedPremiumPlanId: '' as MembershipPlanId | '',
     selectedPlan: null as MembershipPlanViewModel | null,
     selectedPayLabel: '立即开通',
     paying: false,
@@ -143,7 +144,7 @@ Page({
         this.setData({
           status: 'success',
           membership,
-          ...this.selectionForTier(membership, membershipTier, this.data.selectedPlanId),
+          ...this.selectionForTier(membership, membershipTier),
         })
         if (membership.lastPaidOutTradeNo) {
           return syncMembershipOrder(membership.lastPaidOutTradeNo).catch(() => undefined)
@@ -162,13 +163,10 @@ Page({
       })
   },
 
-  selectionForTier(
-    membership: MembershipPageViewModel,
-    membershipTier: MembershipUiTier,
-    planId: MembershipPlanId | '',
-  ) {
+  selectionForTier(membership: MembershipPageViewModel, membershipTier: MembershipUiTier) {
     const visiblePlans = plansForUiTier(membership.plans, membershipTier)
-    const selectedPlan = pickMembershipPlan(membership.plans, pairedPlanId(planId, membershipTier), membershipTier)
+    const storedPlanId = membershipTier === 'premium' ? this.data.selectedPremiumPlanId : this.data.selectedStandardPlanId
+    const selectedPlan = pickMembershipPlan(membership.plans, storedPlanId, membershipTier)
     const selectedPlanId: MembershipPlanId | '' = selectedPlan?.id ?? ''
     const standardActionsDisabled = isStandardMembershipLocked(membership.tier, membershipTier)
     return {
@@ -176,6 +174,8 @@ Page({
       membershipBenefits: getMembershipBenefits(membershipTier),
       visiblePlans,
       selectedPlanId,
+      selectedStandardPlanId: membershipTier === 'standard' ? selectedPlanId : this.data.selectedStandardPlanId,
+      selectedPremiumPlanId: membershipTier === 'premium' ? selectedPlanId : this.data.selectedPremiumPlanId,
       selectedPlan,
       selectedPayLabel: membershipPayLabel(membership.tier, membershipTier),
       standardActionsDisabled,
@@ -189,6 +189,8 @@ Page({
     if (!selectedPlan || selectedPlan.id !== planId) return
     this.setData({
       selectedPlanId: selectedPlan.id,
+      selectedStandardPlanId: this.data.membershipTier === 'standard' ? selectedPlan.id : this.data.selectedStandardPlanId,
+      selectedPremiumPlanId: this.data.membershipTier === 'premium' ? selectedPlan.id : this.data.selectedPremiumPlanId,
       selectedPlan,
       selectedPayLabel: membershipPayLabel(this.data.membership.tier, this.data.membershipTier),
     })
@@ -199,7 +201,7 @@ Page({
     const tier = event.currentTarget.dataset.tier as MembershipUiTier | undefined
     if (tier !== 'standard' && tier !== 'premium') return
     if (tier === this.data.membershipTier) return
-    this.setData(this.selectionForTier(this.data.membership, tier, this.data.selectedPlanId))
+    this.setData(this.selectionForTier(this.data.membership, tier))
   },
 
   onAgreementTap() {
