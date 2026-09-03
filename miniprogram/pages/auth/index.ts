@@ -1,120 +1,108 @@
-import { afterAuthorizeLogin, continueAfterAuth } from '../../services/auth'
-import { ensureLogin, patchCachedLogin } from '../../services/request'
-import { updateUserProfile, uploadUserAvatar } from '../../services/user'
-import { isLocalAvatarFile, isLoginProfileComplete, safeReturnPath, type AuthGate } from '../../utils/auth'
+import { completeProfileLogin, continueAfterAuth } from '../../services/auth'
+import { DEFAULT_AVATAR_URL, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath } from '../../utils/auth'
+import { uploadUserAvatar } from '../../services/user'
 import { HOME_PAGE_PATH } from '../../utils/share-material'
 
-type AuthStep = Exclude<AuthGate, 'ok'>
 type ChooseAvatarEvent = WechatMiniprogram.CustomEvent<{ avatarUrl: string }>
+type NicknameReviewEvent = WechatMiniprogram.CustomEvent<{ pass: boolean }>
+type AuthFormValue = { nickname?: string }
 
 Page({
+  nicknameDraft: '',
   data: {
-    step: 'login' as AuthStep,
     returnPath: HOME_PAGE_PATH,
     nickname: '',
-    avatarUrl: '',
+    avatarUrl: DEFAULT_AVATAR_URL,
     avatarFilePath: '',
     nicknameFocused: false,
     busy: false,
   },
 
   onLoad(options: Record<string, string | undefined>) {
-    const step = options.step === 'profile' ? 'profile' : 'login'
     this.setData({
-      step,
       returnPath: safeReturnPath(options.return),
     })
-    if (step !== 'profile') return
-
-    ensureLogin()
-      .then((user) => {
-        this.setData({
-          nickname: (user.nickname ?? '').trim(),
-          avatarUrl: user.avatar ?? '',
-        })
-      })
-      .catch(() => undefined)
-  },
-
-  onAuthorizeTap() {
-    if (this.data.busy) return
-    this.setData({ busy: true })
-
-    afterAuthorizeLogin()
-      .then(({ user, gate }) => {
-        if (gate === 'ok') {
-          continueAfterAuth(this.data.returnPath)
-          return
-        }
-        this.setData({
-          step: 'profile',
-          nickname: (user.nickname ?? '').trim(),
-          avatarUrl: user.avatar ?? '',
-          avatarFilePath: '',
-          busy: false,
-        })
-      })
-      .catch(() => {
-        this.setData({ busy: false })
-      })
   },
 
   onChooseAvatar(event: ChooseAvatarEvent) {
-    this.applyWechatAvatar(event.detail.avatarUrl, false)
-  },
-
-  onUseWechatProfile(event: ChooseAvatarEvent) {
-    this.applyWechatAvatar(event.detail.avatarUrl, true)
-  },
-
-  applyWechatAvatar(avatarUrl: string, focusNickname: boolean) {
+    const avatarUrl = event.detail.avatarUrl
     if (!avatarUrl) return
     this.setData({
       avatarUrl,
       avatarFilePath: isLocalAvatarFile(avatarUrl) ? avatarUrl : '',
       nicknameFocused: false,
+    }, () => {
+      this.setData({ nicknameFocused: true })
     })
-    if (!focusNickname) return
-    wx.nextTick(() => this.setData({ nicknameFocused: true }))
   },
 
-  onNicknameInput(event: WechatMiniprogram.Input) {
-    this.setData({ nickname: event.detail.value })
+  onNicknameChange(event: WechatMiniprogram.Input) {
+    this.rememberNickname(event.detail.value)
   },
 
   onNicknameBlur(event: WechatMiniprogram.InputBlur) {
-    this.setData({
-      nickname: event.detail.value.trim(),
-      nicknameFocused: false,
+    this.rememberNickname(event.detail.value)
+    if (this.data.nicknameFocused) this.setData({ nicknameFocused: false })
+  },
+
+  onNicknameReview(event: NicknameReviewEvent) {
+    if (event.detail.pass) return
+    this.nicknameDraft = ''
+    this.setData({ nickname: '' })
+    wx.showToast({ title: '昵称未通过安全检测', icon: 'none' })
+  },
+
+  onFormSubmit(event: WechatMiniprogram.FormSubmit) {
+    if (this.data.busy) return
+
+    const formValue = event.detail.value as AuthFormValue
+    this.readNickname(String(formValue.nickname ?? '')).then((nickname) => {
+      this.submitLogin(nickname)
     })
   },
 
-  onSaveProfileTap() {
+  rememberNickname(value: string) {
+    const nickname = value.trim()
+    this.nicknameDraft = nickname
+    if (this.data.nickname && this.data.nickname !== nickname) {
+      this.setData({ nickname })
+    }
+  },
+
+  readNickname(formNickname: string): Promise<string> {
+    const fromForm = formNickname.trim()
+    if (fromForm) return Promise.resolve(fromForm)
+    if (this.nicknameDraft.trim()) return Promise.resolve(this.nicknameDraft.trim())
+    if (this.data.nickname.trim()) return Promise.resolve(this.data.nickname.trim())
+
+    return new Promise((resolve) => {
+      this.createSelectorQuery()
+        .select('#auth-nickname')
+        .fields({ properties: ['value'] })
+        .exec((nodes) => {
+          const node = nodes[0] as { value?: string } | undefined
+          resolve(String(node?.value ?? '').trim())
+        })
+    })
+  },
+
+  submitLogin(nickname: string) {
     if (this.data.busy) return
 
-    const nickname = this.data.nickname.trim()
     const avatarFilePath = this.data.avatarFilePath
     const avatarUrl = this.data.avatarUrl.trim()
-    if (!avatarFilePath && !avatarUrl) {
-      wx.showToast({ title: '请设置头像', icon: 'none' })
-      return
-    }
     if (!isLoginProfileComplete({ nickname, avatar: avatarFilePath || avatarUrl })) {
-      wx.showToast({ title: '请填写微信昵称', icon: 'none' })
+      wx.showToast({ title: '请选择头像并填写昵称', icon: 'none' })
       return
     }
 
-    this.setData({ busy: true })
-    const persistAvatar = avatarFilePath
-      ? uploadUserAvatar(avatarFilePath)
-      : Promise.resolve(avatarUrl)
+    this.nicknameDraft = nickname
+    this.setData({ nickname, busy: true, nicknameFocused: false })
+    const persistAvatar = avatarFilePath ? uploadUserAvatar(avatarFilePath) : Promise.resolve(avatarUrl)
 
     persistAvatar
-      .then((avatar) => updateUserProfile({ nickname, avatar }).then(() => avatar))
-      .then((avatar) => {
-        patchCachedLogin({ nickname, avatar })
-        continueAfterAuth(this.data.returnPath)
-      })
+      .then((avatar) => completeProfileLogin({ nickname, avatar }))
+      .then(() => continueAfterAuth(this.data.returnPath))
       .catch(() => {
         this.setData({ busy: false })
       })

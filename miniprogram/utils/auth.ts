@@ -1,14 +1,18 @@
 export const AUTH_PAGE_ROUTE = 'pages/auth/index'
 const AUTH_FALLBACK_PATH = '/pages/index/index'
 
-export type AuthGate = 'ok' | 'login' | 'profile'
+export type AuthGate = 'ok' | 'login'
+
+/** 微信官方文档「头像昵称填写」示例默认头像，未选择时不算已完善资料 */
+export const DEFAULT_AVATAR_URL =
+  'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
 
 const PLACEHOLDER_NICKNAMES = new Set(['微信用户', '匿名访客'])
 
 export function isLoginProfileComplete(user: { nickname?: string | null; avatar?: string | null }): boolean {
   const nickname = (user.nickname ?? '').trim()
   const avatar = (user.avatar ?? '').trim()
-  return nickname !== '' && !PLACEHOLDER_NICKNAMES.has(nickname) && avatar !== ''
+  return nickname !== '' && !PLACEHOLDER_NICKNAMES.has(nickname) && avatar !== '' && avatar !== DEFAULT_AVATAR_URL
 }
 
 export function isLocalAvatarFile(url: string): boolean {
@@ -45,6 +49,6 @@ export function buildReturnPath(route: string, options?: Record<string, string |
   return query ? `${path}?${query}` : path
 }
 
-export function buildAuthPath(returnPath: string, step: Exclude<AuthGate, 'ok'> = 'login'): string {
-  return `/${AUTH_PAGE_ROUTE}?step=${step}&return=${encodeURIComponent(safeReturnPath(returnPath))}`
+export function buildAuthPath(returnPath: string): string {
+  return `/${AUTH_PAGE_ROUTE}?return=${encodeURIComponent(safeReturnPath(returnPath))}`
 }

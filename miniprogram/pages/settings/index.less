@@ -17,6 +17,9 @@ page {
 }
 
 .settings-page__content {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
   padding: 40rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
@@ -71,6 +74,23 @@ page {
   color: #8a8e94;
   font-size: 24rpx;
   line-height: 34rpx;
+}
+
+.settings-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 112rpx;
+  border-radius: 40rpx;
+  background: #ffffff;
+  color: #e54d42;
+  font-size: 32rpx;
+  font-weight: 500;
+  line-height: 44rpx;
+}
+
+.settings-logout--pressed {
+  opacity: 0.65;
 }
 
 .settings-rules-modal {

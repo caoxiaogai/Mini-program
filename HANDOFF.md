@@ -267,7 +267,7 @@ miniprogram/
 | 无浏览作品内容分析空白 | done | 从未被浏览/转发的作品打开内容分析时仍展示作品卡片和空意向用户，不再整页空白 |
 | PDF 点击预览图查看 | done | 素材详情 PDF 去掉「点击查看」按钮，点击预览图进入阅读页 |
 | PDF 与视频查看记浏览 | done | 打开 PDF/视频详情即上报 play；单页文档先 play 再 end；后端 end 补建也会计入浏览 |
-| 进入小程序必须授权登录 | done | 首页和分享进入素材详情都先校验登录；未授权必须先登录，首次登录编辑头像昵称，可一键用微信头像和昵称 |
+| 进入小程序必须授权登录 | done | 未登录跳转登录页；头像 `chooseAvatar`，昵称 `input type="nickname"`。微信已收回一键读取头像昵称，不再调用 `getUserProfile` |
 | 已发布作品二次编辑 | done | 作者在素材详情用「二次编辑」预填媒体和文案进入发布页，发表为新作品；访客仍显示「分享到朋友圈」 |
 | 总数据主指标按周期环比 | done | 浏览总次数/人数随日、本周、本月、总分别较昨日、上周、上月、上两月；增加显示 +，减少显示 - 且为红色 |
 | 用户轨迹接入真实埋点 | done | `GET /analysis/customer/journey`；浏览/完播/转发时间线，图片与 PDF 显示页数，视频显示秒数，转发显示第几次 |
@@ -298,6 +298,31 @@ miniprogram/
 - 不在文档中记录密钥、AppSecret、用户隐私数据或生产接口凭证。
 
 ## 最近变更
+
+### 2026-09-03：登录页去掉无效的一键头像昵称
+
+- `wx.getUserProfile` 在本小程序只会返回默认头像和「微信用户」，再点「用微信昵称和头像」只会提示改走两步。已删除该调用。
+- 登录页按钮改为官方 `chooseAvatar`（文案「用微信头像」），选完后自动聚焦昵称框，再点键盘上方的微信昵称。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "entry pages require authorized login" tests/home-page.test.mjs`。需真机点「用微信头像」后确认昵称键盘出现微信昵称。
+
+### 2026-09-03：登录页补齐微信昵称填入和一键按钮
+
+- 点键盘上方「用微信昵称」没反应：Skyline 受控 `input value` 会冲掉微信填入。登录页改为 `renderer: webview`，昵称框默认不受控，提交时从 form / 节点读取。
+- 增加「用微信昵称和头像」：调用 `wx.getUserProfile` 尝试一次填入。若仍返回默认头像或「微信用户」，提示改用点头像 + 输入框上方的微信昵称。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "entry pages require authorized login" tests/home-page.test.mjs`。需真机点输入框上方微信昵称，以及点「用微信昵称和头像」。
+
+### 2026-09-03：登录页按官方文档填写头像昵称
+
+- 未登录进入小程序时跳到登录页，不再使用已收回的 `wx.getUserProfile`。
+- 登录页按[头像昵称填写](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/userProfile.html)实现：点头像走 `button open-type="chooseAvatar"`，昵称用 `input type="nickname"`，提交走 form `submit`。
+- 默认灰色头像和「微信用户」不算已登录；两者都换成真实值后走 `POST /wechat/login` 和 `PUT /user/profile`，再回原页面。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "entry pages require authorized login" tests/home-page.test.mjs`。需真机点头像确认微信头像选择器，并在昵称输入框看到微信昵称建议。
+
+### 2026-09-03：设置页增加退出登录
+
+- 「我的 → 设置」在推送意向门槛下方增加「退出登录」。确认后清除本地登录态，回到登录页。
+- 不调用未确认的后端退出接口；再次使用需重新完成微信官方授权。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "profile settings opens a notify intent" tests/home-page.test.mjs`。
 
 ### 2026-09-03：首页一键已读展开后四字完整显示
 

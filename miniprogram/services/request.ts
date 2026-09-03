@@ -229,6 +229,16 @@ export function authorizeLogin(): Promise<ApiLoginData> {
   return ensureLogin()
 }
 
+export function clearLogin(): void {
+  loginPromise = null
+  cachedUser = null
+  wx.removeStorageSync(STORAGE_KEY_USER_ID)
+  wx.removeStorageSync(STORAGE_KEY_OPENID)
+  wx.removeStorageSync(STORAGE_KEY_AUTHORIZED)
+  wx.removeStorageSync(STORAGE_KEY_NICKNAME)
+  wx.removeStorageSync(STORAGE_KEY_AVATAR)
+}
+
 export function patchCachedLogin(patch: Partial<Pick<ApiLoginData, 'nickname' | 'avatar'>>): void {
   const next: ApiLoginData = {
     userId: cachedUser?.userId ?? String(wx.getStorageSync(STORAGE_KEY_USER_ID) ?? ''),
