@@ -299,6 +299,12 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-09-03：首页一键已读展开后四字完整显示
+
+- 紧凑胶囊从 `144rpx` 加到 `168rpx`，文案从 `88rpx` 加到 `104rpx`，避免「一键已读」最后一个字被裁切。
+- 组件开启 `virtualHost`，互动消息标题栏改为 `min-height: 48rpx` 且 `overflow: visible`，展开时不再被 34rpx 标题行和外层盒子裁掉。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home interaction messages expose the compact mark-all-read" tests/home-page.test.mjs`。需真机点标题右侧 ×，确认四字完整露出。
+
 ### 2026-09-03：全屏看图恢复双指缩放
 
 - `catchhtouchmove` / `catchvtouchmove` 不能绑在 `movable-view` 上，会把原生捏合一起拦掉。拦 swiper 改到 `swiper-item` 冒泡阶段。

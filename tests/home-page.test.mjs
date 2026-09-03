@@ -291,6 +291,7 @@ test('home interaction messages expose the compact mark-all-read action', async 
   const component = read('miniprogram/components/notification-mark-all-read/index.wxml')
   const componentLogic = read('miniprogram/components/notification-mark-all-read/index.ts')
   const componentStyles = read('miniprogram/components/notification-mark-all-read/index.less')
+  const componentMeta = read('miniprogram/components/notification-mark-all-read/index.json')
 
   const homeData = {
     unreadNotificationCount: 2,
@@ -330,14 +331,15 @@ test('home interaction messages expose the compact mark-all-read action', async 
   assert.match(componentLogic, /observer\(\)/)
   assert.match(componentLogic, /if \(this\.data\.compactExpanded\) this\.setData\(\{ compactExpanded: false \}\)/)
   assert.match(componentStyles, /notification-mark-all-read--compact/)
+  assert.match(componentMeta, /"virtualHost": true/)
   assert.match(componentStyles, /notification-mark-all-read--compact \{[\s\S]*bottom: auto;/)
   assert.match(componentStyles, /notification-mark-all-read--compact \{[\s\S]*width: 48rpx;[\s\S]*min-width: 48rpx;[\s\S]*height: 48rpx;[\s\S]*flex: 0 0 48rpx;[\s\S]*flex-shrink: 0;[\s\S]*padding: 0;[\s\S]*border-radius: 50%;/)
   assert.match(componentStyles, /notification-mark-all-read--compact \{[\s\S]*transition: width 300ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/)
-  assert.match(componentStyles, /notification-mark-all-read--compact-expanded \{[\s\S]*width: 144rpx;[\s\S]*min-width: 0;[\s\S]*flex: 0 0 144rpx;/)
+  assert.match(componentStyles, /notification-mark-all-read--compact-expanded \{[\s\S]*width: 168rpx;[\s\S]*min-width: 168rpx;[\s\S]*flex: 0 0 168rpx;/)
   assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__label \{[\s\S]*max-width: 0;[\s\S]*opacity: 0;/)
-  assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__label \{[\s\S]*height: 64rpx;[\s\S]*line-height: 64rpx;/)
+  assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__label \{[\s\S]*height: 48rpx;[\s\S]*line-height: 48rpx;/)
   assert.match(componentStyles, /notification-mark-all-read--compact-expanded \{[\s\S]*padding: 0;/)
-  assert.match(componentStyles, /notification-mark-all-read--compact-expanded \.notification-mark-all-read__label \{[\s\S]*left: 50%;[\s\S]*width: 88rpx;[\s\S]*max-width: 88rpx;[\s\S]*opacity: 1;[\s\S]*text-align: center;/)
+  assert.match(componentStyles, /notification-mark-all-read--compact-expanded \.notification-mark-all-read__label \{[\s\S]*left: 50%;[\s\S]*width: 104rpx;[\s\S]*max-width: 104rpx;[\s\S]*opacity: 1;[\s\S]*text-align: center;/)
   assert.match(componentStyles, /notification-mark-all-read--compact \.notification-mark-all-read__label \{[\s\S]*transition: [^;]*max-width 300ms cubic-bezier\(0\.22, 1, 0\.36, 1\), opacity 300ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/)
   assert.match(componentStyles, /notification-mark-all-read--compact::after \{[\s\S]*pointer-events: none;/)
   assert.match(componentStyles, /notification-mark-all-read--compact-expanded \{[\s\S]*z-index: 1002;/)
