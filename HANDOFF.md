@@ -299,6 +299,18 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-09-03：全屏看图恢复双指缩放
+
+- `catchhtouchmove` / `catchvtouchmove` 不能绑在 `movable-view` 上，会把原生捏合一起拦掉。拦 swiper 改到 `swiper-item` 冒泡阶段。
+- 捏合过程中不能 `setData` 只改标记、不带上当前 `scale-value`，否则会把图弹回 1 倍，看起来像双指没反应。缩放倍数只在松手或双击时写回。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "material detail opens image preview" tests/home-page.test.mjs`。需真机确认双指缩放跟手，单击退出、双击缩放仍可用。
+
+### 2026-09-03：全屏看图双指缩放松手不再退出
+
+- 双指捏合缩放结束后，系统常会补一次单击。全屏预览在捏合开始、缩放和松手后 400ms 内忽略这次点击，避免误关全屏。
+- 单击关闭、双击放大仍可用。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "material detail opens image preview" tests/home-page.test.mjs`。需真机确认双指缩放松手后仍停留在全屏。
+
 ### 2026-09-03：标准/尊享套餐选择互不影响
 
 - 尊享页改选一个月、三个月或半年，不再同步改标准页的选中项；两档各自记住上次选择，默认仍是三个月。

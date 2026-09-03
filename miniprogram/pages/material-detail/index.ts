@@ -24,6 +24,10 @@ const VIDEO_SEEK_STEP_SEC = 10
 const VIDEO_SWIPE_THRESHOLD_PX = 48
 const IMAGE_VIEW_INTERVAL_MS = 5000
 const PREVIEW_DOUBLE_TAP_MS = 280
+const PREVIEW_PINCH_TAP_GUARD_MS = 400
+const PREVIEW_TAP_SLOP_PX = 10
+const PREVIEW_EDGE_PAGE_PX = 72
+const PREVIEW_EDGE_IDLE_MS = 80
 const PREVIEW_SCALE_MIN = 1
 const PREVIEW_SCALE_MAX = 4
 const PREVIEW_DOUBLE_TAP_SCALE = 2.5
@@ -56,7 +60,21 @@ Page({
   videoTouchStartX: 0,
   videoTouchStartY: 0,
   previewScaleLive: 1,
+  previewViewX: 0,
+  previewAreaWidth: 0,
+  previewFingerStartX: 0,
+  previewFingerStartY: 0,
+  previewFingerStartAt: 0,
+  previewStartViewX: 0,
+  previewTapMoved: false,
+  previewMovedView: false,
+  previewLastViewAt: 0,
+  previewOutOfBounds: false,
+  previewStartedAtEdge: false,
+  previewFingerDx: 0,
+  previewTurningPage: false,
   lastPreviewTapAt: 0,
+  previewIgnoreTapUntil: 0,
   previewTapTimer: null as number | null,
 
   onLoad(options: Record<string, string | undefined>) {
@@ -199,13 +217,39 @@ Page({
       previewZoomed: false,
       previewPinching: false,
       previewScale: 1,
-    })
+    }, () => this.measurePreviewArea())
     this.previewScaleLive = 1
+    this.previewViewX = 0
     this.markImageViewed(currentIndex, detail)
   },
 
+  measurePreviewArea() {
+    wx.createSelectorQuery()
+      .in(this)
+      .select('.material-detail-preview__area')
+      .boundingClientRect((rect) => {
+        if (rect && rect.width > 0) this.previewAreaWidth = rect.width
+      })
+      .exec()
+  },
+
+  onPreviewBlockSwiper() {
+    // 放大后拦截触摸冒泡，避免 swiper 把平移当成翻页。
+  },
+
   onPreviewSwiperChange(event: WechatMiniprogram.CustomEvent<{ current: number }>) {
-    const activeImageIndex = event.detail.current
+    const nextIndex = event.detail.current
+    if (this.previewTurningPage) return
+    if (this.data.previewZoomed || this.previewScaleLive > PREVIEW_SCALE_MIN + 0.02) {
+      const stayAt = this.data.activeImageIndex
+      if (nextIndex === stayAt) return
+      this.setData({ activeImageIndex: nextIndex }, () => {
+        this.setData({ activeImageIndex: stayAt })
+      })
+      return
+    }
+
+    const activeImageIndex = nextIndex
     this.resetPreviewZoom()
     this.setData({ activeImageIndex })
 
@@ -215,30 +259,176 @@ Page({
     this.markImageViewed(activeImageIndex, detail)
   },
 
-  onPreviewTouchStart(event: WechatMiniprogram.TouchEvent) {
-    if (event.touches.length < 2) return
+  onPreviewViewChange(event: WechatMiniprogram.CustomEvent<{ x: number; y: number; source?: string }>) {
+    const { x, source } = event.detail
+    this.previewViewX = x
+    this.previewLastViewAt = Date.now()
+    if (Math.abs(x - this.previewStartViewX) > 6) this.previewMovedView = true
+    if (source === 'touch-out-of-bounds') {
+      this.previewOutOfBounds = true
+      this.tryPreviewEdgePage(this.previewFingerDx)
+    } else if (source === 'touch' || source === '') {
+      this.previewOutOfBounds = false
+    }
+  },
 
-    const patch: { previewPinching?: boolean; previewZoomed?: boolean } = {}
-    if (!this.data.previewPinching) patch.previewPinching = true
-    if (!this.data.previewZoomed) patch.previewZoomed = true
-    if (patch.previewPinching || patch.previewZoomed) this.setData(patch)
+  previewWindowWidth() {
+    if (this.previewAreaWidth > 0) return this.previewAreaWidth
+    try {
+      return wx.getSystemInfoSync().windowWidth || 375
+    } catch {
+      return 375
+    }
+  },
+
+  previewMaxMoveX() {
+    return Math.max(0, (this.previewScaleLive - 1) * this.previewWindowWidth() / 2)
+  },
+
+  isPreviewAtHorizontalLimit(direction: 'left' | 'right') {
+    const extra = this.previewMaxMoveX()
+    if (this.previewOutOfBounds) {
+      if (direction === 'left') return this.previewFingerDx < 0 || this.previewViewX <= 0
+      return this.previewFingerDx > 0 || this.previewViewX >= 0
+    }
+    if (extra < 8) return true
+    if (direction === 'left') return this.previewViewX <= -extra + 16
+    return this.previewViewX >= extra - 16
+  },
+
+  turnPreviewPage(delta: number) {
+    const detail = this.data.detail
+    if (!detail || this.previewTurningPage || this.data.previewPinching) return
+    const nextIndex = this.data.activeImageIndex + delta
+    if (nextIndex < 0 || nextIndex >= detail.images.length) return
+
+    this.previewTurningPage = true
+    this.previewTapMoved = true
+    this.suppressPreviewTap()
+    this.resetPreviewZoomState()
+    this.previewViewX = 0
+    this.setData({
+      activeImageIndex: nextIndex,
+      previewZoomed: false,
+      previewPinching: false,
+      previewScale: 1.01,
+    }, () => {
+      this.setData({ previewScale: PREVIEW_SCALE_MIN })
+      this.previewTurningPage = false
+      this.markImageViewed(nextIndex, detail)
+    })
+  },
+
+  tryPreviewEdgePage(fingerDx: number) {
+    if (this.previewTurningPage || this.data.previewPinching) return
+    if (this.previewScaleLive <= PREVIEW_SCALE_MIN + 0.02) return
+
+    const threshold = this.previewOutOfBounds ? 40 : PREVIEW_EDGE_PAGE_PX
+    if (Math.abs(fingerDx) < threshold) return
+
+    const viewStalled = this.previewMovedView && Date.now() - this.previewLastViewAt >= PREVIEW_EDGE_IDLE_MS
+    const startEdgeHandoff = this.previewStartedAtEdge && !this.previewMovedView
+    const goingLeft = fingerDx < 0
+    const atLimit = goingLeft
+      ? this.isPreviewAtHorizontalLimit('left')
+      : this.isPreviewAtHorizontalLimit('right')
+
+    if (!this.previewOutOfBounds && !startEdgeHandoff && !atLimit && !viewStalled) return
+    if (goingLeft && !this.previewOutOfBounds && !startEdgeHandoff && !atLimit && this.previewViewX > this.previewStartViewX) {
+      return
+    }
+    if (!goingLeft && !this.previewOutOfBounds && !startEdgeHandoff && !atLimit && this.previewViewX < this.previewStartViewX) {
+      return
+    }
+    if (goingLeft && startEdgeHandoff && this.previewStartViewX > 8) return
+    if (!goingLeft && startEdgeHandoff && this.previewStartViewX < -8) return
+
+    this.turnPreviewPage(goingLeft ? 1 : -1)
+  },
+
+  suppressPreviewTap() {
+    this.previewIgnoreTapUntil = Date.now() + PREVIEW_PINCH_TAP_GUARD_MS
+    this.lastPreviewTapAt = 0
+    this.clearPreviewTapTimer()
+  },
+
+  onPreviewTouchStart(event: WechatMiniprogram.TouchEvent) {
+    if (event.touches.length >= 2) {
+      this.suppressPreviewTap()
+      this.previewTapMoved = true
+      if (!this.data.previewPinching) {
+        this.setData({
+          previewPinching: true,
+          previewScale: this.previewScaleLive,
+        })
+      }
+      return
+    }
+
+    const touch = event.touches[0]
+    if (!touch) return
+    this.previewFingerStartX = touch.clientX
+    this.previewFingerStartY = touch.clientY
+    this.previewFingerStartAt = Date.now()
+    this.previewFingerDx = 0
+    this.previewStartViewX = this.previewViewX
+    this.previewTapMoved = false
+    this.previewMovedView = false
+    this.previewStartedAtEdge = this.previewOutOfBounds
+      || this.isPreviewAtHorizontalLimit('left')
+      || this.isPreviewAtHorizontalLimit('right')
+    this.previewOutOfBounds = false
+    this.previewLastViewAt = Date.now()
+  },
+
+  onPreviewTouchMove(event: WechatMiniprogram.TouchEvent) {
+    if (this.data.previewPinching || this.previewTurningPage || event.touches.length !== 1) return
+    const touch = event.touches[0]
+    if (!touch) return
+    const dx = touch.clientX - this.previewFingerStartX
+    const dy = touch.clientY - this.previewFingerStartY
+    this.previewFingerDx = dx
+    if (dx * dx + dy * dy > PREVIEW_TAP_SLOP_PX * PREVIEW_TAP_SLOP_PX) this.previewTapMoved = true
+    if (Math.abs(this.previewViewX - this.previewStartViewX) > 6) this.previewMovedView = true
+    this.tryPreviewEdgePage(dx)
   },
 
   onPreviewTouchEnd(event: WechatMiniprogram.TouchEvent) {
-    if (event.touches.length > 0 || !this.data.previewPinching) return
-    this.setData({ previewPinching: false })
+    if (event.touches.length > 0) return
+
+    if (this.data.previewPinching) {
+      this.suppressPreviewTap()
+      const previewZoomed = this.previewScaleLive > PREVIEW_SCALE_MIN + 0.02
+      this.setData({
+        previewPinching: false,
+        previewZoomed,
+        previewScale: this.previewScaleLive,
+      })
+      return
+    }
+
+    const touch = event.changedTouches[0]
+    if (touch) this.tryPreviewEdgePage(touch.clientX - this.previewFingerStartX)
+
+    if (!this.previewTapMoved && Date.now() >= this.previewIgnoreTapUntil) {
+      this.onPreviewImageTap()
+    }
   },
 
   onPreviewScale(event: WechatMiniprogram.MovableViewScale) {
     const scale = event.detail.scale
     this.previewScaleLive = scale
-    const previewZoomed = scale > PREVIEW_SCALE_MIN + 0.02
-    if (previewZoomed !== this.data.previewZoomed) {
-      this.setData({ previewZoomed })
-    }
+    this.previewViewX = event.detail.x
+    this.previewLastViewAt = Date.now()
+    if (this.data.previewPinching) this.suppressPreviewTap()
   },
 
   onPreviewImageTap() {
+    if (this.data.previewPinching || this.previewTapMoved || Date.now() < this.previewIgnoreTapUntil) {
+      this.lastPreviewTapAt = 0
+      this.clearPreviewTapTimer()
+      return
+    }
     const now = Date.now()
     if (now - this.lastPreviewTapAt < PREVIEW_DOUBLE_TAP_MS) {
       this.clearPreviewTapTimer()
@@ -276,7 +466,14 @@ Page({
 
   resetPreviewZoomState() {
     this.previewScaleLive = 1
+    this.previewViewX = 0
+    this.previewTapMoved = false
+    this.previewMovedView = false
+    this.previewOutOfBounds = false
+    this.previewStartedAtEdge = false
+    this.previewFingerDx = 0
     this.lastPreviewTapAt = 0
+    this.previewIgnoreTapUntil = 0
     this.clearPreviewTapTimer()
   },
 
