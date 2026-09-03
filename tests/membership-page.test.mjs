@@ -205,9 +205,11 @@ test('membership page does not invent payment success or feature gating', () => 
   const service = read('miniprogram/services/membership.ts')
   const profile = read('miniprogram/services/profile.ts')
 
+  assert.match(logic, /showMembershipResult/)
   assert.match(logic, /开通成功/)
-  assert.match(logic, /支付已提交，请稍后刷新查看开通状态/)
-  assert.match(logic, /已取消支付/)
+  assert.match(logic, /开通失败/)
+  assert.match(logic, /支付已提交，但暂未确认会员是否开通成功/)
+  assert.match(logic, /已取消支付，会员未开通/)
   assert.match(logic, /虚拟支付尚未配置/)
   assert.match(logic, /道具未发布到现网/)
   assert.match(logic, /month_pro \/ quarter_pro \/ half_year_pro/)

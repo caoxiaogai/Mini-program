@@ -299,6 +299,19 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-09-03：素材列表长按多选删除
+
+- 素材列表（首页素材 Tab 与独立素材页）长按进入多选，底部「发布素材」变为「删除」，可删除已选草稿和已发布作品。
+- 后端新增 `DELETE /material/{id}`，走 MyBatis-Plus `deleteById` 做逻辑删除；列表不再返回已删素材。访客打开已删除作品展示「发布者已删除作品」。
+- 访客打开已删除作品（详情或文档）只展示「发布者已删除作品」，不弹「请求失败，请稍后重试」，也不再显示「作品加载失败」。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/materials-select.test.mjs`。需真机长按素材、多选删除，并用另一账号打开已删分享链接。
+
+### 2026-09-03：会员开通成功与失败都弹窗提示
+
+- 支付结果不再用 toast。开通成功、开通失败、已取消、支付后暂未确认，一律 `wx.showModal`，明确告诉用户会员是否开通。
+- 不把未确认的支付显示成开通成功；待确认时提示稍后下拉刷新查看开通状态。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "membership page does not invent payment success" tests/membership-page.test.mjs`。
+
 ### 2026-09-03：登录页去掉无效的一键头像昵称
 
 - `wx.getUserProfile` 在本小程序只会返回默认头像和「微信用户」，再点「用微信昵称和头像」只会提示改走两步。已删除该调用。

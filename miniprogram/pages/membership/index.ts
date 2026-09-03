@@ -70,6 +70,15 @@ function supportsVirtualPayment(): boolean {
   }
 }
 
+function showMembershipResult(title: string, content: string): void {
+  wx.showModal({
+    title,
+    content,
+    showCancel: false,
+    confirmText: '知道了',
+  })
+}
+
 function compareVersion(left: string, right: string): number {
   const a = left.split('.').map((part) => Number.parseInt(part, 10) || 0)
   const b = right.split('.').map((part) => Number.parseInt(part, 10) || 0)
@@ -217,23 +226,18 @@ Page({
       return
     }
     if (!supportsVirtualPayment()) {
-      wx.showToast({ title: '当前微信版本不支持虚拟支付', icon: 'none' })
+      showMembershipResult('开通失败', '当前微信版本不支持虚拟支付，会员未开通。')
       return
     }
     if (iosWechatTooOld()) {
-      wx.showModal({
-        title: '微信版本过低',
-        content: 'iPhone 支付需要微信 8.0.68 及以上版本，请先升级微信。',
-        showCancel: false,
-      })
+      showMembershipResult('开通失败', 'iPhone 支付需要微信 8.0.68 及以上版本，请先升级微信。会员未开通。')
       return
     }
     if (isIosDevice() && plan.amountFen < MEMBERSHIP_IOS_MIN_AMOUNT_FEN) {
-      wx.showModal({
-        title: '苹果支付最低 1 元',
-        content: `当前套餐是联调测试价 ${plan.priceLabel}。iPhone 必须走 Apple 支付，最低 1 元，这个金额无法在苹果手机上完成支付。请用安卓测试，或把套餐改到至少 1 元后再用 iPhone 付。`,
-        showCancel: false,
-      })
+      showMembershipResult(
+        '开通失败',
+        `苹果支付最低 1 元。当前套餐是联调测试价 ${plan.priceLabel}。iPhone 必须走 Apple 支付，这个金额无法在苹果手机上完成支付。请用安卓测试，或把套餐改到至少 1 元后再用 iPhone 付。会员未开通。`,
+      )
       return
     }
 
@@ -245,11 +249,15 @@ Page({
       .then((paid) => {
         this.setData({ paying: false })
         if (paid) {
-          wx.showToast({ title: '开通成功', icon: 'success' })
+          const planTitle = this.data.selectedPlan?.displayTitle || '会员'
+          showMembershipResult('开通成功', `${planTitle}已开通，现在可以使用会员权益。`)
           this.loadMembership(true)
           return
         }
-        wx.showToast({ title: '支付已提交，请稍后刷新查看开通状态', icon: 'none' })
+        showMembershipResult(
+          '开通结果待确认',
+          '支付已提交，但暂未确认会员是否开通成功。请稍后下拉刷新查看开通状态。',
+        )
         this.loadMembership(true)
       })
       .catch((error: unknown) => {
@@ -315,43 +323,37 @@ Page({
       const errMsg = 'errMsg' in error ? String((error as WechatMiniprogram.GeneralCallbackResult).errMsg || '') : ''
       const errCode = readPayErrCode(error)
       if (isPayCancel(errMsg, errCode)) {
-        wx.showToast({ title: '已取消支付', icon: 'none' })
+        showMembershipResult('未开通', '已取消支付，会员未开通。')
         return
       }
       if (errCode === -15010) {
-        wx.showModal({
-          title: '道具未发布到现网',
-          content: `当前购买的道具 ID 是 ${productId || '未知'}。请到小程序后台「虚拟支付 → 道具管理」创建同名道具（month / quarter / half_year / month_pro / quarter_pro / half_year_pro），标价与套餐金额一致，并点「发布到现网」。只上传开发版不够。`,
-          showCancel: false,
-        })
+        showMembershipResult(
+          '开通失败',
+          `道具未发布到现网。当前购买的道具 ID 是 ${productId || '未知'}。请到小程序后台「虚拟支付 → 道具管理」创建同名道具（month / quarter / half_year / month_pro / quarter_pro / half_year_pro），标价与套餐金额一致，并点「发布到现网」。只上传开发版不够。会员未开通。`,
+        )
         return
       }
       if (errCode === -15014) {
-        wx.showModal({
-          title: '道具刚发布还未生效',
-          content: '道具发布到现网后大约 10 分钟才会生效，请稍后再试。',
-          showCancel: false,
-        })
+        showMembershipResult('开通失败', '道具刚发布还未生效。发布到现网后大约 10 分钟才会生效，请稍后再试。会员未开通。')
         return
       }
       if (errCode === -15007) {
-        wx.showToast({ title: '登录态已过期，请重试', icon: 'none' })
+        showMembershipResult('开通失败', '登录态已过期，请重试。会员未开通。')
         return
       }
       if (errCode === -15013) {
-        wx.showModal({
-          title: '价格与后台不一致',
-          content: `道具 ${productId || ''} 的后台标价必须与当前套餐金额一致。改价后需重新发布到现网。`,
-          showCancel: false,
-        })
+        showMembershipResult(
+          '开通失败',
+          `道具 ${productId || ''} 的后台标价必须与当前套餐金额一致。改价后需重新发布到现网。会员未开通。`,
+        )
         return
       }
       if (errCode === -15006) {
-        wx.showToast({ title: '支付签名错误，请检查 OfferId 和 AppKey', icon: 'none' })
+        showMembershipResult('开通失败', '支付签名错误，请检查 OfferId 和 AppKey。会员未开通。')
         return
       }
       if (errCode === -15005) {
-        wx.showToast({ title: '用户签名错误，请重新登录后再支付', icon: 'none' })
+        showMembershipResult('开通失败', '用户签名错误，请重新登录后再支付。会员未开通。')
         return
       }
       if (
@@ -359,32 +361,27 @@ Page({
         errCode === -4 ||
         /App Store|苹果支付|Apple/.test(errMsg)
       ) {
-        wx.showModal({
-          title: '苹果支付未完成',
-          content:
-            'iPhone 走的是 Apple 支付。请确认：虚拟支付后台已打开「苹果支付」开关、小程序简称已审核通过、微信 8.0.68 以上、使用中国大陆 App Store 账号。当前测试价低于 1 元时苹果也会直接失败。',
-          showCancel: false,
-        })
+        showMembershipResult(
+          '开通失败',
+          '苹果支付未完成。iPhone 走的是 Apple 支付。请确认：虚拟支付后台已打开「苹果支付」开关、小程序简称已审核通过、微信 8.0.68 以上、使用中国大陆 App Store 账号。当前测试价低于 1 元时苹果也会直接失败。会员未开通。',
+        )
         return
       }
       if (/支付能力已被限制|支付能力已经被限制/.test(errMsg)) {
-        wx.showToast({ title: '当前仍走错支付通道，请重新编译后再试', icon: 'none' })
+        showMembershipResult('开通失败', '当前仍走错支付通道，请重新编译后再试。会员未开通。')
         return
       }
-      wx.showModal({
-        title: '支付失败',
-        content: `错误码 ${errCode ?? '未知'}。${errMsg || '请稍后重试'}`,
-        showCancel: false,
-      })
+      showMembershipResult(
+        '开通失败',
+        `错误码 ${errCode ?? '未知'}。${errMsg || '请稍后重试'}。会员未开通。`,
+      )
       return
     }
     if (error instanceof ApiError) {
-      wx.showToast({
-        title: error.code === 1006 ? '虚拟支付尚未配置' : error.message || '下单失败，请稍后重试',
-        icon: 'none',
-      })
+      const reason = error.code === 1006 ? '虚拟支付尚未配置' : error.message || '下单失败，请稍后重试'
+      showMembershipResult('开通失败', `${reason}。会员未开通。`)
       return
     }
-    wx.showToast({ title: '支付失败，请稍后重试', icon: 'none' })
+    showMembershipResult('开通失败', '支付失败，请稍后重试。会员未开通。')
   },
 })

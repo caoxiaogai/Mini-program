@@ -176,8 +176,22 @@ export function getMaterials(): Promise<MaterialsViewModel> {
   })
 }
 
+export function deleteMaterials(ids: string[]): Promise<void> {
+  const uniqueIds = [...new Set(ids.map((id) => id.trim()).filter((id) => id !== ''))]
+  return uniqueIds.reduce(
+    (chain, id) =>
+      chain.then(() =>
+        request<void>({
+          method: 'DELETE',
+          path: `/material/${id}`,
+        }),
+      ),
+    Promise.resolve(),
+  )
+}
+
 export function getMaterialDetail(materialId: string): Promise<MaterialDetailViewModel | null> {
-  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
+  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true })
     .then(async (material) => {
       const fileType = material.fileType ?? 'IMAGE'
       const previewUrl = await prepareMaterialThumbnail(material)
@@ -212,7 +226,6 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
         isOwner: String(material.userId) === String(user.userId),
       }
     })
-    .catch(() => null)
 }
 
 /** 分享卡片用的标题和预览图，与详情页分享同一数据来源。 */
@@ -223,7 +236,7 @@ export function getMaterialShareCard(
 ): Promise<{ shareTitle: string; shareImageUrl: string; shareTrackingId: string }> {
   const fallbackTitle = buildMaterialShareTitle(fallbackCopy.split(/\r?\n/))
 
-  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
+  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true })
     .then(async (material) => {
       const previewUrl = await prepareMaterialThumbnail(material)
       return {

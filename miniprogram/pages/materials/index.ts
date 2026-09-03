@@ -1,10 +1,11 @@
-import { applyThumbnailMap, enrichThumbnailsByIds, getMaterialDetail, getMaterials } from '../../services/materials'
+import { applyThumbnailMap, deleteMaterials, enrichThumbnailsByIds, getMaterialDetail, getMaterials } from '../../services/materials'
 import { runAuthed } from '../../services/auth'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
+import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
 import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
@@ -60,6 +61,10 @@ Page({
     materialsVisibleCount: 0,
     materialsNavigationHeight: 91,
     isAndroid: false,
+    materialSelecting: false,
+    selectedMaterialIds: [] as string[],
+    selectedMaterialCount: 0,
+    deletingMaterials: false,
     showPublishSuccessModal: false,
     shareMaterialId: '',
     shareTrackingId: '',
@@ -107,7 +112,7 @@ Page({
   },
   applyMaterialsWindow(items: MaterialCardViewModel[], filterId: MaterialsFilterId, visibleCount: number) {
     const filtered = getVisibleMaterials(items, filterId)
-    const visibleMaterials = windowList(filtered, visibleCount)
+    const visibleMaterials = applyMaterialSelection(windowList(filtered, visibleCount), this.data.selectedMaterialIds)
     this.setData({
       visibleMaterials,
       hasVisibleMaterials: filtered.length > 0,
@@ -122,7 +127,7 @@ Page({
       if (!materials || thumbs.size === 0) return
       this.setData({
         materials: { ...materials, items: applyThumbnailMap(materials.items, thumbs) },
-        visibleMaterials: applyThumbnailMap(this.data.visibleMaterials, thumbs),
+        visibleMaterials: applyMaterialSelection(applyThumbnailMap(this.data.visibleMaterials, thumbs), this.data.selectedMaterialIds),
       })
     })
   },
@@ -150,6 +155,11 @@ Page({
     const materialId = event.currentTarget.dataset.id as string | undefined
     if (!materialId) return
 
+    if (this.data.materialSelecting) {
+      this.toggleMaterialSelected(materialId)
+      return
+    }
+
     const material = this.data.visibleMaterials.find((item) => item.id === materialId)
     if (!material) return
 
@@ -159,7 +169,80 @@ Page({
 
     wx.navigateTo({ url })
   },
+  onMaterialCardLongPress(event: WechatMiniprogram.TouchEvent) {
+    const materialId = event.currentTarget.dataset.id as string | undefined
+    if (!materialId || this.data.deletingMaterials) return
+    const selectedMaterialIds = this.data.materialSelecting
+      ? toggleMaterialSelection(this.data.selectedMaterialIds, materialId)
+      : [materialId]
+    this.setData({
+      materialSelecting: true,
+      selectedMaterialIds,
+      selectedMaterialCount: selectedMaterialIds.length,
+      visibleMaterials: applyMaterialSelection(this.data.visibleMaterials, selectedMaterialIds),
+    })
+  },
+  onMaterialSelectCancelTap() {
+    this.exitMaterialSelectMode()
+  },
+  toggleMaterialSelected(materialId: string) {
+    if (this.data.deletingMaterials) return
+    const selectedMaterialIds = toggleMaterialSelection(this.data.selectedMaterialIds, materialId)
+    this.setData({
+      selectedMaterialIds,
+      selectedMaterialCount: selectedMaterialIds.length,
+      visibleMaterials: applyMaterialSelection(this.data.visibleMaterials, selectedMaterialIds),
+    })
+  },
+  exitMaterialSelectMode() {
+    this.setData({
+      materialSelecting: false,
+      selectedMaterialIds: [],
+      selectedMaterialCount: 0,
+      deletingMaterials: false,
+      visibleMaterials: applyMaterialSelection(this.data.visibleMaterials, []),
+    })
+  },
+  deleteSelectedMaterials() {
+    if (!this.data.materialSelecting || this.data.deletingMaterials) return
+    const ids = this.data.selectedMaterialIds
+    if (ids.length === 0) {
+      wx.showToast({ title: '请先选择素材', icon: 'none' })
+      return
+    }
+
+    wx.showModal({
+      title: '删除素材',
+      content: `确定删除已选的 ${ids.length} 个素材？草稿和已发布作品都会删除。`,
+      confirmText: '删除',
+      confirmColor: '#e45454',
+      success: (result) => {
+        if (!result.confirm) return
+        this.setData({ deletingMaterials: true })
+        deleteMaterials(ids)
+          .then(() => this.loadMaterials())
+          .then(() => {
+            const remainingIds = new Set((this.data.materials?.items ?? []).map((item) => item.id))
+            const stillThere = ids.some((id) => remainingIds.has(id))
+            this.exitMaterialSelectMode()
+            if (stillThere) {
+              wx.showToast({ title: '删除失败，请稍后重试', icon: 'none' })
+              return
+            }
+            wx.showToast({ title: '已删除', icon: 'success' })
+          })
+          .catch(() => {
+            this.setData({ deletingMaterials: false })
+            wx.showToast({ title: '删除失败，请稍后重试', icon: 'none' })
+          })
+      },
+    })
+  },
   onPublishTap() {
+    if (this.data.materialSelecting) {
+      this.deleteSelectedMaterials()
+      return
+    }
     this.setData({ publishTypeSheetVisible: true })
   },
   onPublishTypeCancel() {
@@ -257,7 +340,7 @@ Page({
         shareTitle: buildMaterialShareTitle(detail.descriptionLines),
         shareImageUrl: detail.previewUrl || this.data.shareImageUrl,
       })
-    })
+    }).catch(() => undefined)
   },
   applyPendingPublishReturn() {
     const pending = takePendingPublishReturn()

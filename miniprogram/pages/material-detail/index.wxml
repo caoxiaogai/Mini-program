@@ -3,6 +3,10 @@
     <navigation-bar title="作品" back="{{true}}" home-button="{{true}}" color="#000000" background="#f0f1f2" />
   </view>
 
+  <view wx:if="{{unavailableMessage}}" class="material-detail-page__unavailable">
+    <text>{{unavailableMessage}}</text>
+  </view>
+
   <view wx:if="{{detail}}" class="material-detail-page__content">
     <block wx:if="{{detail.fileType === 'VIDEO'}}">
       <view

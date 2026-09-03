@@ -3,6 +3,7 @@
 
 import type { ApiLoginData, ApiResponse } from '../types/api'
 import { DEV_LAN_ORIGIN, DEVTOOLS_ORIGIN } from '../config/dev'
+import { isMaterialDeletedError } from '../utils/material-deleted'
 
 let cachedApiBaseUrl: string | null = null
 
@@ -90,7 +91,7 @@ export class ApiError extends Error {
 }
 
 export interface RequestOptions {
-  method: 'GET' | 'POST' | 'PUT'
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
   path: string
   query?: Record<string, string | number | undefined>
   data?: Record<string, unknown>
@@ -119,7 +120,7 @@ function endLoading(): void {
 }
 
 function showErrorToast(error: ApiError): void {
-  if (error.code === 401) return
+  if (error.code === 401 || isMaterialDeletedError(error)) return
   const title = error.code === -1 ? '网络异常，请稍后重试' : '请求失败，请稍后重试'
   wx.showToast({ title, icon: 'none' })
 }

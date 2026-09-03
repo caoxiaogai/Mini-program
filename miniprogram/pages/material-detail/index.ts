@@ -8,6 +8,7 @@ import {
 } from '../../services/tracking'
 import type { MaterialDetailViewModel } from '../../types/materials'
 import { buildReturnPath } from '../../utils/auth'
+import { MATERIAL_DELETED_MESSAGE } from '../../utils/material-deleted'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import {
   buildMaterialPublishPath,
@@ -44,6 +45,7 @@ Page({
     previewZoomed: false,
     previewPinching: false,
     previewScale: 1,
+    unavailableMessage: '',
   },
 
   materialId: '',
@@ -94,9 +96,11 @@ Page({
     this.videoTouchStartY = 0
     this.resetPreviewZoomState()
 
-    if (!this.materialId) return
+    if (!this.materialId) {
+      this.setData({ unavailableMessage: MATERIAL_DELETED_MESSAGE })
+      return
+    }
 
-    this.reportOpenedPlay()
     this.loadDetail()
   },
   onPullDownRefresh() {
@@ -105,24 +109,36 @@ Page({
   loadDetail() {
     if (!this.materialId) return Promise.resolve()
 
-    return getMaterialDetail(this.materialId).then((detail) => {
-      if (!detail) return
+    return getMaterialDetail(this.materialId)
+      .then((detail) => {
+        if (!detail) {
+          this.setData({ detail: null, unavailableMessage: MATERIAL_DELETED_MESSAGE })
+          return
+        }
 
-      this.videoDurationSec = detail.duration
-      this.setData({ detail }, () => {
-        if (detail.fileType === 'VIDEO' && detail.videoUrl) {
-          this.getVideoContext()?.play()
+        this.videoDurationSec = detail.duration
+        this.setData({ detail, unavailableMessage: '' }, () => {
+          if (detail.fileType === 'VIDEO' && detail.videoUrl) {
+            this.getVideoContext()?.play()
+          }
+        })
+
+        this.reportOpenedPlay()
+
+        if (detail.fileType === 'IMAGE' && detail.images.length > 0) {
+          this.markImageViewed(0, detail)
+        } else if (detail.fileType === 'VIDEO') {
+          this.reportVideoProgress(false, detail)
+        } else if (isDocumentMaterial(detail)) {
+          this.reportDocumentView(detail)
         }
       })
-
-      if (detail.fileType === 'IMAGE' && detail.images.length > 0) {
-        this.markImageViewed(0, detail)
-      } else if (detail.fileType === 'VIDEO') {
-        this.reportVideoProgress(false, detail)
-      } else if (isDocumentMaterial(detail)) {
-        this.reportDocumentView(detail)
-      }
-    })
+      .catch(() => {
+        this.setData({
+          detail: null,
+          unavailableMessage: MATERIAL_DELETED_MESSAGE,
+        })
+      })
   },
 
   onShow() {

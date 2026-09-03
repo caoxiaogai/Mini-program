@@ -12,6 +12,7 @@ export interface MaterialCardViewModel {
   thumbnailUrl: string
   kind: Exclude<MaterialsFilterId, 'all'>
   isDraft?: boolean
+  selected?: boolean
 }
 
 export interface MaterialDetailViewModel {

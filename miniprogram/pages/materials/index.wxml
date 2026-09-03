@@ -3,7 +3,9 @@
     <view class="materials-page__gradient" />
     <image class="materials-page__stripes" src="/assets/line-bg.svg" mode="scaleToFill" />
     <view class="materials-page__header">
-    <navigation-bar back="{{true}}" title="素材" color="#000000" background="transparent" />
+    <navigation-bar back="{{true}}" title="{{materialSelecting ? '已选 ' + selectedMaterialCount : '素材'}}" color="#000000" background="transparent">
+      <view wx:if="{{materialSelecting}}" slot="right" class="materials-select-cancel" bindtap="onMaterialSelectCancelTap" hover-class="materials-select-cancel--pressed">取消</view>
+    </navigation-bar>
     <view wx:if="{{materials}}" class="materials-filter" role="tablist">
       <view
         wx:for="{{materials.filters}}"
@@ -27,17 +29,19 @@
         <view
           wx:for="{{visibleMaterials}}"
           wx:key="id"
-          class="materials-card"
+          class="materials-card {{item.selected ? 'materials-card--selected' : ''}} {{materialSelecting ? 'materials-card--selecting' : ''}}"
           bindtap="onMaterialCardTap"
+          bindlongpress="onMaterialCardLongPress"
           data-id="{{item.id}}"
-          hover-class="materials-card--pressed"
+          hover-class="{{materialSelecting ? '' : 'materials-card--pressed'}}"
           hover-start-time="80"
           hover-stay-time="120"
         >
           <view class="materials-card__preview">
             <image class="materials-card__image" src="{{item.thumbnailUrl}}" mode="aspectFill" />
             <view wx:if="{{item.isDraft}}" class="materials-card__draft">草稿</view>
-            <image wx:if="{{item.kind === 'video'}}" class="materials-card__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
+            <image wx:if="{{item.kind === 'video' && !materialSelecting}}" class="materials-card__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
+            <view wx:if="{{materialSelecting}}" class="materials-card__check {{item.selected ? 'materials-card__check--selected' : ''}}" />
           </view>
           <view class="materials-card__info">
             <text class="materials-card__title">{{item.title}}</text>
@@ -53,9 +57,9 @@
   </scroll-view>
 
   <view class="materials-publish-bar">
-    <view class="materials-publish-button" bindtap="onPublishTap" hover-class="materials-publish-button--pressed" hover-stay-time="80">
-      <text>发布素材</text>
-      <image src="/assets/materials/material-plus.svg" mode="aspectFit" />
+    <view class="materials-publish-button {{materialSelecting ? 'materials-publish-button--delete' : ''}} {{deletingMaterials ? 'materials-publish-button--disabled' : ''}}" bindtap="onPublishTap" hover-class="{{deletingMaterials ? '' : 'materials-publish-button--pressed'}}" hover-stay-time="80">
+      <text>{{materialSelecting ? (deletingMaterials ? '正在删除' : '删除') : '发布素材'}}</text>
+      <image wx:if="{{!materialSelecting}}" src="/assets/materials/material-plus.svg" mode="aspectFit" />
     </view>
   </view>
 
