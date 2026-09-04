@@ -66,6 +66,7 @@ const fileTypeLabels: Record<string, string> = {
   IMAGE: '图片',
   VIDEO: '视频',
   TABLE: '表格',
+  NOTE: '笔记',
 }
 
 function asList<T>(value: T[] | null | undefined): T[] {

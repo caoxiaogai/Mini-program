@@ -73,18 +73,9 @@ page {
   background: #f0f1f2;
 }
 
-.auth-page__avatar--empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2rpx dashed #d8d8d8;
-  color: #8a8e94;
-  font-size: 24rpx;
-}
-
 .auth-page__nickname {
   height: 96rpx;
-  margin-bottom: 32rpx;
+  margin-bottom: 24rpx;
   padding: 0 32rpx;
   border: 2rpx solid #ebebeb;
   border-radius: 24rpx;
@@ -93,8 +84,35 @@ page {
   background: #ffffff;
 }
 
-.auth-page__primary,
-.auth-page__secondary {
+.auth-page__wechat {
+  display: flex;
+  height: 88rpx;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 16rpx;
+  padding: 0 32rpx;
+  border: none;
+  border-radius: 65rpx;
+  font-size: 28rpx;
+  line-height: normal;
+  color: #0ec8d9;
+  background: #e8fbfd;
+}
+
+.auth-page__wechat::after {
+  border: none;
+}
+
+.auth-page__wechat--pressed {
+  opacity: 0.72;
+}
+
+.auth-page__wechat[disabled] {
+  color: #8a8e94;
+  background: #f0f1f2;
+}
+
+.auth-page__primary {
   display: flex;
   height: 88rpx;
   align-items: center;
@@ -105,30 +123,19 @@ page {
   border-radius: 65rpx;
   font-size: 30rpx;
   line-height: normal;
-}
-
-.auth-page__primary::after,
-.auth-page__secondary::after {
-  border: none;
-}
-
-.auth-page__primary {
   color: #ffffff;
   background: #0ec8d9;
 }
 
-.auth-page__primary--pressed,
-.auth-page__secondary--pressed {
+.auth-page__primary::after {
+  border: none;
+}
+
+.auth-page__primary--pressed {
   opacity: 0.72;
 }
 
 .auth-page__primary[disabled] {
   color: #ffffff;
   background: #b7eef3;
-}
-
-.auth-page__secondary {
-  margin-bottom: 24rpx;
-  color: #0ec8d9;
-  background: #f3fbfc;
 }

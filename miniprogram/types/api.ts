@@ -91,6 +91,17 @@ export interface ApiCustomerListItem {
   lastViewTime: string | null
 }
 
+/** GET /analysis/ranking 响应项（RankingEntryVO） */
+export interface ApiRankingEntry {
+  userId: string
+  nickname: string | null
+  avatar: string | null
+  workCount: number | null
+  viewCount: number | null
+  forwardCount: number | null
+  completeCount: number | null
+}
+
 /** GET /analysis/trend 响应项（DailyViewVO） */
 export interface ApiDailyView {
   date: string | null
@@ -225,7 +236,7 @@ export interface ApiMembershipOrder {
   expireAt: string | null
 }
 
-export type ApiMaterialFileType = 'PDF' | 'IMAGE' | 'VIDEO' | 'TABLE'
+export type ApiMaterialFileType = 'PDF' | 'IMAGE' | 'VIDEO' | 'TABLE' | 'NOTE'
 
 /** 素材实体（Material），fileUrl 为单个 URL 或多图 JSON 数组字符串 */
 export interface ApiMaterial {

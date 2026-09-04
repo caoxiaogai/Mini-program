@@ -3,7 +3,7 @@ import {
   notifyIntentLevelOptions,
   updateNotifySettings,
 } from '../../services/user'
-import { runAuthed } from '../../services/auth'
+import { logoutToAuth, runAuthed } from '../../services/auth'
 import {
   DEFAULT_NOTIFY_INTENT_LEVEL,
   INTENT_RULES_TITLE,
@@ -70,4 +70,16 @@ Page({
   },
 
   onIntentRulesNoop() {},
+
+  onLogoutTap() {
+    wx.showModal({
+      title: '退出登录',
+      content: '退出后需要重新登录才能使用',
+      confirmText: '退出',
+      cancelText: '取消',
+      success: (result) => {
+        if (result.confirm) logoutToAuth()
+      },
+    })
+  },
 })

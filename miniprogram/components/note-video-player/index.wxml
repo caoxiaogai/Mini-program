@@ -1,0 +1,29 @@
+<view wx:if="{{visible}}" class="note-video-player" catchtouchmove="onBlockMove">
+  <view class="note-video-player__bar" style="{{barStyle}}">
+    <view
+      class="note-video-player__close"
+      catchtap="onCloseTap"
+      hover-class="note-video-player__close--pressed"
+      hover-stay-time="80"
+      aria-role="button"
+      aria-label="关闭"
+    >
+      <image src="/assets/materials/note-player-close.svg" mode="aspectFit" />
+    </view>
+  </view>
+  <video
+    class="note-video-player__video"
+    src="{{src}}"
+    poster="{{poster}}"
+    autoplay
+    controls
+    show-center-play-btn
+    show-fullscreen-btn="{{false}}"
+    show-play-btn
+    show-progress
+    enable-play-gesture
+    enable-progress-gesture
+    object-fit="contain"
+    initial-time="{{0}}"
+  />
+</view>

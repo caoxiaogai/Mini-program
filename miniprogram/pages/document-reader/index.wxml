@@ -9,7 +9,7 @@
 
   <view wx:elif="{{status === 'error'}}" class="document-reader__state">
     <text>{{errorMessage}}</text>
-    <view class="document-reader__retry" bindtap="onRetryTap">重新加载</view>
+    <view wx:if="{{showRetry}}" class="document-reader__retry" bindtap="onRetryTap">重新加载</view>
   </view>
 
   <scroll-view

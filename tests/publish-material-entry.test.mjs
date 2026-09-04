@@ -7,13 +7,14 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 test('publish entry exposes separate image, video and PDF choices', async () => {
   const { PUBLISH_ENTRY_TYPE_OPTIONS, PUBLISH_SOURCE_OPTIONS, getPublishEntryType, getMediaPickerType } = await import('../miniprogram/utils/publish-media.ts')
 
-  assert.deepEqual(PUBLISH_ENTRY_TYPE_OPTIONS.map((item) => item.id), ['image', 'video', 'pdf'])
-  assert.deepEqual(PUBLISH_ENTRY_TYPE_OPTIONS.map((item) => item.label), ['图片', '视频', 'PDF'])
+  assert.deepEqual(PUBLISH_ENTRY_TYPE_OPTIONS.map((item) => item.id), ['image', 'video', 'pdf', 'note'])
+  assert.deepEqual(PUBLISH_ENTRY_TYPE_OPTIONS.map((item) => item.label), ['图片', '视频', 'PDF', '笔记'])
   assert.deepEqual(PUBLISH_SOURCE_OPTIONS.map((item) => item.id), ['camera', 'album'])
   assert.deepEqual(PUBLISH_SOURCE_OPTIONS.map((item) => item.label), ['拍摄', '从相册选择'])
   assert.equal(getPublishEntryType('image'), 'image')
   assert.equal(getPublishEntryType('video'), 'video')
   assert.equal(getPublishEntryType('pdf'), 'pdf')
+  assert.equal(getPublishEntryType('note'), 'note')
   assert.equal(getPublishEntryType(undefined), null)
   assert.equal(getPublishEntryType('media'), null)
   assert.equal(getMediaPickerType('image'), 'image')
@@ -57,7 +58,7 @@ test('publish editor reads the selected type and limits native pickers', () => {
 
   assert.match(page, /entryType:\s*'image'\s*as\s*PublishEntryType/)
   assert.match(page, /getPublishEntryType\(options\.type\)/)
-  assert.match(picker, /mediaType:\s*\[options\.type\]/)
+  assert.match(picker, /mediaType:\s*options\.type === 'mix' \? \['image', 'video'\] : \[options\.type\]/)
   assert.match(picker, /sourceType:\s*\[options\.source\]/)
   assert.match(page, /takePendingPublishSelection\(\)/)
   assert.match(page, /onAddMediaTap\(\) \{[\s\S]*media\.length === 0[\s\S]*publishTypeSheetVisible: true/)

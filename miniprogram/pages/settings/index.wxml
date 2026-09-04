@@ -23,6 +23,10 @@
       </view>
       <segmented-filter items="{{notifyIntentLevelOptions}}" active-id="{{activeNotifyIntentLevel}}" bind:change="onNotifyIntentLevelChange" />
     </view>
+
+    <view class="settings-logout" bindtap="onLogoutTap" hover-class="settings-logout--pressed" hover-stay-time="80" aria-role="button">
+      <text>退出登录</text>
+    </view>
   </view>
 
   <view wx:if="{{intentRulesVisible}}" class="settings-rules-modal" aria-role="dialog" aria-label="意向判断标准">

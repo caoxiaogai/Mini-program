@@ -51,6 +51,42 @@
       {
         "type": "folder",
         "value": "assets/home"
+      },
+      {
+        "type": "file",
+        "value": "assets/analysis/user-journey-product.png"
+      },
+      {
+        "type": "file",
+        "value": "assets/materials/detail-image-01.jpg"
+      },
+      {
+        "type": "file",
+        "value": "assets/materials/material-01.jpg"
+      },
+      {
+        "type": "file",
+        "value": "assets/materials/material-02.jpg"
+      },
+      {
+        "type": "file",
+        "value": "assets/materials/material-03.jpg"
+      },
+      {
+        "type": "file",
+        "value": "assets/materials/material-04.jpg"
+      },
+      {
+        "type": "file",
+        "value": "assets/materials/material-09.jpg"
+      },
+      {
+        "type": "file",
+        "value": "assets/materials/material-10.jpg"
+      },
+      {
+        "type": "file",
+        "value": "assets/materials/note-more.svg"
       }
     ],
     "include": []

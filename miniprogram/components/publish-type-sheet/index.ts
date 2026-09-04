@@ -1,4 +1,4 @@
-import { PUBLISH_ENTRY_TYPE_OPTIONS, PUBLISH_SOURCE_OPTIONS } from '../../utils/publish-media'
+import { PUBLISH_ENTRY_TYPE_OPTIONS, PUBLISH_SOURCE_OPTIONS, PUBLISH_TYPE_OPTIONS } from '../../utils/publish-media'
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
 
 Component({
@@ -13,15 +13,18 @@ Component({
     },
   },
   data: {
-    options: PUBLISH_ENTRY_TYPE_OPTIONS,
+    options: PUBLISH_TYPE_OPTIONS,
     dialogLabel: '选择发布素材类型',
   },
   observers: {
     kind(kind: string) {
-      const isSource = kind === 'source'
+      if (kind === 'source') {
+        this.setData({ options: PUBLISH_SOURCE_OPTIONS, dialogLabel: '选择素材来源' })
+        return
+      }
       this.setData({
-        options: isSource ? PUBLISH_SOURCE_OPTIONS : PUBLISH_ENTRY_TYPE_OPTIONS,
-        dialogLabel: isSource ? '选择素材来源' : '选择发布素材类型',
+        options: kind === 'entry' ? PUBLISH_ENTRY_TYPE_OPTIONS : PUBLISH_TYPE_OPTIONS,
+        dialogLabel: '选择发布素材类型',
       })
     },
   },

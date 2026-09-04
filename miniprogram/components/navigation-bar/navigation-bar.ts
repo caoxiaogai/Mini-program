@@ -33,6 +33,13 @@ Component({
       type: Boolean,
       value: true
     },
+    leftFlush: {
+      type: Boolean,
+      value: false,
+      observer() {
+        this.applyLayout()
+      }
+    },
     loading: {
       type: Boolean,
       value: false
@@ -77,7 +84,13 @@ Component({
    */
   methods: {
     applyLayout() {
-      this.setData(toNavigationBarStyle(getNavigationBarLayout()))
+      const layout = toNavigationBarStyle(getNavigationBarLayout())
+      this.setData({
+        ...layout,
+        leftWidth: this.properties.leftFlush
+          ? 'width: auto; padding-left: 0; padding-right: 0;'
+          : layout.leftWidth,
+      })
     },
     _showChange(show: boolean) {
       const animated = this.data.animated

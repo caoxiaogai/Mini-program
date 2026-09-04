@@ -3,7 +3,7 @@ import type { PublishMediaKind, PublishMediaViewModel } from '../types/materials
 export const MAX_IMAGE_COUNT = 9
 export const MAX_VIDEO_DURATION_SECONDS = 30
 
-export type PublishEntryType = 'image' | 'video' | 'pdf'
+export type PublishEntryType = 'image' | 'video' | 'pdf' | 'note'
 
 export const PUBLISH_TYPE_OPTIONS = [
   { id: 'image', label: '图片' },
@@ -11,7 +11,10 @@ export const PUBLISH_TYPE_OPTIONS = [
   { id: 'pdf', label: 'PDF' },
 ] as const
 
-export const PUBLISH_ENTRY_TYPE_OPTIONS = PUBLISH_TYPE_OPTIONS
+export const PUBLISH_ENTRY_TYPE_OPTIONS = [
+  ...PUBLISH_TYPE_OPTIONS,
+  { id: 'note', label: '笔记' },
+] as const
 
 export type PublishTypeOptionId = (typeof PUBLISH_TYPE_OPTIONS)[number]['id']
 
@@ -31,14 +34,14 @@ export function showPublishPickerError(errMsg?: string): void {
 }
 
 export function choosePublishImageOrVideo(options: {
-  type: 'image' | 'video'
+  type: 'image' | 'video' | 'mix'
   source: PublishMediaSource
   count: number
 }): Promise<PublishMediaViewModel[]> {
   return new Promise((resolve, reject) => {
     wx.chooseMedia({
       count: Math.max(options.count, 1),
-      mediaType: [options.type],
+      mediaType: options.type === 'mix' ? ['image', 'video'] : [options.type],
       sourceType: [options.source],
       maxDuration: MAX_VIDEO_DURATION_SECONDS,
       sizeType: ['compressed'],
@@ -49,11 +52,11 @@ export function choosePublishImageOrVideo(options: {
 }
 
 export function getPublishEntryType(value: string | undefined): PublishEntryType | null {
-  if (value === 'image' || value === 'video' || value === 'pdf') return value
+  if (value === 'image' || value === 'video' || value === 'pdf' || value === 'note') return value
   return null
 }
 
-export function getMediaPickerType(entryType: PublishEntryType): 'image' | 'video' | 'pdf' {
+export function getMediaPickerType(entryType: Exclude<PublishEntryType, 'note'>): 'image' | 'video' | 'pdf' {
   return entryType
 }
 

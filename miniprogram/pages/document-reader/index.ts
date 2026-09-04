@@ -9,6 +9,7 @@ import type { DocumentReaderPage } from '../../types/document'
 import { pickCurrentDocumentPageByScroll } from '../../utils/document-page'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { buildReturnPath } from '../../utils/auth'
+import { MATERIAL_DELETED_MESSAGE, isMaterialDeletedError } from '../../utils/material-deleted'
 
 const PRELOAD_AHEAD = 2
 
@@ -37,6 +38,7 @@ Page({
     navTitle: '文档预览',
     status: 'loading' as 'loading' | 'success' | 'error',
     errorMessage: '文档加载失败',
+    showRetry: true,
     pages: [] as DocumentReaderPage[],
     pullRefreshing: false,
   },
@@ -68,11 +70,10 @@ Page({
     this.resetPagingState()
 
     if (!this.materialId) {
-      this.setData({ status: 'error', errorMessage: '无法打开文档', navTitle: '文档预览' })
+      this.setData({ status: 'error', errorMessage: '无法打开文档', navTitle: '文档预览', showRetry: false })
       return
     }
 
-    this.reportOpenedPlay()
     this.loadDocument()
   },
 
@@ -110,6 +111,7 @@ Page({
 
         this.totalPages = totalPages
         this.pageHeightsPx = new Array(totalPages)
+        this.reportOpenedPlay()
         this.setData(
           {
             status: 'success',
@@ -122,12 +124,14 @@ Page({
           },
         )
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (silent) return
+        const deleted = isMaterialDeletedError(error)
         this.setData({
           status: 'error',
-          errorMessage: '无法加载文档，请稍后重试',
+          errorMessage: deleted ? MATERIAL_DELETED_MESSAGE : '无法加载文档，请稍后重试',
           navTitle: '文档预览',
+          showRetry: !deleted,
         })
       })
   },

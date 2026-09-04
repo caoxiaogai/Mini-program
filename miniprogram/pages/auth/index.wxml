@@ -1,40 +1,47 @@
 <view class="auth-page">
   <view class="auth-page__header">
-    <navigation-bar title="{{step === 'profile' ? '完善资料' : '授权登录'}}" back="{{false}}" color="#000000" background="#ffffff" />
+    <navigation-bar title="登录" back="{{false}}" color="#000000" background="#ffffff" />
   </view>
 
-  <view wx:if="{{step === 'login'}}" class="auth-page__content">
+  <form class="auth-page__content" bindsubmit="onFormSubmit">
     <view class="auth-page__copy">
       <text class="auth-page__title">欢迎使用言界阿乐</text>
     </view>
-    <button class="auth-page__primary" hover-class="auth-page__primary--pressed" disabled="{{busy}}" bindtap="onAuthorizeTap">授权登录</button>
-  </view>
 
-  <view wx:else class="auth-page__content">
-    <view class="auth-page__copy">
-      <text class="auth-page__title">设置头像和昵称</text>
-      <text class="auth-page__hint">首次登录请完善资料。可以一键使用微信头像和昵称，也可以自己编辑。</text>
-    </view>
-
-    <button class="auth-page__avatar-button" open-type="chooseAvatar" hover-class="auth-page__avatar-button--pressed" bindchooseavatar="onChooseAvatar">
-      <image wx:if="{{avatarUrl}}" class="auth-page__avatar" src="{{avatarUrl}}" mode="aspectFill" />
-      <view wx:else class="auth-page__avatar auth-page__avatar--empty">
-        <text>添加头像</text>
-      </view>
+    <button class="auth-page__avatar-button" open-type="chooseAvatar" hover-class="auth-page__avatar-button--pressed" disabled="{{busy}}" bind:chooseavatar="onChooseAvatar">
+      <image class="auth-page__avatar" src="{{avatarUrl}}" mode="aspectFill" />
     </button>
 
     <input
+      wx:if="{{nickname}}"
+      id="auth-nickname"
       class="auth-page__nickname"
       type="nickname"
+      name="nickname"
       maxlength="20"
-      placeholder="请输入微信昵称"
+      placeholder="请输入昵称"
       value="{{nickname}}"
       focus="{{nicknameFocused}}"
-      bindinput="onNicknameInput"
+      bindchange="onNicknameChange"
       bindblur="onNicknameBlur"
+      bindnicknamereview="onNicknameReview"
+    />
+    <input
+      wx:else
+      id="auth-nickname"
+      class="auth-page__nickname"
+      type="nickname"
+      name="nickname"
+      maxlength="20"
+      placeholder="请输入昵称"
+      focus="{{nicknameFocused}}"
+      bindchange="onNicknameChange"
+      bindblur="onNicknameBlur"
+      bindnicknamereview="onNicknameReview"
     />
 
-    <button class="auth-page__secondary" open-type="chooseAvatar" hover-class="auth-page__secondary--pressed" bindchooseavatar="onUseWechatProfile">使用微信头像和昵称</button>
-    <button class="auth-page__primary" hover-class="auth-page__primary--pressed" disabled="{{busy}}" bindtap="onSaveProfileTap">完成</button>
-  </view>
+    <button class="auth-page__wechat" open-type="chooseAvatar" hover-class="auth-page__wechat--pressed" disabled="{{busy}}" bind:chooseavatar="onChooseAvatar">用微信头像和昵称</button>
+
+    <button class="auth-page__primary" form-type="submit" hover-class="auth-page__primary--pressed" disabled="{{busy}}">登录</button>
+  </form>
 </view>

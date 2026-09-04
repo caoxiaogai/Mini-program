@@ -1,0 +1,348 @@
+@note-accent: #0db6c5;
+@note-muted: #8a8e94;
+@note-card: #ffffff;
+
+page {
+  height: 100%;
+  background: @app-page-background;
+}
+
+.note-page {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  flex-direction: column;
+  background: @app-page-background;
+  color: #000000;
+}
+
+.note-page__nav {
+  position: relative;
+  z-index: 1001;
+  flex: none;
+}
+
+.note-page .weui-navigation-bar__center {
+  position: absolute;
+  left: 0;
+  width: 100vw;
+  pointer-events: none;
+}
+
+.note-page__nav-back {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 1002;
+  display: flex;
+  height: 44px;
+  align-items: center;
+  padding: 0 24rpx 0 8rpx;
+  box-sizing: border-box;
+}
+
+.note-page__nav-back--pressed {
+  opacity: 0.5;
+}
+
+.note-page__nav-back-icon {
+  display: block;
+  width: 12px;
+  height: 24px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='24' viewBox='0 0 12 24'%3E  %3Cpath fill-opacity='.9' fill-rule='evenodd' d='M10 19.438L8.955 20.5l-7.666-7.79a1.02 1.02 0 0 1 0-1.42L8.955 3.5 10 4.563 2.682 12 10 19.438z'/%3E%3C/svg%3E") no-repeat 50% 50%;
+  mask: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='24' viewBox='0 0 12 24'%3E  %3Cpath fill-opacity='.9' fill-rule='evenodd' d='M10 19.438L8.955 20.5l-7.666-7.79a1.02 1.02 0 0 1 0-1.42L8.955 3.5 10 4.563 2.682 12 10 19.438z'/%3E%3C/svg%3E") no-repeat 50% 50%;
+  -webkit-mask-size: cover;
+  mask-size: cover;
+}
+
+.note-page__nav-actions {
+  position: absolute;
+  bottom: 0;
+  z-index: 1002;
+  display: flex;
+  height: 44px;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.note-page__nav-button {
+  display: flex;
+  width: 56rpx;
+  height: 56rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-page__nav-button image {
+  display: block;
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.note-page__nav-button--pressed {
+  opacity: 0.55;
+}
+
+.note-page__nav-button--disabled {
+  opacity: 0.28;
+}
+
+.note-page__scroll {
+  flex: 1;
+  min-height: 0;
+  height: 0;
+}
+
+.note-page__blocks {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 24rpx;
+  padding: 12rpx 32rpx 0;
+  box-sizing: border-box;
+}
+
+.note-page__blank {
+  flex: 1;
+  min-height: 280rpx;
+}
+
+.note-block {
+  position: relative;
+  width: 100%;
+}
+
+.note-block--pressed {
+  opacity: 0.88;
+}
+
+.note-block__textarea {
+  display: block;
+  width: 100%;
+  min-height: 64rpx;
+  padding: 0;
+  color: #000000;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Microsoft YaHei", sans-serif;
+  font-size: 32rpx;
+  line-height: 48rpx;
+  box-sizing: border-box;
+}
+
+.note-block__placeholder {
+  color: @note-muted;
+  font-size: 32rpx;
+  line-height: 48rpx;
+}
+
+.note-block--card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 24rpx 28rpx;
+  border-radius: 20rpx;
+  background: @note-card;
+  box-sizing: border-box;
+}
+
+.note-block__location-icon {
+  flex: none;
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.note-block__location-copy,
+.note-block__file-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.note-block__location-name,
+.note-block__file-name {
+  overflow: hidden;
+  color: #111111;
+  font-size: 28rpx;
+  line-height: 40rpx;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.note-block__location-address,
+.note-block__file-meta {
+  overflow: hidden;
+  color: @note-muted;
+  font-size: 24rpx;
+  line-height: 34rpx;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.note-block__file-badge {
+  display: flex;
+  flex: none;
+  width: 72rpx;
+  height: 72rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12rpx;
+  background: #e45454;
+  color: #ffffff;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.note-block--media {
+  overflow: hidden;
+  border-radius: 16rpx;
+  background: #dee2e7;
+}
+
+.note-block__image,
+.note-block__video {
+  display: block;
+  width: 100%;
+}
+
+.note-block__video-cover {
+  position: relative;
+}
+
+.note-block__video-fallback {
+  width: 100%;
+  height: 420rpx;
+  background: #d5d8dc;
+}
+
+.note-block__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 88rpx;
+  height: 88rpx;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.note-page__composer {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  flex: none;
+  background: @app-page-background;
+  box-sizing: border-box;
+}
+
+.note-plus {
+  padding: 32rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: #f7f7f7;
+}
+
+.note-plus__grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.note-plus__item {
+  display: flex;
+  width: 25%;
+  margin-bottom: 28rpx;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.note-plus__item--pressed {
+  opacity: 0.7;
+}
+
+.note-plus__icon {
+  display: flex;
+  width: 112rpx;
+  height: 112rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24rpx;
+  background: #ffffff;
+}
+
+.note-plus__icon image {
+  display: block;
+  width: 52rpx;
+  height: 52rpx;
+}
+
+.note-plus__item text {
+  color: #7d7d7d;
+  font-size: 24rpx;
+  line-height: 34rpx;
+}
+
+.note-page__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #f7f7f7;
+  box-sizing: border-box;
+}
+
+.note-page__plus {
+  display: flex;
+  width: 56rpx;
+  height: 56rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-page__plus image {
+  display: block;
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.note-page__plus--pressed {
+  opacity: 0.55;
+}
+
+.note-page__actions {
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+  padding: 12rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.note-page__draft-button,
+.note-page__publish-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72rpx;
+  border-radius: 104rpx;
+  font-size: 28rpx;
+  line-height: 36rpx;
+  box-sizing: border-box;
+}
+
+.note-page__draft-button {
+  flex: 0 0 202rpx;
+  border: 2rpx solid #e5e5e5;
+  color: #000000;
+}
+
+.note-page__publish-button {
+  flex: 1;
+  background: @note-accent;
+  color: #ffffff;
+}
+
+.note-page__button--pressed {
+  opacity: 0.66;
+  transform: scale(0.98);
+}

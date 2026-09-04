@@ -1,0 +1,44 @@
+.note-video-player {
+  position: fixed;
+  z-index: 2000;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  background: #000000;
+}
+
+.note-video-player__bar {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  box-sizing: border-box;
+}
+
+.note-video-player__video {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  height: 0;
+}
+
+.note-video-player__close {
+  display: flex;
+  width: 88rpx;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-video-player__close image {
+  display: block;
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.note-video-player__close--pressed {
+  opacity: 0.65;
+}
