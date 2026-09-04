@@ -299,6 +299,16 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-09-04：正式版 / 体验版后端分流
+
+- 小程序按 `envVersion` 选基址：正式版 `https://www.yjxzhang.com/api`，体验版 `https://www.yjxzhang.com/dev/api`，开发版/真机调试仍走局域网。
+- 素材 URL 按当前 API 前缀改写，体验版文件走 `/dev/api/files`，不会打到正式版。
+- 服务器现网目录是 `/data/aisales`（已有 mysql/redis/nginx/`aisales-api`）。体验版另放 `/data/aisales_dev`，容器名 `aisales-api-dev`，加入已有网络 `aisales_default`，不要重建中间件。
+- 体验版按现网同样方式发版：本机 `mvn` 打 jar，改名为 `app.jar` 传到 `/data/aisales_dev`，服务器 Dockerfile 只 `COPY app.jar`，不要在服务器上编源码。
+- 正式库用 `scripts/clone-dev-db-to-prod.sh` 从体验库 `ai_sales_dev` 拷到 `ai_sales`，方向不要反。
+- 微信虚拟支付发货推送在后台只能填一个 URL；体验版下单时通知会打到当前填写的地址。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "data access goes through the unified request layer" tests/home-page.test.mjs`。服务器需建库、起 trial 容器并重载 Nginx 后，用体验版核对请求是否打到 `/dev/api`。
+
 ### 2026-09-04：笔记导航、占位和键盘关闭
 
 - 笔记页关闭内置返回键，返回箭头叠在导航栏外层最左侧（`left: 0`），不再放进导航栏 slot，避免和标题挤到中间。
@@ -2924,4 +2934,4 @@ miniprogram/
 - 排行榜后端接口（当前 aisales 未提供销售排行榜数据，页面暂用 Figma 预览 mock）。
 - 分析页「总」时间范围口径：后端 custom 查询上限 62 天，暂按最近 62 天，需后端确认是否提供全量范围。
 - 后端待补能力：按日阅读趋势接口（当前由前端按日聚合 dashboard）、素材图片更新与素材删除接口（编辑草稿改图会产生新素材）、客户级转发次数（当前仅 0/1 标记）、未读通知/红点口径。
-- 生产环境接口基址与合法域名配置待确认；当前开发/体验版使用 `http://192.168.31.225:8080/api`。
+- 正式版接口基址 `https://www.yjxzhang.com/api`，体验版 `https://www.yjxzhang.com/dev/api`；开发版/真机调试使用 `config/dev.ts` 局域网地址。

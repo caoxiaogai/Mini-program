@@ -2,29 +2,56 @@
 // 页面不直接使用本文件；所有数据访问经由 services/ 下的业务 service。
 
 import type { ApiLoginData, ApiResponse } from '../types/api'
-import { DEV_LAN_ORIGIN, DEVTOOLS_ORIGIN } from '../config/dev'
+import { DEV_LAN_ORIGIN, DEVTOOLS_ORIGIN, PROD_API_ORIGIN } from '../config/dev'
 import { isMaterialDeletedError } from '../utils/material-deleted'
 
 let cachedApiBaseUrl: string | null = null
 
+function sameOrigin(left: string, right: string): boolean {
+  return left.replace(/\/$/, '') === right.replace(/\/$/, '')
+}
+
+function onlineDevApiBase(): string {
+  return `${PROD_API_ORIGIN}/dev/api`
+}
+
+function localDevApiBase(): string {
+  return sameOrigin(DEV_LAN_ORIGIN, PROD_API_ORIGIN)
+    ? onlineDevApiBase()
+    : `${DEV_LAN_ORIGIN}/api`
+}
+
 /**
- * 开发者工具、真机调试和体验版都走当前配置的局域网 IP（与 caoxiaogai-aisales 一致）。
- * 延迟到首次请求再判定，避免模块加载时读不到运行环境。
+ * 正式版走线上 /api。体验版、以及 DEV_LAN 指到同一线上主机时的真机调试，走 /dev/api。
+ * 开发者工具走本机 DEVTOOLS_ORIGIN。
  */
 export function getApiBaseUrl(): string {
   if (cachedApiBaseUrl) return cachedApiBaseUrl
 
   try {
+    const envVersion = wx.getAccountInfoSync().miniProgram.envVersion
+    if (envVersion === 'release') {
+      cachedApiBaseUrl = `${PROD_API_ORIGIN}/api`
+      return cachedApiBaseUrl
+    }
+    if (envVersion === 'trial') {
+      cachedApiBaseUrl = onlineDevApiBase()
+      return cachedApiBaseUrl
+    }
     if (wx.getSystemInfoSync().platform === 'devtools') {
       cachedApiBaseUrl = `${DEVTOOLS_ORIGIN}/api`
       return cachedApiBaseUrl
     }
   } catch {
-    // 非小程序环境（如单元测试）回退局域网地址
+    // 非小程序环境（如单元测试）回退开发地址
   }
 
-  cachedApiBaseUrl = `${DEV_LAN_ORIGIN}/api`
+  cachedApiBaseUrl = localDevApiBase()
   return cachedApiBaseUrl
+}
+
+function joinApiFileUrl(objectPath: string): string {
+  return `${getApiBaseUrl()}/files/${objectPath.replace(/^\/+/, '')}`
 }
 
 const REQUEST_TIMEOUT_MS = 15000
@@ -46,38 +73,39 @@ export function getApiOrigin(): string {
 
 /**
  * 将后端返回的文件 URL 归一化为当前环境可访问的代理地址。
- * - MinIO 直连（:9000/sales-materials/...）→ /api/files/sales-materials/...
- * - 缺 /api/files 的 /sales-materials/... → 补全代理前缀
- * - 已是代理 URL → 仅对齐主机（模拟器本机 / 真机与体验版局域网 IP）
+ * - MinIO 直连（:9000/sales-materials/...）→ {apiBase}/files/sales-materials/...
+ * - 正式版 /api/files、体验版 /dev/api/files 都改写到当前环境的 API 前缀
  */
 export function resolveMediaUrl(url: string | null | undefined): string {
   if (!url) return ''
   const trimmed = url.trim()
   if (!trimmed) return ''
   if (!/^https?:\/\//.test(trimmed)) {
+    if (trimmed.startsWith('/dev/api/files/')) {
+      return joinApiFileUrl(trimmed.slice('/dev/api/files/'.length))
+    }
     if (trimmed.startsWith('/api/files/')) {
-      return `${getApiOrigin()}${trimmed}`
+      return joinApiFileUrl(trimmed.slice('/api/files/'.length))
     }
     return trimmed
   }
 
-  const origin = getApiOrigin()
-
   const minioDirect = trimmed.match(/^https?:\/\/[^/]+:9000\/sales-materials\/(.+)$/i)
   if (minioDirect) {
-    return `${origin}/api/files/sales-materials/${minioDirect[1]}`
+    return joinApiFileUrl(`sales-materials/${minioDirect[1]}`)
   }
 
-  if (trimmed.includes('/api/files/')) {
-    return trimmed.replace(/^https?:\/\/[^/]+/, origin)
+  const apiFiles = trimmed.match(/\/(?:dev\/)?api\/files\/(.+)$/i)
+  if (apiFiles) {
+    return joinApiFileUrl(apiFiles[1])
   }
 
   const bareBucket = trimmed.match(/^https?:\/\/[^/]+\/sales-materials\/(.+)$/i)
   if (bareBucket) {
-    return `${origin}/api/files/sales-materials/${bareBucket[1]}`
+    return joinApiFileUrl(`sales-materials/${bareBucket[1]}`)
   }
 
-  return trimmed.replace(/^https?:\/\/[^/]+/, origin)
+  return trimmed.replace(/^https?:\/\/[^/]+/, getApiOrigin())
 }
 
 /** 归一化后的接口错误；code 为后端业务码，网络层失败时为 -1 */
