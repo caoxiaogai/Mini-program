@@ -172,6 +172,12 @@ miniprogram/
 
 不得把猜测的 URL、字段或成功结果描述为已确认合同。真实 API 接入后，应删除对应 mock 分支和 `TODO(API)`，并同步更新本文档。
 
+### 已确认：当前对接的后端仓库
+
+- 小程序当前对接 `D:\IdeaProjects\aisales_dev`（dev 分支），不是 `D:\IdeaProjects\aisales`。
+- 后续需要改后端（接口、配置、SQL、Docker）只改 `aisales_dev`，并部署到服务器 `/data/aisales_dev`（容器 `aisales-api-dev`，公网前缀 `/dev/api`）。
+- 正式版仓库 `D:\IdeaProjects\aisales` 由用户在上线时自行合并；Agent 不得主动把 `aisales_dev` 的改动合进正式版仓库或部署到 `/data/aisales`。
+
 ### 页面状态
 
 所有依赖数据的主要区域原则上需考虑：
@@ -218,7 +224,7 @@ miniprogram/
 | 实现页面视觉样式 | done | 首页三张摘要卡、AI 问候区和底部导航已实现 |
 | 建立 mock 与 API 占位层 | done | 新增 `HomeOverviewViewModel`、Mock 与首页 service |
 | 实现通知页面与首页通知跳转 | done | Figma `107:6253` 通知列表、通知 service/mock、本地资源与首页 tab 跳转已实现 |
-| 实现排行榜页面与排序交互 | done | Figma `311:15611` 排行榜页面、typed mock/service、本地资源与首页排名 tab 跳转已实现 |
+| 实现排行榜页面与排序交互 | done | Figma `311:15611` 排行榜页面已接 `GET /analysis/ranking` 真实数据，可按浏览量/转发量/完播量排序 |
 | 实现素材页面与发布入口视觉 | done | Figma `173:12468` 素材双列卡片、`835:8666`/`835:8477` 筛选与顶部样式、首页素材 tab 跳转已实现 |
 | 实现素材发布页面 | done | Figma `208:13581` 发布页、最多 9 张图片、无限制文案输入、草稿/发表占位交互及成功弹窗已实现 |
 | 发布选择后直达详情页 | done | 选择图片/视频后先弹出拍摄或相册，PDF 进微信文件选择，再将已选素材带入发布详情；图片支持继续追加 |
@@ -229,7 +235,7 @@ miniprogram/
 | 发布详情已添加图片描边 | done | 已添加媒体槽位使用 `2rpx solid #E5E5E5` 描边，继续添加入口样式保持不变 |
 | 实现素材详情分享页 | done | Figma `229:14271` 作品详情页、素材卡片按 id 跳转、轮播图片、描述文案、底部分享按钮与 typed service/mock 已实现 |
 | 素材内容详情上下背景色调整 | done | 发布后进入内容详情时，导航、说明区和底部分享操作区统一使用 `#F5F5F5`，媒体展示和按钮颜色保持不变 |
-| 接入后端真实接口 | done | 统一 `services/request.ts` 请求层 + 微信登录；首页/分析/通知/素材/我的头像昵称走后端数据；排行榜后端无接口，暂用 Figma 预览 mock；余额/提现仍为视觉占位 |
+| 接入后端真实接口 | done | 统一 `services/request.ts` 请求层 + 微信登录；首页/分析/通知/素材/排行榜/我的头像昵称走后端数据；余额/提现仍为视觉占位 |
 | 首页像素级与真机适配验收 | pending | 新版首页已实现，等待开发者工具或真机进行视觉核对 |
 | 首页改版（重新开始） | in_progress | 已按新版 Figma `478:1234` 重写首页结构、数据层、底部导航和本地资源 |
 | 首页顶部背景 SVG 替换 | done | 使用用户提供的 Figma `887:12344` 导出资源 `miniprogram/assets/home-new/home-header-background.svg`，固定在首页首个滚动面板底层 |
@@ -299,11 +305,22 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-09-04：超级榜单对接真实用户排序
+
+- 小程序排行榜改为请求 `GET /analysis/ranking`，按已发布作品的浏览量、转发量、完播量给小程序用户排序；切换指标仍在前端重排，不再使用 `mocks/ranking.ts`。
+- `aisales_dev` 新增该接口：只统计启用账号、未删除且已发布的作品，从 `content_stats` 汇总三项总量。部署体验版后端后生效。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "ranking|data access goes through the unified request layer" tests/home-page.test.mjs tests/list-window.test.mjs`。需重启 `aisales_dev` 后在体验版核对榜单。
+
+### 2026-09-04：后端改动只走 aisales_dev
+
+- 已确认：当前对接仓库是 `D:\IdeaProjects\aisales_dev`（dev 分支）。后续后端改动只改这个项目。
+- 正式版仓库 `D:\IdeaProjects\aisales` 由用户上线时自行合并，不在本仓库任务里自动合并或部署正式版。
+
 ### 2026-09-04：正式版 / 体验版后端分流
 
 - 小程序按 `envVersion` 选基址：正式版 `https://www.yjxzhang.com/api`，体验版 `https://www.yjxzhang.com/dev/api`，开发版/真机调试仍走局域网。
 - 素材 URL 按当前 API 前缀改写，体验版文件走 `/dev/api/files`，不会打到正式版。
-- 服务器现网目录是 `/data/aisales`（已有 mysql/redis/nginx/`aisales-api`）。体验版另放 `/data/aisales_dev`，容器名 `aisales-api-dev`，加入已有网络 `aisales_default`，不要重建中间件。
+- 本地开发改后端用 `D:\IdeaProjects\aisales_dev`。服务器现网目录是 `/data/aisales`（已有 mysql/redis/nginx/`aisales-api`）。体验版另放 `/data/aisales_dev`，容器名 `aisales-api-dev`，加入已有网络 `aisales_default`，不要重建中间件。
 - 体验版按现网同样方式发版：本机 `mvn` 打 jar，改名为 `app.jar` 传到 `/data/aisales_dev`，服务器 Dockerfile 只 `COPY app.jar`，不要在服务器上编源码。
 - 正式库用 `scripts/clone-dev-db-to-prod.sh` 从体验库 `ai_sales_dev` 拷到 `ai_sales`，方向不要反。
 - 微信虚拟支付发货推送在后台只能填一个 URL；体验版下单时通知会打到当前填写的地址。
@@ -2931,7 +2948,6 @@ miniprogram/
 - 小程序虚拟支付：后台填 OfferId / 现网 AppKey；创建道具 `month` / `quarter` / `half_year` / `month_pro` / `quarter_pro` / `half_year_pro` 并**发布到现网**；发货推送指向公网 `https://host/api/pay/xpay/notify`。
 - 三个 Pro 档位的正式价格待确认（当前后端占位 0.03 / 0.04 / 0.05 元）。
 - iOS 虚拟支付最低 1 元，当前测试价 ¥0.01 不能在 iPhone 上完成；需打开「苹果支付」、配置小程序简称。上线前改回 29.9 / 79.9 / 139.9。
-- 排行榜后端接口（当前 aisales 未提供销售排行榜数据，页面暂用 Figma 预览 mock）。
 - 分析页「总」时间范围口径：后端 custom 查询上限 62 天，暂按最近 62 天，需后端确认是否提供全量范围。
 - 后端待补能力：按日阅读趋势接口（当前由前端按日聚合 dashboard）、素材图片更新与素材删除接口（编辑草稿改图会产生新素材）、客户级转发次数（当前仅 0/1 标记）、未读通知/红点口径。
 - 正式版接口基址 `https://www.yjxzhang.com/api`，体验版 `https://www.yjxzhang.com/dev/api`；开发版/真机调试使用 `config/dev.ts` 局域网地址。

@@ -90,9 +90,7 @@ test('data access goes through the unified request layer', () => {
   for (const name of ['home', 'analysis', 'materials', 'notifications', 'ranking', 'profile', 'tracking', 'user', 'user-journey', 'membership']) {
     const service = read(`miniprogram/services/${name}.ts`)
     assert.doesNotMatch(service, /wx\.request\(/, `${name} service must use the request layer`)
-    if (name !== 'ranking') {
-      assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
-    }
+    assert.doesNotMatch(service, /from '\.\.\/mocks\//, `${name} service must not import mocks`)
   }
 })
 
@@ -1125,34 +1123,37 @@ test('ranking and analysis periods use the shared segmented filter control', () 
   assert.match(componentStyles, /height: auto;/)
 })
 
-test('ranking preview uses the fixed Figma leaderboard mock and sorts each metric', async () => {
-  const { getRankingStyleMock } = await import('../miniprogram/mocks/ranking.ts')
+test('ranking loads published-user totals from the analysis API and sorts each metric', async () => {
+  const { sortRankingEntries } = await import('../miniprogram/utils/ranking.ts')
   const service = read('miniprogram/services/ranking.ts')
+  const types = read('miniprogram/types/api.ts')
 
-  const ranking = getRankingStyleMock()
+  assert.match(types, /export interface ApiRankingEntry/)
+  assert.match(service, /path: '\/analysis\/ranking'/)
+  assert.match(service, /from '\.\/request'/)
+  assert.doesNotMatch(service, /from '\.\.\/mocks\//)
+  assert.doesNotMatch(service, /TODO\(API\)/)
 
-  assert.match(service, /from '\.\.\/mocks\/ranking'/)
-  assert.match(service, /return Promise\.resolve\(getRankingStyleMock\(\)\)/)
-  assert.equal(ranking.entries.length, 8)
-  assert.deepEqual(ranking.entries.map((entry) => [entry.name, entry.views]), [
-    ['快乐小鹅', 20984],
-    ['来财来财', 18930],
-    ['金钱豹到', 18032],
-    ['恭喜暴富', 16098],
-    ['给个生活比个耶', 15093],
-    ['你瞅啥', 14093],
-    ['橘里橘气', 12938],
-    ['黑色幽默', 11098],
+  const entries = [
+    { id: '2', avatarUrl: '', name: '来财来财', workCount: 4, views: 80, shares: 12, completions: 40 },
+    { id: '1', avatarUrl: '', name: '快乐小鹅', workCount: 3, views: 120, shares: 8, completions: 20 },
+    { id: '3', avatarUrl: '', name: '金钱豹到', workCount: 2, views: 200, shares: 20, completions: 30 },
+  ]
+
+  assert.deepEqual(sortRankingEntries(entries, 'views').map((entry) => [entry.name, entry.rankValue]), [
+    ['金钱豹到', 200],
+    ['快乐小鹅', 120],
+    ['来财来财', 80],
   ])
-  assert.deepEqual([...ranking.entries].sort((left, right) => right.shares - left.shares).slice(0, 3).map((entry) => [entry.name, entry.shares]), [
-    ['黑色幽默', 1120],
-    ['快乐小鹅', 980],
-    ['给个生活比个耶', 860],
+  assert.deepEqual(sortRankingEntries(entries, 'shares').map((entry) => [entry.name, entry.rankValue]), [
+    ['金钱豹到', 20],
+    ['来财来财', 12],
+    ['快乐小鹅', 8],
   ])
-  assert.deepEqual([...ranking.entries].sort((left, right) => right.completions - left.completions).slice(0, 3).map((entry) => [entry.name, entry.completions]), [
-    ['来财来财', 920],
-    ['恭喜暴富', 880],
-    ['快乐小鹅', 840],
+  assert.deepEqual(sortRankingEntries(entries, 'completions').map((entry) => [entry.name, entry.rankValue]), [
+    ['来财来财', 40],
+    ['金钱豹到', 30],
+    ['快乐小鹅', 20],
   ])
 })
 

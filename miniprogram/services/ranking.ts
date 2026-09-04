@@ -1,20 +1,34 @@
-import type { RankingEntry, RankingEntryViewModel, RankingMetric, RankingViewModel } from '../types/ranking'
-import { getRankingStyleMock } from '../mocks/ranking'
+import type { ApiRankingEntry } from '../types/api'
+import type { RankingEntry, RankingViewModel } from '../types/ranking'
+import { DEFAULT_AVATAR_URL } from '../utils/auth'
+import { prepareMediaUrls } from '../utils/media'
+import { request, resolveMediaUrl } from './request'
 
-// TODO(API): 接入排行榜真实接口
-// Method: 待后端确认
-// Endpoint: 待后端确认（后端 aisales 项目当前未提供销售排行榜接口）
-// Request: 待后端确认
-// Response: RankingViewModel
-// Auth/permission: 待后端确认
-// Error states: 待后端确认
-// 后端提供接口前返回固定开发数据，页面用于 Figma 视觉预览。
-export function getRankingOverview(): Promise<RankingViewModel> {
-  return Promise.resolve(getRankingStyleMock())
+export { sortRankingEntries } from '../utils/ranking'
+
+function asCount(value: number | null | undefined): number {
+  const count = Number(value)
+  return Number.isFinite(count) ? Math.max(0, Math.trunc(count)) : 0
 }
 
-export function sortRankingEntries(entries: RankingEntry[], metric: RankingMetric): RankingEntryViewModel[] {
-  return [...entries]
-    .sort((left, right) => right[metric] - left[metric])
-    .map((entry) => ({ ...entry, rankValue: entry[metric] }))
+function mapRankingEntry(item: ApiRankingEntry, avatarUrl: string): RankingEntry {
+  const name = (item.nickname ?? '').trim() || '微信用户'
+  return {
+    id: String(item.userId),
+    avatarUrl: avatarUrl || DEFAULT_AVATAR_URL,
+    name,
+    workCount: asCount(item.workCount),
+    views: asCount(item.viewCount),
+    shares: asCount(item.forwardCount),
+    completions: asCount(item.completeCount),
+  }
+}
+
+export function getRankingOverview(): Promise<RankingViewModel> {
+  return request<ApiRankingEntry[]>({ method: 'GET', path: '/analysis/ranking' }).then((items) => {
+    const list = Array.isArray(items) ? items : []
+    return prepareMediaUrls(list.map((item) => resolveMediaUrl(item.avatar))).then((avatars) => ({
+      entries: list.map((item, index) => mapRankingEntry(item, avatars[index])),
+    }))
+  })
 }
