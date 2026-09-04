@@ -299,6 +299,41 @@ miniprogram/
 
 ## 最近变更
 
+### 2026-09-04：笔记导航、占位和键盘关闭
+
+- 笔记页关闭内置返回键，返回箭头叠在导航栏外层最左侧（`left: 0`），不再放进导航栏 slot，避免和标题挤到中间。
+- 撤销/恢复叠在导航栏外层同一行，按「笔记」右缘和微信胶囊左缘自动居中。
+- 笔记编辑页锁 `100vh`，只让正文 `scroll-view` 上下滚动。
+- 点工具栏「+」先收起键盘再打开照片/拍摄/位置/文件面板，不再被键盘高度事件抢回焦点。
+- 去掉空白页「添加文字」占位。工具栏固定贴在键盘上方；呼出键盘时给正文留出底部空间并滚到当前输入块。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/note-material.test.mjs`。需真机确认导航位置和加号能打开面板。
+
+### 2026-09-04：真机调试源码包超过 2MB
+
+- 真机调试报 `80051`，源码包约 2056KB，超过微信 2MB 上限。默认头像 PNG 过大（展示仅 120rpx），已缩到 240px 并重压；奖杯图只做压缩、不改展示尺寸。未引用的旧 mock 图从预览包排除。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "wechat preview source stays under the 2MB upload limit" tests/home-page.test.mjs`。需重新编译后再真机调试。
+
+### 2026-09-04：笔记标题居中、键盘工具栏与独立播放器
+
+- 笔记页导航标题「笔记」相对屏幕水平居中，不再被右侧撤销/恢复挤偏。
+- 只要呼出键盘就显示加号工具栏；不再依赖图片/视频插入后可能丢失的键盘高度事件。
+- 编辑页和作品详情里的笔记视频改为独立全屏播放器，带关闭按钮，关闭后回到当前笔记页；每次从 0 起播，不记播放进度。
+- 播放器关闭键放在状态栏下方独立顶栏，不再叠在原生 video 上，避免点不上。
+- 访客看笔记只按整篇滑动距离上报进度；笔记内打开 PDF 走 `wx.openDocument`，不进文档阅读页，避免单独记页进度。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/note-material.test.mjs`。需真机确认加图后点空白能出键盘和工具栏，以及关闭播放器回到笔记。
+
+### 2026-09-04：笔记加号靠右，相册含视频，附件用键盘删除
+
+- 键盘工具栏加号改为圈线「+」图标并靠右；点开照片/拍摄/位置/文件面板后不再展示加号。
+- 「照片」打开系统相册时同时展示图片和视频。图片、视频、位置、文件不再带独立删除叉，在其后文字处按键盘删除键去掉上一块附件。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/note-material.test.mjs`。需真机确认相册可选视频，以及退格能删附件。
+
+### 2026-09-03：发布素材增加笔记
+
+- 发布类型弹窗新增「笔记」。点击后进入 `/pages/materials/note/index`，点空白处开始输入；键盘上方只有「+」，点开后选照片、拍摄、位置、文件。支持撤销/恢复、存草稿和发表。
+- 笔记以 `fileType=NOTE` 落库，`content` 为块 JSON；列表、删除、分享好友、分享朋友圈与其他素材相同。草稿点开回笔记编辑页，已发布作品走详情页块展示。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/note-material.test.mjs tests/publish-material-entry.test.mjs`。需重启后端以接受 NOTE 类型。真机需配置位置隐私协议后才能选点。
+
 ### 2026-09-03：素材列表长按多选删除
 
 - 素材列表（首页素材 Tab 与独立素材页）长按进入多选，底部「发布素材」变为「删除」，可删除已选草稿和已发布作品。

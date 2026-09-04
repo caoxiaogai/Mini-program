@@ -1,6 +1,7 @@
 export const HOME_PAGE_PATH = '/pages/index/index'
 export const MATERIAL_DETAIL_PATH = '/pages/material-detail/index'
 export const MATERIAL_PUBLISH_PATH = '/pages/materials/publish/index'
+export const MATERIAL_NOTE_PATH = '/pages/materials/note/index'
 
 const MATERIAL_ID_QUERY_KEY = 'id'
 const PUBLISH_REMIX_QUERY_KEY = 'remix'
@@ -27,10 +28,16 @@ export function isPublishRemixQuery(value?: string): boolean {
 
 /** 打开发布页；remix 时预填已发布素材，发表为新作品，不覆盖原素材 */
 export function buildMaterialPublishPath(materialId?: string, remix = false): string {
-  if (!materialId) return MATERIAL_PUBLISH_PATH
+  return buildMaterialEditPath(materialId, undefined, remix)
+}
+
+/** 笔记草稿/二次编辑走笔记页，其余素材走原发布页 */
+export function buildMaterialEditPath(materialId?: string, kind?: string, remix = false): string {
+  const basePath = kind === 'note' || kind === 'NOTE' ? MATERIAL_NOTE_PATH : MATERIAL_PUBLISH_PATH
+  if (!materialId) return basePath
   const query = [`${MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`]
   if (remix) query.push(`${PUBLISH_REMIX_QUERY_KEY}=1`)
-  return `${MATERIAL_PUBLISH_PATH}?${query.join('&')}`
+  return `${basePath}?${query.join('&')}`
 }
 
 export function buildMaterialShareQuery(materialId: string, trackingId?: string): string {

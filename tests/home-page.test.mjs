@@ -2215,7 +2215,8 @@ test('publish page picks image/video from camera or album and PDF from chat file
   assert.match(types, /export interface PublishMediaViewModel/)
   assert.match(service, /fileType: 'VIDEO'/)
   assert.match(service, /fileType: 'PDF'/)
-  assert.equal(app.permission, undefined)
+  assert.equal(app.permission['scope.userLocation'].desc, '用于在笔记中添加位置')
+  assert.deepEqual(app.requiredPrivateInfos, ['chooseLocation'])
 })
 
 test('publish detail media slots follow Figma 835:8415 sizing and page background', () => {
@@ -2731,7 +2732,7 @@ test('published material detail opens secondary edit on the publish page', async
   assert.match(markup, /src="\/assets\/materials\/detail-edit\.svg"/)
   assert.equal(existsSync(new URL('../miniprogram/assets/materials/detail-edit.svg', import.meta.url)), true)
   assert.match(markup, /bindtap="onSecondaryEditTap"/)
-  assert.match(logic, /buildMaterialPublishPath\(detail\.id, true\)/)
+  assert.match(logic, /buildMaterialEditPath\(detail\.id, detail\.fileType === 'NOTE' \? 'note' : '', true\)/)
   assert.match(styles, /\.material-detail__share-button--edit \{[\s\S]*background: #0db6c5;/)
   assert.equal(MATERIAL_PUBLISH_PATH, '/pages/materials/publish/index')
   assert.equal(buildMaterialPublishPath(), '/pages/materials/publish/index')
@@ -2745,8 +2746,8 @@ test('published material detail opens secondary edit on the publish page', async
   assert.equal(getMaterialsReturnDelta(['pages/index/index', 'pages/materials/publish/index']), 1)
   assert.equal(getMaterialsReturnDelta(['pages/index/index', 'pages/material-detail/index', 'pages/materials/publish/index']), 2)
   assert.equal(getMaterialsReturnDelta(['pages/materials/index', 'pages/material-detail/index', 'pages/materials/publish/index']), 2)
-  assert.match(read('miniprogram/pages/index/index.ts'), /buildMaterialPublishPath\(materialId\)/)
-  assert.match(read('miniprogram/pages/materials/index.ts'), /buildMaterialPublishPath\(materialId\)/)
+  assert.match(read('miniprogram/pages/index/index.ts'), /buildMaterialEditPath\(materialId, material\.kind\)/)
+  assert.match(read('miniprogram/pages/materials/index.ts'), /buildMaterialEditPath\(materialId, material\.kind\)/)
 })
 
 test('document reader current page follows the top of the reading area', async () => {
@@ -3536,7 +3537,7 @@ test('home analysis sort sheet is rendered above the fixed analysis header', () 
 })
 
 test('navigation bar clears the status bar and WeChat capsule on every platform', async () => {
-  const { resolveNavigationBarLayout, isMenuButtonRectValid, toNavigationBarStyle } = await import('../miniprogram/utils/navigation-layout.ts')
+  const { resolveNavigationBarLayout, isMenuButtonRectValid, toNavigationBarStyle, resolveNavActionsRight } = await import('../miniprogram/utils/navigation-layout.ts')
   const logic = read('miniprogram/components/navigation-bar/navigation-bar.ts')
   const styles = read('miniprogram/components/navigation-bar/navigation-bar.less')
   const appStyles = read('miniprogram/app.less')
@@ -3573,6 +3574,12 @@ test('navigation bar clears the status bar and WeChat capsule on every platform'
   assert.equal(missingCapsule.capsuleOffset, 94)
   assert.match(toNavigationBarStyle(iphone).safeAreaTop, /padding-top: 54px/)
   assert.match(toNavigationBarStyle(iphone).innerPaddingRight, /padding-right: 97px/)
+  assert.equal(resolveNavActionsRight({
+    windowWidth: 393,
+    titleRight: 196.5 + 17,
+    capsuleLeft: 296,
+    actionsWidth: 58,
+  }), 109)
 
   assert.match(logic, /getNavigationBarLayout\(\)/)
   assert.doesNotMatch(logic, /isDevtools \|\| isAndroid/)
@@ -3980,6 +3987,7 @@ test('every page can pull from the top to refresh', () => {
   const pageRefreshPages = [
     'pages/material-detail/index',
     'pages/materials/publish/index',
+    'pages/materials/note/index',
     'pages/ranking/index',
     'pages/notifications/notifications',
     'pages/analysis/index',
@@ -4016,7 +4024,12 @@ test('every page can pull from the top to refresh', () => {
 
 test('wechat preview source stays under the 2MB upload limit', () => {
   const bytes = getFileBytes(new URL('../miniprogram/', import.meta.url))
-  const ignoredLegacyAssets = getFileBytes(new URL('../miniprogram/assets/home/', import.meta.url))
-  const packagedBytes = bytes - ignoredLegacyAssets
+  const packOptions = JSON.parse(read('project.config.json')).packOptions.ignore
+  const ignoredBytes = packOptions.reduce((total, item) => {
+    const relative = item.value.replace(/\\/g, '/')
+    const entryUrl = new URL(`../miniprogram/${relative}${item.type === 'folder' && !relative.endsWith('/') ? '/' : ''}`, import.meta.url)
+    return total + (item.type === 'folder' ? getFileBytes(entryUrl) : statSync(entryUrl).size)
+  }, 0)
+  const packagedBytes = bytes - ignoredBytes
   assert.ok(packagedBytes < 2 * 1024 * 1024, `packaged miniprogram source is ${Math.round(packagedBytes / 1024)}KB`)
 })

@@ -9,8 +9,22 @@ import type {
   PublishMediaKind,
   PublishMediaViewModel,
 } from '../types/materials'
+import type { NoteBlock, NoteDraftViewModel, NoteSubmitInput } from '../types/note'
 import { formatDateKey } from '../utils/format'
 import { prepareMediaUrl, prepareMediaUrls } from '../utils/media'
+import {
+  extractNotePlainText,
+  extractNoteTitle,
+  hasNoteContent,
+  isNoteFileType,
+  NOTE_DEFAULT_TITLE,
+  NOTE_FILE_TYPE,
+  NOTE_PLACEHOLDER_FILE_URL,
+  noteAttachmentSignature,
+  parseNoteContent,
+  serializeNoteContent,
+  toNoteDisplayBlocks,
+} from '../utils/note'
 import { buildMaterialShareTitle } from '../utils/share-material'
 import { prepareDocumentPageImage } from './document'
 import { ensureLogin, request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
@@ -28,6 +42,7 @@ const materialKinds: Record<string, MaterialCardViewModel['kind']> = {
   VIDEO: 'video',
   PDF: 'pdf',
   TABLE: 'pdf',
+  NOTE: 'note',
 }
 
 const MATERIAL_DEFAULT_TITLES = {
@@ -35,6 +50,7 @@ const MATERIAL_DEFAULT_TITLES = {
   VIDEO: '视频素材',
   PDF: 'PDF 文档',
   TABLE: '表格文档',
+  NOTE: NOTE_DEFAULT_TITLE,
 } as const
 const MATERIAL_TITLE_MAX_LENGTH = 30
 const UPLOAD_CONCURRENCY = 3
@@ -143,6 +159,8 @@ export function prepareMaterialThumbnailMap(sources: MaterialThumbnailSource[]):
 
 /** 列表展示用户填写的文案；content 为空时回退 title（兼容旧数据 / 仅有文件名的素材） */
 function resolveMaterialCopy(material: ApiMaterial): string {
+  const noteBlocks = parseNoteContent(material.content)
+  if (noteBlocks) return extractNotePlainText(noteBlocks)
   if (material.content != null && material.content.trim() !== '') return material.content
   return material.title ?? ''
 }
@@ -201,6 +219,7 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
       let videoUrl = ''
       let pdfUrl = ''
       let pdfFileName = ''
+      let noteBlocks = [] as MaterialDetailViewModel['noteBlocks']
 
       if (fileType === 'IMAGE') {
         images = await prepareMediaUrls(parseImageUrls(material.fileUrl))
@@ -209,6 +228,8 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
       } else if (fileType === 'PDF' || fileType === 'TABLE') {
         pdfUrl = resolveMediaUrl(material.fileUrl)
         pdfFileName = material.title?.trim() || (fileType === 'TABLE' ? '表格文档' : 'PDF 文档')
+      } else if (isNoteFileType(fileType)) {
+        noteBlocks = await prepareNoteDisplayBlocks(parseNoteContent(material.content) ?? [])
       }
 
       return {
@@ -222,6 +243,7 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
         duration: material.duration ?? 0,
         pdfUrl,
         pdfFileName,
+        noteBlocks,
         descriptionLines: splitMaterialCopy(resolveMaterialCopy(material)),
         isOwner: String(material.userId) === String(user.userId),
       }
@@ -337,19 +359,20 @@ function persistMediaFiles(items: PublishMediaViewModel[]): Promise<string[]> {
 }
 
 function createMaterial(input: {
-  fileType: 'IMAGE' | 'VIDEO' | 'PDF'
+  fileType: 'IMAGE' | 'VIDEO' | 'PDF' | 'NOTE'
   fileUrl: string
   coverUrl: string
   duration: number
   copy: string
   fallbackTitle: string
+  content?: string
 }): Promise<string> {
   return request<ApiMaterial>({
     method: 'POST',
     path: '/material',
     data: {
       title: buildMaterialTitle(input.copy, input.fallbackTitle),
-      content: input.copy,
+      content: input.content ?? input.copy,
       fileType: input.fileType,
       fileUrl: input.fileUrl,
       coverUrl: input.coverUrl,
@@ -439,6 +462,131 @@ export function saveMaterialDraft(input: MaterialSubmitInput): Promise<string> {
 /** 发表：素材落库后生成分享链接（后端置 publishStatus=1），返回素材 ID */
 export function publishMaterial(input: MaterialSubmitInput): Promise<string> {
   return persistMaterial(input).then((materialId) =>
+    request<ApiMaterial>({ method: 'POST', path: `/material/${materialId}/share` }).then(() => materialId),
+  )
+}
+
+async function hydrateNoteBlock(block: NoteBlock): Promise<NoteBlock> {
+  if (block.type === 'image') {
+    const source = block.remoteUrl || block.path
+    const path = source ? await prepareMediaUrl(resolveMediaUrl(source)) : ''
+    return { ...block, path: path || source, remoteUrl: source }
+  }
+  if (block.type === 'video') {
+    const source = block.remoteUrl || block.path
+    const coverSource = block.remoteCoverUrl || block.coverPath
+    const path = source ? resolveMediaUrl(source) : ''
+    const coverPath = coverSource ? await prepareMediaUrl(resolveMediaUrl(coverSource)).catch(() => '') : ''
+    return { ...block, path, coverPath, remoteUrl: source, remoteCoverUrl: coverSource }
+  }
+  if (block.type === 'file') {
+    const source = block.remoteUrl || block.path
+    return { ...block, path: source ? resolveMediaUrl(source) : '', remoteUrl: source }
+  }
+  return block
+}
+
+async function prepareNoteDisplayBlocks(blocks: NoteBlock[]): Promise<MaterialDetailViewModel['noteBlocks']> {
+  const hydrated = await Promise.all(blocks.map((block) => hydrateNoteBlock(block)))
+  return toNoteDisplayBlocks(hydrated)
+}
+
+export function getNoteDraft(materialId: string): Promise<NoteDraftViewModel | null> {
+  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
+    .then(async (material) => {
+      if (!isNoteFileType(material.fileType)) return null
+      const parsed = parseNoteContent(material.content) ?? []
+      const blocks = await Promise.all(parsed.map((block) => hydrateNoteBlock(block)))
+      return { id: String(material.id), blocks: blocks.length > 0 ? blocks : [] }
+    })
+    .catch(() => null)
+}
+
+async function persistNoteBlock(block: NoteBlock): Promise<NoteBlock> {
+  if (block.type === 'image') {
+    const fileUrl = await persistNoteFile(block.path, block.remoteUrl)
+    return { ...block, path: fileUrl, remoteUrl: fileUrl }
+  }
+  if (block.type === 'video') {
+    const fileUrl = await persistNoteFile(block.path, block.remoteUrl)
+    const coverUrl = block.coverPath
+      ? await persistNoteFile(block.coverPath, block.remoteCoverUrl).catch(() => '')
+      : block.remoteCoverUrl ?? ''
+    return { ...block, path: fileUrl, remoteUrl: fileUrl, coverPath: coverUrl, remoteCoverUrl: coverUrl, duration: Math.round(block.duration) }
+  }
+  if (block.type === 'file') {
+    const fileUrl = await persistNoteFile(block.path, block.remoteUrl)
+    return { ...block, path: fileUrl, remoteUrl: fileUrl }
+  }
+  return block
+}
+
+function persistNoteFile(path: string, remoteUrl?: string): Promise<string> {
+  if (!shouldUploadLocalPath(path)) return Promise.resolve(path || remoteUrl || '')
+  if (remoteUrl && !shouldUploadLocalPath(remoteUrl)) return Promise.resolve(remoteUrl)
+  return uploadFile('/material/upload-file', path)
+}
+
+function firstNoteCover(blocks: NoteBlock[]): { fileUrl: string; coverUrl: string; duration: number } {
+  const image = blocks.find((block): block is Extract<NoteBlock, { type: 'image' }> => block.type === 'image')
+  if (image) return { fileUrl: image.remoteUrl || image.path, coverUrl: image.remoteUrl || image.path, duration: 0 }
+
+  const video = blocks.find((block): block is Extract<NoteBlock, { type: 'video' }> => block.type === 'video')
+  if (video) {
+    return {
+      fileUrl: video.remoteUrl || video.path,
+      coverUrl: video.remoteCoverUrl || video.coverPath || '',
+      duration: Math.round(video.duration),
+    }
+  }
+
+  const file = blocks.find((block): block is Extract<NoteBlock, { type: 'file' }> => block.type === 'file')
+  if (file) return { fileUrl: file.remoteUrl || file.path, coverUrl: '', duration: 0 }
+
+  return { fileUrl: NOTE_PLACEHOLDER_FILE_URL, coverUrl: '', duration: 0 }
+}
+
+function persistNoteMaterial(input: NoteSubmitInput): Promise<string> {
+  if (!hasNoteContent(input.blocks)) {
+    wx.showToast({ title: '请先添加笔记内容', icon: 'none' })
+    return Promise.reject(new Error('note content required'))
+  }
+
+  const attachmentsUnchanged =
+    input.draftId !== null && noteAttachmentSignature(input.blocks) === input.originalAttachmentSignature
+
+  if (attachmentsUnchanged && input.draftId) {
+    const draftId = input.draftId
+    return request<ApiMaterial>({
+      method: 'PUT',
+      path: `/material/${draftId}`,
+      data: { content: serializeNoteContent(input.blocks) },
+    }).then(() => draftId)
+  }
+
+  return runRequestQueue(
+    input.blocks.map((block) => () => persistNoteBlock(block)),
+    UPLOAD_CONCURRENCY,
+  ).then((blocks) => {
+    const media = firstNoteCover(blocks)
+    return createMaterial({
+      fileType: NOTE_FILE_TYPE,
+      fileUrl: media.fileUrl || NOTE_PLACEHOLDER_FILE_URL,
+      coverUrl: media.coverUrl,
+      duration: media.duration,
+      copy: extractNotePlainText(blocks),
+      fallbackTitle: extractNoteTitle(blocks),
+      content: serializeNoteContent(blocks),
+    })
+  })
+}
+
+export function saveNoteDraft(input: NoteSubmitInput): Promise<string> {
+  return persistNoteMaterial(input)
+}
+
+export function publishNote(input: NoteSubmitInput): Promise<string> {
+  return persistNoteMaterial(input).then((materialId) =>
     request<ApiMaterial>({ method: 'POST', path: `/material/${materialId}/share` }).then(() => materialId),
   )
 }

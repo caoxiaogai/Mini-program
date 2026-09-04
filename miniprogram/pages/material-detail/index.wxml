@@ -8,7 +8,70 @@
   </view>
 
   <view wx:if="{{detail}}" class="material-detail-page__content">
-    <block wx:if="{{detail.fileType === 'VIDEO'}}">
+    <block wx:if="{{detail.fileType === 'NOTE'}}">
+      <view class="note-detail">
+        <block wx:for="{{detail.noteBlocks}}" wx:key="id">
+          <text wx:if="{{item.type === 'text' && item.text}}" class="note-detail__text">{{item.text}}</text>
+
+          <view
+            wx:elif="{{item.type === 'location'}}"
+            class="note-detail__card"
+            data-latitude="{{item.latitude}}"
+            data-longitude="{{item.longitude}}"
+            data-name="{{item.name}}"
+            data-address="{{item.address}}"
+            bindtap="onNoteLocationTap"
+            hover-class="note-detail__card--pressed"
+            hover-stay-time="80"
+          >
+            <image class="note-detail__location-icon" src="/assets/materials/note-location.svg" mode="aspectFit" />
+            <view class="note-detail__location-copy">
+              <text class="note-detail__location-name">{{item.name}}</text>
+              <text class="note-detail__location-address">{{item.address}}</text>
+            </view>
+          </view>
+
+          <image
+            wx:elif="{{item.type === 'image'}}"
+            class="note-detail__image"
+            src="{{item.path}}"
+            mode="widthFix"
+          />
+
+          <view
+            wx:elif="{{item.type === 'video'}}"
+            class="note-detail__media"
+            data-path="{{item.path}}"
+            data-cover="{{item.coverPath}}"
+            bindtap="onNoteVideoTap"
+            hover-class="note-detail__media--pressed"
+            hover-stay-time="80"
+          >
+            <image wx:if="{{item.coverPath}}" class="note-detail__image" src="{{item.coverPath}}" mode="widthFix" />
+            <view wx:else class="note-detail__video-fallback"></view>
+            <image class="note-detail__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
+          </view>
+
+          <view
+            wx:elif="{{item.type === 'file'}}"
+            class="note-detail__card"
+            data-path="{{item.path}}"
+            data-name="{{item.name}}"
+            bindtap="onNoteFileTap"
+            hover-class="note-detail__card--pressed"
+            hover-stay-time="80"
+          >
+            <view class="note-detail__file-badge">{{item.ext}}</view>
+            <view class="note-detail__file-copy">
+              <text class="note-detail__file-name">{{item.name}}</text>
+              <text class="note-detail__file-meta">{{item.ext}} {{item.sizeLabel}}</text>
+            </view>
+          </view>
+        </block>
+      </view>
+    </block>
+
+    <block wx:elif="{{detail.fileType === 'VIDEO'}}">
       <view
         class="material-detail__media material-detail__media--video"
         bindtouchstart="onVideoTouchStart"
@@ -75,7 +138,7 @@
       </view>
     </block>
 
-    <view class="material-detail__description">
+    <view wx:if="{{detail.fileType !== 'NOTE'}}" class="material-detail__description">
       <text wx:for="{{detail.descriptionLines}}" wx:key="*this" class="material-detail__description-line">{{item}}</text>
     </view>
   </view>
@@ -157,4 +220,11 @@
     </swiper>
     <text class="material-detail-preview__counter">{{activeImageIndex + 1}} / {{detail.images.length}}</text>
   </view>
+
+  <note-video-player
+    visible="{{videoPlayerVisible}}"
+    src="{{videoPlayerSrc}}"
+    poster="{{videoPlayerPoster}}"
+    bind:close="onCloseVideoPlayer"
+  />
 </view>

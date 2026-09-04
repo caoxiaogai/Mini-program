@@ -211,7 +211,7 @@
   <date-range-picker visible="{{dateRangePickerVisible}}" start-date="{{datePickerStartDate}}" end-date="{{datePickerEndDate}}" min-date="{{twoMonthsAgoDate}}" max-date="{{todayDate}}" bind:confirm="onDateRangeConfirm" bind:cancel="onDateRangeCancel" />
   <notification-mark-all-read wx:if="{{activeTabIndex === 1 && unreadNotificationCount}}" unread-count="{{unreadNotificationCount}}" bind:markallread="onMarkAllReadTap" />
   <bottom-tab-bar wx:if="{{!analysisSortSheetVisible}}" items="{{tabItems}}" plus-active="{{plusActive}}" bind:tabtap="onTabTap" bind:plus="onPlusTap" />
-  <publish-type-sheet visible="{{publishTypeSheetVisible}}" bind:select="onPublishTypeSelect" bind:cancel="onPublishTypeCancel" />
+  <publish-type-sheet kind="entry" visible="{{publishTypeSheetVisible}}" bind:select="onPublishTypeSelect" bind:cancel="onPublishTypeCancel" />
   <publish-type-sheet kind="source" visible="{{publishSourceSheetVisible}}" bind:select="onPublishSourceSelect" bind:cancel="onPublishSourceCancel" />
   <publish-success-modal
     visible="{{showPublishSuccessModal}}"

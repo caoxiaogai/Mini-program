@@ -3,8 +3,8 @@
     "navigation-bar": "/components/navigation-bar/navigation-bar",
     "note-video-player": "/components/note-video-player/index"
   },
-  "enableShareAppMessage": true,
-  "enableShareTimeline": true,
+  "renderer": "webview",
+  "disableScroll": true,
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark"
 }

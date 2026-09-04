@@ -18,7 +18,7 @@ import { capAudienceUsers, resolveVisitorLimit } from '../../utils/membership'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
-import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, MATERIAL_NOTE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
 import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
@@ -787,7 +787,7 @@ Page({
     if (!material) return
 
     const url = material.isDraft
-      ? buildMaterialPublishPath(materialId)
+      ? buildMaterialEditPath(materialId, material.kind)
       : buildMaterialDetailPath(materialId)
     wx.navigateTo({ url })
   },
@@ -870,6 +870,10 @@ Page({
   onPublishTypeSelect(event: WechatMiniprogram.CustomEvent<{ type: PublishEntryType }>) {
     const type = event.detail.type
     this.setData({ publishTypeSheetVisible: false }, () => {
+      if (type === 'note') {
+        wx.navigateTo({ url: MATERIAL_NOTE_PATH })
+        return
+      }
       if (type === 'pdf') {
         this.choosePdfForPublish()
         return

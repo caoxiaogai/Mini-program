@@ -1,0 +1,165 @@
+<view class="note-page">
+  <view class="note-page__nav">
+    <navigation-bar id="noteNavBar" title="笔记" back="{{false}}" color="#000000" background="#f0f1f2"></navigation-bar>
+    <view class="note-page__nav-actions" style="right: {{navActionRight}}px;">
+      <view
+        class="note-page__nav-button {{canUndo ? '' : 'note-page__nav-button--disabled'}}"
+        bindtap="onUndoTap"
+        hover-class="{{canUndo ? 'note-page__nav-button--pressed' : ''}}"
+        hover-stay-time="80"
+        aria-role="button"
+        aria-label="撤销"
+      >
+        <image src="/assets/materials/note-undo.svg" mode="aspectFit" />
+      </view>
+      <view
+        class="note-page__nav-button {{canRedo ? '' : 'note-page__nav-button--disabled'}}"
+        bindtap="onRedoTap"
+        hover-class="{{canRedo ? 'note-page__nav-button--pressed' : ''}}"
+        hover-stay-time="80"
+        aria-role="button"
+        aria-label="恢复"
+      >
+        <image src="/assets/materials/note-redo.svg" mode="aspectFit" />
+      </view>
+    </view>
+    <view
+      class="note-page__nav-back"
+      bindtap="onNavBackTap"
+      hover-class="note-page__nav-back--pressed"
+      hover-stay-time="80"
+      aria-role="button"
+      aria-label="返回"
+    >
+      <view class="note-page__nav-back-icon"></view>
+    </view>
+  </view>
+
+  <scroll-view
+    scroll-y
+    class="note-page__scroll"
+    enhanced
+    show-scrollbar="{{false}}"
+    scroll-into-view="{{scrollIntoView}}"
+    scroll-with-animation="{{true}}"
+    bindtap="onEditorBlankTap"
+  >
+    <view class="note-page__blocks" style="padding-bottom: {{composerReserve}}px;">
+      <block wx:for="{{blocks}}" wx:key="id">
+        <view wx:if="{{item.type === 'text'}}" id="note-block-{{item.id}}" class="note-block note-block--text" catchtap="onTextBlockTap">
+          <textarea
+            class="note-block__textarea"
+            value="{{item.text}}"
+            data-id="{{item.id}}"
+            maxlength="-1"
+            auto-height="{{true}}"
+            adjust-position="{{false}}"
+            hold-keyboard="{{false}}"
+            show-confirm-bar="{{false}}"
+            focus="{{textFocused && focusTextId === item.id}}"
+            bindinput="onTextInput"
+            bindfocus="onTextFocus"
+            bindblur="onTextBlur"
+            bindkeyboardheightchange="onKeyboardHeightChange"
+          />
+        </view>
+
+        <view
+          wx:elif="{{item.type === 'location'}}"
+          class="note-block note-block--card"
+          data-id="{{item.id}}"
+          catchtap="onLocationTap"
+          hover-class="note-block--pressed"
+          hover-stay-time="80"
+        >
+          <image class="note-block__location-icon" src="/assets/materials/note-location.svg" mode="aspectFit" />
+          <view class="note-block__location-copy">
+            <text class="note-block__location-name">{{item.name}}</text>
+            <text class="note-block__location-address">{{item.address}}</text>
+          </view>
+        </view>
+
+        <view wx:elif="{{item.type === 'image'}}" class="note-block note-block--media" catchtap="onMediaBlockTap">
+          <image class="note-block__image" src="{{item.path}}" mode="widthFix" data-id="{{item.id}}" bindtap="onImageTap" />
+        </view>
+
+        <view wx:elif="{{item.type === 'video'}}" class="note-block note-block--media" catchtap="onMediaBlockTap">
+          <view class="note-block__video-cover" data-id="{{item.id}}" bindtap="onVideoTap">
+            <image wx:if="{{item.coverPath}}" class="note-block__image" src="{{item.coverPath}}" mode="widthFix" />
+            <view wx:else class="note-block__video-fallback"></view>
+            <image class="note-block__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
+          </view>
+        </view>
+
+        <view
+          wx:else
+          class="note-block note-block--card"
+          data-id="{{item.id}}"
+          catchtap="onFileTap"
+          hover-class="note-block--pressed"
+          hover-stay-time="80"
+        >
+          <view class="note-block__file-badge">{{item.ext}}</view>
+          <view class="note-block__file-copy">
+            <text class="note-block__file-name">{{item.name}}</text>
+            <text class="note-block__file-meta">{{item.ext}} {{item.sizeLabel}}</text>
+          </view>
+        </view>
+      </block>
+      <view id="note-page-end" class="note-page__blank"></view>
+    </view>
+  </scroll-view>
+
+  <view class="note-page__composer" style="bottom: {{keyboardInset}}px;">
+    <view wx:if="{{plusPanelVisible}}" class="note-plus">
+      <view class="note-plus__grid">
+        <view class="note-plus__item" bindtap="onAlbumTap" hover-class="note-plus__item--pressed" hover-stay-time="80">
+          <view class="note-plus__icon">
+            <image src="/assets/materials/note-album.svg" mode="aspectFit" />
+          </view>
+          <text>照片</text>
+        </view>
+        <view class="note-plus__item" bindtap="onCameraTap" hover-class="note-plus__item--pressed" hover-stay-time="80">
+          <view class="note-plus__icon">
+            <image src="/assets/materials/note-camera.svg" mode="aspectFit" />
+          </view>
+          <text>拍摄</text>
+        </view>
+        <view class="note-plus__item" bindtap="onLocationInsertTap" hover-class="note-plus__item--pressed" hover-stay-time="80">
+          <view class="note-plus__icon">
+            <image src="/assets/materials/note-location.svg" mode="aspectFit" />
+          </view>
+          <text>位置</text>
+        </view>
+        <view class="note-plus__item" bindtap="onFileInsertTap" hover-class="note-plus__item--pressed" hover-stay-time="80">
+          <view class="note-plus__icon">
+            <image src="/assets/materials/note-folder.svg" mode="aspectFit" />
+          </view>
+          <text>文件</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{showComposerBar}}" class="note-page__toolbar">
+      <view class="note-page__plus" catchtouchstart="onPlusTouchStart" catchtap="onPlusTap" hover-class="note-page__plus--pressed" hover-stay-time="80" aria-role="button" aria-label="添加内容">
+        <image src="/assets/materials/note-plus.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <view wx:if="{{showActions}}" class="note-page__actions">
+      <view class="note-page__draft-button" bindtap="onDraftTap" hover-class="note-page__button--pressed" hover-stay-time="80">
+        <text>存草稿</text>
+      </view>
+      <view class="note-page__publish-button" bindtap="onPublishTap" hover-class="note-page__button--pressed" hover-stay-time="80">
+        <text>发表</text>
+      </view>
+    </view>
+  </view>
+
+  <note-video-player
+    visible="{{videoPlayerVisible}}"
+    src="{{videoPlayerSrc}}"
+    poster="{{videoPlayerPoster}}"
+    bind:close="onCloseVideoPlayer"
+  />
+</view>

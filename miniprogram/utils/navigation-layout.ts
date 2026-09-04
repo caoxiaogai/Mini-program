@@ -66,6 +66,24 @@ export function getNavigationBarLayout(): NavigationBarLayout {
   })
 }
 
+export function resolveNavActionsRight(input: {
+  windowWidth: number
+  titleRight: number
+  capsuleLeft: number
+  actionsWidth: number
+}): number {
+  const windowWidth = input.windowWidth > 0 ? input.windowWidth : 375
+  const titleRight = Number.isFinite(input.titleRight) ? input.titleRight : windowWidth / 2
+  const capsuleLeft = input.capsuleLeft > 0 ? input.capsuleLeft : windowWidth
+  const actionsWidth = Math.max(0, input.actionsWidth)
+  const gap = capsuleLeft - titleRight
+  if (gap <= 0) {
+    return Math.max(0, Math.round(windowWidth - capsuleLeft))
+  }
+  const actionsRight = Math.min(titleRight + gap / 2 + actionsWidth / 2, capsuleLeft)
+  return Math.max(0, Math.round(windowWidth - actionsRight))
+}
+
 export function toNavigationBarStyle(layout: NavigationBarLayout): {
   ios: boolean
   innerPaddingRight: string

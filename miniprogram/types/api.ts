@@ -225,7 +225,7 @@ export interface ApiMembershipOrder {
   expireAt: string | null
 }
 
-export type ApiMaterialFileType = 'PDF' | 'IMAGE' | 'VIDEO' | 'TABLE'
+export type ApiMaterialFileType = 'PDF' | 'IMAGE' | 'VIDEO' | 'TABLE' | 'NOTE'
 
 /** 素材实体（Material），fileUrl 为单个 URL 或多图 JSON 数组字符串 */
 export interface ApiMaterial {

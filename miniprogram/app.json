@@ -6,6 +6,7 @@
     "pages/material-detail/index",
     "pages/document-reader/index",
     "pages/materials/publish/index",
+    "pages/materials/note/index",
     "pages/ranking/index",
     "pages/notifications/notifications",
     "pages/analysis/index",
@@ -31,5 +32,11 @@
   },
   "componentFramework": "glass-easel",
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于在笔记中添加位置"
+    }
+  },
+  "requiredPrivateInfos": ["chooseLocation"]
 }

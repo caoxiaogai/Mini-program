@@ -6,12 +6,13 @@ import {
   createTrackingSessionId,
   reportTrackingEvent,
 } from '../../services/tracking'
+import { calcNoteScrollProgress } from '../../utils/note'
 import type { MaterialDetailViewModel } from '../../types/materials'
 import { buildReturnPath } from '../../utils/auth'
 import { MATERIAL_DELETED_MESSAGE } from '../../utils/material-deleted'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import {
-  buildMaterialPublishPath,
+  buildMaterialEditPath,
   buildMaterialSharePath,
   buildMaterialShareQuery,
   buildMaterialShareTitle,
@@ -46,6 +47,9 @@ Page({
     previewPinching: false,
     previewScale: 1,
     unavailableMessage: '',
+    videoPlayerVisible: false,
+    videoPlayerSrc: '',
+    videoPlayerPoster: '',
   },
 
   materialId: '',
@@ -78,6 +82,10 @@ Page({
   lastPreviewTapAt: 0,
   previewIgnoreTapUntil: 0,
   previewTapTimer: null as number | null,
+  noteScrollTimer: 0,
+  noteScrollReportTimer: 0,
+  lastNoteProgress: 0,
+  noteViewStartedAt: 0,
 
   onLoad(options: Record<string, string | undefined>) {
     runAuthed(buildReturnPath(MATERIAL_DETAIL_PATH, options), () => this.startDetail(options))
@@ -90,6 +98,8 @@ Page({
     this.hasReportedComplete = false
     this.imageViewStartedAt = 0
     this.lastVideoProgress = 0
+    this.lastNoteProgress = 0
+    this.noteViewStartedAt = 0
     this.videoCurrentTimeSec = 0
     this.videoDurationSec = 0
     this.videoTouchStartX = 0
@@ -129,6 +139,8 @@ Page({
           this.markImageViewed(0, detail)
         } else if (detail.fileType === 'VIDEO') {
           this.reportVideoProgress(false, detail)
+        } else if (detail.fileType === 'NOTE') {
+          this.startNoteScrollTracking()
         } else if (isDocumentMaterial(detail)) {
           this.reportDocumentView(detail)
         }
@@ -148,8 +160,10 @@ Page({
   onHide() {
     this.clearImageViewTimer()
     this.clearVideoProgressTimer()
+    this.clearNoteScrollTimer()
     this.reportImageViewProgress(true)
     this.reportVideoProgress(true)
+    this.reportNoteScrollProgress(true)
     this.reportDocumentView()
     this.getVideoContext()?.pause()
   },
@@ -157,8 +171,10 @@ Page({
   onUnload() {
     this.clearImageViewTimer()
     this.clearVideoProgressTimer()
+    this.clearNoteScrollTimer()
     this.reportImageViewProgress(true)
     this.reportVideoProgress(true)
+    this.reportNoteScrollProgress(true)
     this.reportDocumentView()
     this.getVideoContext()?.pause()
     this.clearPreviewTapTimer()
@@ -169,8 +185,21 @@ Page({
     this.lastVideoProgress = 0
     this.videoCurrentTimeSec = 0
     this.videoDurationSec = 0
+    this.lastNoteProgress = 0
+    this.noteViewStartedAt = 0
     this.pageTrackingId = ''
     this.materialId = ''
+  },
+
+  onBackPress() {
+    if (!this.data.videoPlayerVisible) return undefined
+    this.onCloseVideoPlayer()
+    return true
+  },
+
+  onPageScroll() {
+    if (this.data.detail?.fileType !== 'NOTE') return
+    this.scheduleNoteScrollReport()
   },
 
   resolveTrackingTarget(detail?: MaterialDetailViewModel) {
@@ -200,6 +229,69 @@ Page({
     return target.trackingId !== '' || target.materialId !== ''
   },
 
+  startNoteScrollTracking() {
+    if (this.noteViewStartedAt <= 0) this.noteViewStartedAt = Date.now()
+    this.reportNoteScrollProgress(false)
+    this.clearNoteScrollTimer()
+    this.noteScrollTimer = setInterval(() => {
+      this.reportNoteScrollProgress(false)
+    }, IMAGE_VIEW_INTERVAL_MS) as unknown as number
+  },
+
+  clearNoteScrollTimer() {
+    if (this.noteScrollTimer) {
+      clearInterval(this.noteScrollTimer)
+      this.noteScrollTimer = 0
+    }
+    if (this.noteScrollReportTimer) {
+      clearTimeout(this.noteScrollReportTimer)
+      this.noteScrollReportTimer = 0
+    }
+  },
+
+  scheduleNoteScrollReport() {
+    if (this.noteScrollReportTimer) return
+    this.noteScrollReportTimer = setTimeout(() => {
+      this.noteScrollReportTimer = 0
+      this.reportNoteScrollProgress(false)
+    }, 300) as unknown as number
+  },
+
+  getNoteViewDurationSec() {
+    if (this.noteViewStartedAt <= 0) return 0
+    return Math.max(0, Math.floor((Date.now() - this.noteViewStartedAt) / 1000))
+  },
+
+  reportNoteScrollProgress(isFinal = false) {
+    const detail = this.data.detail
+    if (!detail || detail.fileType !== 'NOTE' || !this.canTrackMaterial(detail)) return
+
+    wx.createSelectorQuery()
+      .selectViewport()
+      .scrollOffset((offset) => {
+        if (!offset) return
+        let viewportHeight = 0
+        try {
+          viewportHeight = wx.getSystemInfoSync().windowHeight || 0
+        } catch {
+          viewportHeight = 0
+        }
+        const progress = calcNoteScrollProgress(offset.scrollTop, offset.scrollHeight, viewportHeight)
+        if (!isFinal && progress <= this.lastNoteProgress) return
+        this.lastNoteProgress = Math.max(this.lastNoteProgress, progress)
+        const target = this.resolveTrackingTarget(detail)
+        reportTrackingEvent({
+          trackingId: target.trackingId,
+          materialId: target.materialId,
+          actionType: this.lastNoteProgress >= 100 ? 'end' : 'play',
+          progress: this.lastNoteProgress,
+          duration: this.getNoteViewDurationSec(),
+          sessionId: this.trackingSessionId,
+        })
+      })
+      .exec()
+  },
+
   onPdfOpenTap() {
     const detail = this.data.detail
     if (!detail || !isDocumentMaterial(detail)) return
@@ -218,6 +310,71 @@ Page({
     }
 
     wx.navigateTo({ url: `/pages/document-reader/index?${query.join('&')}` })
+  },
+
+  onNoteLocationTap(event: WechatMiniprogram.TouchEvent) {
+    const { latitude, longitude, name, address } = event.currentTarget.dataset
+    const lat = Number(latitude)
+    const lng = Number(longitude)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return
+    wx.openLocation({
+      latitude: lat,
+      longitude: lng,
+      name: String(name ?? ''),
+      address: String(address ?? ''),
+    })
+  },
+
+  onNoteVideoTap(event: WechatMiniprogram.TouchEvent) {
+    const path = String(event.currentTarget.dataset.path ?? '')
+    if (!path) {
+      wx.showToast({ title: '视频不存在', icon: 'none' })
+      return
+    }
+    this.setData({
+      videoPlayerVisible: true,
+      videoPlayerSrc: path,
+      videoPlayerPoster: String(event.currentTarget.dataset.cover ?? ''),
+    })
+  },
+
+  onCloseVideoPlayer() {
+    this.setData({
+      videoPlayerVisible: false,
+      videoPlayerSrc: '',
+      videoPlayerPoster: '',
+    })
+  },
+
+  onNoteFileTap(event: WechatMiniprogram.TouchEvent) {
+    const path = String(event.currentTarget.dataset.path ?? '')
+    if (!path) {
+      wx.showToast({ title: '文件不存在', icon: 'none' })
+      return
+    }
+
+    const openLocal = (filePath: string) => {
+      // 笔记内文件不进文档阅读页，避免单独记 PDF 页进度。
+      wx.openDocument({
+        filePath,
+        showMenu: true,
+        fail: () => wx.showToast({ title: '无法打开文件', icon: 'none' }),
+      })
+    }
+
+    if (!/^https?:\/\//.test(path)) {
+      openLocal(path)
+      return
+    }
+
+    wx.downloadFile({
+      url: path,
+      success: (result) => {
+        if (result.statusCode === 200 && result.tempFilePath) openLocal(result.tempFilePath)
+        else wx.showToast({ title: '无法打开文件', icon: 'none' })
+      },
+      fail: () => wx.showToast({ title: '无法打开文件', icon: 'none' }),
+    })
   },
 
   onImageTap(event: WechatMiniprogram.TouchEvent) {
@@ -782,6 +939,6 @@ Page({
   onSecondaryEditTap() {
     const detail = this.data.detail
     if (!detail || !detail.isOwner) return
-    wx.navigateTo({ url: buildMaterialPublishPath(detail.id, true) })
+    wx.navigateTo({ url: buildMaterialEditPath(detail.id, detail.fileType === 'NOTE' ? 'note' : '', true) })
   },
 })

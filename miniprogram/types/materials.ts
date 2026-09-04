@@ -1,4 +1,7 @@
+import type { NoteDisplayBlock } from './note'
+
 export type MaterialsFilterId = 'all' | 'image' | 'video' | 'pdf'
+export type MaterialCardKind = Exclude<MaterialsFilterId, 'all'> | 'note'
 
 export interface MaterialsFilterViewModel {
   id: MaterialsFilterId
@@ -10,7 +13,7 @@ export interface MaterialCardViewModel {
   title: string
   date: string
   thumbnailUrl: string
-  kind: Exclude<MaterialsFilterId, 'all'>
+  kind: MaterialCardKind
   isDraft?: boolean
   selected?: boolean
 }
@@ -34,6 +37,8 @@ export interface MaterialDetailViewModel {
   /** PDF/表格展示文件名（仅 PDF、TABLE） */
   pdfFileName: string
   descriptionLines: string[]
+  /** 笔记块；仅 fileType=NOTE */
+  noteBlocks: NoteDisplayBlock[]
   /** 当前登录用户是否为素材作者；作者详情显示二次编辑，访客仍显示分享到朋友圈 */
   isOwner: boolean
 }

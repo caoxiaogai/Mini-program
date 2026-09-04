@@ -3,7 +3,7 @@ import { runAuthed } from '../../services/auth'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
-import { buildMaterialDetailPath, buildMaterialPublishPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, MATERIAL_NOTE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
@@ -164,7 +164,7 @@ Page({
     if (!material) return
 
     const url = material.isDraft
-      ? buildMaterialPublishPath(materialId)
+      ? buildMaterialEditPath(materialId, material.kind)
       : buildMaterialDetailPath(materialId)
 
     wx.navigateTo({ url })
@@ -254,6 +254,10 @@ Page({
   onPublishTypeSelect(event: WechatMiniprogram.CustomEvent<{ type: PublishEntryType }>) {
     const type = event.detail.type
     this.setData({ publishTypeSheetVisible: false }, () => {
+      if (type === 'note') {
+        wx.navigateTo({ url: MATERIAL_NOTE_PATH })
+        return
+      }
       if (type === 'pdf') {
         this.choosePdfForPublish()
         return
