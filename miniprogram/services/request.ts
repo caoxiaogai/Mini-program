@@ -219,6 +219,7 @@ let cachedUser: ApiLoginData | null = null
 
 function persistLogin(data: ApiLoginData): ApiLoginData {
   cachedUser = data
+  wx.setStorageSync(STORAGE_KEY_AUTHORIZED, '1')
   wx.setStorageSync(STORAGE_KEY_USER_ID, data.userId)
   wx.setStorageSync(STORAGE_KEY_OPENID, data.openid)
   wx.setStorageSync(STORAGE_KEY_NICKNAME, data.nickname ?? '')

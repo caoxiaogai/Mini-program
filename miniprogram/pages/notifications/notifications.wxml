@@ -2,7 +2,7 @@
   <notification-header navigation-height="{{notificationNavigationHeight}}" filters="{{notifications.filters}}" active-filter="{{activeFilter}}" bind:filtertap="onFilterTap" />
 
   <view wx:if="{{notifications}}" class="notification-page__content">
-    <view wx:if="{{notifications.showVisitorLimitPrompt}}" class="notification-membership-limit"><membership-limit-prompt action-label="{{notifications.limitPromptActionLabel}}" bind:upgrade="onMembershipLimitUpgrade" /></view>
+    <view wx:if="{{notifications.showVisitorLimitPrompt}}" class="notification-membership-limit"><membership-limit-prompt style="display: block; height: 63px;" variant="visitor" visitor-count="{{notifications.limitPromptVisitorCount}}" visitor-avatars="{{notifications.limitPromptVisitorAvatars}}" bind:upgrade="onMembershipLimitUpgrade" /></view>
     <view wx:if="{{hasVisibleGroups}}">
       <view wx:for="{{visibleGroups}}" wx:key="id" class="notification-group {{index > 0 ? 'notification-group--spaced' : ''}}">
         <text class="notification-group__date">{{item.label}}</text>
@@ -46,11 +46,15 @@
     </view>
 
     <view wx:else class="notification-empty-state">
-      <image class="notification-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
-      <text>暂无意向用户</text>
+      <image class="notification-empty-state__icon" src="/assets/home-new/empty-state-box.svg" mode="aspectFit" />
+      <text class="notification-empty-state__message">暂无待跟进客户，快去分享作品吧</text>
+      <view class="notification-empty-state__share" bindtap="onPlusTap" hover-class="notification-empty-state__share--pressed" hover-stay-time="80">
+        <text class="notification-empty-state__share-label">去分享</text>
+        <image class="notification-empty-state__share-icon" src="/assets/home-new/share-action.svg" mode="aspectFit" />
+      </view>
     </view>
   </view>
-  <view wx:else class="notification-page__loading">正在加载通知</view>
+  <loading-skeleton wx:else variant="list" />
 
   <notification-mark-all-read wx:if="{{unreadNotificationCount}}" unread-count="{{unreadNotificationCount}}" bind:markallread="onMarkAllReadTap" />
   <bottom-tab-bar items="{{tabItems}}" bind:tabtap="onTabTap" bind:plus="onPlusTap" />

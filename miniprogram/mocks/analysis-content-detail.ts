@@ -14,24 +14,15 @@ export const analysisContentDetailPreview: AnalysisContentDetailViewModel = {
       { label: '观看人数', value: '1,231' },
     ],
   },
-  intentUsers: [
-    { id: 'preview-xiaogai-1', userId: 'preview-xiaogai', avatarUrl: '/assets/analysis/user-avatar-01.jpg', name: 'xiaogai', level: 'high', levelLabel: '高意向', readCount: '50', completionCount: '4', shareCount: '4' },
-    { id: 'preview-xiaogai-2', userId: 'preview-xiaogai', avatarUrl: '/assets/analysis/user-avatar-02.jpg', name: 'xiaogai', level: 'high', levelLabel: '高意向', readCount: '50', completionCount: '4', shareCount: '4' },
-    { id: 'preview-xiaogai-3', userId: 'preview-xiaogai', avatarUrl: '/assets/analysis/user-avatar-03.jpg', name: 'xiaogai', level: 'high', levelLabel: '高意向', readCount: '50', completionCount: '4', shareCount: '4' },
-    { id: 'preview-happy-goose', userId: 'preview-happy-goose', avatarUrl: '/assets/analysis/user-avatar-04.jpg', name: '快乐小鹅', level: 'medium', levelLabel: '中意向', readCount: '50', completionCount: '1', shareCount: '4' },
-    { id: 'preview-laicai-1', userId: 'preview-laicai', avatarUrl: '/assets/analysis/user-avatar-05.jpg', name: '来财来财', level: 'low', levelLabel: '低意向', readCount: '50', completionCount: '2', shareCount: '4' },
-    { id: 'preview-laicai-2', userId: 'preview-laicai', avatarUrl: '/assets/analysis/user-avatar-06.jpg', name: '来财来财', level: 'low', levelLabel: '低意向', readCount: '50', completionCount: '2', shareCount: '4' },
-    { id: 'preview-laicai-3', userId: 'preview-laicai', avatarUrl: '/assets/analysis/user-avatar-07.jpg', name: '来财来财', level: 'low', levelLabel: '低意向', readCount: '50', completionCount: '2', shareCount: '4' },
-    { id: 'preview-laicai-4', userId: 'preview-laicai', avatarUrl: '/assets/analysis/user-avatar-05.jpg', name: '来财来财', level: 'low', levelLabel: '低意向', readCount: '50', completionCount: '2', shareCount: '4' },
-    { id: 'preview-laicai-5', userId: 'preview-laicai', avatarUrl: '/assets/analysis/user-avatar-06.jpg', name: '来财来财', level: 'low', levelLabel: '低意向', readCount: '50', completionCount: '2', shareCount: '4' },
-  ],
+  // TODO(API): 接入作品意向用户真实接口后，由 service 层提供用户头像和统计数据。
+  intentUsers: [],
 }
 
 /** Figma 743:3561 作品分析预览数据，供首页分析 Tab 离线排版使用。 */
 export const analysisOverviewPreview: AnalysisViewModel = {
   summary: [
-    { label: '总阅读次数', value: '24,234', iconPath: '/assets/analysis/total-view-icon.svg' },
-    { label: '总转发', value: '1,223', iconPath: '/assets/analysis/total-forward-icon.svg' },
+    { label: '总阅读次数', value: '24,234', iconPath: '/assets/analysis/icon-read.svg' },
+    { label: '总转发', value: '1,223', iconPath: '/assets/analysis/icon-forward.svg' },
   ],
   workCount: '10',
   cards: [
@@ -42,9 +33,9 @@ export const analysisOverviewPreview: AnalysisViewModel = {
     { id: 'preview-work-5', thumbnailUrl: '/assets/analysis/content-figma-lake.jpg', title: '资深AI-Native 全栈产品教程，一人...', date: '2026-08-20', publishedAt: '8 月 20 17:00', intentLevel: 'medium', intentLabel: '3 个中意向', metrics: [], compactMetrics: [{ label: '浏览次数', value: '0' }, { label: '转发', value: '1' }, { label: '完播', value: '0' }], sortCounts: { view: 0, share: 1, completion: 0 } },
   ],
   userSummary: [
-    { label: '高意向', value: '4,234', iconPath: '/assets/analysis/intent-high-icon.svg' },
-    { label: '中意向', value: '1,223', iconPath: '/assets/analysis/intent-middle-icon.svg' },
-    { label: '低意向', value: '1,223', iconPath: '/assets/analysis/intent-low-icon.svg' },
+    { label: '高意向', value: '4,234', iconPath: '/assets/analysis/intent-summary-high.svg' },
+    { label: '中意向', value: '1,223', iconPath: '/assets/analysis/intent-summary-medium.svg' },
+    { label: '低意向', value: '1,223', iconPath: '/assets/analysis/intent-summary-low.svg' },
   ],
   audienceUsers: analysisContentDetailPreview.intentUsers,
   visitorLimit: null,

@@ -1,4 +1,4 @@
-import type { MembershipUiTier } from './membership'
+import type { MembershipUiTier, VisitorLimitPromptAvatarViewModel } from './membership'
 
 export type HomeIntentLevel = 'high' | 'medium' | 'low'
 
@@ -58,6 +58,8 @@ export interface HomePageViewModel {
   showVisitorLimitPrompt: boolean
   limitPromptActionLabel: string
   limitPromptTargetTier: MembershipUiTier
+  limitPromptVisitorCount: number
+  limitPromptVisitorAvatars: VisitorLimitPromptAvatarViewModel[]
   notifications: HomeNotificationViewModel[]
   contents: HomeContentViewModel[]
   intentSummary: HomeIntentSummaryViewModel

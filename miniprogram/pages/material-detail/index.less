@@ -122,7 +122,7 @@ page {
   position: relative;
   overflow: hidden;
   border-radius: 16rpx;
-  background: #dee2e7;
+  background: #ebebeb;
 }
 
 .note-detail__media--pressed {
@@ -132,7 +132,7 @@ page {
 .note-detail__video-fallback {
   width: 100%;
   height: 420rpx;
-  background: #d5d8dc;
+  background: #ebebeb;
 }
 
 .note-detail__play {
@@ -149,14 +149,14 @@ page {
   display: block;
   width: 100%;
   height: 1052rpx;
-  background: #DEE2E7;
+  background: #ebebeb;
 }
 
 .material-detail__media {
   position: relative;
   width: 100%;
   height: 1052rpx;
-  background: #dee2e7;
+  background: #ebebeb;
 }
 
 .material-detail__media--video {
@@ -306,14 +306,114 @@ page {
 }
 
 .material-detail__share-button--friend {
-  background: #ffffff;
+  border: 1px solid #808080;
+  background: #f8f9fa;
   color: #000000;
 }
 
 .material-detail__share-button--moments,
 .material-detail__share-button--edit {
-  background: #0db6c5;
+  background: #ff8901;
   color: #ffffff;
+}
+
+.material-detail-owner-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1001;
+  height: calc(164rpx + env(safe-area-inset-bottom));
+  border-top: 1px solid #f0f0f0;
+  background: @app-page-background;
+  box-sizing: border-box;
+}
+
+.material-detail-owner-bar__action,
+.material-detail-owner-bar__share {
+  position: absolute;
+  top: 34rpx;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.material-detail-owner-bar__action {
+  left: 31rpx;
+  width: 92rpx;
+  height: 92rpx;
+  border: 0;
+  background: transparent;
+  line-height: 0;
+}
+
+.material-detail-owner-bar__action::after,
+.material-detail-owner-bar__share::after {
+  display: none;
+}
+
+.material-detail-owner-bar__action image {
+  display: block;
+  width: 92rpx;
+  height: 92rpx;
+}
+
+.material-detail-owner-bar__action--edit {
+  left: 145rpx;
+}
+
+.material-detail-owner-bar__share {
+  display: flex;
+  width: 191rpx;
+  height: 92rpx;
+  align-items: center;
+  justify-content: center;
+  gap: 19rpx;
+  border-radius: 110rpx;
+  font-size: 28rpx;
+  line-height: normal;
+  white-space: nowrap;
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.material-detail-owner-bar__share--friend {
+  left: 311rpx;
+  border: 1px solid #808080;
+  background: #f8f9fa;
+  color: #000000;
+}
+
+.material-detail-owner-bar__share--moments {
+  left: 521rpx;
+  border: 0;
+  background: #ff8901;
+  color: #ffffff;
+}
+
+.material-detail-owner-bar__share-icon,
+.material-detail-owner-bar__moments-icon {
+  flex: 0 0 46rpx;
+  width: 46rpx;
+  height: 46rpx;
+}
+
+.material-detail-owner-bar__moments-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.material-detail-owner-bar__moments-icon image {
+  width: 34rpx;
+  height: 34rpx;
+}
+
+.material-detail-owner-bar__action--pressed,
+.material-detail-owner-bar__share--pressed {
+  opacity: 0.72;
+  transform: scale(0.98);
 }
 
 .material-detail__share-button--pressed {

@@ -1,13 +1,14 @@
 <view class="analysis-page" style="--analysis-navigation-height: {{analysisNavigationHeight}}px;">
   <analysis-header back="{{false}}" title-weight="600" navigation-height="{{analysisNavigationHeight}}" analysis-tabs="{{analysisTabs}}" active-analysis-tab="{{activeAnalysisTab}}" analysis-tab-offset="{{analysisTabOffset}}" bind:analysistabtap="onAnalysisTabTap" bind:analysistouchstart="onAnalysisTouchStart" bind:analysistouchend="onAnalysisTouchEnd" />
+  <loading-skeleton wx:if="{{!analysisData}}" variant="analysis" />
   <view wx:if="{{analysisData && activeAnalysisTab === 'work'}}" class="analysis-page__content analysis-page__content--work">
     <view class="analysis-work-panel analysis-work-panel--figma">
       <view class="analysis-summary analysis-summary--redesign">
         <view wx:for="{{workSummary}}" wx:key="label" class="analysis-summary__card"><image class="analysis-summary__icon" src="{{item.iconPath}}" mode="aspectFit" /><view class="analysis-summary__copy"><text class="analysis-summary__value">{{item.value}}</text><text class="analysis-summary__label">{{item.label}}</text></view></view>
       </view>
-      <view class="analysis-work-list">
+      <view class="analysis-work-list {{hasAnalysisCards ? '' : 'analysis-work-list--empty'}}">
         <view class="analysis-work-header">
-          <image class="analysis-work-header__icon" src="/assets/analysis/my-works-icon.svg" mode="aspectFit" />
+          <image class="analysis-work-header__icon" src="/assets/analysis/icon-collect.svg" mode="aspectFit" />
           <text class="analysis-work-header__title">我的作品 <text class="analysis-work-count">（{{workCount}}）</text></text>
         </view>
         <view class="analysis-work-body">
@@ -31,15 +32,21 @@
               <view class="analysis-work-card__metrics"><view wx:for="{{item.compactMetrics}}" wx:key="label" class="analysis-work-card__metric"><text>{{item.label}}</text><text class="analysis-work-card__metric-value">{{item.value}}</text></view></view>
             </view>
           </view>
-          <view wx:else class="analysis-empty-state analysis-empty-state--work">
-            <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
-            <text>还没有作品，你可以发布一个</text>
+          <view wx:else class="analysis-work-empty">
+            <view class="analysis-work-empty__copy">
+              <image class="analysis-work-empty__icon" src="/assets/analysis/empty-state-work.svg" mode="aspectFit" />
+              <text class="analysis-work-empty__message">你还没有作品，去发布作品吧</text>
+            </view>
+            <view class="analysis-work-empty__publish" bindtap="onWorkEmptyPublishTap" hover-class="analysis-work-empty__publish--pressed" hover-stay-time="80" aria-role="button" aria-label="发布作品">
+              <text>发布作品</text>
+              <view class="analysis-work-empty__plus" aria-hidden="true"><view class="analysis-work-empty__plus-horizontal" /><view class="analysis-work-empty__plus-vertical" /></view>
+            </view>
           </view>
         </view>
       </view>
     </view>
   </view>
-  <view wx:if="{{analysisData && activeAnalysisTab === 'user'}}" class="analysis-page__content">
+  <view wx:if="{{analysisData && activeAnalysisTab === 'user'}}" class="analysis-page__content analysis-page__content--user">
     <view class="analysis-user-panel">
       <view class="analysis-user__summary">
         <view wx:for="{{analysisData.userSummary}}" wx:key="label" class="analysis-user__summary-card">
@@ -47,8 +54,8 @@
           <view class="analysis-user__summary-copy"><text class="analysis-user__summary-value">{{item.value}}</text><text class="analysis-user__summary-label">{{item.label}}</text></view>
         </view>
       </view>
-      <text class="analysis-user__title">意向用户</text>
       <view class="analysis-user__list-panel">
+        <view class="analysis-user__header"><image class="analysis-user__header-icon" src="/assets/analysis/intent-customer-header.svg" mode="aspectFit" /><text class="analysis-user__header-title">意向客户<text class="analysis-user__header-count">（{{analysisData.audienceUsers.length}}）</text></text></view>
         <view class="analysis-filters analysis-filters--redesign">
           <segmented-filter items="{{analysisPeriods}}" active-id="{{activePeriod}}" item-width="68" bind:change="onPeriodTap" />
           <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
@@ -66,8 +73,12 @@
           </view>
         </view>
         <view wx:else class="analysis-empty-state analysis-empty-state--user">
-          <image class="analysis-empty-state__icon" src="/assets/analysis/empty-state-cloud.png" mode="aspectFill" />
-          <text>还没用户，快去发布作品吧</text>
+          <image class="analysis-empty-state__icon" src="/assets/home-new/empty-state-box.svg" mode="aspectFit" />
+          <text class="analysis-empty-state__message">暂无待跟进客户，快去分享作品吧</text>
+          <view class="analysis-empty-state__share" bindtap="onPlusTap" hover-class="analysis-empty-state__share--pressed" hover-stay-time="80" aria-role="button" aria-label="去分享">
+            <text class="analysis-empty-state__share-label">去分享</text>
+            <image class="analysis-empty-state__share-icon" src="/assets/home-new/share-action.svg" mode="aspectFit" />
+          </view>
         </view>
       </view>
     </view>

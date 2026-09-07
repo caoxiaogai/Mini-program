@@ -137,8 +137,8 @@ function mapContentCard(
 
 function buildWorkSummary(dashboard: ApiDashboard): AnalysisMetric[] {
   return [
-    { label: '总浏览次数', value: formatCount(dashboard.totalViewCount), iconPath: '/assets/analysis/total-view-icon.svg' },
-    { label: '总转发', value: formatCount(dashboard.totalForwardCount), iconPath: '/assets/analysis/total-forward-icon.svg' },
+    { label: '总浏览次数', value: formatCount(dashboard.totalViewCount), iconPath: '/assets/analysis/icon-read.svg' },
+    { label: '总转发', value: formatCount(dashboard.totalForwardCount), iconPath: '/assets/analysis/icon-forward.svg' },
   ]
 }
 
@@ -511,9 +511,9 @@ export function getAnalysisOverview(
       cards,
       workCount: formatCount(dashboard.totalPublishCount),
       userSummary: [
-        { label: '高意向', value: formatCount(dashboard.highIntentCount), iconPath: '/assets/analysis/intent-high-icon.svg' },
-        { label: '中意向', value: formatCount(dashboard.mediumIntentCount), iconPath: '/assets/analysis/intent-middle-icon.svg' },
-        { label: '低意向', value: formatCount(dashboard.lowIntentCount), iconPath: '/assets/analysis/intent-low-icon.svg' },
+        { label: '高意向', value: formatCount(dashboard.highIntentCount), iconPath: '/assets/analysis/intent-summary-high.svg' },
+        { label: '中意向', value: formatCount(dashboard.mediumIntentCount), iconPath: '/assets/analysis/intent-summary-medium.svg' },
+        { label: '低意向', value: formatCount(dashboard.lowIntentCount), iconPath: '/assets/analysis/intent-summary-low.svg' },
       ],
       audienceUsers: (customers ?? []).map((customer) => {
         const customerId = String(customer.customerId)

@@ -1,9 +1,7 @@
 <view class="user-journey-page">
-  <navigation-bar title="用户轨迹" back="{{true}}" color="#000000" background="#f0f1f2" />
+  <navigation-bar title="用户轨迹" back="{{true}}" color="#000000" background="#ffffff" />
 
-  <view wx:if="{{status === 'loading'}}" class="user-journey-page__state">
-    <text>正在加载轨迹...</text>
-  </view>
+  <loading-skeleton wx:if="{{status === 'loading'}}" variant="detail" />
 
   <view wx:elif="{{status === 'error'}}" class="user-journey-page__state">
     <text>{{errorMessage}}</text>
@@ -36,9 +34,5 @@
         </view>
       </view>
     </view>
-
-    <view class="user-journey-contact" bindtap="onContactTap" hover-class="user-journey-contact--pressed" hover-start-time="80" hover-stay-time="120">联系用户</view>
   </view>
-
-  <view wx:if="{{noticeVisible}}" class="user-journey-copy-feedback">微信名称复制成功，关闭小程序后，前往微信联系用户。</view>
 </view>

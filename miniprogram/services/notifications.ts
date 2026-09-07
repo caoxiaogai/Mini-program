@@ -12,6 +12,7 @@ import {
 import { keepEventsForVisitorLimit, shouldShowVisitorLimitPrompt, visitorLimitPromptActionLabel, visitorLimitPromptTargetTier } from '../utils/membership'
 import { getMembershipAccessSilent } from './membership'
 import { request, resolveMediaUrl } from './request'
+import { buildVisitorLimitPromptViewModel, SHOW_VISITOR_LIMIT_PROMPT_PREVIEW } from './visitor-limit-prompt'
 
 /** 后端查询时间范围上限（custom 最长 62 天） */
 export const NOTIFICATION_RANGE_DAYS = 62
@@ -34,11 +35,9 @@ export function getNotifications(): Promise<NotificationsViewModel> {
     request<ApiNotificationEvent[]>({ method: 'GET', path: '/analysis/notify/list', query: { ...rangeQuery } }),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
     getMembershipAccessSilent(),
-  ]).then(([events, materials, membershipAccess]) => {
-    const visibleEvents = keepEventsForVisitorLimit(
-      (events ?? []).filter((event) => event != null),
-      membershipAccess.visitorLimit,
-    )
+  ]).then(async ([events, materials, membershipAccess]) => {
+    const notificationEvents = (events ?? []).filter((event) => event != null)
+    const visibleEvents = keepEventsForVisitorLimit(notificationEvents, membershipAccess.visitorLimit)
     const materialById = new Map((materials ?? []).map((material) => [String(material.id), material]))
     const sources = [...materialById.values()].map((material) => ({
       id: String(material.id),
@@ -72,12 +71,16 @@ export function getNotifications(): Promise<NotificationsViewModel> {
       )
     })
 
+    const limitPrompt = await buildVisitorLimitPromptViewModel(notificationEvents, membershipAccess.visitorLimit)
+
     return {
       filters: notificationFilters,
       groups: groupNotificationCards(cards),
-      showVisitorLimitPrompt: shouldShowVisitorLimitPrompt(membershipAccess),
+      showVisitorLimitPrompt: SHOW_VISITOR_LIMIT_PROMPT_PREVIEW || shouldShowVisitorLimitPrompt(membershipAccess),
       limitPromptActionLabel: visitorLimitPromptActionLabel(membershipAccess.tier),
       limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
+      limitPromptVisitorCount: limitPrompt.visitorCount,
+      limitPromptVisitorAvatars: limitPrompt.avatars,
     }
   })
 }

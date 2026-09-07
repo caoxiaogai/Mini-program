@@ -3,9 +3,7 @@
     <navigation-bar title="{{navTitle}}" back="{{true}}" color="#000000" background="#ffffff" />
   </view>
 
-  <view wx:if="{{status === 'loading'}}" class="document-reader__state">
-    <text>正在加载文档...</text>
-  </view>
+  <loading-skeleton wx:if="{{status === 'loading'}}" variant="document" />
 
   <view wx:elif="{{status === 'error'}}" class="document-reader__state">
     <text>{{errorMessage}}</text>

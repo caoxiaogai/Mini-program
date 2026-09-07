@@ -19,24 +19,18 @@ page {
 .detail-page__content {
   display: flex;
   flex-direction: column;
-  gap: 32rpx;
-  padding: 20rpx 40rpx 80rpx;
+  gap: 20px;
+  padding: 20px 40rpx 80rpx;
   box-sizing: border-box;
-}
-
-.detail-page__loading {
-  padding: 80rpx 40rpx;
-  color: #8a8e94;
-  font-size: 28rpx;
-  text-align: center;
 }
 
 .detail-card {
   display: flex;
   flex-direction: column;
-  gap: 30rpx;
-  padding: 30rpx 40rpx;
-  border-radius: 32rpx;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid #808080;
+  border-radius: 20px;
   background: #ffffff;
   box-sizing: border-box;
 }
@@ -44,14 +38,14 @@ page {
 .detail-card__head {
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  gap: 10px;
 }
 
 .detail-card__thumbnail {
-  width: 100rpx;
-  height: 136rpx;
+  width: 50px;
+  height: 68px;
   flex: none;
-  border-radius: 16rpx;
+  border-radius: 8px;
   background: #d9e4ef;
 }
 
@@ -62,17 +56,18 @@ page {
 .detail-card__identity {
   display: flex;
   min-width: 0;
+  height: 68px;
   flex: 1;
   flex-direction: column;
-  gap: 16rpx;
+  justify-content: space-between;
 }
 
 .detail-card__title {
   overflow: hidden;
   color: #000000;
-  font-size: 30rpx;
-  font-weight: 500;
-  line-height: 46rpx;
+  font-size: 15px;
+  font-weight: 510;
+  line-height: 23px;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -81,7 +76,7 @@ page {
 
 .detail-card__date {
   color: #999999;
-  font-size: 28rpx;
+  font-size: 12px;
   line-height: normal;
   white-space: nowrap;
 }
@@ -95,58 +90,77 @@ page {
 .detail-card__metric {
   display: flex;
   min-width: 0;
-  flex: 1;
   flex-direction: column;
   align-items: center;
-  gap: 8rpx;
+  gap: 4px;
 }
 
 .detail-card__metric-value {
   color: #000000;
-  font-size: 32rpx;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 510;
   line-height: normal;
 }
 
 .detail-card__metric-label {
   color: #8a8e94;
-  font-size: 24rpx;
+  font-size: 12px;
   line-height: normal;
 }
 
 .detail-intent {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
-}
-
-.detail-intent__title {
-  color: #8a8e94;
-  font-size: 28rpx;
-  font-weight: 500;
-  line-height: normal;
+  min-height: 473px;
 }
 
 .detail-intent__panel {
   display: flex;
+  min-height: 473px;
   flex-direction: column;
-  gap: 30rpx;
-  padding: 30rpx 30rpx 40rpx;
-  border-radius: 32rpx;
+  gap: 20px;
+  padding: 0 20px 20px;
+  border: 1px solid #808080;
+  border-radius: 20px;
   background: #ffffff;
   box-sizing: border-box;
+}
+
+.detail-intent__header {
+  display: flex;
+  width: 100%;
+  height: 35px;
+  align-items: center;
+  gap: 5px;
+  padding-top: 15px;
+  box-sizing: border-box;
+}
+
+.detail-intent__header-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.detail-intent__header-title {
+  color: #333333;
+  font-size: 14px;
+  font-weight: 510;
+  line-height: normal;
+  white-space: nowrap;
 }
 
 .detail-users {
   display: flex;
   flex-direction: column;
-  gap: 30rpx;
+  gap: 15px;
 }
 
 .detail-user {
   display: flex;
+  min-height: 60px;
   align-items: flex-start;
-  gap: 22rpx;
+  gap: 11px;
   transition: opacity 120ms ease-out;
 }
 
@@ -155,8 +169,8 @@ page {
 }
 
 .detail-user__avatar {
-  width: 88rpx;
-  height: 88rpx;
+  width: 44px;
+  height: 44px;
   flex: none;
   border-radius: 50%;
   background: #d9e4ef;
@@ -165,37 +179,38 @@ page {
 .detail-user__body {
   display: flex;
   min-width: 0;
+  height: 60px;
   flex: 1;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 15px;
 }
 
 .detail-user__identity {
   display: flex;
   align-items: center;
-  gap: 24rpx;
+  gap: 12px;
   min-width: 0;
-  height: 44rpx;
+  height: 22px;
 }
 
 .detail-user__name {
   overflow: hidden;
   color: #000000;
-  font-size: 32rpx;
-  line-height: 44rpx;
+  font-size: 16px;
+  line-height: 22px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .detail-user__tag {
   display: flex;
-  height: 40rpx;
+  height: 20px;
   align-items: center;
   justify-content: center;
   flex: none;
-  padding: 0 20rpx;
-  border-radius: 96rpx;
-  font-size: 22rpx;
+  padding: 0 10px;
+  border-radius: 48px;
+  font-size: 11px;
   line-height: normal;
   white-space: nowrap;
 }
@@ -218,18 +233,18 @@ page {
 .detail-user__stats {
   display: flex;
   align-items: center;
-  gap: 40rpx;
-  height: 44rpx;
+  gap: 20px;
+  height: 22px;
   color: #333333;
-  font-size: 24rpx;
-  line-height: 44rpx;
+  font-size: 12px;
+  line-height: 22px;
   white-space: nowrap;
 }
 
 .detail-user__stat {
   display: flex;
   align-items: center;
-  gap: 8rpx;
+  gap: 4px;
 }
 
 .detail-user__stat text:first-child {
@@ -237,39 +252,77 @@ page {
 }
 
 .detail-user__divider {
-  width: 2rpx;
-  height: 20rpx;
+  width: 1px;
+  height: 10px;
   flex: none;
   background: #b0b0b0;
 }
 
 .detail-user__line {
   width: 100%;
-  height: 2rpx;
-}
-
-.detail-user__line--high,
-.detail-user__line--medium {
-  background: #f0f0f0;
-}
-
-.detail-user__line--low {
+  height: 1px;
   background: #f4f5f5;
 }
 
 .detail-intent__empty {
   display: flex;
   min-height: 320rpx;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10rpx;
+  gap: 10px;
+  padding: 20px 0;
   color: #8a8e94;
-  font-size: 26rpx;
+  font-size: 12px;
   line-height: normal;
+  box-sizing: border-box;
 }
 
 .detail-intent__empty-icon {
-  width: 78rpx;
-  height: 78rpx;
+  display: block;
+  flex: none;
+  width: 37px;
+  height: 27px;
+}
+
+.detail-intent__empty-message {
+  width: 100%;
+  color: #8a8e94;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: normal;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.detail-intent__empty-share {
+  display: flex;
+  width: 120px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 24px;
+  border-radius: 53px;
+  background: linear-gradient(180deg, #ff8901 0%, #ff8900 100%);
+  box-sizing: border-box;
+}
+
+.detail-intent__empty-share--pressed {
+  opacity: .72;
+}
+
+.detail-intent__empty-share-label {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 590;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.detail-intent__empty-share-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
 }

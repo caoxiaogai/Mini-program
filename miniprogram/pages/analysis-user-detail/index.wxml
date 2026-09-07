@@ -1,25 +1,29 @@
 <view class="user-detail-page">
   <view class="user-detail-page__header">
-    <navigation-bar title="用户详情" back="{{true}}" color="#000000" background="#f0f1f2" />
+    <navigation-bar title="用户详情" back="{{true}}" color="#000000" background="#ffffff" />
   </view>
+
+  <loading-skeleton wx:if="{{!detail}}" variant="user-detail" />
 
   <view wx:if="{{detail}}" class="user-detail-page__content">
     <view class="user-detail__profile-card">
-      <view class="user-detail__profile-main">
-        <image class="user-detail__avatar" src="{{detail.profile.avatarUrl}}" mode="aspectFill" />
-        <view class="user-detail__profile-body">
-          <view class="user-detail__identity">
-            <text class="user-detail__name" bindtap="onCopyUsername">{{detail.profile.name}}</text>
-            <text wx:if="{{detail.profile.highIntentContentCount}}" class="user-detail__high-intent">#对{{detail.profile.highIntentContentCount}}个作品高意向</text>
+      <view class="user-detail__profile-summary">
+        <view class="user-detail__profile-main">
+          <image class="user-detail__avatar" src="{{detail.profile.avatarUrl}}" mode="aspectFill" />
+          <view class="user-detail__profile-body">
+            <view class="user-detail__identity">
+              <text class="user-detail__name" bindtap="onCopyUsername">{{detail.profile.name}}</text>
+              <text wx:if="{{detail.profile.highIntentContentCount}}" class="user-detail__high-intent">{{detail.profile.highIntentContentCount}} 个高意向</text>
+            </view>
           </view>
         </view>
-      </view>
 
-      <view class="user-detail__metrics">
-        <view class="user-detail__metric"><text>浏览次数</text><text>{{detail.profile.readCount}}</text></view>
-        <view class="user-detail__metric"><text>完播</text><text>{{detail.profile.completionCount}}</text></view>
-        <view class="user-detail__metric"><text>转发</text><text>{{detail.profile.shareCount}}</text></view>
-        <view class="user-detail__metric"><text>观看时长</text><text>{{detail.profile.viewDuration}}</text></view>
+        <view class="user-detail__metrics">
+          <view class="user-detail__metric"><text>阅读数</text><text>{{detail.profile.readCount}}</text></view>
+          <view class="user-detail__metric"><text>完播</text><text>{{detail.profile.completionCount}}</text></view>
+          <view class="user-detail__metric"><text>转发</text><text>{{detail.profile.shareCount}}</text></view>
+          <view class="user-detail__metric"><text>观看时长</text><text>{{detail.profile.viewDuration}}</text></view>
+        </view>
       </view>
 
       <view class="user-detail__contact" bindtap="onContactTap">联系用户</view>

@@ -4,6 +4,7 @@ export const MATERIAL_PUBLISH_PATH = '/pages/materials/publish/index'
 export const MATERIAL_NOTE_PATH = '/pages/materials/note/index'
 
 const MATERIAL_ID_QUERY_KEY = 'id'
+const MATERIAL_OWNER_QUERY_KEY = 'owner'
 const PUBLISH_REMIX_QUERY_KEY = 'remix'
 const DEFAULT_SHARE_TITLE = '图文素材'
 
@@ -17,9 +18,10 @@ export function buildMaterialSharePath(materialId: string, trackingId?: string):
   return buildMaterialDetailPath(materialId, trackingId)
 }
 
-/** 小程序内打开素材详情 */
-export function buildMaterialDetailPath(materialId: string, trackingId?: string): string {
-  return `${MATERIAL_DETAIL_PATH}?${buildMaterialShareQuery(materialId, trackingId)}`
+/** 小程序内打开素材详情；ownerView 只由已登录用户的作品入口传入。 */
+export function buildMaterialDetailPath(materialId: string, trackingId?: string, ownerView = false): string {
+  const query = buildMaterialShareQuery(materialId, trackingId)
+  return `${MATERIAL_DETAIL_PATH}?${ownerView ? `${query}&${MATERIAL_OWNER_QUERY_KEY}=1` : query}`
 }
 
 export function isPublishRemixQuery(value?: string): boolean {

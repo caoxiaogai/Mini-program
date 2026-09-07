@@ -6,7 +6,11 @@ import type {
   ApiMaterial,
   ApiNotificationEvent,
 } from '../types/api'
-import type { HomeContentViewModel, HomeNotificationViewModel, HomePageViewModel } from '../types/home'
+import type {
+  HomeContentViewModel,
+  HomeNotificationViewModel,
+  HomePageViewModel,
+} from '../types/home'
 import { buildCustomRangeQuery, formatCount, formatDateKey } from '../utils/format'
 import { prepareMediaUrls } from '../utils/media'
 import { readViewedNotificationMap, selectUnviewedNotificationEvents } from '../utils/notification-viewed'
@@ -16,6 +20,7 @@ import { prepareMaterialThumbnailMap, rememberMaterialThumbnailSources } from '.
 import { getMembershipAccessSilent } from './membership'
 import { NOTIFICATION_RANGE_DAYS } from './notifications'
 import { request, resolveMediaUrl } from './request'
+import { buildVisitorLimitPromptViewModel, SHOW_VISITOR_LIMIT_PROMPT_PREVIEW } from './visitor-limit-prompt'
 
 const HOME_PREVIEW_LIMIT = 7
 const HOME_CONTENT_LIMIT = 2
@@ -97,6 +102,7 @@ export function getHomePageData(): Promise<HomePageViewModel> {
       .sort((left, right) => String(right.viewTime ?? '').localeCompare(String(left.viewTime ?? '')))
       .slice(0, HOME_PREVIEW_LIMIT)
     const previewContents = [...(contents ?? [])]
+      .filter((content) => (content.viewCount ?? 0) > 0)
       .sort((left, right) => (right.viewCount ?? 0) - (left.viewCount ?? 0))
       .slice(0, HOME_CONTENT_LIMIT)
     const materialById = new Map((materials ?? []).map((material) => [String(material.id), material]))
@@ -134,14 +140,19 @@ export function getHomePageData(): Promise<HomePageViewModel> {
     const mediumCount = dashboard.mediumIntentCount ?? 0
     const lowCount = dashboard.lowIntentCount ?? 0
 
-    const notificationAvatars = await prepareMediaUrls(notifications.map((item) => item.avatarUrl))
+    const [notificationAvatars, limitPrompt] = await Promise.all([
+      prepareMediaUrls(notifications.map((item) => item.avatarUrl)),
+      buildVisitorLimitPromptViewModel((notifyEvents ?? []).filter((event) => event != null), membershipAccess.visitorLimit),
+    ])
 
     return {
       unreadNotificationCount: unreadEvents.length,
       unreadNotificationEventIds: unreadEvents.map((event) => String(event.id)),
-      showVisitorLimitPrompt: shouldShowVisitorLimitPrompt(membershipAccess),
+      showVisitorLimitPrompt: SHOW_VISITOR_LIMIT_PROMPT_PREVIEW || shouldShowVisitorLimitPrompt(membershipAccess),
       limitPromptActionLabel: visitorLimitPromptActionLabel(membershipAccess.tier),
       limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
+      limitPromptVisitorCount: limitPrompt.visitorCount,
+      limitPromptVisitorAvatars: limitPrompt.avatars,
       notifications: notifications.map((item, index) => ({
         ...item,
         avatarUrl: notificationAvatars[index] ?? '',

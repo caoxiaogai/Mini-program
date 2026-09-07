@@ -147,3 +147,9 @@ test('publish actions match Figma 850:9374 without a white bottom container', ()
   assert.doesNotMatch(styles, /\.publish-page__actions\s*\{[^}]*background:\s*#ffffff;/)
   assert.match(styles, /\.publish-page__draft-button\s*\{[^}]*border:\s*2rpx solid #e5e5e5;/)
 })
+
+test('materials publish button uses the orange publish color', () => {
+  const styles = read('miniprogram/pages/materials/index.less')
+
+  assert.match(styles, /\.materials-publish-button\s*\{[\s\S]*background:\s*#ff8901;/)
+})

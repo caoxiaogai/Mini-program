@@ -1,6 +1,5 @@
 import { completeProfileLogin, continueAfterAuth } from '../../services/auth'
 import { DEFAULT_AVATAR_URL, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath } from '../../utils/auth'
-import { uploadUserAvatar } from '../../services/user'
 import { HOME_PAGE_PATH } from '../../utils/share-material'
 
 type ChooseAvatarEvent = WechatMiniprogram.CustomEvent<{ avatarUrl: string }>
@@ -89,21 +88,23 @@ Page({
   submitLogin(nickname: string) {
     if (this.data.busy) return
 
-    const avatarFilePath = this.data.avatarFilePath
-    const avatarUrl = this.data.avatarUrl.trim()
-    if (!isLoginProfileComplete({ nickname, avatar: avatarFilePath || avatarUrl })) {
+    const avatar = this.data.avatarFilePath || this.data.avatarUrl.trim()
+    if (!isLoginProfileComplete({ nickname, avatar })) {
       wx.showToast({ title: '请选择头像并填写昵称', icon: 'none' })
       return
     }
 
     this.nicknameDraft = nickname
     this.setData({ nickname, busy: true, nicknameFocused: false })
-    const persistAvatar = avatarFilePath ? uploadUserAvatar(avatarFilePath) : Promise.resolve(avatarUrl)
-
-    persistAvatar
-      .then((avatar) => completeProfileLogin({ nickname, avatar }))
+    completeProfileLogin({ nickname, avatar })
       .then(() => continueAfterAuth(this.data.returnPath))
-      .catch(() => {
+      .catch((error: unknown) => {
+        console.error('[auth] login failed', error)
+        const isWechatLoginError = error instanceof Error && error.message.includes('微信登录')
+        wx.showToast({
+          title: isWechatLoginError ? '微信登录失败，请重试' : '登录失败，请稍后重试',
+          icon: 'none',
+        })
         this.setData({ busy: false })
       })
   },

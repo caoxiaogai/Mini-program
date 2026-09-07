@@ -415,6 +415,12 @@ Page({
     if (!cardId) return
     wx.navigateTo({ url: `/pages/analysis-detail/index?id=${encodeURIComponent(cardId)}` })
   },
+  onWorkEmptyPublishTap() {
+    wx.navigateTo({ url: '/pages/materials/publish/index' })
+  },
+  onPlusTap() {
+    wx.navigateTo({ url: '/pages/materials/index' })
+  },
   onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) {
     const userId = fromDatasetId(event.currentTarget.dataset.id)
     if (!userId) return

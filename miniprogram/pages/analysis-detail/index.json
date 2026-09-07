@@ -1,7 +1,8 @@
 {
   "usingComponents": {
     "analysis-header": "/components/analysis-header/index",
-    "segmented-filter": "/components/segmented-filter/index"
+    "segmented-filter": "/components/segmented-filter/index",
+    "loading-skeleton": "/components/loading-skeleton/index"
   },
   "enablePullDownRefresh": true,
   "onReachBottomDistance": 80,

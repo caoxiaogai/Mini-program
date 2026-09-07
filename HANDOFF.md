@@ -10,6 +10,20 @@
 
 ## 相关文档
 
+### 2026-09-07 榜单视觉调整
+
+- 按本地 Figma `1150:10879` 为榜单面板添加 `1px #808080` 描边、`32rpx` 圆角。
+- 滚动导航背景由蓝灰色改为纯白，保留原透明度渐变。
+- 榜单头部使用用户提供的奖杯 SVG，保存为 `assets/ranking/ranking-trophy.svg`；首页现有奖杯不变。
+- 尚未进行微信开发者工具真机视觉验收。
+- 验证：榜单背景及共享筛选控件两项定向测试通过；`git diff --check` 与 SVG 原文件一致性检查通过。榜单 Mock 排序测试因缺少 `miniprogram/mocks/ranking.ts` 无法运行，未改动该数据测试。
+
+### 2026-09-07 个人作品详情底部操作固定锚点
+
+- 个人视角的作品详情底栏不再使用 flex 横向分布，改为以 iPhone 16 设计宽度 393px 为基准的四个固定锚点：删除、编辑、好友、朋友圈；避免微信原生 `button` 的默认外边距参与排布后将编辑和分享按钮撑散。
+- 操作栏高度包含底部安全区，四个 48px 控件保持在栏顶下方 17px。客户访问视角仍使用原有两按钮分享栏，未改动。
+- 验证：新增锚点回归检查，先在旧布局下失败、改动后通过；`git diff --check` 通过。已在开发者工具重新编译并实际打开个人作品详情，运行时识别到四个操作控件；桌面截图权限不可用，仍需在模拟器画面中确认像素级视觉。
+
 - `AGENTS.md`：本仓库内开发人员和 AI Agent 必须遵守的稳定工程、协作、隐私与验证规则；不承载具体功能定义。
 - `docs/home-page-prd.md`：旧首页 `107:6040` 的历史准备文档；当前首页以新版 Frame `478:1234` 为准。
 
@@ -46,9 +60,13 @@
 - 分析页内容卡片参考节点：`107:7553`，内容缩略图、标题日期、打开图标和四项指标布局。
 - 分析详情页参考节点：`173:11084`，内容分析导航、内容卡片和意向用户区域。
 - 内容详情新版参考节点：`743:3538`，总阅读/转发汇总、我的作品列表、周期筛选与作品数据卡。
+- 用户详情内容新版参考节点：`1133:9656`，白色描边用户概览卡、橙色联系用户按钮、阅读记录描边卡片与三项排序筛选。
 - 分析作品汇总卡新版参考节点：`743:3539`，两张总阅读次数/总转发卡片及对应 24px SVG 图标。
 - 分析总数据总览卡新版参考节点：`743:5979`，数据总览图标、阅读总次数/人数主指标及 2×3 统计卡。
 - 内容详情意向用户组件新版参考节点：`743:4059`，意向用户人数、周期/阅读量筛选和用户指标列表。
+- 作品详情新版参考节点：`1138:10096`，白色导航与底部操作区、`#EBEBEB` 媒体背景、描边分享按钮和主题橙主按钮。
+- 个人作品详情新版参考节点：`1139:10298`，仅素材作者视角使用删除、编辑、好友与朋友圈四个底部操作；客户访问视角保持原有操作栏不变。
+- 用户轨迹新版参考节点：`1136:9882`，作品摘要描边卡、行为轨迹时间线和橙色节点。
 - 会员开通详情页参考节点：`933:795`，深色标准会员权益区、白色圆角套餐区、三档套餐、开通按钮与付费协议勾选。
 - 设计稿基准：iPhone 16，画板宽度 393px。
 - 首页新版确认日期：2026-08-24。
@@ -172,12 +190,6 @@ miniprogram/
 
 不得把猜测的 URL、字段或成功结果描述为已确认合同。真实 API 接入后，应删除对应 mock 分支和 `TODO(API)`，并同步更新本文档。
 
-### 已确认：当前对接的后端仓库
-
-- 小程序当前对接 `D:\IdeaProjects\aisales_dev`（dev 分支），不是 `D:\IdeaProjects\aisales`。
-- 后续需要改后端（接口、配置、SQL、Docker）只改 `aisales_dev`，并部署到服务器 `/data/aisales_dev`（容器 `aisales-api-dev`，公网前缀 `/dev/api`）。
-- 正式版仓库 `D:\IdeaProjects\aisales` 由用户在上线时自行合并；Agent 不得主动把 `aisales_dev` 的改动合进正式版仓库或部署到 `/data/aisales`。
-
 ### 页面状态
 
 所有依赖数据的主要区域原则上需考虑：
@@ -224,7 +236,7 @@ miniprogram/
 | 实现页面视觉样式 | done | 首页三张摘要卡、AI 问候区和底部导航已实现 |
 | 建立 mock 与 API 占位层 | done | 新增 `HomeOverviewViewModel`、Mock 与首页 service |
 | 实现通知页面与首页通知跳转 | done | Figma `107:6253` 通知列表、通知 service/mock、本地资源与首页 tab 跳转已实现 |
-| 实现排行榜页面与排序交互 | done | Figma `311:15611` 排行榜页面已接 `GET /analysis/ranking` 真实数据，可按浏览量/转发量/完播量排序 |
+| 实现排行榜页面与排序交互 | done | Figma `311:15611` 排行榜页面、typed mock/service、本地资源与首页排名 tab 跳转已实现 |
 | 实现素材页面与发布入口视觉 | done | Figma `173:12468` 素材双列卡片、`835:8666`/`835:8477` 筛选与顶部样式、首页素材 tab 跳转已实现 |
 | 实现素材发布页面 | done | Figma `208:13581` 发布页、最多 9 张图片、无限制文案输入、草稿/发表占位交互及成功弹窗已实现 |
 | 发布选择后直达详情页 | done | 选择图片/视频后先弹出拍摄或相册，PDF 进微信文件选择，再将已选素材带入发布详情；图片支持继续追加 |
@@ -235,7 +247,7 @@ miniprogram/
 | 发布详情已添加图片描边 | done | 已添加媒体槽位使用 `2rpx solid #E5E5E5` 描边，继续添加入口样式保持不变 |
 | 实现素材详情分享页 | done | Figma `229:14271` 作品详情页、素材卡片按 id 跳转、轮播图片、描述文案、底部分享按钮与 typed service/mock 已实现 |
 | 素材内容详情上下背景色调整 | done | 发布后进入内容详情时，导航、说明区和底部分享操作区统一使用 `#F5F5F5`，媒体展示和按钮颜色保持不变 |
-| 接入后端真实接口 | done | 统一 `services/request.ts` 请求层 + 微信登录；首页/分析/通知/素材/排行榜/我的头像昵称走后端数据；余额/提现仍为视觉占位 |
+| 接入后端真实接口 | done | 统一 `services/request.ts` 请求层 + 微信登录；首页/分析/通知/素材/我的头像昵称走后端数据；排行榜后端无接口，暂用 Figma 预览 mock；余额/提现仍为视觉占位 |
 | 首页像素级与真机适配验收 | pending | 新版首页已实现，等待开发者工具或真机进行视觉核对 |
 | 首页改版（重新开始） | in_progress | 已按新版 Figma `478:1234` 重写首页结构、数据层、底部导航和本地资源 |
 | 首页顶部背景 SVG 替换 | done | 使用用户提供的 Figma `887:12344` 导出资源 `miniprogram/assets/home-new/home-header-background.svg`，固定在首页首个滚动面板底层 |
@@ -273,7 +285,7 @@ miniprogram/
 | 无浏览作品内容分析空白 | done | 从未被浏览/转发的作品打开内容分析时仍展示作品卡片和空意向用户，不再整页空白 |
 | PDF 点击预览图查看 | done | 素材详情 PDF 去掉「点击查看」按钮，点击预览图进入阅读页 |
 | PDF 与视频查看记浏览 | done | 打开 PDF/视频详情即上报 play；单页文档先 play 再 end；后端 end 补建也会计入浏览 |
-| 进入小程序必须授权登录 | done | 未登录跳转登录页；头像 `chooseAvatar`，昵称 `input type="nickname"`。微信已收回一键读取头像昵称，不再调用 `getUserProfile` |
+| 进入小程序必须授权登录 | done | 首页和分享进入素材详情都先校验登录；未授权必须先登录，首次登录编辑头像昵称，可一键用微信头像和昵称 |
 | 已发布作品二次编辑 | done | 作者在素材详情用「二次编辑」预填媒体和文案进入发布页，发表为新作品；访客仍显示「分享到朋友圈」 |
 | 总数据主指标按周期环比 | done | 浏览总次数/人数随日、本周、本月、总分别较昨日、上周、上月、上两月；增加显示 +，减少显示 - 且为红色 |
 | 用户轨迹接入真实埋点 | done | `GET /analysis/customer/journey`；浏览/完播/转发时间线，图片与 PDF 显示页数，视频显示秒数，转发显示第几次 |
@@ -305,103 +317,255 @@ miniprogram/
 
 ## 最近变更
 
-### 2026-09-04：超级榜单对接真实用户排序
+### 2026-09-07：作品详情个人视角底部按 Figma 1139:10298 校准
 
-- 小程序排行榜改为请求 `GET /analysis/ranking`，按已发布作品的浏览量、转发量、完播量给小程序用户排序；切换指标仍在前端重排，不再使用 `mocks/ranking.ts`。
-- `aisales_dev` 新增该接口：只统计启用账号、未删除且已发布的作品，从 `content_stats` 汇总三项总量。部署体验版后端后生效。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "ranking|data access goes through the unified request layer" tests/home-page.test.mjs tests/list-window.test.mjs`。需重启 `aisales_dev` 后在体验版核对榜单。
+- 作者视角底部操作栏按新版 Figma 保留删除、编辑、好友、朋友圈四个控件，底部栏含安全区时自动扩展。
+- 作者栏使用独立布局，不复用访客分享按钮的伸缩样式，避免删除和编辑操作被两枚分享按钮挤出屏幕。
+- 小程序内部从首页、素材页和分析内容页进入自己的作品时显式传递作者视角；详情页对无分享追踪参数的旧内部入口也默认按作者视角处理，带分享追踪参数的外部链接继续显示访客操作栏。
+- 删除/编辑图标保持 48px，好友与朋友圈按钮为 100×48px；好友使用 `#F8F9FA` 背景和 `#808080` 描边，朋友圈使用主题橙 `#FF8901`。
+- 作者视角分享图标按 24px（朋友圈图标内图形 18px）渲染，访客视角的分享操作和交互保持不变。
+- 验证：作品详情作者底部定向测试通过，`git diff --check` 通过。
 
-### 2026-09-04：后端改动只走 aisales_dev
+### 2026-09-07：用户轨迹按 Figma 1136:9882 改版
 
-- 已确认：当前对接仓库是 `D:\IdeaProjects\aisales_dev`（dev 分支）。后续后端改动只改这个项目。
-- 正式版仓库 `D:\IdeaProjects\aisales` 由用户上线时自行合并，不在本仓库任务里自动合并或部署正式版。
+- 用户轨迹改为作品摘要描边卡 + 行为轨迹描边卡，移除旧版底部联系用户按钮。
+- 行为轨迹使用 20px 黑色文档图标、橙色时间线和 12px 节点，事件文案按时间、动作、详情横向排列。
+- 导航栏与作品摘要卡之间补充 20px 顶部间距。
+- 保留用户轨迹接口、加载/错误/重试和下拉刷新状态。
 
-### 2026-09-04：正式版 / 体验版后端分流
+### 2026-09-07：用户轨迹顶部改为纯白
 
-- 小程序按 `envVersion` 选基址：正式版 `https://www.yjxzhang.com/api`，体验版 `https://www.yjxzhang.com/dev/api`，开发版/真机调试仍走局域网。
-- 素材 URL 按当前 API 前缀改写，体验版文件走 `/dev/api/files`，不会打到正式版。
-- 本地开发改后端用 `D:\IdeaProjects\aisales_dev`。服务器现网目录是 `/data/aisales`（已有 mysql/redis/nginx/`aisales-api`）。体验版另放 `/data/aisales_dev`，容器名 `aisales-api-dev`，加入已有网络 `aisales_default`，不要重建中间件。
-- 体验版按现网同样方式发版：本机 `mvn` 打 jar，改名为 `app.jar` 传到 `/data/aisales_dev`，服务器 Dockerfile 只 `COPY app.jar`，不要在服务器上编源码。
-- 正式库用 `scripts/clone-dev-db-to-prod.sh` 从体验库 `ai_sales_dev` 拷到 `ai_sales`，方向不要反。
-- 微信虚拟支付发货推送在后台只能填一个 URL；体验版下单时通知会打到当前填写的地址。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "data access goes through the unified request layer" tests/home-page.test.mjs`。服务器需建库、起 trial 容器并重载 Nginx 后，用体验版核对请求是否打到 `/dev/api`。
+- 用户轨迹页导航栏背景改为 `#ffffff`，保持返回按钮、标题和轨迹内容布局不变。
 
-### 2026-09-04：笔记导航、占位和键盘关闭
+### 2026-09-07：用户详情意向标签与首页通知区统一
 
-- 笔记页关闭内置返回键，返回箭头叠在导航栏外层最左侧（`left: 0`），不再放进导航栏 slot，避免和标题挤到中间。
-- 撤销/恢复叠在导航栏外层同一行，按「笔记」右缘和微信胶囊左缘自动居中。
-- 笔记编辑页锁 `100vh`，只让正文 `scroll-view` 上下滚动。
-- 点工具栏「+」先收起键盘再打开照片/拍摄/位置/文件面板，不再被键盘高度事件抢回焦点。
-- 去掉空白页「添加文字」占位。工具栏固定贴在键盘上方；呼出键盘时给正文留出底部空间并滚到当前输入块。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/note-material.test.mjs`。需真机确认导航位置和加号能打开面板。
+- 用户详情阅读记录中的高/中/低意向标签统一复用首页通知区的尺寸、圆角、字号和颜色：`#ff9923/#844600`、`#f9b566/#ac691b`、`#fee5b9/#be9752`。
 
-### 2026-09-04：真机调试源码包超过 2MB
+### 2026-09-07：用户详情浏览记录图标替换
 
-- 真机调试报 `80051`，源码包约 2056KB，超过微信 2MB 上限。默认头像 PNG 过大（展示仅 120rpx），已缩到 240px 并重压；奖杯图只做压缩、不改展示尺寸。未引用的旧 mock 图从预览包排除。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "wechat preview source stays under the 2MB upload limit" tests/home-page.test.mjs`。需重新编译后再真机调试。
+- 使用用户提供的 `icon_read.svg` 替换浏览记录标题图标，资源保存为 `assets/analysis/reading-record-icon.svg`。
+- 保持新版 Figma 规定的 20px 图标尺寸和现有筛选、记录布局不变。
 
-### 2026-09-04：笔记标题居中、键盘工具栏与独立播放器
+### 2026-09-07：用户详情内容区域按 Figma 1133:9656 更新
 
-- 笔记页导航标题「笔记」相对屏幕水平居中，不再被右侧撤销/恢复挤偏。
-- 只要呼出键盘就显示加号工具栏；不再依赖图片/视频插入后可能丢失的键盘高度事件。
-- 编辑页和作品详情里的笔记视频改为独立全屏播放器，带关闭按钮，关闭后回到当前笔记页；每次从 0 起播，不记播放进度。
-- 播放器关闭键放在状态栏下方独立顶栏，不再叠在原生 video 上，避免点不上。
-- 访客看笔记只按整篇滑动距离上报进度；笔记内打开 PDF 走 `wx.openDocument`，不进文档阅读页，避免单独记页进度。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/note-material.test.mjs`。需真机确认加图后点空白能出键盘和工具栏，以及关闭播放器回到笔记。
+- 用户概览卡改为白色 `#808080` 描边，恢复 Figma 的 20px 内边距与 16px 圆角，联系用户按钮使用主题橙色 `#FF8901`。
+- 阅读记录区域改为白色描边容器，标题图标与文字尺寸、记录卡片边框、标签颜色和指标字号按新版 Figma 调整。
+- 保留现有 typed service、排序筛选、点击记录进入用户轨迹和复制用户名交互。
 
-### 2026-09-04：笔记加号靠右，相册含视频，附件用键盘删除
+### 2026-09-07：用户详情顶部改为纯白
 
-- 键盘工具栏加号改为圈线「+」图标并靠右；点开照片/拍摄/位置/文件面板后不再展示加号。
-- 「照片」打开系统相册时同时展示图片和视频。图片、视频、位置、文件不再带独立删除叉，在其后文字处按键盘删除键去掉上一块附件。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/note-material.test.mjs`。需真机确认相册可选视频，以及退格能删附件。
+- 用户详情页导航栏及其 sticky 顶部容器统一使用 `#ffffff`，标题、返回按钮和页面其余内容不变。
+- 验证：用户详情导航背景定向测试通过，`git diff --check` 通过。
 
-### 2026-09-03：发布素材增加笔记
+### 2026-09-07：分析总数据卡按 Figma 1065:6295 更新
 
-- 发布类型弹窗新增「笔记」。点击后进入 `/pages/materials/note/index`，点空白处开始输入；键盘上方只有「+」，点开后选照片、拍摄、位置、文件。支持撤销/恢复、存草稿和发表。
-- 笔记以 `fileType=NOTE` 落库，`content` 为块 JSON；列表、删除、分享好友、分享朋友圈与其他素材相同。草稿点开回笔记编辑页，已发布作品走详情页块展示。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/note-material.test.mjs tests/publish-material-entry.test.mjs`。需重启后端以接受 NOTE 类型。真机需配置位置隐私协议后才能选点。
+- “数据总览”和“浏览峰值”卡统一增加 `#808080` 的 1px 外描边，移除标题区横向分割线；内容、筛选器和图表结构保持不变。
+- 使用用户提供的 `icon_date.svg` 与 `icon_fengzhi.svg` 替换两处 20px 黑色标题图标，独立分析页与首页内嵌分析同步生效。
+- 验证：总数据相关定向测试 5/5 通过，两个 SVG 与用户提供文件逐字匹配，`git diff --check` 通过。
 
-### 2026-09-03：素材列表长按多选删除
+### 2026-09-04：通知页空状态按 Figma 1115:8725 更新
 
-- 素材列表（首页素材 Tab 与独立素材页）长按进入多选，底部「发布素材」变为「删除」，可删除已选草稿和已发布作品。
-- 后端新增 `DELETE /material/{id}`，走 MyBatis-Plus `deleteById` 做逻辑删除；列表不再返回已删素材。访客打开已删除作品展示「发布者已删除作品」。
-- 访客打开已删除作品（详情或文档）只展示「发布者已删除作品」，不弹「请求失败，请稍后重试」，也不再显示「作品加载失败」。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/materials-select.test.mjs`。需真机长按素材、多选删除，并用另一账号打开已删分享链接。
+- 通知页无待跟进数据时改用空箱图标、`暂无待跟进客户，快去分享作品吧` 文案和橙色「去分享」按钮。
+- 复用本地 `empty-state-box.svg` 与 `share-action.svg` 资源，按 Figma 的 37×27px 图标、12px 文案、120×32px 按钮和 10px 间距实现。
+- 「去分享」继续走现有 `onPlusTap` 发布入口；加载中的骨架屏和有数据列表不变。
+- 验证：`notification page empty state follows Figma 1115:8725` 定向测试通过，`git diff --check` 通过。
 
-### 2026-09-03：会员开通成功与失败都弹窗提示
+### 2026-09-04：全小程序数据页面统一骨架屏
 
-- 支付结果不再用 toast。开通成功、开通失败、已取消、支付后暂未确认，一律 `wx.showModal`，明确告诉用户会员是否开通。
-- 不把未确认的支付显示成开通成功；待确认时提示稍后下拉刷新查看开通状态。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "membership page does not invent payment success" tests/membership-page.test.mjs`。
+- 新增复用组件 `miniprogram/components/loading-skeleton/`，按列表、分析、详情、会员、文档/作品详情提供结构化占位，并使用统一 shimmer 动效。
+- 首页之外，分析、分析详情、用户详情、用户轨迹、文档预览、作品详情、素材、会员、通知、排行榜、设置，以及首页内嵌的通知/分析/我的模块均在异步数据未就绪时显示骨架屏。
+- 设置页补充加载状态，避免设置请求期间提前展示默认选项。
+- 验证：骨架屏针对性测试通过；页面和组件 JSON 解析通过；`git diff --check` 通过。全局 TypeScript 编译命令不可用（环境未安装 `tsc`）。
 
-### 2026-09-03：登录页去掉无效的一键头像昵称
+### 2026-09-04：首页顶部星星装饰替换为新素材
 
-- `wx.getUserProfile` 在本小程序只会返回默认头像和「微信用户」，再点「用微信昵称和头像」只会提示改走两步。已删除该调用。
-- 登录页按钮改为官方 `chooseAvatar`（文案「用微信头像」），选完后自动聚焦昵称框，再点键盘上方的微信昵称。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "entry pages require authorized login" tests/home-page.test.mjs`。需真机点「用微信头像」后确认昵称键盘出现微信昵称。
+- 使用用户提供的 `image 45.png` 替换 `miniprogram/assets/home-new/home-greeting-star.png`。
+- 保持 `.home-hero__star` 的位置、右侧间距和 `home-greeting-float` 无限循环浮动动画不变。
+- 针对性测试：`home hero uses the supplied star artwork without changing its motion hook`。
 
-### 2026-09-03：登录页补齐微信昵称填入和一键按钮
+### 2026-09-04：首页顶部箭头组右侧间距调整
 
-- 点键盘上方「用微信昵称」没反应：Skyline 受控 `input value` 会冲掉微信填入。登录页改为 `renderer: webview`，昵称框默认不受控，提交时从 form / 节点读取。
-- 增加「用微信昵称和头像」：调用 `wx.getUserProfile` 尝试一次填入。若仍返回默认头像或「微信用户」，提示改用点头像 + 输入框上方的微信昵称。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "entry pages require authorized login" tests/home-page.test.mjs`。需真机点输入框上方微信昵称，以及点「用微信昵称和头像」。
+- 首页顶部 Figma `1106:8082` 的箭头组改为右侧 `20px` 锚定，星星装饰同步保持 `32px` 右间距，避免设备宽度变化时偏移。
+- 针对性测试同步校验右侧定位。
 
-### 2026-09-03：登录页按官方文档填写头像昵称
+### 2026-09-04：首页顶部发布引导按 Figma 1106:8082 更新
 
-- 未登录进入小程序时跳到登录页，不再使用已收回的 `wx.getUserProfile`。
-- 登录页按[头像昵称填写](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/userProfile.html)实现：点头像走 `button open-type="chooseAvatar"`，昵称用 `input type="nickname"`，提交走 form `submit`。
-- 默认灰色头像和「微信用户」不算已登录；两者都换成真实值后走 `POST /wechat/login` 和 `PUT /user/profile`，再回原页面。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "entry pages require authorized login" tests/home-page.test.mjs`。需真机点头像确认微信头像选择器，并在昵称输入框看到微信昵称建议。
+- 首页顶部文案改为两行“发布作品 / 找到高意向客户”，标题继续使用 Tencent Sans W7，字号按 28px 基准实现。
+- 流程说明保留为“发布素材 → 跟进浏览 → 识别客户”，并按 Figma 间距放置右侧箭头 SVG 与底部星星装饰。
+- 火焰和星星装饰继续使用无限循环的上下浮动动画；新增资源 `miniprogram/assets/home-new/home-hero-arrow.svg`。
+- 针对性测试：`home hero matches the confirmed Figma 1106:8082 composition`。
 
-### 2026-09-03：设置页增加退出登录
+### 2026-09-04：首页空状态文案与发布按钮间距
 
-- 「我的 → 设置」在推送意向门槛下方增加「退出登录」。确认后清除本地登录态，回到登录页。
-- 不调用未确认的后端退出接口；再次使用需重新完成微信官方授权。
-- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "profile settings opens a notify intent" tests/home-page.test.mjs`。
+- 将首页“今日浏览最多”空状态中文案组与“发布作品”按钮之间的间距从 `40rpx` 调整为 `10px`；图标与文案内部间距、按钮尺寸和交互保持不变。
+- 验证：空状态定向测试通过，`git diff --check` 通过。
+
+### 2026-09-04：首页空状态“发布作品”直接打开发布流程
+
+- 将首页“今日浏览最多”空状态中的“发布作品”按钮事件改为 `onMaterialPublishTap`，点击后直接显示现有图片 / 视频 / PDF 发布类型遮罩；底部导航发布入口仍保持切换到发布页的原有行为。
+- 验证：空状态与发布流程定向测试通过，发布相关测试 10/10 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页无数据“发布作品”按钮宽度
+
+- 按 Figma `1063:4570` 将首页“今日浏览最多”空状态中的“发布作品 +”按钮宽度设为 `120px`，并将按钮内部尺寸同步为 Figma 的 13px 文字、6px 间距、24px 内边距和不可换行布局，避免内容挤压换行。
+- 验证：空状态定向测试通过，`git diff --check` 通过；全量首页测试仍有仓库既有的其它不相关失败。
+
+### 2026-09-04：首页增加数据加载骨架
+
+- 首页首次加载且 `isLoading` 为真时，展示与现有首页主要区块保持尺寸的静态浅灰骨架；数据返回后自动切回真实内容，静默刷新不改变当前内容。
+- 骨架覆盖顶部标题、待跟进、超级榜单、今日浏览最多、今日新增客户和今日数据区域；底部胶囊导航保持正常显示。
+- 验证：首页加载骨架定向测试通过，`git diff --check` 通过。
+
+### 2026-09-04：素材筛选选中态改为橙色
+
+- 按 Figma 节点 `1094:7486` 将素材页筛选栏选中项的边框、文字改为 `#FF8901`，背景改为 `#FCEFE4` 至 `#FEFEFF` 的渐变；尺寸、圆角、阴影和交互保持不变。
+- 验证：素材筛选定向测试、发布相关测试（10/10）和 `git diff --check` 均通过。
+
+### 2026-09-04：发布页“发布素材”按钮改为橙色
+
+- 将发布页底部“发布素材”按钮背景色改为 `#FF8901`，文字和加号保持白色，尺寸、位置与交互不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/publish-material-entry.test.mjs`（10/10 通过），`git diff --check` 通过。
+
+### 2026-09-04：首页互动消息状态提示对齐与字号
+
+- 将互动消息卡片中的“该用户已完成浏览”等状态提示左移至头像左边缘，并将字号设为 12px（`24rpx`）；卡片其它布局保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home notification status aligns with the avatar and uses 12px text" tests/home-page.test.mjs`。
+
+### 2026-09-04：底部胶囊导航增加投影
+
+- 按最新确认将投影应用到整个胶囊导航容器：`#000000`、8% 不透明度、`blur 20px`，CSS 为 `box-shadow: 0 0 20px rgba(0, 0, 0, 0.08)`。
+- 移除胶囊内部效果层的旧投影，避免同一导航叠加两层不同阴影。
+
+### 2026-09-04：修正今日数据分隔线位置
+
+- `.home-today-card__header` 增加 `box-sizing: border-box`，使 `height: 68rpx` 包含 `padding-bottom: 16rpx`，避免标题区域额外增加高度导致分隔线下移。
+
+### 2026-09-04：底部背景层整体移除
+
+- 按最新确认移除底部导航的整块背景容器、背景 SVG 和对应样式；仅保留悬浮胶囊导航及其自身背景。
+- 验证：底部背景层移除定向测试通过，`git diff --check` 通过。
+
+### 2026-09-04：底部导航间距改为 24px 并移除底部背景模糊
+
+- 将底部导航胶囊与底部安全区的最小间距改为 `24px`，保留全面屏设备的 `safe-area-inset-bottom`。
+- 移除 `.bottom-tab-bar__scrim` 的 `backdrop-filter: blur(7.7px)`；胶囊自身的 `blur(5px)` 保持不变。
+- 验证：`bottom navigation uses a 24px bottom gap without backdrop blur` 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页“今日浏览最多”过滤零浏览作品
+
+- 修正首页 service：`/analysis/content/list` 返回的作品先过滤 `viewCount <= 0`，再按浏览次数排序并取前两条；没有有效浏览数据时，页面会进入 Figma `1055:3141` 空状态。
+- 验证：空状态、零浏览过滤和首页空状态分支定向测试 3/3 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页汇总卡图标改为无 mask 高清 SVG
+
+- 使用用户最新提供的 `icon_read.svg`、`icon_date.svg` 替换首页“今日浏览最多”和“今日数据”图标；移除原 SVG 的 `mask` 结构，减少缩放后的灰边/投影感。
+- 验证：资源与用户提供文件逐字匹配，`xmllint --noout` 通过，高清图标定向测试通过。
+
+### 2026-09-04：首页“今日浏览最多”无数据状态按 Figma 1055:3141 更新
+
+- 无今日浏览数据时，保留标题区，显示 Figma 导出的 `today-most-empty.svg` 插画、文案“没有作品被浏览，快去发布作品吧”和橙色全宽“发布作品”按钮；有数据时继续显示“查看更多”。
+- 空状态按钮沿用现有 `onPlusTap` 发布入口，删除旧云朵提示和旧按钮样式。
+- 验证：`home today-most empty state follows Figma 1055:3141` 与当前首页空状态分支测试通过，`git diff --check` 通过。
+
+### 2026-09-04：首页“今日数据”标题区上下居中
+
+- 调整“今日数据”标题区为 `68rpx` 内容高度和 `16rpx` 底部间距，使标题、日期图标和右侧箭头在上方矩形内垂直居中；分隔线仍保持在上下矩形交界处。
+- 验证：`home today data` 分隔线与标题区定向测试 3/3 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页汇总卡标题加粗
+
+- 将“今日浏览最多”“今日新增 … 个客户”和“今日数据”三个标题的字重统一为 `700`，数字颜色、图标和布局保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home summary card titles use bold typography" tests/home-page.test.mjs`。
+
+### 2026-09-04：首页汇总卡图标替换为高清 SVG
+
+- 将“今日浏览最多”的眼睛图标和“今日数据”的日期图标替换为用户提供的高清 SVG，保留原有首页资源路径、尺寸和布局。
+- 验证：两个资源与用户提供文件逐字匹配，`xmllint --noout` 通过；高清图标定向测试通过。
+
+### 2026-09-04：首页“今日数据”分隔线下移至上下矩形交界
+
+- 根据最新截图，分隔线从标题区底部下移 `22rpx`，与 `today-data-background-926.svg` 的上下矩形交界对齐；线条水平宽度、颜色和样式保持不变。
+- 验证：`home today data divider` 定向测试 2/2 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页“今日浏览”和“今日新增客户”按钮补充背景
+
+- 按 Figma `1055:663` 将“今日浏览最多”和“今日新增客户”卡片内的“查看更多”按钮底色统一为 `#F8F9FA`，保留 `#F0F0F0` 描边、圆角、尺寸和文字样式。
+- 验证：`home summary more buttons use the Figma surface background` 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页“今日数据”分隔线居中
+
+- 为“今日数据”卡片标题下方的虚线分隔线补充水平自动外边距，确保分隔线在内容区域居中；线条宽度、颜色和上下间距保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home today data divider is horizontally centered" tests/home-page.test.mjs`。
+
+### 2026-09-04：首页“超级榜单”左侧内容组垂直居中
+
+- 按 Figma `1055:829` 的层级将标题和副文案收进 `home-ranking-entry__heading`，补齐标题区高度与两段间距。
+- `home-ranking-entry__copy` 改为相对卡片 `top: 50%` 并使用 `translateY(-50%)`，使标题、说明和按钮整体上下居中；奖杯定位和卡片尺寸不变。
+- 验证：`home ranking copy is vertically centered as one Figma content group` 与高清标题资源测试 2/2 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页互动消息“查看更多”按钮底色
+
+- 按最新确认将首页互动消息区的“查看更多”按钮底色设为 `#F8F9FA`，保留当前首页 Figma 样式的尺寸、描边、圆角和文字。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home interaction messages show more on the third unread card only" tests/home-page.test.mjs`。
+
+### 2026-09-04：首页“超级榜单”标题替换为 Figma 高清资源
+
+- 根因：首页原引用 `103×31px` JPEG，标题展示时出现压缩模糊。
+- 按当前首页 Figma 节点 `1055:831` 导出 `309×81px` 的 3 倍 PNG，保存为 `miniprogram/assets/home-new/ranking-title-latest.png`；展示尺寸仍为 `103×27px`，未改变布局。
+- 删除不再使用的低清 `ranking-title-latest.jpg`。验证：标题资源与首页资源定向测试 2/2 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页“待跟进”空状态按 Figma 1055:3430 更新
+
+- 当 `homeData.notifications` 为空时，首页“待跟进”区域改为 Figma `1055:3430` 的 353×93px 空状态卡片：白底、`#808080` 1px 描边、16px 圆角、20px 内边距和 10px 内容间距。
+- 文案更新为“暂无待跟进客户，快去分享作品吧”，并将 Figma 专用插画导出为 `miniprogram/assets/home-new/followup-empty.svg`；有通知数据时仍渲染原有列表。
+- 验证：`node --test --test-name-pattern='home empty state follows Figma|home follow-up empty card follows Figma' tests/home-page.test.mjs`（2/2 通过），`git diff --check` 通过。
+
+### 2026-09-04：首页标题腾讯体字形待补齐
+
+- 检查发现项目内嵌的 `TencentSansW7` 仅是问候语子集，未包含「发布作品 / 快速找到高意向客户」所需字形，标题会回退到系统字体。误加的 `700` 字重已撤回到原 `500`；待用户重新提供原始腾讯字体文件后，提取完整标题字形并接入。
+
+### 2026-09-04：首页顶部灰色渐变在滚动表面绘制
+
+- 发现 SVG 背景层在微信 `scroll-view` 渲染层级中未实际露出，导致顶部始终显示全局纯白。首页改为直接在首个 `scroll-view` 表面绘制 `#CCCCCC` 至透明白的纵向渐变，确保灰色从状态栏顶部开始可见；渐变绘制区域固定为顶部 `200px`，不重复。
+- 渐变通过 `--home-header-gradient-opacity` 复用既有上滑前 `100px` 的淡出值；移除不再使用的 `home-header-background.svg`。
+
+### 2026-09-04：全局浅灰白底统一为纯白
+
+- 全局将首页中出现的 `#F8F9FA`（源文件为小写写法）统一替换为 `#FFF`，避免同一白色卡片/操作区出现不一致的浅灰底。
+- 共享页面画布变量 `@app-page-background` 已由 `#F0F1F2` 改为 `#FFFFFF`；所有引用该变量的页面与内嵌页签同步采用纯白底。
+
+### 2026-09-04：首页顶部渐变改为灰白并保留滚动淡出
+
+- 首页顶部背景资源更新为 Figma 画板宽度 `393px`、高度 `200px` 的纵向渐变：`#CCCCCC` 在顶部，至 50% 处过渡为 `#FFFFFF` 并保持纯白。
+- 继续复用既有 `onHomeScroll` 与 `getHomeHeaderGradientOpacity`：页面上滑的前 `100px` 内，背景不透明度从 `1` 线性降至 `0`；未改动其余首页模块。
+- 验证：`node --test --test-name-pattern='home page uses the local Figma header background asset|home navigation title and background fade in over 100px of scroll' tests/home-page.test.mjs`（2/2 通过），`git diff --check` 通过。
+
+### 2026-09-04：首页按 Figma 1055:663 发版样式更新
+
+- 首页以 Figma `1055:663` 为当前唯一视觉基准：首屏固定文案更新为「发布作品 / 快速找到高意向客户 / 发布素材 → 跟进浏览 → 识别客户」；消息区标题更新为「待跟进」。数据来源和点击路径不变。
+- 首页卡片统一为白底、`#808080` 1px 描边、16px 圆角的最新样式；超级榜单、今日浏览最多、今日新增客户、今日数据均已按该节点重排，并替换为 Figma 导出的榜单奖杯、意向卡、今日数据与图标资源。
+- 底部胶囊以 `1055:663` 覆盖 `1055:3353` 的差异：底色改为实色 `#F0F0F0`，投影改为 `0 0 10px rgba(0,0,0,.05)`；保留用户提供的五组最新选中/未选中图标。
+- 清理新版首页不再引用的旧素材，预览包保持在 2MB 限制内。验证：`home release follows Figma 1055:663`、静态资源预算与微信预览包预算检查均通过；完整历史测试仍有旧 Figma 断言和用户已有开发地址断言待同步。
+
+### 2026-09-04：底部胶囊导航按 Figma 1055:3353 更新
+
+- 以 Figma `1055:3353` 为准：底部渐变层为透明至 `#F2F3F6` 并加 `7.7px` 模糊；胶囊改为 60px 高、20px 左右边距、4px 内边距、`80% #F0F0F0` 玻璃底、白色 1px 描边和 20px 轻阴影；选中项改为白色胶囊。
+- 五组导航图标已替换为用户提供的 SVG；非选中标签为黑色，选中标签及图标为 `#FF8901`。素材页同步移除失效的 `*-default.svg` 路径。
+- 验证：`node --test --test-name-pattern='new homepage assets|bottom navigation|publish navigation receives' tests/home-page.test.mjs`（9/9 通过）。微信开发者工具已通过 CLI 打开工程，仍需在其预览或真机中核对最终像素级位置。
+
+### 2026-09-03：合并 main-v2 后恢复 developer-v2 一键已读视觉尺寸
+
+- 保留 main-v2 为解决文字裁切补上的 `overflow: visible` 和标题栏可见溢出处理；展开胶囊恢复我们确认的 `144rpx` 宽度，文案容器恢复 `112rpx`，避免主分支样式覆盖昨日视觉调整。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home interaction messages expose the compact mark-all-read action|home page declares the new Figma sections|home greeting title uses the Tencent Sans W7 subset" tests/home-page.test.mjs`。
+
+### 2026-09-03：首页问候文案字号放大
+
+- 按最新截图将首页问候标题和副标题字号各增加 4px，从 `44rpx` 调整为 `52rpx`；字体、图标和其他布局保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home page declares the new Figma sections|home greeting title uses the Tencent Sans W7 subset" tests/home-page.test.mjs`。
 
 ### 2026-09-03：首页一键已读展开后四字完整显示
 
-- 紧凑胶囊从 `144rpx` 加到 `168rpx`，文案从 `88rpx` 加到 `112rpx`，避免「一键已读」最后一个字被裁切。
+- 紧凑胶囊从 `144rpx` 加到 `168rpx`，文案从 `88rpx` 加到 `104rpx`，避免「一键已读」最后一个字被裁切。
 - 组件开启 `virtualHost`，互动消息标题栏改为 `min-height: 48rpx` 且 `overflow: visible`，展开时不再被 34rpx 标题行和外层盒子裁掉。
 - 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home interaction messages expose the compact mark-all-read" tests/home-page.test.mjs`。需真机点标题右侧 ×，确认四字完整露出。
 
@@ -818,6 +982,17 @@ miniprogram/
 
 - 首页“今日浏览最多”“意向用户”“今日数据”标题左侧图标从 24px 调整为 22px（`44rpx`），匹配最新设计；底部导航和头像尺寸保持不变。
 - 定向首页视觉测试通过；当前环境无法运行微信开发者工具 GUI，仍需在开发者工具或真机核对图标与标题的视觉对齐。
+
+### 2026-09-07：作品详情按 Figma 1138:10096 更新颜色
+
+- 作品详情导航与底部操作区使用纯白背景，图片、视频和 PDF 媒体承载区域统一为 `#EBEBEB`。
+- “分享给好友”按钮改为 `#F8F9FA` 背景与 `#808080` 描边；“分享到朋友圈”和作者“二次编辑”按钮统一使用主题橙 `#FF8901`。
+- 保留现有作品详情的轮播、预览缩放、文档阅读、分享和二次编辑交互。
+
+### 2026-09-07：内容分析无意向用户空状态统一首页去分享
+
+- 内容分析筛选无数据时改用空箱图标、`暂无意向客户，去分享作品` 文案和首页同款橙色「去分享」按钮。
+- 点击「去分享」使用当前内容分析的作品 ID 打开对应作品详情，复用详情页分享入口；返回时回到内容分析。
 
 ### 2026-08-31：素材内容详情上下背景色调整
 
@@ -2937,6 +3112,46 @@ miniprogram/
 - 标准会员背景、权益、套餐、支付流程和导航保持不变。
 - 验证：会员页定向测试 7/7、TypeScript 语法、WXML 语法和 `git diff --check` 均通过。
 
+### 2026-09-04：首页今日数据说明字号
+
+- 首页“今日数据”卡中“浏览次数、阅读人数、总完播、转发次数、观看人数、高/中/低意向”说明文字统一调整为 12px（`24rpx`）；数值、布局和其他模块不变。
+- “今日数据”卡使用边框盒计算固定高度，使最后一行指标到卡片底部的可见间距为 20px（`40rpx`）。
+
+### 2026-09-04：首页空数据图标统一
+
+- 首页“待跟进”和“今日浏览最多”的空数据状态统一使用用户提供的 `Group 92.svg`，保存为 `assets/home-new/empty-state-box.svg`。
+- 保持原有空状态文案、尺寸、操作按钮和跳转逻辑不变。
+
+### 2026-09-04：首页待跟进空状态补充去分享入口
+
+- 按 Figma `1102:8012` 在“待跟进”空状态加入“去分享”按钮及节点导出的 20px 分享图标，空状态卡高度随按钮调整为 200px。
+- 点击按钮复用首页现有 `onPlusTap`，切换到底部导航的发布（素材）页；不新增数据请求或跳转路径。
+- 卡片高度调整为 140px（280rpx），内容上下离卡片边缘各 20px。
+
+### 2026-09-04：用户分析意向客户改版
+
+- 按 Figma `1107:8095` 更新“用户分析”Tab：三张意向统计卡增加描边，意向客户列表改为带图标标题、筛选区与 44px 客户行的描边卡片。
+- 节点导出的意向图标与预览头像保存在 `assets/analysis/`；作品分析和总数据不在本次改动范围内。
+- 意向客户标题到底部筛选区的可见间距固定为 20px。
+- 按最新确认，按钮宽度固定为 120px，文字大小为 13px。
+
+### 2026-09-04：发布页移除顶部竖线背景
+
+- 移除发布（素材）页顶部的 `line-bg.svg` 竖线背景；保留顶部渐变、导航、筛选、内容与交互不变。首页底部导航内的发布页同步移除该背景。
+
+### 2026-09-04：分析作品页更新图标与描边
+
+- 按 Figma `1097:7996`，作品分析顶部两项统计和“我的作品”标题替换为该节点导出的 20px SVG 图标；独立分析页与首页内嵌分析页同步使用。
+- 顶部统计卡和“我的作品”容器使用 `#808080` 的 1px 描边；作品列表单卡使用 `#F0F0F0` 的 1px 描边、白色背景和 12px 圆角。仅调整图标与卡片外观，不改数据、筛选或跳转。
+- “我的作品”图标替换为用户最新提供的 `icon_collect.svg`，标题字号为 14px；独立分析页与首页内嵌分析页同步生效。
+
+### 2026-09-04：首页会员访客提醒更新
+
+- 按 Figma `1055:2593`，首页“待跟进”内的会员追踪上限提醒替换为 353×63px 的半透明白色描边卡：16px 圆角、`#808080` 1px 描边、20px×12px 内边距。
+- 提示显示隐藏访客总数；头像最多显示 5 个。接口头像会额外模糊，Figma 导出的 5 个已模糊头像作为接口缺失时的固定视觉占位，均保存于 `assets/home-new/limit-prompt/`。
+- 首页与通知页均使用该白色会员提醒卡，点击后进入既有会员开通页；通知页不再使用深绿色旧提醒卡。
+- 为便于当前视觉验收，首页与通知页暂时固定展示该提醒卡；真实会员状态接入后移除 `SHOW_VISITOR_LIMIT_PROMPT_PREVIEW`。
+
 ## 待确认事项
 
 - 设计稿基准设备尺寸和适配目标。
@@ -2948,6 +3163,7 @@ miniprogram/
 - 小程序虚拟支付：后台填 OfferId / 现网 AppKey；创建道具 `month` / `quarter` / `half_year` / `month_pro` / `quarter_pro` / `half_year_pro` 并**发布到现网**；发货推送指向公网 `https://host/api/pay/xpay/notify`。
 - 三个 Pro 档位的正式价格待确认（当前后端占位 0.03 / 0.04 / 0.05 元）。
 - iOS 虚拟支付最低 1 元，当前测试价 ¥0.01 不能在 iPhone 上完成；需打开「苹果支付」、配置小程序简称。上线前改回 29.9 / 79.9 / 139.9。
+- 排行榜后端接口（当前 aisales 未提供销售排行榜数据，页面暂用 Figma 预览 mock）。
 - 分析页「总」时间范围口径：后端 custom 查询上限 62 天，暂按最近 62 天，需后端确认是否提供全量范围。
 - 后端待补能力：按日阅读趋势接口（当前由前端按日聚合 dashboard）、素材图片更新与素材删除接口（编辑草稿改图会产生新素材）、客户级转发次数（当前仅 0/1 标记）、未读通知/红点口径。
-- 正式版接口基址 `https://www.yjxzhang.com/api`，体验版 `https://www.yjxzhang.com/dev/api`；开发版/真机调试使用 `config/dev.ts` 局域网地址。
+- 生产环境接口基址与合法域名配置待确认；当前开发/体验版使用 `http://192.168.31.225:8080/api`。

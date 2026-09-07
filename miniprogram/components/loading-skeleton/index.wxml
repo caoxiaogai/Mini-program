@@ -1,0 +1,21 @@
+<view class="loading-skeleton loading-skeleton--{{variant}}" aria-label="正在加载">
+  <view wx:if="{{variant === 'analysis'}}" class="loading-skeleton__analysis">
+    <view class="loading-skeleton__row loading-skeleton__row--metrics"><view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="loading-skeleton__metric" /></view>
+    <view class="loading-skeleton__bar loading-skeleton__bar--title" />
+    <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="loading-skeleton__card"><view class="loading-skeleton__thumb" /><view class="loading-skeleton__copy"><view class="loading-skeleton__bar loading-skeleton__bar--wide" /><view class="loading-skeleton__bar loading-skeleton__bar--medium" /><view class="loading-skeleton__bar loading-skeleton__bar--short" /></view></view>
+  </view>
+  <view wx:elif="{{variant === 'detail' || variant === 'user-detail'}}" class="loading-skeleton__detail">
+    <view class="loading-skeleton__card loading-skeleton__card--hero"><view class="loading-skeleton__thumb loading-skeleton__thumb--large" /><view class="loading-skeleton__copy"><view class="loading-skeleton__bar loading-skeleton__bar--wide" /><view class="loading-skeleton__bar loading-skeleton__bar--medium" /></view></view>
+    <view class="loading-skeleton__bar loading-skeleton__bar--title" />
+    <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="loading-skeleton__card"><view class="loading-skeleton__thumb" /><view class="loading-skeleton__copy"><view class="loading-skeleton__bar loading-skeleton__bar--wide" /><view class="loading-skeleton__bar loading-skeleton__bar--medium" /><view class="loading-skeleton__bar loading-skeleton__bar--short" /></view></view>
+  </view>
+  <view wx:elif="{{variant === 'materials'}}" class="loading-skeleton__materials">
+    <view wx:for="{{[1, 2, 3, 4]}}" wx:key="*this" class="loading-skeleton__materials-card">
+      <view class="loading-skeleton__materials-preview" />
+      <view class="loading-skeleton__materials-info"><view class="loading-skeleton__bar loading-skeleton__bar--wide" /><view class="loading-skeleton__bar loading-skeleton__bar--short" /></view>
+    </view>
+  </view>
+  <view wx:elif="{{variant === 'membership'}}" class="loading-skeleton__membership"><view class="loading-skeleton__block loading-skeleton__block--hero" /><view class="loading-skeleton__bar loading-skeleton__bar--title" /><view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="loading-skeleton__plan" /><view class="loading-skeleton__block loading-skeleton__block--button" /></view>
+  <view wx:elif="{{variant === 'document' || variant === 'material-detail'}}" class="loading-skeleton__document"><view class="loading-skeleton__block loading-skeleton__block--media" /><view class="loading-skeleton__bar loading-skeleton__bar--wide" /><view class="loading-skeleton__bar loading-skeleton__bar--medium" /></view>
+  <view wx:else class="loading-skeleton__list"><view class="loading-skeleton__bar loading-skeleton__bar--title" /><view wx:for="{{[1, 2, 3, 4]}}" wx:key="*this" class="loading-skeleton__card"><view class="loading-skeleton__thumb" /><view class="loading-skeleton__copy"><view class="loading-skeleton__bar loading-skeleton__bar--wide" /><view class="loading-skeleton__bar loading-skeleton__bar--medium" /><view class="loading-skeleton__bar loading-skeleton__bar--short" /></view></view></view>
+</view>
