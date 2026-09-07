@@ -1,12 +1,10 @@
 <view class="auth-page">
   <view class="auth-page__header">
-    <navigation-bar title="登录" back="{{false}}" color="#000000" background="#ffffff" />
+    <navigation-bar title="授权" back="{{false}}" color="#000000" background="#ffffff" />
   </view>
 
   <form class="auth-page__content" bindsubmit="onFormSubmit">
-    <view class="auth-page__copy">
-      <text class="auth-page__title">欢迎使用言界阿乐</text>
-    </view>
+    
 
     <button class="auth-page__avatar-button" open-type="chooseAvatar" hover-class="auth-page__avatar-button--pressed" disabled="{{busy}}" bind:chooseavatar="onChooseAvatar">
       <image class="auth-page__avatar" src="{{avatarUrl}}" mode="aspectFill" />
@@ -18,7 +16,7 @@
       class="auth-page__nickname"
       type="nickname"
       name="nickname"
-      maxlength="20"
+      maxlength="10"
       placeholder="请输入昵称"
       value="{{nickname}}"
       focus="{{nicknameFocused}}"
@@ -32,7 +30,7 @@
       class="auth-page__nickname"
       type="nickname"
       name="nickname"
-      maxlength="20"
+      maxlength="10"
       placeholder="请输入昵称"
       focus="{{nicknameFocused}}"
       bindchange="onNicknameChange"
@@ -42,6 +40,6 @@
 
     <button class="auth-page__wechat" open-type="chooseAvatar" hover-class="auth-page__wechat--pressed" disabled="{{busy}}" bind:chooseavatar="onChooseAvatar">用微信头像和昵称</button>
 
-    <button class="auth-page__primary" form-type="submit" hover-class="auth-page__primary--pressed" disabled="{{busy}}">登录</button>
+    <button class="auth-page__primary" form-type="submit" hover-class="auth-page__primary--pressed" disabled="{{busy}}">授权查看</button>
   </form>
 </view>
