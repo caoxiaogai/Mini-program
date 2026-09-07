@@ -7,6 +7,84 @@
   border-radius: 40rpx;
 }
 
+.membership-limit-prompt--visitor {
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #808080;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.membership-limit-prompt__visitor-content {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+}
+
+.membership-limit-prompt__visitor-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.membership-limit-prompt__visitor-message {
+  color: #333333;
+  font-size: 13px;
+  font-weight: 520;
+  line-height: 17px;
+  white-space: nowrap;
+}
+
+.membership-limit-prompt__visitor-count {
+  color: #02a9bf;
+}
+
+.membership-limit-prompt__visitor-description {
+  color: #666666;
+  font-size: 12px;
+  font-weight: 330;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.membership-limit-prompt__visitor-avatars {
+  display: flex;
+  flex: none;
+  width: 72px;
+  height: 24px;
+  align-items: center;
+}
+
+.membership-limit-prompt__visitor-avatar-wrap {
+  position: relative;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-right: -12px;
+}
+
+.membership-limit-prompt__visitor-avatar-wrap:last-child {
+  margin-right: 0;
+}
+
+.membership-limit-prompt__visitor-avatar {
+  position: absolute;
+  top: -5.1px;
+  left: -5.1px;
+  display: block;
+  width: 34.2px;
+  height: 34.2px;
+}
+
+.membership-limit-prompt__visitor-avatar--blurred {
+  filter: blur(4px);
+}
+
 .membership-limit-prompt__background {
   position: absolute;
   inset: 0;

@@ -1,6 +1,6 @@
 <view class="notification-page notification-page--embedded">
   <view wx:if="{{notifications}}" class="notification-page__content">
-    <view wx:if="{{notifications.showVisitorLimitPrompt}}" class="notification-membership-limit"><membership-limit-prompt action-label="{{notifications.limitPromptActionLabel}}" bind:upgrade="onMembershipLimitUpgrade" /></view>
+    <view wx:if="{{notifications.showVisitorLimitPrompt}}" class="notification-membership-limit"><membership-limit-prompt style="display: block; height: 63px;" variant="visitor" visitor-count="{{notifications.limitPromptVisitorCount}}" visitor-avatars="{{notifications.limitPromptVisitorAvatars}}" bind:upgrade="onMembershipLimitUpgrade" /></view>
     <view wx:if="{{hasVisibleGroups}}">
       <view wx:for="{{visibleGroups}}" wx:key="id" class="notification-group {{index > 0 ? 'notification-group--spaced' : ''}}">
         <text class="notification-group__date">{{item.label}}</text>
@@ -48,5 +48,5 @@
       <text>暂无意向用户</text>
     </view>
   </view>
-  <view wx:else class="notification-page__loading">正在加载通知</view>
+  <loading-skeleton wx:else variant="list" />
 </view>

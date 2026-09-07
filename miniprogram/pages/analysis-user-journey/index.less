@@ -39,7 +39,8 @@ page {
 .user-journey-page__content {
   display: flex;
   flex-direction: column;
-  padding: 30rpx 40rpx 0;
+  gap: 40rpx;
+  padding: 40rpx 40rpx 40rpx;
   box-sizing: border-box;
 }
 
@@ -48,6 +49,7 @@ page {
   align-items: center;
   gap: 20rpx;
   padding: 40rpx;
+  border: 2rpx solid #808080;
   border-radius: 40rpx;
   background: #ffffff;
   box-sizing: border-box;
@@ -96,32 +98,35 @@ page {
 }
 
 .user-journey-track-card {
-  margin: 40rpx 0;
+  display: flex;
+  min-height: 1052rpx;
+  flex-direction: column;
+  gap: 30rpx;
   padding: 0 40rpx 40rpx;
-  border-radius: 48rpx;
+  border: 2rpx solid #808080;
+  border-radius: 32rpx;
   background: #ffffff;
   box-sizing: border-box;
 }
 
 .user-journey-track-card__header {
   display: flex;
-  height: 108rpx;
   align-items: center;
   gap: 10rpx;
-  border-bottom: 2rpx solid #f0f0f0;
+  padding-top: 30rpx;
   box-sizing: border-box;
 }
 
 .user-journey-track-card__icon {
-  width: 44rpx;
-  height: 44rpx;
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .user-journey-track-card__title {
-  color: #8a8e94;
+  color: #333333;
   font-size: 28rpx;
   font-weight: 500;
-  line-height: 40rpx;
+  line-height: normal;
 }
 
 .user-journey-track {
@@ -129,16 +134,15 @@ page {
   display: flex;
   flex-direction: column;
   gap: 60rpx;
-  padding-top: 30rpx;
 }
 
 .user-journey-track__line {
   position: absolute;
-  top: 42rpx;
-  bottom: 12rpx;
-  left: 11rpx;
+  top: 6rpx;
+  bottom: 20rpx;
+  left: 10rpx;
   width: 4rpx;
-  background: #cdf0f7;
+  background: #ffd19b;
 }
 
 .user-journey-track__event {
@@ -155,7 +159,7 @@ page {
   height: 24rpx;
   flex: none;
   border-radius: 50%;
-  background: #5ac8d8;
+  background: #ffcf9a;
 }
 
 .user-journey-track__copy {
@@ -164,7 +168,7 @@ page {
   align-items: center;
   gap: 20rpx;
   font-size: 28rpx;
-  line-height: 40rpx;
+  line-height: normal;
   white-space: nowrap;
 }
 
@@ -175,42 +179,4 @@ page {
 
 .user-journey-track__action {
   color: #333333;
-}
-
-.user-journey-contact {
-  position: static;
-  min-height: 0;
-  flex: none;
-  margin: 0 40rpx 48rpx;
-  z-index: 2;
-  display: flex;
-  height: 96rpx;
-  align-items: center;
-  justify-content: center;
-  border-radius: 130rpx;
-  color: #ffffff;
-  background: #0ec8d9;
-  font-size: 26rpx;
-  line-height: 36rpx;
-  transition: transform 120ms ease-out, opacity 120ms ease-out;
-}
-
-.user-journey-contact--pressed {
-  opacity: 0.72;
-  transform: scale(0.96);
-}
-
-.user-journey-copy-feedback {
-  position: fixed;
-  right: 110rpx;
-  bottom: calc(168rpx + env(safe-area-inset-bottom));
-  left: 110rpx;
-  z-index: 3;
-  padding: 20rpx 28rpx;
-  border-radius: 28rpx;
-  color: #ffffff;
-  background: rgba(0, 0, 0, 0.8);
-  font-size: 24rpx;
-  line-height: 36rpx;
-  text-align: center;
 }

@@ -44,6 +44,17 @@ export type MembershipAccess = {
   hasUnshownVisitors: boolean
 }
 
+export interface VisitorLimitPromptAvatarViewModel {
+  id: string
+  url: string
+  shouldBlur: boolean
+}
+
+export interface VisitorLimitPromptViewModel {
+  visitorCount: number
+  avatars: VisitorLimitPromptAvatarViewModel[]
+}
+
 export interface MembershipPlanViewModel {
   id: MembershipPlanId
   title: string

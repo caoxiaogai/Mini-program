@@ -30,15 +30,7 @@ page {
 }
 
 .notification-membership-limit {
-  height: 200rpx;
-  margin-bottom: 40rpx;
-}
-
-.notification-page__loading {
-  padding-top: 80rpx;
-  color: @notification-muted;
-  font-size: 28rpx;
-  text-align: center;
+  margin-bottom: 20px;
 }
 
 .notification-group {
@@ -69,16 +61,57 @@ page {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20rpx;
+  gap: 10px;
   margin-top: 120rpx;
-  color: @notification-muted;
-  font-size: 28rpx;
-  line-height: 40rpx;
+  color: #8a8e94;
 }
 
 .notification-empty-state__icon {
-  width: 156rpx;
-  height: 156rpx;
+  display: block;
+  flex: none;
+  width: 37px;
+  height: 27px;
+}
+
+.notification-empty-state__message {
+  width: 180px;
+  color: #8a8e94;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.notification-empty-state__share {
+  display: flex;
+  width: 120px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 24px;
+  border-radius: 53px;
+  background: linear-gradient(180deg, #ff8901 0%, #ff8900 100%);
+  box-sizing: border-box;
+}
+
+.notification-empty-state__share--pressed {
+  opacity: 0.72;
+}
+
+.notification-empty-state__share-label {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 590;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.notification-empty-state__share-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
 }
 
 .home-notification-card {

@@ -87,6 +87,18 @@
       {
         "type": "file",
         "value": "assets/materials/note-more.svg"
+      },
+      {
+        "type": "file",
+        "value": "assets/analysis/intent-customer-high-avatar.png"
+      },
+      {
+        "type": "file",
+        "value": "assets/analysis/intent-customer-medium-avatar.png"
+      },
+      {
+        "type": "file",
+        "value": "assets/analysis/intent-customer-low-avatar.png"
       }
     ],
     "include": []

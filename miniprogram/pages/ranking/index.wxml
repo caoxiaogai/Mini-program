@@ -1,17 +1,18 @@
 <view class="ranking-page">
   <view class="ranking-page__base"></view>
   <view class="ranking-page__status-glow" />
-  <view class="ranking-page__header" style="background: rgba(232, 237, 245, {{rankingHeaderOpacity}});">
+  <view class="ranking-page__header" style="background: rgba(255, 255, 255, {{rankingHeaderOpacity}});">
     <navigation-bar title="排行榜" back="{{true}}" color="#000000" background="transparent" />
   </view>
 
     <view class="ranking-page__content">
-      <view class="ranking-hero">
+      <loading-skeleton wx:if="{{!rankingData}}" variant="list" />
+      <view wx:if="{{rankingData}}" class="ranking-hero">
         <view class="ranking-hero__copy">
           <image class="ranking-hero__title" src="/assets/ranking/ranking-title.png" mode="aspectFit" />
           <text class="ranking-hero__subtitle">每一次浏览，都是实力的证明</text>
         </view>
-        <image class="ranking-hero__trophy" src="/assets/ranking/ranking-trophy.png" mode="aspectFit" />
+        <image class="ranking-hero__trophy" src="/assets/ranking/ranking-trophy.svg" mode="aspectFit" />
       </view>
 
       <view wx:if="{{rankingData}}" class="ranking-panel {{hasRankingEntries ? '' : 'ranking-panel--empty'}}">

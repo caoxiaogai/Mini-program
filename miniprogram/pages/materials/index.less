@@ -40,18 +40,6 @@ page {
   pointer-events: none;
 }
 
-.materials-page__stripes {
-  position: absolute;
-  top: 0;
-  left: 4rpx;
-  z-index: 1;
-  display: block;
-  width: 100%;
-  height: 260rpx;
-  opacity: 0.9;
-  pointer-events: none;
-}
-
 .materials-page__header {
   position: relative;
   z-index: 2;
@@ -119,10 +107,33 @@ page {
 }
 
 .materials-filter__item--active {
-  border-color: #7acadb;
-  background: linear-gradient(180deg, #e4f9fc 0%, #fefeff 100%);
-  color: @materials-accent;
+  border-color: #ff8901;
+  background: linear-gradient(180deg, #fcefe4 0%, #fefeff 100%);
+  color: #ff8901;
   font-weight: 600;
+}
+
+.materials-filter--skeleton {
+  gap: 20rpx;
+}
+
+.materials-filter__skeleton-item {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 64rpx;
+  overflow: hidden;
+  border-radius: 10rpx;
+  background: #e6e8ea;
+}
+
+.materials-filter__skeleton-item::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.6) 45%, transparent 70%);
+  transform: translateX(-100%);
+  animation: materials-skeleton-shimmer 1.4s ease-in-out infinite;
+  content: '';
 }
 
 .materials-filter__item--pressed,
@@ -163,6 +174,10 @@ page {
 
 .materials-card--pressed {
   transform: scale(0.99);
+}
+
+@keyframes materials-skeleton-shimmer {
+  to { transform: translateX(100%); }
 }
 
 .materials-card__preview {
@@ -260,7 +275,7 @@ page {
   height: 80rpx;
   padding: 0 48rpx;
   border-radius: 106rpx;
-  background: @materials-accent;
+  background: #ff8901;
   color: #ffffff;
   font-size: 28rpx;
   font-weight: 600;

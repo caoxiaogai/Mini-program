@@ -85,11 +85,7 @@
     </view>
   </view>
 
-  <view wx:elif="{{status === 'loading'}}" class="membership-page__state-surface">
-    <view class="membership-page__state">
-      <text>正在加载会员套餐</text>
-    </view>
-  </view>
+  <loading-skeleton wx:elif="{{status === 'loading'}}" variant="membership" />
 
   <view wx:else class="membership-page__state-surface">
     <view class="membership-page__state">

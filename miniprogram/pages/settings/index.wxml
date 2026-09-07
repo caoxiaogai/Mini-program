@@ -3,7 +3,9 @@
     <navigation-bar title="设置" back="{{true}}" color="#000000" background="#ffffff" />
   </view>
 
-  <view class="settings-page__content">
+  <loading-skeleton wx:if="{{loading}}" variant="list" />
+
+  <view wx:else class="settings-page__content">
     <view class="settings-card">
       <view class="settings-card__copy">
         <view class="settings-card__title-row">

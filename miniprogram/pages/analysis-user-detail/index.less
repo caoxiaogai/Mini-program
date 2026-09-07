@@ -13,7 +13,7 @@ page {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: #f0f1f2;
+  background: #ffffff;
 }
 
 .user-detail-page__content {
@@ -29,10 +29,17 @@ page {
 }
 
 .user-detail__profile-card {
-  gap: 20rpx;
+  gap: 40rpx;
   padding: 40rpx;
-  border-radius: 40rpx;
-  background: linear-gradient(180deg, #f3fbfc 0%, #ffffff 100%);
+  border: 2rpx solid #808080;
+  border-radius: 32rpx;
+  background: #ffffff;
+}
+
+.user-detail__profile-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
 }
 
 .user-detail__profile-main {
@@ -59,7 +66,7 @@ page {
   flex-direction: column;
   align-items: flex-start;
   min-width: 0;
-  gap: 16rpx;
+  gap: 4rpx;
 }
 
 .user-detail__name {
@@ -78,31 +85,41 @@ page {
   flex: none;
   align-items: center;
   justify-content: center;
+  font-size: 22rpx;
+  white-space: nowrap;
+}
+
+.user-detail__high-intent {
   padding: 0 20rpx;
   border-radius: 96rpx;
-  font-size: 22rpx;
   line-height: normal;
-  white-space: nowrap;
 }
 
 .user-detail__record-intent {
   align-self: flex-start;
+  padding: 0 12rpx;
+  border-radius: 48rpx;
+  line-height: 40rpx;
 }
 
-.user-detail__high-intent,
+.user-detail__high-intent {
+  color: #844600;
+  background: #ff9923;
+}
+
 .user-detail__record-intent--high {
-  color: #ff4343;
-  background: #ffd7ce;
+  color: #844600;
+  background: #ff9923;
 }
 
 .user-detail__record-intent--medium {
-  color: #ffa602;
-  background: #fff0d3;
+  color: #ac691b;
+  background: #f9b566;
 }
 
 .user-detail__record-intent--low {
-  color: #656159;
-  background: #d8d8d8;
+  color: #be9752;
+  background: #fee5b9;
 }
 
 .user-detail__metrics {
@@ -135,7 +152,7 @@ page {
   justify-content: center;
   border-radius: 65rpx;
   color: #ffffff;
-  background: #0ec8d9;
+  background: #ff8901;
   font-size: 26rpx;
   line-height: normal;
 }
@@ -151,7 +168,8 @@ page {
   flex-direction: column;
   gap: 34rpx;
   padding: 0 40rpx 40rpx;
-  border-radius: 48rpx;
+  border: 2rpx solid #808080;
+  border-radius: 32rpx;
   background: #ffffff;
   box-sizing: border-box;
 }
@@ -160,21 +178,20 @@ page {
   display: flex;
   align-items: center;
   gap: 10rpx;
-  padding: 30rpx 0;
-  border-bottom: 2rpx solid #f0f0f0;
+  padding: 30rpx 0 0;
 }
 
 .user-detail__records-icon {
-  width: 44rpx;
-  height: 44rpx;
+  width: 40rpx;
+  height: 40rpx;
   flex: none;
 }
 
 .user-detail__records-title {
-  color: #8a8e94;
+  color: #333333;
   font-size: 28rpx;
   font-weight: 500;
-  line-height: 40rpx;
+  line-height: normal;
 }
 
 .user-detail__records-body {
@@ -195,8 +212,9 @@ page {
   align-items: stretch;
   gap: 30rpx;
   padding: 30rpx;
+  border: 2rpx solid #f0f0f0;
   border-radius: 30rpx;
-  background: #f0f1f2;
+  background: #ffffff;
   box-sizing: border-box;
 }
 

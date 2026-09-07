@@ -1,8 +1,4 @@
 <view class="bottom-tab-bar {{isAndroid ? 'bottom-tab-bar--android' : ''}}">
-  <view class="bottom-tab-bar__scrim">
-    <image class="bottom-tab-bar__scrim-image" src="/assets/home-new/bottom-nav-scrim.svg" mode="scaleToFill" />
-  </view>
-  <view class="bottom-tab-bar__scrim-tail" />
   <view class="bottom-tab-bar__inner">
     <view class="bottom-tab-bar__glass" />
     <view class="bottom-tab-bar__effects" />

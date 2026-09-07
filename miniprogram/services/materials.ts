@@ -208,7 +208,7 @@ export function deleteMaterials(ids: string[]): Promise<void> {
   )
 }
 
-export function getMaterialDetail(materialId: string): Promise<MaterialDetailViewModel | null> {
+export function getMaterialDetail(materialId: string, ownerView = false): Promise<MaterialDetailViewModel | null> {
   return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true })
     .then(async (material) => {
       const fileType = material.fileType ?? 'IMAGE'
@@ -245,7 +245,7 @@ export function getMaterialDetail(materialId: string): Promise<MaterialDetailVie
         pdfFileName,
         noteBlocks,
         descriptionLines: splitMaterialCopy(resolveMaterialCopy(material)),
-        isOwner: String(material.userId) === String(user.userId),
+        isOwner: ownerView || String(material.userId) === String(user.userId),
       }
     })
 }

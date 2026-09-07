@@ -1,13 +1,15 @@
 <view class="material-detail-page">
   <view class="material-detail-page__header">
-    <navigation-bar title="作品" back="{{true}}" home-button="{{true}}" color="#000000" background="#f0f1f2" />
+    <navigation-bar title="作品" back="{{true}}" home-button="{{true}}" color="#000000" background="#ffffff" />
   </view>
 
   <view wx:if="{{unavailableMessage}}" class="material-detail-page__unavailable">
     <text>{{unavailableMessage}}</text>
   </view>
 
-  <view wx:if="{{detail}}" class="material-detail-page__content">
+  <loading-skeleton wx:elif="{{!detail}}" variant="material-detail" />
+
+  <view wx:else class="material-detail-page__content">
     <block wx:if="{{detail.fileType === 'NOTE'}}">
       <view class="note-detail">
         <block wx:for="{{detail.noteBlocks}}" wx:key="id">
@@ -143,23 +145,31 @@
     </view>
   </view>
 
-  <view wx:if="{{detail}}" class="material-detail__share-bar">
+  <view wx:if="{{detail && detail.isOwner}}" class="material-detail-owner-bar">
+    <button class="material-detail-owner-bar__action" bindtap="onOwnerDeleteTap" hover-class="material-detail-owner-bar__action--pressed" hover-stay-time="80" aria-label="删除作品">
+      <image src="/assets/materials/detail-owner-delete.svg" mode="aspectFit" />
+    </button>
+    <button class="material-detail-owner-bar__action material-detail-owner-bar__action--edit" bindtap="onSecondaryEditTap" hover-class="material-detail-owner-bar__action--pressed" hover-stay-time="80" aria-label="编辑作品">
+      <image src="/assets/materials/detail-owner-edit.svg" mode="aspectFit" />
+    </button>
+    <button class="material-detail-owner-bar__share material-detail-owner-bar__share--friend" open-type="share" hover-class="material-detail-owner-bar__share--pressed" hover-stay-time="80">
+      <text>好友</text>
+      <image class="material-detail-owner-bar__share-icon" src="/assets/materials/detail-share.svg" mode="aspectFit" />
+    </button>
+    <button class="material-detail-owner-bar__share material-detail-owner-bar__share--moments" bindtap="onShareMomentsTap" hover-class="material-detail-owner-bar__share--pressed" hover-stay-time="80">
+      <text>朋友圈</text>
+      <view class="material-detail-owner-bar__moments-icon">
+        <image src="/assets/materials/detail-moments.png" mode="aspectFit" />
+      </view>
+    </button>
+  </view>
+
+  <view wx:elif="{{detail}}" class="material-detail__share-bar">
     <button class="material-detail__share-button material-detail__share-button--friend" open-type="share" hover-class="material-detail__share-button--pressed" hover-stay-time="80">
       <text>分享给好友</text>
       <image class="material-detail__share-icon" src="/assets/materials/detail-share.svg" mode="aspectFit" />
     </button>
     <button
-      wx:if="{{detail.isOwner}}"
-      class="material-detail__share-button material-detail__share-button--edit"
-      bindtap="onSecondaryEditTap"
-      hover-class="material-detail__share-button--pressed"
-      hover-stay-time="80"
-    >
-      <text>二次编辑</text>
-      <image class="material-detail__share-icon" src="/assets/materials/detail-edit.svg" mode="aspectFit" />
-    </button>
-    <button
-      wx:else
       class="material-detail__share-button material-detail__share-button--moments"
       bindtap="onShareMomentsTap"
       hover-class="material-detail__share-button--pressed"

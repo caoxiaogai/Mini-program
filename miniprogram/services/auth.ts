@@ -1,14 +1,12 @@
 import type { ApiLoginData } from '../types/api'
-import { AUTH_PAGE_ROUTE, buildAuthPath, isLoginProfileComplete, safeReturnPath, type AuthGate } from '../utils/auth'
+import { AUTH_PAGE_ROUTE, buildAuthPath, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath, type AuthGate } from '../utils/auth'
 import { HOME_PAGE_PATH } from '../utils/share-material'
-import { authorizeLogin, clearLogin, ensureLogin, hasAuthorizedLogin, patchCachedLogin } from './request'
-import { updateUserProfile } from './user'
+import { authorizeLogin, clearLogin, ensureLogin, patchCachedLogin } from './request'
+import { updateUserProfile, uploadUserAvatar } from './user'
 
 export { isLoginProfileComplete }
 
 export function resolveAuthGate(): Promise<AuthGate> {
-  if (!hasAuthorizedLogin()) return Promise.resolve('login')
-
   return ensureLogin()
     .then((user) => (isLoginProfileComplete(user) ? 'ok' : 'login'))
     .catch(() => 'login' as AuthGate)
@@ -52,10 +50,15 @@ export function completeProfileLogin(input: { nickname: string; avatar: string }
     return Promise.reject(new Error('请设置真实头像和昵称'))
   }
 
-  return authorizeLogin().then((user) =>
-    updateUserProfile({ nickname, avatar }).then(() => {
-      patchCachedLogin({ nickname, avatar })
-      return { ...user, nickname, avatar }
-    }),
-  )
+  return authorizeLogin()
+    .then((user) => {
+      const resolvedAvatar = isLocalAvatarFile(avatar) ? uploadUserAvatar(avatar) : Promise.resolve(avatar)
+      return resolvedAvatar.then((uploadedAvatar) => ({ user, avatar: uploadedAvatar }))
+    })
+    .then(({ user, avatar: uploadedAvatar }) =>
+      updateUserProfile({ nickname, avatar: uploadedAvatar }).then(() => {
+        patchCachedLogin({ nickname, avatar: uploadedAvatar })
+        return { ...user, nickname, avatar: uploadedAvatar }
+      }),
+    )
 }

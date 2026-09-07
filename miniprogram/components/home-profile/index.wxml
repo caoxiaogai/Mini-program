@@ -114,5 +114,5 @@
       <text class="home-profile__pending-description">{{profile.pendingDescription}}</text>
     </view>
   </view>
-  <view wx:else class="home-profile__loading"><text>正在加载</text></view>
+  <loading-skeleton wx:else variant="detail" />
 </view>

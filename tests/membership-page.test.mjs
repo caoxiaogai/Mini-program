@@ -75,7 +75,7 @@ test('membership page is registered and uses the typed service seam', () => {
   assert.match(page, /membership-plan--disabled/)
   assert.match(page, /selectedPlanId === item.id && !standardActionsDisabled/)
   assert.match(styles, /\.membership-plan--disabled/)
-  assert.match(styles, /\.membership-plan--disabled \{[\s\S]*background: #ffffff;/) 
+  assert.match(styles, /\.membership-plan--disabled \{[\s\S]*background: #ffffff;/)
   assert.match(service, /path: '\/membership\/me'/)
   assert.match(service, /path: '\/membership\/order'/)
   assert.match(service, /data: \{ planId, code \}/)

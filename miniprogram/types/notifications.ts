@@ -1,4 +1,4 @@
-import type { MembershipUiTier } from './membership'
+import type { MembershipUiTier, VisitorLimitPromptAvatarViewModel } from './membership'
 
 export type NotificationFilterId = 'all' | 'high' | 'medium' | 'low'
 
@@ -42,4 +42,6 @@ export interface NotificationsViewModel {
   showVisitorLimitPrompt: boolean
   limitPromptActionLabel: string
   limitPromptTargetTier: MembershipUiTier
+  limitPromptVisitorCount: number
+  limitPromptVisitorAvatars: VisitorLimitPromptAvatarViewModel[]
 }

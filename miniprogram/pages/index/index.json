@@ -12,7 +12,8 @@
     "notification-mark-all-read": "/components/notification-mark-all-read/index",
     "publish-success-modal": "/components/publish-success-modal/index",
     "date-range-picker": "/components/date-range-picker/index",
-    "publish-type-sheet": "/components/publish-type-sheet/index"
+    "publish-type-sheet": "/components/publish-type-sheet/index",
+    "loading-skeleton": "/components/loading-skeleton/index"
   },
   "disableScroll": true,
   "enableShareAppMessage": true,

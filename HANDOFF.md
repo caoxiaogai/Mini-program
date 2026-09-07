@@ -310,6 +310,252 @@ miniprogram/
 - 授权页头像从 `176rpx` 改为 `128rpx`，昵称输入框高度改为 `72rpx`。
 - 「用微信头像和昵称」「查看更多」按钮高度改为 `112rpx`，字号加大。
 
+### 2026-09-07：作品详情个人视角底部按 Figma 1139:10298 校准
+
+- 作者视角底部操作栏按新版 Figma 保留删除、编辑、好友、朋友圈四个控件，底部栏含安全区时自动扩展。
+- 作者栏使用独立布局，不复用访客分享按钮的伸缩样式，避免删除和编辑操作被两枚分享按钮挤出屏幕。
+- 小程序内部从首页、素材页和分析内容页进入自己的作品时显式传递作者视角；详情页对无分享追踪参数的旧内部入口也默认按作者视角处理，带分享追踪参数的外部链接继续显示访客操作栏。
+- 删除/编辑图标保持 48px，好友与朋友圈按钮为 100×48px；好友使用 `#F8F9FA` 背景和 `#808080` 描边，朋友圈使用主题橙 `#FF8901`。
+- 作者视角分享图标按 24px（朋友圈图标内图形 18px）渲染，访客视角的分享操作和交互保持不变。
+- 验证：作品详情作者底部定向测试通过，`git diff --check` 通过。
+
+### 2026-09-07：用户轨迹按 Figma 1136:9882 改版
+
+- 用户轨迹改为作品摘要描边卡 + 行为轨迹描边卡，移除旧版底部联系用户按钮。
+- 行为轨迹使用 20px 黑色文档图标、橙色时间线和 12px 节点，事件文案按时间、动作、详情横向排列。
+- 导航栏与作品摘要卡之间补充 20px 顶部间距。
+- 保留用户轨迹接口、加载/错误/重试和下拉刷新状态。
+
+### 2026-09-07：用户轨迹顶部改为纯白
+
+- 用户轨迹页导航栏背景改为 `#ffffff`，保持返回按钮、标题和轨迹内容布局不变。
+
+### 2026-09-07：用户详情意向标签与首页通知区统一
+
+- 用户详情阅读记录中的高/中/低意向标签统一复用首页通知区的尺寸、圆角、字号和颜色：`#ff9923/#844600`、`#f9b566/#ac691b`、`#fee5b9/#be9752`。
+
+### 2026-09-07：用户详情浏览记录图标替换
+
+- 使用用户提供的 `icon_read.svg` 替换浏览记录标题图标，资源保存为 `assets/analysis/reading-record-icon.svg`。
+- 保持新版 Figma 规定的 20px 图标尺寸和现有筛选、记录布局不变。
+
+### 2026-09-07：用户详情内容区域按 Figma 1133:9656 更新
+
+- 用户概览卡改为白色 `#808080` 描边，恢复 Figma 的 20px 内边距与 16px 圆角，联系用户按钮使用主题橙色 `#FF8901`。
+- 阅读记录区域改为白色描边容器，标题图标与文字尺寸、记录卡片边框、标签颜色和指标字号按新版 Figma 调整。
+- 保留现有 typed service、排序筛选、点击记录进入用户轨迹和复制用户名交互。
+
+### 2026-09-07：用户详情顶部改为纯白
+
+- 用户详情页导航栏及其 sticky 顶部容器统一使用 `#ffffff`，标题、返回按钮和页面其余内容不变。
+- 验证：用户详情导航背景定向测试通过，`git diff --check` 通过。
+
+### 2026-09-07：分析总数据卡按 Figma 1065:6295 更新
+
+- “数据总览”和“浏览峰值”卡统一增加 `#808080` 的 1px 外描边，移除标题区横向分割线；内容、筛选器和图表结构保持不变。
+- 使用用户提供的 `icon_date.svg` 与 `icon_fengzhi.svg` 替换两处 20px 黑色标题图标，独立分析页与首页内嵌分析同步生效。
+- 验证：总数据相关定向测试 5/5 通过，两个 SVG 与用户提供文件逐字匹配，`git diff --check` 通过。
+
+### 2026-09-04：通知页空状态按 Figma 1115:8725 更新
+
+- 通知页无待跟进数据时改用空箱图标、`暂无待跟进客户，快去分享作品吧` 文案和橙色「去分享」按钮。
+- 复用本地 `empty-state-box.svg` 与 `share-action.svg` 资源，按 Figma 的 37×27px 图标、12px 文案、120×32px 按钮和 10px 间距实现。
+- 「去分享」继续走现有 `onPlusTap` 发布入口；加载中的骨架屏和有数据列表不变。
+- 验证：`notification page empty state follows Figma 1115:8725` 定向测试通过，`git diff --check` 通过。
+
+### 2026-09-04：全小程序数据页面统一骨架屏
+
+- 新增复用组件 `miniprogram/components/loading-skeleton/`，按列表、分析、详情、会员、文档/作品详情提供结构化占位，并使用统一 shimmer 动效。
+- 首页之外，分析、分析详情、用户详情、用户轨迹、文档预览、作品详情、素材、会员、通知、排行榜、设置，以及首页内嵌的通知/分析/我的模块均在异步数据未就绪时显示骨架屏。
+- 设置页补充加载状态，避免设置请求期间提前展示默认选项。
+- 验证：骨架屏针对性测试通过；页面和组件 JSON 解析通过；`git diff --check` 通过。全局 TypeScript 编译命令不可用（环境未安装 `tsc`）。
+
+### 2026-09-04：首页顶部星星装饰替换为新素材
+
+- 使用用户提供的 `image 45.png` 替换 `miniprogram/assets/home-new/home-greeting-star.png`。
+- 保持 `.home-hero__star` 的位置、右侧间距和 `home-greeting-float` 无限循环浮动动画不变。
+- 针对性测试：`home hero uses the supplied star artwork without changing its motion hook`。
+
+### 2026-09-04：首页顶部箭头组右侧间距调整
+
+- 首页顶部 Figma `1106:8082` 的箭头组改为右侧 `20px` 锚定，星星装饰同步保持 `32px` 右间距，避免设备宽度变化时偏移。
+- 针对性测试同步校验右侧定位。
+
+### 2026-09-04：首页顶部发布引导按 Figma 1106:8082 更新
+
+- 首页顶部文案改为两行“发布作品 / 找到高意向客户”，标题继续使用 Tencent Sans W7，字号按 28px 基准实现。
+- 流程说明保留为“发布素材 → 跟进浏览 → 识别客户”，并按 Figma 间距放置右侧箭头 SVG 与底部星星装饰。
+- 火焰和星星装饰继续使用无限循环的上下浮动动画；新增资源 `miniprogram/assets/home-new/home-hero-arrow.svg`。
+- 针对性测试：`home hero matches the confirmed Figma 1106:8082 composition`。
+
+### 2026-09-04：首页空状态文案与发布按钮间距
+
+- 将首页“今日浏览最多”空状态中文案组与“发布作品”按钮之间的间距从 `40rpx` 调整为 `10px`；图标与文案内部间距、按钮尺寸和交互保持不变。
+- 验证：空状态定向测试通过，`git diff --check` 通过。
+
+### 2026-09-04：首页空状态“发布作品”直接打开发布流程
+
+- 将首页“今日浏览最多”空状态中的“发布作品”按钮事件改为 `onMaterialPublishTap`，点击后直接显示现有图片 / 视频 / PDF 发布类型遮罩；底部导航发布入口仍保持切换到发布页的原有行为。
+- 验证：空状态与发布流程定向测试通过，发布相关测试 10/10 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页无数据“发布作品”按钮宽度
+
+- 按 Figma `1063:4570` 将首页“今日浏览最多”空状态中的“发布作品 +”按钮宽度设为 `120px`，并将按钮内部尺寸同步为 Figma 的 13px 文字、6px 间距、24px 内边距和不可换行布局，避免内容挤压换行。
+- 验证：空状态定向测试通过，`git diff --check` 通过；全量首页测试仍有仓库既有的其它不相关失败。
+
+### 2026-09-04：首页增加数据加载骨架
+
+- 首页首次加载且 `isLoading` 为真时，展示与现有首页主要区块保持尺寸的静态浅灰骨架；数据返回后自动切回真实内容，静默刷新不改变当前内容。
+- 骨架覆盖顶部标题、待跟进、超级榜单、今日浏览最多、今日新增客户和今日数据区域；底部胶囊导航保持正常显示。
+- 验证：首页加载骨架定向测试通过，`git diff --check` 通过。
+
+### 2026-09-04：素材筛选选中态改为橙色
+
+- 按 Figma 节点 `1094:7486` 将素材页筛选栏选中项的边框、文字改为 `#FF8901`，背景改为 `#FCEFE4` 至 `#FEFEFF` 的渐变；尺寸、圆角、阴影和交互保持不变。
+- 验证：素材筛选定向测试、发布相关测试（10/10）和 `git diff --check` 均通过。
+
+### 2026-09-04：发布页“发布素材”按钮改为橙色
+
+- 将发布页底部“发布素材”按钮背景色改为 `#FF8901`，文字和加号保持白色，尺寸、位置与交互不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/publish-material-entry.test.mjs`（10/10 通过），`git diff --check` 通过。
+
+### 2026-09-04：首页互动消息状态提示对齐与字号
+
+- 将互动消息卡片中的“该用户已完成浏览”等状态提示左移至头像左边缘，并将字号设为 12px（`24rpx`）；卡片其它布局保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home notification status aligns with the avatar and uses 12px text" tests/home-page.test.mjs`。
+
+### 2026-09-04：底部胶囊导航增加投影
+
+- 按最新确认将投影应用到整个胶囊导航容器：`#000000`、8% 不透明度、`blur 20px`，CSS 为 `box-shadow: 0 0 20px rgba(0, 0, 0, 0.08)`。
+- 移除胶囊内部效果层的旧投影，避免同一导航叠加两层不同阴影。
+
+### 2026-09-04：修正今日数据分隔线位置
+
+- `.home-today-card__header` 增加 `box-sizing: border-box`，使 `height: 68rpx` 包含 `padding-bottom: 16rpx`，避免标题区域额外增加高度导致分隔线下移。
+
+### 2026-09-04：底部背景层整体移除
+
+- 按最新确认移除底部导航的整块背景容器、背景 SVG 和对应样式；仅保留悬浮胶囊导航及其自身背景。
+- 验证：底部背景层移除定向测试通过，`git diff --check` 通过。
+
+### 2026-09-04：底部导航间距改为 24px 并移除底部背景模糊
+
+- 将底部导航胶囊与底部安全区的最小间距改为 `24px`，保留全面屏设备的 `safe-area-inset-bottom`。
+- 移除 `.bottom-tab-bar__scrim` 的 `backdrop-filter: blur(7.7px)`；胶囊自身的 `blur(5px)` 保持不变。
+- 验证：`bottom navigation uses a 24px bottom gap without backdrop blur` 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页“今日浏览最多”过滤零浏览作品
+
+- 修正首页 service：`/analysis/content/list` 返回的作品先过滤 `viewCount <= 0`，再按浏览次数排序并取前两条；没有有效浏览数据时，页面会进入 Figma `1055:3141` 空状态。
+- 验证：空状态、零浏览过滤和首页空状态分支定向测试 3/3 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页汇总卡图标改为无 mask 高清 SVG
+
+- 使用用户最新提供的 `icon_read.svg`、`icon_date.svg` 替换首页“今日浏览最多”和“今日数据”图标；移除原 SVG 的 `mask` 结构，减少缩放后的灰边/投影感。
+- 验证：资源与用户提供文件逐字匹配，`xmllint --noout` 通过，高清图标定向测试通过。
+
+### 2026-09-04：首页“今日浏览最多”无数据状态按 Figma 1055:3141 更新
+
+- 无今日浏览数据时，保留标题区，显示 Figma 导出的 `today-most-empty.svg` 插画、文案“没有作品被浏览，快去发布作品吧”和橙色全宽“发布作品”按钮；有数据时继续显示“查看更多”。
+- 空状态按钮沿用现有 `onPlusTap` 发布入口，删除旧云朵提示和旧按钮样式。
+- 验证：`home today-most empty state follows Figma 1055:3141` 与当前首页空状态分支测试通过，`git diff --check` 通过。
+
+### 2026-09-04：首页“今日数据”标题区上下居中
+
+- 调整“今日数据”标题区为 `68rpx` 内容高度和 `16rpx` 底部间距，使标题、日期图标和右侧箭头在上方矩形内垂直居中；分隔线仍保持在上下矩形交界处。
+- 验证：`home today data` 分隔线与标题区定向测试 3/3 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页汇总卡标题加粗
+
+- 将“今日浏览最多”“今日新增 … 个客户”和“今日数据”三个标题的字重统一为 `700`，数字颜色、图标和布局保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home summary card titles use bold typography" tests/home-page.test.mjs`。
+
+### 2026-09-04：首页汇总卡图标替换为高清 SVG
+
+- 将“今日浏览最多”的眼睛图标和“今日数据”的日期图标替换为用户提供的高清 SVG，保留原有首页资源路径、尺寸和布局。
+- 验证：两个资源与用户提供文件逐字匹配，`xmllint --noout` 通过；高清图标定向测试通过。
+
+### 2026-09-04：首页“今日数据”分隔线下移至上下矩形交界
+
+- 根据最新截图，分隔线从标题区底部下移 `22rpx`，与 `today-data-background-926.svg` 的上下矩形交界对齐；线条水平宽度、颜色和样式保持不变。
+- 验证：`home today data divider` 定向测试 2/2 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页“今日浏览”和“今日新增客户”按钮补充背景
+
+- 按 Figma `1055:663` 将“今日浏览最多”和“今日新增客户”卡片内的“查看更多”按钮底色统一为 `#F8F9FA`，保留 `#F0F0F0` 描边、圆角、尺寸和文字样式。
+- 验证：`home summary more buttons use the Figma surface background` 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页“今日数据”分隔线居中
+
+- 为“今日数据”卡片标题下方的虚线分隔线补充水平自动外边距，确保分隔线在内容区域居中；线条宽度、颜色和上下间距保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home today data divider is horizontally centered" tests/home-page.test.mjs`。
+
+### 2026-09-04：首页“超级榜单”左侧内容组垂直居中
+
+- 按 Figma `1055:829` 的层级将标题和副文案收进 `home-ranking-entry__heading`，补齐标题区高度与两段间距。
+- `home-ranking-entry__copy` 改为相对卡片 `top: 50%` 并使用 `translateY(-50%)`，使标题、说明和按钮整体上下居中；奖杯定位和卡片尺寸不变。
+- 验证：`home ranking copy is vertically centered as one Figma content group` 与高清标题资源测试 2/2 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页互动消息“查看更多”按钮底色
+
+- 按最新确认将首页互动消息区的“查看更多”按钮底色设为 `#F8F9FA`，保留当前首页 Figma 样式的尺寸、描边、圆角和文字。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home interaction messages show more on the third unread card only" tests/home-page.test.mjs`。
+
+### 2026-09-04：首页“超级榜单”标题替换为 Figma 高清资源
+
+- 根因：首页原引用 `103×31px` JPEG，标题展示时出现压缩模糊。
+- 按当前首页 Figma 节点 `1055:831` 导出 `309×81px` 的 3 倍 PNG，保存为 `miniprogram/assets/home-new/ranking-title-latest.png`；展示尺寸仍为 `103×27px`，未改变布局。
+- 删除不再使用的低清 `ranking-title-latest.jpg`。验证：标题资源与首页资源定向测试 2/2 通过，`git diff --check` 通过。
+
+### 2026-09-04：首页“待跟进”空状态按 Figma 1055:3430 更新
+
+- 当 `homeData.notifications` 为空时，首页“待跟进”区域改为 Figma `1055:3430` 的 353×93px 空状态卡片：白底、`#808080` 1px 描边、16px 圆角、20px 内边距和 10px 内容间距。
+- 文案更新为“暂无待跟进客户，快去分享作品吧”，并将 Figma 专用插画导出为 `miniprogram/assets/home-new/followup-empty.svg`；有通知数据时仍渲染原有列表。
+- 验证：`node --test --test-name-pattern='home empty state follows Figma|home follow-up empty card follows Figma' tests/home-page.test.mjs`（2/2 通过），`git diff --check` 通过。
+
+### 2026-09-04：首页标题腾讯体字形待补齐
+
+- 检查发现项目内嵌的 `TencentSansW7` 仅是问候语子集，未包含「发布作品 / 快速找到高意向客户」所需字形，标题会回退到系统字体。误加的 `700` 字重已撤回到原 `500`；待用户重新提供原始腾讯字体文件后，提取完整标题字形并接入。
+
+### 2026-09-04：首页顶部灰色渐变在滚动表面绘制
+
+- 发现 SVG 背景层在微信 `scroll-view` 渲染层级中未实际露出，导致顶部始终显示全局纯白。首页改为直接在首个 `scroll-view` 表面绘制 `#CCCCCC` 至透明白的纵向渐变，确保灰色从状态栏顶部开始可见；渐变绘制区域固定为顶部 `200px`，不重复。
+- 渐变通过 `--home-header-gradient-opacity` 复用既有上滑前 `100px` 的淡出值；移除不再使用的 `home-header-background.svg`。
+
+### 2026-09-04：全局浅灰白底统一为纯白
+
+- 全局将首页中出现的 `#F8F9FA`（源文件为小写写法）统一替换为 `#FFF`，避免同一白色卡片/操作区出现不一致的浅灰底。
+- 共享页面画布变量 `@app-page-background` 已由 `#F0F1F2` 改为 `#FFFFFF`；所有引用该变量的页面与内嵌页签同步采用纯白底。
+
+### 2026-09-04：首页顶部渐变改为灰白并保留滚动淡出
+
+- 首页顶部背景资源更新为 Figma 画板宽度 `393px`、高度 `200px` 的纵向渐变：`#CCCCCC` 在顶部，至 50% 处过渡为 `#FFFFFF` 并保持纯白。
+- 继续复用既有 `onHomeScroll` 与 `getHomeHeaderGradientOpacity`：页面上滑的前 `100px` 内，背景不透明度从 `1` 线性降至 `0`；未改动其余首页模块。
+- 验证：`node --test --test-name-pattern='home page uses the local Figma header background asset|home navigation title and background fade in over 100px of scroll' tests/home-page.test.mjs`（2/2 通过），`git diff --check` 通过。
+
+### 2026-09-04：首页按 Figma 1055:663 发版样式更新
+
+- 首页以 Figma `1055:663` 为当前唯一视觉基准：首屏固定文案更新为「发布作品 / 快速找到高意向客户 / 发布素材 → 跟进浏览 → 识别客户」；消息区标题更新为「待跟进」。数据来源和点击路径不变。
+- 首页卡片统一为白底、`#808080` 1px 描边、16px 圆角的最新样式；超级榜单、今日浏览最多、今日新增客户、今日数据均已按该节点重排，并替换为 Figma 导出的榜单奖杯、意向卡、今日数据与图标资源。
+- 底部胶囊以 `1055:663` 覆盖 `1055:3353` 的差异：底色改为实色 `#F0F0F0`，投影改为 `0 0 10px rgba(0,0,0,.05)`；保留用户提供的五组最新选中/未选中图标。
+- 清理新版首页不再引用的旧素材，预览包保持在 2MB 限制内。验证：`home release follows Figma 1055:663`、静态资源预算与微信预览包预算检查均通过；完整历史测试仍有旧 Figma 断言和用户已有开发地址断言待同步。
+
+### 2026-09-04：底部胶囊导航按 Figma 1055:3353 更新
+
+- 以 Figma `1055:3353` 为准：底部渐变层为透明至 `#F2F3F6` 并加 `7.7px` 模糊；胶囊改为 60px 高、20px 左右边距、4px 内边距、`80% #F0F0F0` 玻璃底、白色 1px 描边和 20px 轻阴影；选中项改为白色胶囊。
+- 五组导航图标已替换为用户提供的 SVG；非选中标签为黑色，选中标签及图标为 `#FF8901`。素材页同步移除失效的 `*-default.svg` 路径。
+- 验证：`node --test --test-name-pattern='new homepage assets|bottom navigation|publish navigation receives' tests/home-page.test.mjs`（9/9 通过）。微信开发者工具已通过 CLI 打开工程，仍需在其预览或真机中核对最终像素级位置。
+
+### 2026-09-03：合并 main-v2 后恢复 developer-v2 一键已读视觉尺寸
+
+- 保留 main-v2 为解决文字裁切补上的 `overflow: visible` 和标题栏可见溢出处理；展开胶囊恢复我们确认的 `144rpx` 宽度，文案容器恢复 `112rpx`，避免主分支样式覆盖昨日视觉调整。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home interaction messages expose the compact mark-all-read action|home page declares the new Figma sections|home greeting title uses the Tencent Sans W7 subset" tests/home-page.test.mjs`。
+
+### 2026-09-03：首页问候文案字号放大
+
+- 按最新截图将首页问候标题和副标题字号各增加 4px，从 `44rpx` 调整为 `52rpx`；字体、图标和其他布局保持不变。
+- 验证：`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-name-pattern "home page declares the new Figma sections|home greeting title uses the Tencent Sans W7 subset" tests/home-page.test.mjs`。
+
 ### 2026-09-04：超级榜单对接真实用户排序
 
 - 小程序排行榜改为请求 `GET /analysis/ranking`，按已发布作品的浏览量、转发量、完播量给小程序用户排序；切换指标仍在前端重排，不再使用 `mocks/ranking.ts`。

@@ -5,12 +5,10 @@ import { buildReturnPath } from '../../utils/auth'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 
 Page({
-  noticeTimer: null as number | null,
   data: {
     status: 'loading' as 'loading' | 'success' | 'error',
     errorMessage: '轨迹加载失败',
     journey: null as UserJourneyViewModel | null,
-    noticeVisible: false,
   },
   userId: '',
   materialId: '',
@@ -47,32 +45,5 @@ Page({
           journey: null,
         })
       })
-  },
-  onContactTap() {
-    const userName = this.data.journey?.userName
-    if (!userName) return
-
-    wx.setClipboardData({
-      data: userName,
-      success: () => {
-        wx.hideToast()
-        this.showNotice()
-      },
-    })
-  },
-  showNotice() {
-    if (this.noticeTimer !== null) clearTimeout(this.noticeTimer)
-
-    this.setData({ noticeVisible: true })
-    this.noticeTimer = setTimeout(() => {
-      this.setData({ noticeVisible: false })
-      this.noticeTimer = null
-    }, 1200)
-  },
-  onUnload() {
-    if (this.noticeTimer !== null) {
-      clearTimeout(this.noticeTimer)
-      this.noticeTimer = null
-    }
   },
 })

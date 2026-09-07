@@ -16,6 +16,7 @@ Page({
   data: {
     notifyIntentLevelOptions,
     activeNotifyIntentLevel: DEFAULT_NOTIFY_INTENT_LEVEL as NotifyIntentLevel,
+    loading: true,
     saving: false,
     intentRulesVisible: false,
     intentRulesTitle: INTENT_RULES_TITLE,
@@ -33,10 +34,10 @@ Page({
   loadSettings() {
     return getNotifySettings()
       .then((activeNotifyIntentLevel) => {
-        this.setData({ activeNotifyIntentLevel })
+        this.setData({ activeNotifyIntentLevel, loading: false })
       })
       .catch(() => {
-        this.setData({ activeNotifyIntentLevel: DEFAULT_NOTIFY_INTENT_LEVEL })
+        this.setData({ activeNotifyIntentLevel: DEFAULT_NOTIFY_INTENT_LEVEL, loading: false })
       })
   },
 

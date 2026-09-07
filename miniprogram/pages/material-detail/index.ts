@@ -1,4 +1,4 @@
-import { getMaterialDetail } from '../../services/materials'
+import { deleteMaterials, getMaterialDetail } from '../../services/materials'
 import { runAuthed } from '../../services/auth'
 import {
   calcImageViewProgress,
@@ -50,10 +50,12 @@ Page({
     videoPlayerVisible: false,
     videoPlayerSrc: '',
     videoPlayerPoster: '',
+    deletingMaterial: false,
   },
 
   materialId: '',
   pageTrackingId: '',
+  ownerView: false,
   trackingSessionId: '',
   viewedImageIndices: [] as number[],
   hasReportedComplete: false,
@@ -93,6 +95,8 @@ Page({
   startDetail(options: Record<string, string | undefined>) {
     this.materialId = options.id ?? ''
     this.pageTrackingId = options.trackingId ?? ''
+    // 内部详情入口没有分享追踪参数；分享链接带 trackingId 时保持访客视角。
+    this.ownerView = options.owner === '1' || (!options.trackingId && options.owner !== '0')
     this.trackingSessionId = createTrackingSessionId()
     this.viewedImageIndices = []
     this.hasReportedComplete = false
@@ -119,7 +123,7 @@ Page({
   loadDetail() {
     if (!this.materialId) return Promise.resolve()
 
-    return getMaterialDetail(this.materialId)
+    return getMaterialDetail(this.materialId, this.ownerView)
       .then((detail) => {
         if (!detail) {
           this.setData({ detail: null, unavailableMessage: MATERIAL_DELETED_MESSAGE })
@@ -940,5 +944,29 @@ Page({
     const detail = this.data.detail
     if (!detail || !detail.isOwner) return
     wx.navigateTo({ url: buildMaterialEditPath(detail.id, detail.fileType === 'NOTE' ? 'note' : '', true) })
+  },
+  onOwnerDeleteTap() {
+    const detail = this.data.detail
+    if (!detail || !detail.isOwner || this.data.deletingMaterial) return
+
+    wx.showModal({
+      title: '删除作品',
+      content: '删除后不可恢复，确定删除该作品吗？',
+      confirmText: '删除',
+      confirmColor: '#e45454',
+      success: (result) => {
+        if (!result.confirm) return
+        this.setData({ deletingMaterial: true })
+        deleteMaterials([detail.id])
+          .then(() => {
+            wx.showToast({ title: '已删除', icon: 'success' })
+            wx.navigateBack()
+          })
+          .catch(() => {
+            this.setData({ deletingMaterial: false })
+            wx.showToast({ title: '删除失败，请稍后重试', icon: 'none' })
+          })
+      },
+    })
   },
 })

@@ -4,6 +4,7 @@
   "usingComponents": {
     "navigation-bar": "/components/navigation-bar/navigation-bar",
     "segmented-filter": "/components/segmented-filter/index",
-    "analysis-trend-chart": "/components/analysis-trend-chart/index"
+    "analysis-trend-chart": "/components/analysis-trend-chart/index",
+    "loading-skeleton": "/components/loading-skeleton/index"
   }
 }

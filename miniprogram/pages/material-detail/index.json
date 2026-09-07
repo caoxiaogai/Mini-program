@@ -1,7 +1,8 @@
 {
   "usingComponents": {
     "navigation-bar": "/components/navigation-bar/navigation-bar",
-    "note-video-player": "/components/note-video-player/index"
+    "note-video-player": "/components/note-video-player/index",
+    "loading-skeleton": "/components/loading-skeleton/index"
   },
   "enableShareAppMessage": true,
   "enableShareTimeline": true,

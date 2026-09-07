@@ -18,28 +18,28 @@ const materialsTabItems = [
   {
     id: 'home' as const,
     label: '首页',
-    iconPath: '/assets/home-new/tab-home-default.svg',
+    iconPath: '/assets/home-new/tab-home.svg',
     activeIconPath: '/assets/home-new/tab-home-selected.svg',
     active: false,
   },
   {
     id: 'notifications' as const,
     label: '通知',
-    iconPath: '/assets/home-new/tab-notification-default.svg',
+    iconPath: '/assets/home-new/tab-notification.svg',
     activeIconPath: '/assets/home-new/tab-notification-selected.svg',
     active: false,
   },
   {
     id: 'analysis' as const,
     label: '分析',
-    iconPath: '/assets/home-new/tab-analysis-default.svg',
+    iconPath: '/assets/home-new/tab-analysis.svg',
     activeIconPath: '/assets/home-new/tab-analysis-selected.svg',
     active: false,
   },
   {
     id: 'profile' as const,
     label: '我的',
-    iconPath: '/assets/home-new/tab-profile-default.svg',
+    iconPath: '/assets/home-new/tab-profile.svg',
     activeIconPath: '/assets/home-new/tab-profile-selected.svg',
     active: false,
   },
@@ -165,7 +165,7 @@ Page({
 
     const url = material.isDraft
       ? buildMaterialEditPath(materialId, material.kind)
-      : buildMaterialDetailPath(materialId)
+      : buildMaterialDetailPath(materialId, undefined, true)
 
     wx.navigateTo({ url })
   },
