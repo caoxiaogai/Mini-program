@@ -23,6 +23,7 @@
     "navigationStyle": "custom"
   },
   "style": "v2",
+  "__usePrivacyCheck__": true,
   "rendererOptions": {
     "skyline": {
       "defaultDisplayBlock": true,

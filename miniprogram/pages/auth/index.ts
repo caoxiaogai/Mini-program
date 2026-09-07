@@ -18,6 +18,8 @@ Page({
     avatarFilePath: '',
     nicknameFocused: false,
     busy: false,
+    hasAvatar: false,
+    canSubmit: false,
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -35,8 +37,13 @@ Page({
       avatarFilePath: isLocalAvatarFile(avatarUrl) ? avatarUrl : '',
       nicknameFocused: false,
     }, () => {
-      this.setData({ nicknameFocused: true })
+      this.syncAuthAction()
+      this.focusNickname()
     })
+  },
+
+  onContinueNicknameTap() {
+    this.focusNickname()
   },
 
   onNicknameChange(event: WechatMiniprogram.Input) {
@@ -65,11 +72,23 @@ Page({
   },
 
   rememberNickname(value: string) {
-    const nickname = value.trim()
-    this.nicknameDraft = nickname
-    if (this.data.nickname && this.data.nickname !== nickname) {
-      this.setData({ nickname })
-    }
+    this.nicknameDraft = value.trim()
+    this.syncAuthAction()
+  },
+
+  focusNickname() {
+    this.setData({ nicknameFocused: false }, () => {
+      this.setData({ nicknameFocused: true })
+    })
+  },
+
+  syncAuthAction() {
+    const nickname = this.nicknameDraft || this.data.nickname
+    const avatar = this.data.avatarFilePath || this.data.avatarUrl
+    this.setData({
+      hasAvatar: Boolean(avatar && avatar !== DEFAULT_AVATAR_URL),
+      canSubmit: isLoginProfileComplete({ nickname, avatar }),
+    })
   },
 
   readNickname(formNickname: string): Promise<string> {

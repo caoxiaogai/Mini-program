@@ -76,8 +76,8 @@ page {
 
 .share-gate-page__social-proof {
   display: flex;
-  align-self: center;
-  width: 180px;
+  align-self: stretch;
+  width: 100%;
   flex-direction: column;
   align-items: center;
   gap: 10px;
@@ -104,9 +104,12 @@ page {
 }
 
 .share-gate-page__likes {
+  max-width: 100%;
   font-size: 16px;
   font-weight: 510;
   line-height: 22px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .share-gate-page__likes-count {

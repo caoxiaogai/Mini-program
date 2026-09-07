@@ -5,45 +5,76 @@
 
   <form bindsubmit="onFormSubmit">
     <view class="auth-page__content" style="min-height: calc(100vh - {{navigationHeight}}px);">
-    <view class="auth-page__copy">
-      <text class="auth-page__title">微信授权</text>
-      <text class="auth-page__hint">授权微信头像、昵称快捷登录</text>
-    </view>
+      <view class="auth-page__copy">
+        <text class="auth-page__title">微信授权</text>
+        <text class="auth-page__hint">点击下方按钮，依次选择微信头像和微信昵称</text>
+      </view>
 
-    <button class="auth-page__avatar-button" open-type="chooseAvatar" hover-class="auth-page__avatar-button--pressed" disabled="{{busy}}" bind:chooseavatar="onChooseAvatar">
-      <image class="auth-page__avatar" src="{{avatarFilePath || avatarUrl !== defaultAvatarUrl ? avatarUrl : '/assets/auth/avatar-placeholder.svg'}}" mode="aspectFill" />
-    </button>
+      <button class="auth-page__avatar-button" open-type="chooseAvatar" hover-class="auth-page__avatar-button--pressed" disabled="{{busy}}" bind:chooseavatar="onChooseAvatar">
+        <image class="auth-page__avatar" src="{{avatarFilePath || avatarUrl !== defaultAvatarUrl ? avatarUrl : '/assets/auth/avatar-placeholder.svg'}}" mode="aspectFill" />
+      </button>
 
-    <input
-      wx:if="{{nickname}}"
-      id="auth-nickname"
-      class="auth-page__nickname"
-      type="nickname"
-      name="nickname"
-      maxlength="20"
-      placeholder="使用微信昵称" placeholder-class="auth-page__placeholder" disabled="{{busy}}"
-      value="{{nickname}}"
-      focus="{{nicknameFocused}}"
-      bindchange="onNicknameChange"
-      bindblur="onNicknameBlur"
-      bindnicknamereview="onNicknameReview"
-    />
-    <input
-      wx:else
-      id="auth-nickname"
-      class="auth-page__nickname"
-      type="nickname"
-      name="nickname"
-      maxlength="20"
-      placeholder="使用微信昵称" placeholder-class="auth-page__placeholder" disabled="{{busy}}"
-      focus="{{nicknameFocused}}"
-      bindchange="onNicknameChange"
-      bindblur="onNicknameBlur"
-      bindnicknamereview="onNicknameReview"
-    />
+      <input
+        wx:if="{{nickname}}"
+        id="auth-nickname"
+        class="auth-page__nickname"
+        type="nickname"
+        name="nickname"
+        maxlength="20"
+        placeholder="使用微信昵称"
+        placeholder-class="auth-page__placeholder"
+        disabled="{{busy}}"
+        value="{{nickname}}"
+        focus="{{nicknameFocused}}"
+        hold-keyboard="{{true}}"
+        adjust-position="{{true}}"
+        bindinput="onNicknameChange"
+        bindchange="onNicknameChange"
+        bindblur="onNicknameBlur"
+        bindnicknamereview="onNicknameReview"
+      />
+      <input
+        wx:else
+        id="auth-nickname"
+        class="auth-page__nickname"
+        type="nickname"
+        name="nickname"
+        maxlength="20"
+        placeholder="使用微信昵称"
+        placeholder-class="auth-page__placeholder"
+        disabled="{{busy}}"
+        focus="{{nicknameFocused}}"
+        hold-keyboard="{{true}}"
+        adjust-position="{{true}}"
+        bindinput="onNicknameChange"
+        bindchange="onNicknameChange"
+        bindblur="onNicknameBlur"
+        bindnicknamereview="onNicknameReview"
+      />
 
-
-    <button class="auth-page__primary" form-type="submit" hover-class="auth-page__primary--pressed" disabled="{{busy}}" loading="{{busy}}">使用微信一键登录</button>
+      <button
+        wx:if="{{!hasAvatar}}"
+        class="auth-page__primary"
+        open-type="chooseAvatar"
+        hover-class="auth-page__primary--pressed"
+        disabled="{{busy}}"
+        bind:chooseavatar="onChooseAvatar"
+      >使用微信一键登录</button>
+      <button
+        wx:elif="{{!canSubmit}}"
+        class="auth-page__primary"
+        hover-class="auth-page__primary--pressed"
+        disabled="{{busy}}"
+        bindtap="onContinueNicknameTap"
+      >使用微信一键登录</button>
+      <button
+        wx:else
+        class="auth-page__primary"
+        form-type="submit"
+        hover-class="auth-page__primary--pressed"
+        disabled="{{busy}}"
+        loading="{{busy}}"
+      >授权查看</button>
     </view>
   </form>
 </view>
