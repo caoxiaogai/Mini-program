@@ -14,7 +14,7 @@ import { runPagePullRefresh } from '../../utils/pull-refresh'
 import {
   buildMaterialEditPath,
   buildMaterialSharePath,
-  buildMaterialShareQuery,
+  buildMaterialShareTimelineQuery,
   buildMaterialShareTitle,
   enableMaterialShareMenu,
   MATERIAL_DETAIL_PATH,
@@ -90,6 +90,12 @@ Page({
   noteViewStartedAt: 0,
 
   onLoad(options: Record<string, string | undefined>) {
+    if (options.entry === 'share-gate' && options.id) {
+      const query = [`id=${encodeURIComponent(options.id)}`]
+      if (options.trackingId) query.push(`trackingId=${encodeURIComponent(options.trackingId)}`)
+      wx.redirectTo({ url: `/pages/share-gate/index?${query.join('&')}` })
+      return
+    }
     runAuthed(buildReturnPath(MATERIAL_DETAIL_PATH, options), () => this.startDetail(options))
   },
   startDetail(options: Record<string, string | undefined>) {
@@ -931,7 +937,7 @@ Page({
 
     return {
       title: buildMaterialShareTitle(detail.descriptionLines),
-      query: buildMaterialShareQuery(detail.id, detail.trackingId || this.pageTrackingId),
+      query: buildMaterialShareTimelineQuery(detail.id, detail.trackingId || this.pageTrackingId),
       imageUrl: detail.previewUrl || undefined,
     }
   },

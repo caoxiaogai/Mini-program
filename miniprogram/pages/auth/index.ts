@@ -1,5 +1,6 @@
 import { completeProfileLogin, continueAfterAuth } from '../../services/auth'
 import { DEFAULT_AVATAR_URL, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath } from '../../utils/auth'
+import { getNavigationBarLayout } from '../../utils/navigation-layout'
 import { HOME_PAGE_PATH } from '../../utils/share-material'
 
 type ChooseAvatarEvent = WechatMiniprogram.CustomEvent<{ avatarUrl: string }>
@@ -10,8 +11,10 @@ Page({
   nicknameDraft: '',
   data: {
     returnPath: HOME_PAGE_PATH,
+    navigationHeight: 0,
     nickname: '',
     avatarUrl: DEFAULT_AVATAR_URL,
+    defaultAvatarUrl: DEFAULT_AVATAR_URL,
     avatarFilePath: '',
     nicknameFocused: false,
     busy: false,
@@ -20,6 +23,7 @@ Page({
   onLoad(options: Record<string, string | undefined>) {
     this.setData({
       returnPath: safeReturnPath(options.return),
+      navigationHeight: getNavigationBarLayout().totalHeight,
     })
   },
 

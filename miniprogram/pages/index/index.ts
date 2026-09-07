@@ -17,7 +17,7 @@ import { capAudienceUsers, resolveVisitorLimit } from '../../utils/membership'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
-import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, MATERIAL_NOTE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTimelineQuery, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, MATERIAL_NOTE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
 import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
@@ -581,6 +581,10 @@ Page({
     this.setAnalysisTab(2)
     if (hasAnalysisData) this.loadAnalysis('day', 'day')
   },
+  onDebugShareGateTap() {
+    const materialId = this.data.homeData?.contents?.[0]?.id ?? 'preview-work-1'
+    wx.navigateTo({ url: buildMaterialSharePath(materialId) })
+  },
   onNotificationFilterTap(event: WechatMiniprogram.CustomEvent<{ filterId: NotificationFilterId }>) {
     const filterId = event.detail.filterId
     if (!['all', 'high', 'medium', 'low'].includes(filterId)) return
@@ -770,6 +774,7 @@ Page({
     const filterId = event.currentTarget.dataset.id as MaterialsFilterId
     if (!['all', 'image', 'video', 'pdf'].includes(filterId)) return
 
+    wx.vibrateShort({ type: 'light' })
     this.setData({ activeMaterialFilter: filterId })
     this.applyMaterialsWindow(this.data.materials?.items ?? [], filterId, LIST_PAGE_SIZE)
   },
@@ -972,7 +977,7 @@ Page({
     this.closePublishSuccessModalAfterShare()
     return {
       title: this.data.shareTitle || buildMaterialShareTitle([]),
-      query: buildMaterialShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
+      query: buildMaterialShareTimelineQuery(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl,
     }
   },

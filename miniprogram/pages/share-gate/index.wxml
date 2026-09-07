@@ -1,0 +1,22 @@
+<view class="share-gate-page">
+  <view class="share-gate-page__hero">
+    <navigation-bar title="" back="{{false}}" color="#000000" background="#f8f8f8" />
+    <image class="share-gate-page__art" src="/assets/share-gate/group-98.svg" mode="aspectFit" />
+    <view class="share-gate-page__headline">
+      <text>好产品</text>
+      <text>值得多了解一点</text>
+    </view>
+  </view>
+
+  <view class="share-gate-page__content">
+    <text class="share-gate-page__hint">点击查看更多 访问完整内容</text>
+    <view class="share-gate-page__social-proof">
+      <view class="share-gate-page__avatars">
+        <image wx:for="{{friendAvatars}}" wx:key="*this" class="share-gate-page__avatar" src="{{item}}" mode="aspectFill" />
+      </view>
+      <text class="share-gate-page__likes">你有 <text class="share-gate-page__likes-count">6</text> 个好友赞了该内容</text>
+    </view>
+    <view class="share-gate-page__primary-wrap"><button class="share-gate-page__primary" bindtap="onMoreTap" hover-class="share-gate-page__primary--pressed">查看更多</button></view>
+    <text class="share-gate-page__legal">微信安全协议保护，内容仅对授权用户可见</text>
+  </view>
+</view>

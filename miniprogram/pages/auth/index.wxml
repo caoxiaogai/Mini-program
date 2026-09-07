@@ -1,13 +1,17 @@
 <view class="auth-page">
   <view class="auth-page__header">
-    <navigation-bar title="授权" back="{{false}}" color="#000000" background="#ffffff" />
+    <navigation-bar title="" back="{{false}}" color="#000000" background="#ffffff" />
   </view>
 
-  <form class="auth-page__content" bindsubmit="onFormSubmit">
-    
+  <form bindsubmit="onFormSubmit">
+    <view class="auth-page__content" style="min-height: calc(100vh - {{navigationHeight}}px);">
+    <view class="auth-page__copy">
+      <text class="auth-page__title">微信授权</text>
+      <text class="auth-page__hint">授权微信头像、昵称快捷登录</text>
+    </view>
 
     <button class="auth-page__avatar-button" open-type="chooseAvatar" hover-class="auth-page__avatar-button--pressed" disabled="{{busy}}" bind:chooseavatar="onChooseAvatar">
-      <image class="auth-page__avatar" src="{{avatarUrl}}" mode="aspectFill" />
+      <image class="auth-page__avatar" src="{{avatarFilePath || avatarUrl !== defaultAvatarUrl ? avatarUrl : '/assets/auth/avatar-placeholder.svg'}}" mode="aspectFill" />
     </button>
 
     <input
@@ -16,8 +20,8 @@
       class="auth-page__nickname"
       type="nickname"
       name="nickname"
-      maxlength="10"
-      placeholder="请输入昵称"
+      maxlength="20"
+      placeholder="使用微信昵称" placeholder-class="auth-page__placeholder" disabled="{{busy}}"
       value="{{nickname}}"
       focus="{{nicknameFocused}}"
       bindchange="onNicknameChange"
@@ -30,16 +34,16 @@
       class="auth-page__nickname"
       type="nickname"
       name="nickname"
-      maxlength="10"
-      placeholder="请输入昵称"
+      maxlength="20"
+      placeholder="使用微信昵称" placeholder-class="auth-page__placeholder" disabled="{{busy}}"
       focus="{{nicknameFocused}}"
       bindchange="onNicknameChange"
       bindblur="onNicknameBlur"
       bindnicknamereview="onNicknameReview"
     />
 
-    <button class="auth-page__wechat" open-type="chooseAvatar" hover-class="auth-page__wechat--pressed" disabled="{{busy}}" bind:chooseavatar="onChooseAvatar">用微信头像和昵称</button>
 
-    <button class="auth-page__primary" form-type="submit" hover-class="auth-page__primary--pressed" disabled="{{busy}}">授权查看</button>
+    <button class="auth-page__primary" form-type="submit" hover-class="auth-page__primary--pressed" disabled="{{busy}}" loading="{{busy}}">使用微信一键登录</button>
+    </view>
   </form>
 </view>

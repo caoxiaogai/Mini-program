@@ -7,8 +7,6 @@
  */
 export const DEV_LAN_ORIGIN = 'http://192.168.13.101:8081'
 
-// export const DEV_LAN_ORIGIN = 'https://www.yjxzhang.com'
-
 /**
  * 开发者工具同样访问当前电脑局域网地址；后端运行在本机或同事电脑时都不要回退到 localhost。
  */

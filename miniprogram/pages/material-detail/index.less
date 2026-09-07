@@ -280,6 +280,7 @@ page {
   align-items: center;
   height: 164rpx;
   padding: 20rpx 40rpx calc(20rpx + env(safe-area-inset-bottom));
+  border-top: 1px solid #f0f0f0;
   background: @app-page-background;
   box-sizing: border-box;
 }
@@ -287,9 +288,11 @@ page {
 .material-detail__share-button {
   display: flex;
   height: 96rpx;
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   gap: 20rpx;
   margin: 0;
   padding: 0;
@@ -301,6 +304,7 @@ page {
   transition: opacity 120ms ease-out, transform 120ms ease-out;
 }
 
+.material-detail__share-button::before,
 .material-detail__share-button::after {
   display: none;
 }
@@ -364,10 +368,13 @@ page {
 
 .material-detail-owner-bar__share {
   display: flex;
+  min-width: 191rpx;
   width: 191rpx;
+  max-width: 191rpx;
   height: 92rpx;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   gap: 19rpx;
   border-radius: 110rpx;
   font-size: 28rpx;
