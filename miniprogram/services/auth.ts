@@ -1,5 +1,5 @@
 import type { ApiLoginData } from '../types/api'
-import { AUTH_PAGE_ROUTE, buildAuthPath, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath, type AuthGate } from '../utils/auth'
+import { AUTH_PAGE_ROUTE, buildShareGatePath, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath, type AuthGate } from '../utils/auth'
 import { HOME_PAGE_PATH } from '../utils/share-material'
 import { authorizeLogin, clearLogin, ensureLogin, patchCachedLogin } from './request'
 import { updateUserProfile, uploadUserAvatar } from './user'
@@ -15,7 +15,7 @@ export function resolveAuthGate(): Promise<AuthGate> {
 export function requireAuth(returnPath: string): Promise<boolean> {
   return resolveAuthGate().then((gate) => {
     if (gate === 'ok') return true
-    const url = buildAuthPath(returnPath)
+    const url = buildShareGatePath(returnPath)
     wx.redirectTo({
       url,
       fail: () => wx.reLaunch({ url }),
@@ -40,7 +40,7 @@ export function isAuthPageRoute(route: string | undefined): boolean {
 
 export function logoutToAuth(): void {
   clearLogin()
-  wx.reLaunch({ url: buildAuthPath(HOME_PAGE_PATH) })
+  wx.reLaunch({ url: buildShareGatePath(HOME_PAGE_PATH) })
 }
 
 export function completeProfileLogin(input: { nickname: string; avatar: string }): Promise<ApiLoginData> {

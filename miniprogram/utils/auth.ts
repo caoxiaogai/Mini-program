@@ -1,4 +1,5 @@
 export const AUTH_PAGE_ROUTE = 'pages/auth/index'
+export const SHARE_GATE_PAGE_ROUTE = 'pages/share-gate/index'
 const AUTH_FALLBACK_PATH = '/pages/index/index'
 
 export type AuthGate = 'ok' | 'login'
@@ -34,7 +35,7 @@ export function safeReturnPath(returnPath: string | undefined, fallback = AUTH_F
   }
 
   const path = decoded.trim()
-  if (!path.startsWith('/pages/') || path.startsWith(`/${AUTH_PAGE_ROUTE}`)) return fallback
+  if (!path.startsWith('/pages/') || path.startsWith(`/${AUTH_PAGE_ROUTE}`) || path.startsWith(`/${SHARE_GATE_PAGE_ROUTE}`)) return fallback
   if (path.includes('://') || path.includes('..')) return fallback
   return path
 }
@@ -51,4 +52,8 @@ export function buildReturnPath(route: string, options?: Record<string, string |
 
 export function buildAuthPath(returnPath: string): string {
   return `/${AUTH_PAGE_ROUTE}?return=${encodeURIComponent(safeReturnPath(returnPath))}`
+}
+
+export function buildShareGatePath(returnPath: string): string {
+  return `/${SHARE_GATE_PAGE_ROUTE}?return=${encodeURIComponent(safeReturnPath(returnPath))}`
 }

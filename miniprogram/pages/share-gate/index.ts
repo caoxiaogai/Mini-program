@@ -1,5 +1,5 @@
-import { buildAuthPath } from '../../utils/auth'
-import { buildMaterialDetailPath } from '../../utils/share-material'
+import { buildAuthPath, safeReturnPath } from '../../utils/auth'
+import { buildMaterialDetailPath, HOME_PAGE_PATH } from '../../utils/share-material'
 
 const friendAvatars = [
   '/assets/ranking/avatar-01.png',
@@ -17,19 +17,18 @@ Page({
 
   materialId: '',
   trackingId: '',
+  returnPath: HOME_PAGE_PATH,
 
   onLoad(options: Record<string, string | undefined>) {
     this.materialId = options.id ?? ''
     this.trackingId = options.trackingId ?? ''
+    this.returnPath = safeReturnPath(options.return, HOME_PAGE_PATH)
   },
 
   onMoreTap() {
-    if (!this.materialId) {
-      wx.showToast({ title: '内容暂不可用', icon: 'none' })
-      return
-    }
-
-    const detailPath = buildMaterialDetailPath(this.materialId, this.trackingId)
-    wx.navigateTo({ url: buildAuthPath(detailPath) })
+    const destination = this.materialId
+      ? buildMaterialDetailPath(this.materialId, this.trackingId)
+      : this.returnPath
+    wx.navigateTo({ url: buildAuthPath(destination) })
   },
 })
