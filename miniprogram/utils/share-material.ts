@@ -1,5 +1,6 @@
 export const HOME_PAGE_PATH = '/pages/index/index'
 export const MATERIAL_DETAIL_PATH = '/pages/material-detail/index'
+export const MATERIAL_SHARE_GATE_PATH = '/pages/share-gate/index'
 export const MATERIAL_PUBLISH_PATH = '/pages/materials/publish/index'
 export const MATERIAL_NOTE_PATH = '/pages/materials/note/index'
 
@@ -13,9 +14,19 @@ function withTrackingId(query: string, trackingId?: string): string {
   return `${query}&trackingId=${encodeURIComponent(trackingId)}`
 }
 
-/** 分享卡片直接打开作品详情，返回回到分享来源 */
+/** 分享卡片先进入授权前置页，授权后再打开作品详情。 */
 export function buildMaterialSharePath(materialId: string, trackingId?: string): string {
-  return buildMaterialDetailPath(materialId, trackingId)
+  return buildMaterialShareGatePath(materialId, trackingId)
+}
+
+/** 分享进入授权前置页，用户授权后再进入作品详情。 */
+export function buildMaterialShareGatePath(materialId: string, trackingId?: string): string {
+  return `${MATERIAL_SHARE_GATE_PATH}?${buildMaterialShareQuery(materialId, trackingId)}`
+}
+
+/** 朋友圈分享仍由当前页面承载，通过标记让详情页先转入授权前置页。 */
+export function buildMaterialShareTimelineQuery(materialId: string, trackingId?: string): string {
+  return `${buildMaterialShareQuery(materialId, trackingId)}&entry=share-gate`
 }
 
 /** 小程序内打开素材详情；ownerView 只由已登录用户的作品入口传入。 */

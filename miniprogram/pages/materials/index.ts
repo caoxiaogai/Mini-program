@@ -3,7 +3,7 @@ import { runAuthed } from '../../services/auth'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
-import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareQuery, buildMaterialShareTitle, enableMaterialShareMenu, MATERIAL_NOTE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTimelineQuery, buildMaterialShareTitle, enableMaterialShareMenu, MATERIAL_NOTE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
@@ -148,6 +148,7 @@ Page({
     const filterId = event.currentTarget.dataset.id as MaterialsFilterId
     if (!['all', 'image', 'video', 'pdf'].includes(filterId)) return
 
+    wx.vibrateShort({ type: 'light' })
     this.setData({ activeFilter: filterId })
     this.applyMaterialsWindow(this.data.materials?.items ?? [], filterId, LIST_PAGE_SIZE)
   },
@@ -398,7 +399,7 @@ Page({
     this.closePublishSuccessModalAfterShare()
     return {
       title: this.data.shareTitle || buildMaterialShareTitle([]),
-      query: buildMaterialShareQuery(this.data.shareMaterialId, this.data.shareTrackingId),
+      query: buildMaterialShareTimelineQuery(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl,
     }
   },

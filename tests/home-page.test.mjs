@@ -958,6 +958,8 @@ test('home renders the Figma 1055:2593 hidden-visitor prompt inside interaction 
   assert.match(styles, /\.home-membership-limit\s*\{[\s\S]*?margin: 20rpx 0 10px;/)
   assert.match(promptStyles, /\.membership-limit-prompt--visitor\s*\{[\s\S]*?border: 1px solid #808080;[\s\S]*?border-radius: 16px;[\s\S]*?background: rgba\(255, 255, 255, 0\.75\);/)
   assert.match(promptStyles, /\.membership-limit-prompt__visitor-content\s*\{[\s\S]*?padding: 12px 20px;/)
+  assert.match(promptStyles, /\.membership-limit-prompt__visitor-message\s*\{[\s\S]*?font-size: 14px;/)
+  assert.match(promptStyles, /\.membership-limit-prompt__visitor-count\s*\{[\s\S]*?color: #FF8901;/)
   assert.match(promptStyles, /\.membership-limit-prompt__visitor-avatar--blurred\s*\{[\s\S]*?filter: blur\(4px\);/)
   assert.match(types, /limitPromptActionLabel: string/)
   assert.match(types, /limitPromptTargetTier: MembershipUiTier/)
@@ -2726,6 +2728,14 @@ test('materials filter matches the Figma card surfaces', () => {
   assert.match(styles, /box-shadow: 0 0 20px rgba\(0, 0, 0, 0\.1\);/)
 })
 
+test('material type filters provide light haptic feedback in both entry points', () => {
+  const materialsLogic = read('miniprogram/pages/materials/index.ts')
+  const homeLogic = read('miniprogram/pages/index/index.ts')
+
+  assert.match(materialsLogic, /onFilterTap\(event[\s\S]*\['all', 'image', 'video', 'pdf'\]\.includes\(filterId\)[\s\S]*wx\.vibrateShort\(\{ type: 'light' \}\)[\s\S]*setData\(\{ activeFilter: filterId \}\)/)
+  assert.match(homeLogic, /onMaterialFilterTap\(event[\s\S]*\['all', 'image', 'video', 'pdf'\]\.includes\(filterId\)[\s\S]*wx\.vibrateShort\(\{ type: 'light' \}\)[\s\S]*setData\(\{ activeMaterialFilter: filterId \}\)/)
+})
+
 test('materials publish button does not place a blue gradient layer over cards or navigation', () => {
   const pageStyles = read('miniprogram/pages/materials/index.less')
   const navigationStyles = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.less')
@@ -2896,9 +2906,10 @@ test('friend material views report play and forward tracking events', () => {
   assert.match(homeLogic, /buildMaterialSharePath\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
 })
 
-test('shared material opens the detail page so back returns to the share origin', async () => {
+test('shared material opens the authorization gate before the detail page', async () => {
   const {
     buildMaterialDetailPath,
+    buildMaterialShareGatePath,
     buildMaterialSharePath,
     buildMaterialShareQuery,
     HOME_PAGE_PATH,
@@ -2910,15 +2921,16 @@ test('shared material opens the detail page so back returns to the share origin'
 
   assert.equal(HOME_PAGE_PATH, '/pages/index/index')
   assert.equal(MATERIAL_DETAIL_PATH, '/pages/material-detail/index')
-  assert.equal(buildMaterialSharePath('abc', 't1'), '/pages/material-detail/index?id=abc&trackingId=t1')
+  assert.equal(buildMaterialShareGatePath('abc', 't1'), '/pages/share-gate/index?id=abc&trackingId=t1')
+  assert.equal(buildMaterialSharePath('abc', 't1'), '/pages/share-gate/index?id=abc&trackingId=t1')
   assert.equal(buildMaterialDetailPath('abc', 't1'), '/pages/material-detail/index?id=abc&trackingId=t1')
   assert.equal(buildMaterialDetailPath('abc', undefined, true), '/pages/material-detail/index?id=abc&owner=1')
   assert.equal(buildMaterialShareQuery('abc', 't1'), 'id=abc&trackingId=t1')
-  assert.equal(buildMaterialSharePath('abc', 't1'), buildMaterialDetailPath('abc', 't1'))
+  assert.notEqual(buildMaterialSharePath('abc', 't1'), buildMaterialDetailPath('abc', 't1'))
 
   assert.doesNotMatch(homeLogic, /options\.materialId/)
   assert.doesNotMatch(homeLogic, /buildHomeShareQuery/)
-  assert.match(homeLogic, /buildMaterialShareQuery\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
+  assert.match(homeLogic, /buildMaterialShareTimelineQuery\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
   assert.doesNotMatch(detailLogic, /isRootPageStack/)
   assert.doesNotMatch(detailLogic, /wx\.reLaunch/)
   assert.match(navigationLogic, /fail: \(\) => \{\s*wx\.exitMiniProgram/)
@@ -2937,6 +2949,7 @@ test('material detail shares to friends and guides moments sharing', () => {
   assert.match(logic, /onShareAppMessage\(\)[\s\S]*?reportForwardTracking\(\)/)
   assert.match(logic, /onShareTimeline\(\)[\s\S]*?reportForwardTracking\(\)/)
   assert.match(logic, /buildMaterialSharePath\(detail\.id, detail\.trackingId/)
+  assert.match(logic, /buildMaterialShareTimelineQuery\(detail\.id, detail\.trackingId/)
   assert.match(logic, /showMomentsShareGuide/)
   assert.match(logic, /enableMaterialShareMenu/)
   assert.match(shareUtil, /请点击右上角「···」，选择「分享到朋友圈」/)
@@ -2999,11 +3012,14 @@ test('owner material detail uses the Figma personal action bar while visitor act
   assert.match(logic, /deleteMaterials\(\[detail\.id\]\)/)
   assert.match(logic, /title: '删除作品'/)
   assert.match(markup, /class="material-detail-owner-bar"[\s\S]*material-detail-owner-bar__action[\s\S]*material-detail-owner-bar__share--friend[\s\S]*material-detail-owner-bar__share--moments/)
+  assert.match(styles, /\.material-detail__share-bar \{[\s\S]*gap: 26rpx;[\s\S]*border-top: 1px solid #f0f0f0;/)
+  assert.match(styles, /\.material-detail__share-button \{[\s\S]*flex: 1 1 0;[\s\S]*min-width: 0;[\s\S]*overflow: hidden;/)
+  assert.match(styles, /\.material-detail__share-button::before,[\s\S]*\.material-detail__share-button::after \{[\s\S]*display: none;/)
   assert.match(styles, /\.material-detail-owner-bar \{[\s\S]*height: calc\(164rpx \+ env\(safe-area-inset-bottom\)\);[\s\S]*border-top: 1px solid #f0f0f0;/)
   assert.match(styles, /\.material-detail-owner-bar__action,[\s\S]*\.material-detail-owner-bar__share \{[\s\S]*position: absolute;[\s\S]*top: 34rpx;/)
   assert.match(styles, /\.material-detail-owner-bar__action \{[\s\S]*left: 31rpx;[\s\S]*width: 92rpx;[\s\S]*height: 92rpx;/)
   assert.match(styles, /\.material-detail-owner-bar__action--edit \{[\s\S]*left: 145rpx;/)
-  assert.match(styles, /\.material-detail-owner-bar__share \{[\s\S]*width: 191rpx;[\s\S]*height: 92rpx;/)
+  assert.match(styles, /\.material-detail-owner-bar__share \{[\s\S]*min-width: 191rpx;[\s\S]*width: 191rpx;[\s\S]*max-width: 191rpx;[\s\S]*height: 92rpx;[\s\S]*overflow: hidden;/)
   assert.match(styles, /\.material-detail-owner-bar__share--friend \{[\s\S]*left: 311rpx;[\s\S]*border: 1px solid #808080;/)
   assert.match(styles, /\.material-detail-owner-bar__share--moments \{[\s\S]*left: 521rpx;[\s\S]*background: #ff8901;/)
   assert.match(service, /getMaterialDetail\(materialId: string, ownerView = false\)/)
@@ -4372,6 +4388,7 @@ test('every page can pull from the top to refresh', () => {
   ]
   const ungatedPages = [
     'pages/auth/index',
+    'pages/share-gate/index',
   ]
 
   assert.deepEqual([...app.pages].sort(), [...scrollViewPages, ...pageRefreshPages, ...ungatedPages].sort())
@@ -4393,6 +4410,47 @@ test('every page can pull from the top to refresh', () => {
 
   const publishLogic = read('miniprogram/pages/materials/publish/index.ts')
   assert.match(publishLogic, /onPullDownRefresh\(\) \{\s*wx\.stopPullDownRefresh\(\)/)
+})
+
+test('home page exposes a temporary share-gate debug entry', () => {
+  const markup = read('miniprogram/pages/index/index.wxml')
+  const logic = read('miniprogram/pages/index/index.ts')
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(markup, /home-debug-share-gate[^\n]*bindtap="onDebugShareGateTap"/)
+  assert.match(markup, /wx:if="\{\{activeTabIndex === 0\}\}"[^>]*home-debug-share-gate/)
+  assert.match(logic, /onDebugShareGateTap\(\)[\s\S]*buildMaterialSharePath\(/)
+  assert.match(styles, /\.home-debug-share-gate\s*\{[\s\S]*position:\s*fixed;[\s\S]*right:\s*20px;[\s\S]*bottom:\s*140px;/)
+})
+
+test('share gate uses 16px social proof text and a 20px inset primary button', () => {
+  const markup = read('miniprogram/pages/share-gate/index.wxml')
+  const styles = read('miniprogram/pages/share-gate/index.less')
+
+  assert.match(styles, /\.share-gate-page__likes\s*\{[\s\S]*font-size:\s*16px;/)
+  assert.match(styles, /\.share-gate-page\s*\{[^}]*width:\s*100%;/)
+  assert.match(styles, /\.share-gate-page__content\s*\{[^}]*width:\s*100%;/)
+  assert.match(styles, /\.share-gate-page__content\s*\{[\s\S]*padding:\s*32px 20px /)
+  assert.match(markup, /<view class="share-gate-page__primary-wrap">\s*<button class="share-gate-page__primary"/)
+  assert.match(styles, /\.share-gate-page__primary-wrap\s*\{[\s\S]*align-self:\s*stretch;[\s\S]*width:\s*100%;/)
+  assert.match(styles, /\.share-gate-page__primary\s*\{[\s\S]*display:\s*block;[\s\S]*width:\s*100%;[\s\S]*min-width:\s*100%;[\s\S]*max-width:\s*100%;[\s\S]*padding:\s*0;[\s\S]*line-height:\s*56px;/)
+})
+
+test('share gate hero adapts to the device width and keeps a 32px bottom inset', () => {
+  const markup = read('miniprogram/pages/share-gate/index.wxml')
+  const styles = read('miniprogram/pages/share-gate/index.less')
+
+  assert.match(styles, /\.share-gate-page\s*\{[\s\S]*display:\s*flex;[\s\S]*flex-direction:\s*column;/)
+  assert.match(styles, /\.share-gate-page__hero\s*\{[\s\S]*height:\s*auto;/)
+  assert.match(styles, /\.share-gate-page__hero\s*\{[\s\S]*padding:\s*0 20px 32px;/)
+  assert.match(styles, /\.share-gate-page__content\s*\{[\s\S]*flex:\s*1;[\s\S]*min-height:\s*0;[\s\S]*padding:\s*32px 20px /)
+  assert.match(styles, /\.share-gate-page__content\s*\{[\s\S]*padding:\s*32px 20px calc\(32px \+ env\(safe-area-inset-bottom\)\)/)
+  assert.match(styles, /\.share-gate-page__content\s*\{[\s\S]*justify-content:\s*flex-end;/)
+  assert.doesNotMatch(styles, /\.share-gate-page__hero\s*\{[^}]*min-height:\s*550px;/)
+  assert.match(styles, /\.share-gate-page__art\s*\{[\s\S]*width:\s*calc\(100vw - 40px\);[\s\S]*height:\s*37vh;[\s\S]*max-height:\s*313px;/)
+  assert.match(styles, /\.share-gate-page__headline\s*\{[\s\S]*position:\s*static;[\s\S]*width:\s*100%;/)
+  assert.match(styles, /\.share-gate-page__legal\s*\{[^}]*margin-top:\s*30px;/)
+  assert.match(markup, /class="share-gate-page__art"[^>]*mode="aspectFit"/)
 })
 
 test('wechat preview source stays under the 2MB upload limit', () => {
