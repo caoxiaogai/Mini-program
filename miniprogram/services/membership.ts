@@ -14,6 +14,8 @@ const FALLBACK_MEMBERSHIP_ACCESS: MembershipAccess = {
   tier: 'none',
   visitorLimit: MEMBERSHIP_VISITOR_LIMIT_NONE,
   hasUnshownVisitors: false,
+  hiddenVisitorCount: 0,
+  hiddenVisitors: [],
 }
 
 function isOrderStatus(value: string | null | undefined): value is MembershipOrderStatus {

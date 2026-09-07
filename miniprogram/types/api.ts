@@ -202,6 +202,12 @@ export interface ApiMembershipPlan {
   priceYuan: string
 }
 
+/** GET /membership/me 被挡住的访客（HiddenVisitorVO） */
+export interface ApiHiddenVisitor {
+  customerId: string
+  avatar: string | null
+}
+
 /** GET /membership/me 响应（MembershipStatusVO） */
 export interface ApiMembershipStatus {
   active: boolean
@@ -214,6 +220,9 @@ export interface ApiMembershipStatus {
   usedVisitorCount?: number | null
   /** 独立访客总数超过当前档位上限，存在未展示的人 */
   hasUnshownVisitors?: boolean | null
+  /** 被档位挡住、未在通知里展示的独立访客数 */
+  hiddenVisitorCount?: number | null
+  hiddenVisitors?: ApiHiddenVisitor[] | null
   plans: ApiMembershipPlan[] | null
   lastPaidOutTradeNo?: string | null
 }

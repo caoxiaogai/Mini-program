@@ -1,71 +1,31 @@
-import type { ApiNotificationEvent } from '../types/api'
-import type { VisitorLimitPromptAvatarViewModel, VisitorLimitPromptViewModel } from '../types/membership'
-import { keepEventsForVisitorLimit } from '../utils/membership'
+import type { MembershipAccess, VisitorLimitPromptAvatarViewModel, VisitorLimitPromptViewModel } from '../types/membership'
+import { DEFAULT_AVATAR_URL } from '../utils/auth'
 import { prepareMediaUrls } from '../utils/media'
 import { resolveMediaUrl } from './request'
 
-/** 视觉验收期间固定展示 Figma 1055:2593；真实会员状态接入后移除。 */
-export const SHOW_VISITOR_LIMIT_PROMPT_PREVIEW = true
 const LIMIT_PROMPT_VISITOR_AVATAR_LIMIT = 5
-const LIMIT_PROMPT_FIGMA_AVATAR_PATHS = [
-  '/assets/home-new/limit-prompt/avatar-01.png',
-  '/assets/home-new/limit-prompt/avatar-02.png',
-  '/assets/home-new/limit-prompt/avatar-03.png',
-  '/assets/home-new/limit-prompt/avatar-04.png',
-  '/assets/home-new/limit-prompt/avatar-05.png',
-] as const
 
-interface LimitPromptVisitorSource {
-  id: string
-  avatarUrl: string
-}
-
-function collectHiddenVisitorSources(
-  events: ApiNotificationEvent[],
-  visitorLimit: number | null,
-): LimitPromptVisitorSource[] {
-  const visibleVisitorIds = new Set(
-    keepEventsForVisitorLimit(events, visitorLimit)
-      .map((event) => String(event.customerId ?? '').trim())
-      .filter((customerId) => customerId !== ''),
-  )
-  const visitorsById = new Map<string, LimitPromptVisitorSource>()
-
-  for (const event of [...events].sort((left, right) => String(right.viewTime ?? '').localeCompare(String(left.viewTime ?? '')))) {
-    const id = String(event.customerId ?? '').trim()
-    if (!id || visibleVisitorIds.has(id) || visitorsById.has(id)) continue
-    visitorsById.set(id, { id, avatarUrl: resolveMediaUrl(event.avatar) })
+/** 通知接口已过滤被挡访客，人数和头像改从 /membership/me 读取。 */
+export async function buildVisitorLimitPromptViewModel(
+  access: MembershipAccess,
+): Promise<VisitorLimitPromptViewModel> {
+  if (access.hiddenVisitorCount <= 0) {
+    return { visitorCount: 0, avatars: [] }
   }
 
-  return [...visitorsById.values()]
-}
-
-export async function buildVisitorLimitPromptViewModel(
-  events: ApiNotificationEvent[],
-  visitorLimit: number | null,
-): Promise<VisitorLimitPromptViewModel> {
-  const hiddenVisitors = collectHiddenVisitorSources(events, visitorLimit)
-  const displayedVisitors = hiddenVisitors.slice(0, LIMIT_PROMPT_VISITOR_AVATAR_LIMIT)
-  const preparedUrls = await prepareMediaUrls(displayedVisitors.map((visitor) => visitor.avatarUrl))
+  const displayedVisitors = access.hiddenVisitors.slice(0, LIMIT_PROMPT_VISITOR_AVATAR_LIMIT)
+  const preparedUrls = await prepareMediaUrls(displayedVisitors.map((visitor) => resolveMediaUrl(visitor.avatar)))
   const avatars: VisitorLimitPromptAvatarViewModel[] = displayedVisitors.map((visitor, index) => {
     const url = preparedUrls[index] ?? ''
     return {
-      id: visitor.id,
-      url: url || LIMIT_PROMPT_FIGMA_AVATAR_PATHS[index],
-      shouldBlur: url !== '',
+      id: visitor.customerId,
+      url: url || DEFAULT_AVATAR_URL,
+      shouldBlur: true,
     }
   })
 
-  if (avatars.length > 0) {
-    return { visitorCount: hiddenVisitors.length, avatars }
-  }
-
   return {
-    visitorCount: LIMIT_PROMPT_VISITOR_AVATAR_LIMIT,
-    avatars: LIMIT_PROMPT_FIGMA_AVATAR_PATHS.map((url, index) => ({
-      id: `figma-limit-visitor-${index + 1}`,
-      url,
-      shouldBlur: false,
-    })),
+    visitorCount: access.hiddenVisitorCount,
+    avatars,
   }
 }

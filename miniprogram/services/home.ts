@@ -15,12 +15,12 @@ import { buildCustomRangeQuery, formatCount, formatDateKey } from '../utils/form
 import { prepareMediaUrls } from '../utils/media'
 import { readViewedNotificationMap, selectUnviewedNotificationEvents } from '../utils/notification-viewed'
 import { mapNotificationEvent } from '../utils/notifications'
-import { keepEventsForVisitorLimit, shouldShowVisitorLimitPrompt, visitorLimitPromptActionLabel, visitorLimitPromptTargetTier } from '../utils/membership'
+import { keepEventsForVisitorLimit, visitorLimitPromptActionLabel, visitorLimitPromptTargetTier } from '../utils/membership'
 import { prepareMaterialThumbnailMap, rememberMaterialThumbnailSources } from './materials'
 import { getMembershipAccessSilent } from './membership'
 import { NOTIFICATION_RANGE_DAYS } from './notifications'
 import { request, resolveMediaUrl } from './request'
-import { buildVisitorLimitPromptViewModel, SHOW_VISITOR_LIMIT_PROMPT_PREVIEW } from './visitor-limit-prompt'
+import { buildVisitorLimitPromptViewModel } from './visitor-limit-prompt'
 
 const HOME_PREVIEW_LIMIT = 7
 const HOME_CONTENT_LIMIT = 2
@@ -142,13 +142,13 @@ export function getHomePageData(): Promise<HomePageViewModel> {
 
     const [notificationAvatars, limitPrompt] = await Promise.all([
       prepareMediaUrls(notifications.map((item) => item.avatarUrl)),
-      buildVisitorLimitPromptViewModel((notifyEvents ?? []).filter((event) => event != null), membershipAccess.visitorLimit),
+      buildVisitorLimitPromptViewModel(membershipAccess),
     ])
 
     return {
       unreadNotificationCount: unreadEvents.length,
       unreadNotificationEventIds: unreadEvents.map((event) => String(event.id)),
-      showVisitorLimitPrompt: SHOW_VISITOR_LIMIT_PROMPT_PREVIEW || shouldShowVisitorLimitPrompt(membershipAccess),
+      showVisitorLimitPrompt: limitPrompt.visitorCount > 0,
       limitPromptActionLabel: visitorLimitPromptActionLabel(membershipAccess.tier),
       limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
       limitPromptVisitorCount: limitPrompt.visitorCount,

@@ -42,6 +42,9 @@ export type MembershipAccess = {
   visitorLimit: number | null
   /** 有被档位截掉、尚未展示的独立访客 */
   hasUnshownVisitors: boolean
+  /** 被挡住的独立访客人数 */
+  hiddenVisitorCount: number
+  hiddenVisitors: Array<{ customerId: string; avatar: string | null }>
 }
 
 export interface VisitorLimitPromptAvatarViewModel {

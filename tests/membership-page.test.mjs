@@ -228,6 +228,7 @@ test('membership page does not invent payment success or feature gating', () => 
 test('membership visitor limits follow none / regular / pro', async () => {
   const {
     capAudienceUsers,
+    collectHiddenVisitors,
     keepEventsForVisitorLimit,
     membershipAccessFromStatus,
     resolveVisitorLimit,
@@ -245,9 +246,9 @@ test('membership visitor limits follow none / regular / pro', async () => {
   assert.equal(resolveVisitorLimit(null), null)
   assert.equal(resolveVisitorLimit(undefined), 8)
   assert.equal(resolveVisitorLimit(10), 10)
-  assert.deepEqual(membershipAccessFromStatus(null), { tier: 'none', visitorLimit: 8, hasUnshownVisitors: false })
-  assert.deepEqual(membershipAccessFromStatus({ active: true, tier: 'pro' }), { tier: 'pro', visitorLimit: null, hasUnshownVisitors: false })
-  assert.deepEqual(membershipAccessFromStatus({ active: false, tier: 'pro' }), { tier: 'none', visitorLimit: 8, hasUnshownVisitors: false })
+  assert.deepEqual(membershipAccessFromStatus(null), { tier: 'none', visitorLimit: 8, hasUnshownVisitors: false, hiddenVisitorCount: 0, hiddenVisitors: [] })
+  assert.deepEqual(membershipAccessFromStatus({ active: true, tier: 'pro' }), { tier: 'pro', visitorLimit: null, hasUnshownVisitors: false, hiddenVisitorCount: 0, hiddenVisitors: [] })
+  assert.deepEqual(membershipAccessFromStatus({ active: false, tier: 'pro' }), { tier: 'none', visitorLimit: 8, hasUnshownVisitors: false, hiddenVisitorCount: 0, hiddenVisitors: [] })
   assert.equal(
     membershipAccessFromStatus({ active: false, tier: 'none', hasUnshownVisitors: true }).hasUnshownVisitors,
     true,
@@ -256,6 +257,16 @@ test('membership visitor limits follow none / regular / pro', async () => {
     membershipAccessFromStatus({ active: true, tier: 'pro', hasUnshownVisitors: true }).hasUnshownVisitors,
     false,
   )
+  assert.equal(
+    membershipAccessFromStatus({
+      active: false,
+      tier: 'none',
+      hiddenVisitorCount: 3,
+      hiddenVisitors: [{ customerId: '9', avatar: 'https://example.com/a.png' }],
+    }).hiddenVisitorCount,
+    3,
+  )
+  assert.equal(membershipAccessFromStatus({ active: true, tier: 'pro', hiddenVisitorCount: 9 }).hiddenVisitorCount, 0)
   assert.equal(shouldShowVisitorLimitPrompt({ visitorLimit: 8, hasUnshownVisitors: true }), true)
   assert.equal(shouldShowVisitorLimitPrompt({ visitorLimit: 8, hasUnshownVisitors: false }), false)
   assert.equal(shouldShowVisitorLimitPrompt({ visitorLimit: null, hasUnshownVisitors: true }), false)
@@ -312,6 +323,10 @@ test('membership visitor limits follow none / regular / pro', async () => {
   assert.equal(noneEvents.some((event) => event.customerId === 'visitor-7'), false)
   assert.equal(noneEvents.some((event) => event.customerId === 'visitor-10'), false)
   assert.equal(keepEventsForVisitorLimit(events, null).length, events.length)
+  const hidden = collectHiddenVisitors(events, 8)
+  assert.equal(hidden.length, 4)
+  assert.deepEqual(hidden.map((event) => event.customerId), ['visitor-10', 'visitor-9', 'visitor-8', 'visitor-7'])
+  assert.deepEqual(collectHiddenVisitors(events, null), [])
   assert.deepEqual(capAudienceUsers(['a', 'b', 'c'], 2), ['a', 'b'])
   assert.deepEqual(capAudienceUsers(['a', 'b', 'c'], null), ['a', 'b', 'c'])
 })
@@ -329,7 +344,7 @@ test('membership access service fails closed to the free visitor limit', () => {
   assert.match(home, /keepEventsForVisitorLimit/)
   assert.match(home, /getMembershipAccessSilent/)
   assert.match(notifications, /keepEventsForVisitorLimit/)
-  assert.match(notifications, /showVisitorLimitPrompt: shouldShowVisitorLimitPrompt/)
+  assert.match(notifications, /showVisitorLimitPrompt: limitPrompt\.visitorCount > 0/)
   assert.match(notifications, /getMembershipAccessSilent/)
   assert.match(analysis, /getMembershipAccessSilent/)
   assert.match(analysis, /visitorLimit: membershipAccess\.visitorLimit/)

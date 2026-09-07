@@ -86,19 +86,33 @@ export function resolveVisitorLimit(limit: number | null | undefined): number | 
   return limit === undefined ? MEMBERSHIP_VISITOR_LIMIT_NONE : limit
 }
 
+function asHiddenVisitorCount(value: number | null | undefined): number {
+  const count = Math.trunc(Number(value))
+  return Number.isFinite(count) && count > 0 ? count : 0
+}
+
 export function membershipAccessFromStatus(
-  data: Pick<ApiMembershipStatus, 'active' | 'tier' | 'visitorLimit' | 'hasUnshownVisitors'> | null | undefined,
+  data: Pick<ApiMembershipStatus, 'active' | 'tier' | 'visitorLimit' | 'hasUnshownVisitors' | 'hiddenVisitorCount' | 'hiddenVisitors'> | null | undefined,
 ): MembershipAccess {
   const tier = normalizeMembershipTier(data?.tier, data?.active)
   const visitorLimit = visitorLimitForTier(tier)
+  const hiddenVisitors = (data?.hiddenVisitors ?? [])
+    .map((visitor) => ({
+      customerId: String(visitor.customerId ?? '').trim(),
+      avatar: visitor.avatar ?? null,
+    }))
+    .filter((visitor) => visitor.customerId !== '')
+  const hiddenVisitorCount = visitorLimit == null ? 0 : asHiddenVisitorCount(data?.hiddenVisitorCount)
   return {
     tier,
     visitorLimit,
-    hasUnshownVisitors: visitorLimit != null && data?.hasUnshownVisitors === true,
+    hasUnshownVisitors: visitorLimit != null && (data?.hasUnshownVisitors === true || hiddenVisitorCount > 0),
+    hiddenVisitorCount,
+    hiddenVisitors,
   }
 }
 
-/** 追踪人数已用完且仍有未展示访客时，才展示上限提示卡。 */
+/** 后端标记仍有未展示访客。首页/通知卡以通知列表里实际被挡住的人数为准。 */
 export function shouldShowVisitorLimitPrompt(access: Pick<MembershipAccess, 'visitorLimit' | 'hasUnshownVisitors'>): boolean {
   return access.visitorLimit != null && access.hasUnshownVisitors
 }
@@ -139,6 +153,29 @@ export function keepEventsForVisitorLimit<T extends { customerId?: string | numb
   }
 
   return events.filter((event) => allowed.has(String(event.customerId ?? '').trim()))
+}
+
+/** 通知里超出档位上限、未进入可见列表的独立访客（按最近浏览时间）。 */
+export function collectHiddenVisitors<T extends { customerId?: string | number | null; viewTime?: string | null }>(
+  events: readonly T[],
+  limit: number | null | undefined,
+): T[] {
+  if (limit == null) return []
+
+  const visibleVisitorIds = new Set(
+    keepEventsForVisitorLimit(events, limit)
+      .map((event) => String(event.customerId ?? '').trim())
+      .filter((customerId) => customerId !== ''),
+  )
+  const hiddenById = new Map<string, T>()
+
+  for (const event of [...events].sort((left, right) => String(right.viewTime ?? '').localeCompare(String(left.viewTime ?? '')))) {
+    const id = String(event.customerId ?? '').trim()
+    if (!id || visibleVisitorIds.has(id) || hiddenById.has(id)) continue
+    hiddenById.set(id, event)
+  }
+
+  return [...hiddenById.values()]
 }
 
 /** 排序完成后截取访客列表；limit 为 null 时不截断。 */
