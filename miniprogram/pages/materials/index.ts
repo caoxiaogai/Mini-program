@@ -3,6 +3,7 @@ import { runAuthed } from '../../services/auth'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
+import { prepareShareCardImage } from '../../utils/share-image'
 import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTimelineQuery, buildMaterialShareTitle, enableMaterialShareMenu, MATERIAL_NOTE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
@@ -51,6 +52,7 @@ function getVisibleMaterials(items: MaterialCardViewModel[], filterId: Materials
 
 Page({
   publishSuccessShared: false,
+  shareImageToken: 0,
   pendingPublishType: null as 'image' | 'video' | null,
   data: {
     materials: null as MaterialsViewModel | null,
@@ -337,13 +339,19 @@ Page({
   },
   onPlusTap() {},
   loadShareMaterial(materialId: string) {
+    this.shareImageToken += 1
+    const token = this.shareImageToken
     getMaterialDetail(materialId).then((detail) => {
       if (!detail) return
-      this.setData({
-        shareMaterialId: detail.id,
-        shareTrackingId: detail.trackingId,
-        shareTitle: buildMaterialShareTitle(detail.descriptionLines),
-        shareImageUrl: detail.previewUrl || this.data.shareImageUrl,
+      const previewUrl = detail.previewUrl || ''
+      return prepareShareCardImage(previewUrl).then((shareImageUrl) => {
+        if (token !== this.shareImageToken) return
+        this.setData({
+          shareMaterialId: detail.id,
+          shareTrackingId: detail.trackingId,
+          shareTitle: buildMaterialShareTitle(detail.descriptionLines),
+          shareImageUrl: shareImageUrl || previewUrl || this.data.shareImageUrl,
+        })
       })
     }).catch(() => undefined)
   },

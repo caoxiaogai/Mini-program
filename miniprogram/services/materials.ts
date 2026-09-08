@@ -26,6 +26,7 @@ import {
   serializeNoteContent,
   toNoteDisplayBlocks,
 } from '../utils/note'
+import { prepareShareCardImage } from '../utils/share-image'
 import { buildMaterialShareTitle } from '../utils/share-material'
 import { prepareDocumentPageImage } from './document'
 import { ensureLogin, request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
@@ -356,17 +357,21 @@ export function getMaterialShareCard(
   return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true })
     .then(async (material) => {
       const previewUrl = await prepareMaterialThumbnail(material)
+      const sourceUrl = previewUrl || fallbackImageUrl
+      const shareImageUrl = (await prepareShareCardImage(sourceUrl)) || sourceUrl
       return {
         shareTitle: buildMaterialShareTitle(splitMaterialCopy(resolveMaterialCopy(material))) || fallbackTitle,
-        shareImageUrl: previewUrl || fallbackImageUrl,
+        shareImageUrl,
         shareTrackingId: material.trackingId ?? '',
       }
     })
-    .catch(() => ({
-      shareTitle: fallbackTitle,
-      shareImageUrl: fallbackImageUrl,
-      shareTrackingId: '',
-    }))
+    .catch(() =>
+      prepareShareCardImage(fallbackImageUrl).then((shareImageUrl) => ({
+        shareTitle: fallbackTitle,
+        shareImageUrl: shareImageUrl || fallbackImageUrl,
+        shareTrackingId: '',
+      })),
+    )
 }
 
 function kindFromFileType(fileType: string): PublishMediaKind {

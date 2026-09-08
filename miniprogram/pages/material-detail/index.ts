@@ -12,6 +12,7 @@ import { buildReturnPath } from '../../utils/auth'
 import { formatCompactCount } from '../../utils/format'
 import { MATERIAL_DELETED_MESSAGE } from '../../utils/material-deleted'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
+import { prepareShareCardImage } from '../../utils/share-image'
 import {
   buildMaterialEditPath,
   buildMaterialSharePath,
@@ -56,9 +57,11 @@ Page({
     commentsError: false,
     comments: [] as MaterialCommentViewModel[],
     commentDraft: '',
+    shareImageUrl: '',
   },
 
   materialId: '',
+  shareImageToken: 0,
   pageTrackingId: '',
   ownerView: false,
   trackingSessionId: '',
@@ -140,16 +143,20 @@ Page({
     return getMaterialDetail(this.materialId, this.ownerView)
       .then((detail) => {
         if (!detail) {
-          this.setData({ detail: null, unavailableMessage: MATERIAL_DELETED_MESSAGE })
+          this.shareImageToken += 1
+          this.setData({ detail: null, unavailableMessage: MATERIAL_DELETED_MESSAGE, shareImageUrl: '' })
           return
         }
 
         this.videoDurationSec = detail.duration
-        this.setData({ detail, unavailableMessage: '' }, () => {
+        this.shareImageToken += 1
+        const shareImageToken = this.shareImageToken
+        this.setData({ detail, unavailableMessage: '', shareImageUrl: '' }, () => {
           if (detail.fileType === 'VIDEO' && detail.videoUrl) {
             this.getVideoContext()?.play()
           }
         })
+        this.prepareShareImage(detail.previewUrl, shareImageToken)
 
         this.reportOpenedPlay()
 
@@ -164,9 +171,11 @@ Page({
         }
       })
       .catch(() => {
+        this.shareImageToken += 1
         this.setData({
           detail: null,
           unavailableMessage: MATERIAL_DELETED_MESSAGE,
+          shareImageUrl: '',
         })
       })
   },
@@ -927,6 +936,19 @@ Page({
     this.markImageViewed(activeImageIndex, detail)
   },
 
+  prepareShareImage(previewUrl: string, token: number) {
+    prepareShareCardImage(previewUrl)
+      .then((shareImageUrl) => {
+        if (token !== this.shareImageToken) return
+        this.setData({ shareImageUrl: shareImageUrl || previewUrl })
+      })
+      .catch(() => undefined)
+  },
+
+  resolveShareImageUrl(previewUrl?: string) {
+    return this.data.shareImageUrl || previewUrl || undefined
+  },
+
   onShareAppMessage() {
     const detail = this.data.detail
     this.reportForwardTracking()
@@ -936,7 +958,7 @@ Page({
     return {
       title: buildMaterialShareTitle(detail.descriptionLines),
       path: buildMaterialSharePath(detail.id, detail.trackingId || this.pageTrackingId),
-      imageUrl: detail.previewUrl || undefined,
+      imageUrl: this.resolveShareImageUrl(detail.previewUrl),
     }
   },
 
@@ -949,7 +971,7 @@ Page({
     return {
       title: buildMaterialShareTitle(detail.descriptionLines),
       query: buildMaterialShareTimelineQuery(detail.id, detail.trackingId || this.pageTrackingId),
-      imageUrl: detail.previewUrl || undefined,
+      imageUrl: this.resolveShareImageUrl(detail.previewUrl),
     }
   },
 
