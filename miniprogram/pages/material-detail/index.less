@@ -276,23 +276,28 @@ page {
   left: 0;
   z-index: 1001;
   display: flex;
-  align-items: flex-start;
-  gap: 8rpx;
+  align-items: center;
   padding: 16rpx 32rpx calc(12rpx + env(safe-area-inset-bottom));
   border-top: 1px solid #f0f0f0;
   background: @app-page-background;
   box-sizing: border-box;
 }
 
+.material-detail-engage__actions {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
 .material-detail-engage__action,
 .material-detail-engage__more {
   display: flex;
+  flex: none;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8rpx;
+  justify-content: center;
   margin: 0;
-  padding: 8rpx 12rpx;
+  padding: 8rpx 0;
   border: 0;
   background: transparent;
   line-height: normal;
@@ -300,14 +305,19 @@ page {
 }
 
 .material-detail-engage__action {
-  flex: 1 1 0;
-  min-width: 0;
+  width: 64rpx;
+  gap: 4rpx;
+  overflow: visible;
 }
 
 .material-detail-engage__share {
+  width: 64rpx;
+  min-width: 64rpx;
+  max-width: 64rpx;
   height: auto;
   min-height: 0;
   overflow: visible;
+  padding: 8rpx 0;
   font-size: 22rpx;
   color: #666666;
 }
@@ -318,8 +328,11 @@ page {
 }
 
 .material-detail-engage__more {
-  flex: none;
-  width: 88rpx;
+  margin-left: auto;
+  min-width: 72rpx;
+  color: #000000;
+  font-size: 28rpx;
+  line-height: 40rpx;
 }
 
 .material-detail-engage__icon {
