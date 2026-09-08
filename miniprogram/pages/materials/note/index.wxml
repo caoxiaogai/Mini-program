@@ -41,12 +41,12 @@
     enhanced
     show-scrollbar="{{false}}"
     scroll-into-view="{{scrollIntoView}}"
-    scroll-with-animation="{{true}}"
-    bindtap="onEditorBlankTap"
+    scroll-top="{{scrollTop}}"
+    scroll-with-animation="{{false}}"
   >
     <view class="note-page__blocks" style="padding-bottom: {{composerReserve}}px;">
       <block wx:for="{{blocks}}" wx:key="id">
-        <view wx:if="{{item.type === 'text'}}" id="note-block-{{item.id}}" class="note-block note-block--text" catchtap="onTextBlockTap">
+        <view wx:if="{{item.type === 'text'}}" id="note-block-{{item.id}}" class="note-block note-block--text {{item.id === lastTextId && !lastTextHasCopy ? 'note-block--text-lead' : ''}}" data-id="{{item.id}}" catchtap="onTextBlockTap">
           <textarea
             class="note-block__textarea"
             value="{{item.text}}"
@@ -56,14 +56,15 @@
             maxlength="-1"
             auto-height="{{true}}"
             adjust-position="{{false}}"
-            hold-keyboard="{{false}}"
+            hold-keyboard="{{true}}"
             show-confirm-bar="{{false}}"
             focus="{{textFocused && focusTextId === item.id}}"
             bindinput="onTextInput"
+            bindlinechange="onTextLineChange"
             bindfocus="onTextFocus"
             bindblur="onTextBlur"
-            bindkeyboardheightchange="onKeyboardHeightChange"
           />
+          <view class="note-block__caret-anchor" id="note-caret-{{item.id}}"></view>
         </view>
 
         <view
@@ -108,6 +109,7 @@
           </view>
         </view>
       </block>
+      <view wx:if="{{lastTextHasCopy}}" class="note-page__focus-pad" bindtap="onEditorBlankTap"></view>
       <view id="note-page-end" class="note-page__blank"></view>
     </view>
   </scroll-view>

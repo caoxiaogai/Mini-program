@@ -47,14 +47,43 @@ const NOTE_TOOLBAR_RPX = 88
 const NOTE_ACTIONS_RPX = 108
 const NOTE_PLUS_PANEL_RPX = 200
 const NOTE_BLANK_TAP_GUARD_MS = 480
+const NOTE_KEYBOARD_DISMISS_MS = 320
+const NOTE_KEYBOARD_HEIGHT_SLACK = 24
+const NOTE_CARET_SCROLL_MS = 64
+const NOTE_LINE_HEIGHT_RPX = 48
+const NOTE_FONT_SIZE_RPX = 32
+const NOTE_CARET_GAP_RPX = 16
 const NOTE_NAV_ACTION_BUTTON_RPX = 56
 const NOTE_NAV_ACTION_GAP_RPX = 4
 const NOTE_TITLE_ESTIMATE_PX = 34
 const NOTE_LOCATION_FALLBACK = { latitude: 30.659462, longitude: 104.065735 }
 const NOTE_EMPTY_HINT = '记录文字、图片、视频等'
 
+function estimateCaretLines(text: string, cursor: number, charsPerLine: number): number {
+  const before = text.slice(0, Math.max(0, Math.min(cursor, text.length)))
+  if (!before) return 1
+  const columns = Math.max(1, charsPerLine)
+  return before.split('\n').reduce((lines, paragraph) => {
+    return lines + Math.max(1, Math.ceil(paragraph.length / columns))
+  }, 0)
+}
+
 function emptyHintFor(blocks: NoteBlock[]): string {
   return hasNoteContent(blocks) ? '' : NOTE_EMPTY_HINT
+}
+
+function lastTextIdOf(blocks: NoteBlock[]): string {
+  return [...blocks].reverse().find((block) => block.type === 'text')?.id ?? ''
+}
+
+function editorViewState(blocks: NoteBlock[]) {
+  const lastTextId = lastTextIdOf(blocks)
+  const last = blocks.find((block) => block.id === lastTextId)
+  return {
+    emptyHint: emptyHintFor(blocks),
+    lastTextId,
+    lastTextHasCopy: Boolean(last && last.type === 'text' && stripNoteTextMark(last.text).trim()),
+  }
 }
 
 function isLocationAuthDenied(errMsg?: string): boolean {
@@ -107,14 +136,22 @@ Page({
   historyIndex: -1,
   keyboardHeightListener: null as ((result: WechatMiniprogram.OnKeyboardHeightChangeListenerResult) => void) | null,
   focusTimer: 0,
+  keyboardDismissTimer: 0,
+  caretScrollTimer: 0,
+  lastCaretCursor: 0,
   ignoreBlankTapUntil: 0,
+  editorActive: false,
+  keyboardHidePending: false,
   openingPlusPanel: false,
+  textDrafts: {} as Record<string, string>,
   windowWidth: 375,
   safeAreaBottom: 0,
 
   data: {
     blocks: withFileLabels([createEmptyTextBlock()]),
     emptyHint: NOTE_EMPTY_HINT,
+    lastTextId: '',
+    lastTextHasCopy: false,
     canUndo: false,
     canRedo: false,
     videoPlayerVisible: false,
@@ -128,6 +165,7 @@ Page({
     showComposerBar: false,
     showActions: true,
     scrollIntoView: '',
+    scrollTop: 0,
     composerReserve: 120,
     navActionRight: 104,
   },
@@ -138,6 +176,7 @@ Page({
     this.safeAreaBottom = metrics.safeAreaBottom
     this.setData({
       navActionRight: this.estimateNavActionRight(),
+      lastTextId: lastTextIdOf(this.data.blocks),
     })
     this.keyboardHeightListener = (result) => {
       this.applyKeyboardHeight(Math.max(0, result.height || 0))
@@ -195,6 +234,8 @@ Page({
   },
   onUnload() {
     this.clearFocusTimer()
+    this.clearKeyboardDismissTimer()
+    this.clearCaretScrollTimer()
     if (this.keyboardHeightListener) {
       wx.offKeyboardHeightChange(this.keyboardHeightListener)
       this.keyboardHeightListener = null
@@ -222,7 +263,7 @@ Page({
     if (!materialId) {
       const first = this.data.blocks.find((block) => block.type === 'text')
       this.resetHistory(this.data.blocks)
-      this.setData({ focusTextId: first?.id ?? '' })
+      this.setData({ focusTextId: first?.id ?? '', lastTextId: lastTextIdOf(this.data.blocks) })
       return
     }
 
@@ -237,7 +278,7 @@ Page({
       this.draftMaterialId = remix ? null : draft.id
       this.originalAttachmentSignature = remix ? '' : noteAttachmentSignature(blocks)
       const first = blocks.find((block) => block.type === 'text')
-      this.setData({ blocks, emptyHint: emptyHintFor(blocks), focusTextId: first?.id ?? '' }, () => this.resetHistory(blocks))
+      this.setData({ blocks, ...editorViewState(blocks), focusTextId: first?.id ?? '' }, () => this.resetHistory(blocks))
     })
   },
 
@@ -259,33 +300,146 @@ Page({
     this.focusTimer = 0
   },
 
+  clearKeyboardDismissTimer() {
+    if (!this.keyboardDismissTimer) return
+    clearTimeout(this.keyboardDismissTimer)
+    this.keyboardDismissTimer = 0
+  },
+
+  clearCaretScrollTimer() {
+    if (!this.caretScrollTimer) return
+    clearTimeout(this.caretScrollTimer)
+    this.caretScrollTimer = 0
+  },
+
   applyKeyboardHeight(height: number) {
     if (this.openingPlusPanel || this.data.plusPanelVisible) {
       if (height <= 0) {
         this.openingPlusPanel = false
+        this.clearKeyboardDismissTimer()
+        this.editorActive = false
         this.syncComposer({ keyboardHeight: 0, textFocused: false, plusPanelVisible: true })
       }
       return
     }
     if (height > 0) {
-      const keyboardJustOpened = this.data.keyboardHeight <= 0
-      if (height === this.data.keyboardHeight) return
-      this.syncComposer({
+      this.keyboardHidePending = false
+      this.clearKeyboardDismissTimer()
+      this.editorActive = true
+      if (Math.abs(height - this.data.keyboardHeight) < NOTE_KEYBOARD_HEIGHT_SLACK) {
+        this.scheduleEnsureCaretVisible(this.data.focusTextId)
+        return
+      }
+      this.setData({
         keyboardHeight: height,
         plusPanelVisible: false,
+        showComposerBar: true,
+        showActions: false,
+        keyboardInset: height,
+        composerReserve: height + this.toolbarHeightPx(),
+      }, () => {
+        this.scheduleEnsureCaretVisible(this.data.focusTextId)
       })
-      if (keyboardJustOpened) this.scrollFocusedBlockIntoView()
       return
     }
-    this.dismissKeyboard()
+    this.keyboardHidePending = true
+    this.scheduleDismissKeyboard(NOTE_KEYBOARD_DISMISS_MS)
+  },
+
+  scheduleDismissKeyboard(delay: number) {
+    this.clearKeyboardDismissTimer()
+    this.keyboardDismissTimer = setTimeout(() => {
+      this.keyboardDismissTimer = 0
+      if (!this.keyboardHidePending) return
+      if (this.openingPlusPanel || this.data.plusPanelVisible) return
+      this.dismissKeyboard()
+    }, delay) as unknown as number
+  },
+
+  flushTextDrafts(recordHistory = false): NoteBlock[] {
+    const blocks = this.data.blocks.map((block) => {
+      if (block.type !== 'text') return block
+      const draft = this.textDrafts[block.id]
+      const text = stripNoteTextMark(draft === undefined ? block.text : draft)
+      return text === block.text ? block : { ...block, text }
+    })
+    this.textDrafts = {}
+    const changed = blocks.some((block, index) => block !== this.data.blocks[index])
+    if (changed) this.setData({ blocks, ...editorViewState(blocks) })
+    if (recordHistory && changed) this.pushHistory(blocks)
+    return blocks
   },
 
   dismissKeyboard() {
     this.clearFocusTimer()
+    this.clearKeyboardDismissTimer()
+    this.editorActive = false
+    this.keyboardHidePending = false
     this.ignoreBlankTapUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
+    this.flushTextDrafts(true)
     this.syncComposer({
       textFocused: false,
       keyboardHeight: 0,
+    })
+  },
+
+  scheduleEnsureCaretVisible(textId?: string) {
+    const id = textId || this.data.focusTextId
+    if (!id) return
+    this.clearCaretScrollTimer()
+    this.caretScrollTimer = setTimeout(() => {
+      this.caretScrollTimer = 0
+      this.ensureCaretVisible(id)
+    }, NOTE_CARET_SCROLL_MS) as unknown as number
+  },
+
+  ensureCaretVisible(textId?: string) {
+    const id = textId || this.data.focusTextId
+    if (!id || this.data.keyboardHeight <= 0) return
+    const overlay = this.data.showComposerBar
+      ? this.data.composerReserve
+      : this.data.keyboardHeight
+    if (overlay <= 0) return
+
+    const query = this.createSelectorQuery()
+    query.select('.note-page__scroll').boundingClientRect()
+    query.select('.note-page__scroll').scrollOffset()
+    query.select(`#note-block-${id}`).boundingClientRect()
+    query.select(`#note-caret-${id}`).boundingClientRect()
+    query.exec((res) => {
+      const viewport = res[0] as WechatMiniprogram.BoundingClientRectCallbackResult | null
+      const offset = res[1] as WechatMiniprogram.ScrollOffsetCallbackResult | null
+      const block = res[2] as WechatMiniprogram.BoundingClientRectCallbackResult | null
+      const caret = res[3] as WechatMiniprogram.BoundingClientRectCallbackResult | null
+      if (!viewport || !offset || !block) {
+        this.scrollFocusedBlockIntoView(id)
+        return
+      }
+
+      const lineHeight = rpxToPx(NOTE_LINE_HEIGHT_RPX, this.windowWidth)
+      const fontSize = rpxToPx(NOTE_FONT_SIZE_RPX, this.windowWidth)
+      const gap = rpxToPx(NOTE_CARET_GAP_RPX, this.windowWidth)
+      const current = this.data.blocks.find((item) => item.id === id)
+      const text = this.textDrafts[id] ?? (current && current.type === 'text' ? current.text : '')
+      const atEnd = this.lastCaretCursor >= text.length
+      const charsPerLine = Math.max(1, Math.floor(block.width / Math.max(1, fontSize)))
+      const caretOffset = estimateCaretLines(text, this.lastCaretCursor, charsPerLine) * lineHeight
+      const caretBottom = atEnd
+        ? (caret?.bottom ?? block.bottom)
+        : Math.min(caret?.bottom ?? block.bottom, block.top + caretOffset)
+      const caretTop = caretBottom - lineHeight
+      const safeBottom = viewport.bottom - overlay - gap
+      const safeTop = viewport.top + gap
+      let delta = 0
+      if (caretBottom > safeBottom) delta = caretBottom - safeBottom
+      else if (caretTop < safeTop) delta = caretTop - safeTop
+      if (Math.abs(delta) < 2) return
+
+      const nextTop = Math.max(0, Math.round(offset.scrollTop + delta))
+      const currentTop = this.data.scrollTop
+      this.setData({
+        scrollTop: nextTop === currentTop ? nextTop + 0.1 : nextTop,
+      })
     })
   },
 
@@ -293,7 +447,7 @@ Page({
     const id = textId || this.data.focusTextId
     if (!id) return
     this.setData({ scrollIntoView: '' }, () => {
-      this.setData({ scrollIntoView: `note-block-${id}` })
+      this.setData({ scrollIntoView: `note-caret-${id}` })
     })
   },
 
@@ -342,8 +496,10 @@ Page({
       }
     }
 
-    const alreadyFocused = this.data.textFocused && this.data.focusTextId === focusTextId
+    const alreadyFocused = this.editorActive && this.data.focusTextId === focusTextId
     if (alreadyFocused) return
+    this.editorActive = true
+    this.keyboardHidePending = false
 
     this.ignoreBlankTapUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
     this.clearFocusTimer()
@@ -357,7 +513,7 @@ Page({
         this.focusTimer = 0
         if (this.openingPlusPanel || this.data.plusPanelVisible) return
         this.syncComposer({ textFocused: true, focusTextId })
-        if (this.data.keyboardHeight > 0) this.scrollFocusedBlockIntoView(focusTextId)
+        if (this.data.keyboardHeight > 0) this.scheduleEnsureCaretVisible(focusTextId)
       }, 40) as unknown as number
       return
     }
@@ -367,6 +523,7 @@ Page({
       textFocused: true,
       focusTextId,
     })
+    if (this.data.keyboardHeight > 0) this.scheduleEnsureCaretVisible(focusTextId)
   },
 
   resetHistory(blocks: NoteBlock[]) {
@@ -389,7 +546,7 @@ Page({
 
   applyBlocks(blocks: NoteBlock[], recordHistory = true) {
     const next = withFileLabels(blocks)
-    this.setData({ blocks: next, emptyHint: emptyHintFor(next) })
+    this.setData({ blocks: next, ...editorViewState(next) })
     if (recordHistory) this.pushHistory(next)
   },
 
@@ -416,7 +573,7 @@ Page({
     const blocks = withFileLabels(cloneNoteBlocks(this.history[this.historyIndex] ?? []))
     this.setData({
       blocks,
-      emptyHint: emptyHintFor(blocks),
+      ...editorViewState(blocks),
       canUndo: this.historyIndex > 0,
       canRedo: true,
     })
@@ -428,7 +585,7 @@ Page({
     const blocks = withFileLabels(cloneNoteBlocks(this.history[this.historyIndex] ?? []))
     this.setData({
       blocks,
-      emptyHint: emptyHintFor(blocks),
+      ...editorViewState(blocks),
       canUndo: true,
       canRedo: this.historyIndex < this.history.length - 1,
     })
@@ -436,25 +593,38 @@ Page({
 
   onEditorBlankTap() {
     if (Date.now() < this.ignoreBlankTapUntil) return
-    if (this.data.textFocused || this.data.keyboardHeight > 0) return
+    if (this.editorActive || this.data.textFocused || this.data.keyboardHeight > 0) return
     this.focusEditor()
   },
 
-  onTextBlockTap() {},
+  onTextBlockTap(event: WechatMiniprogram.TouchEvent) {
+    if (Date.now() < this.ignoreBlankTapUntil) return
+    if (this.data.lastTextHasCopy) return
+    const id = event.currentTarget.dataset.id as string
+    this.focusEditor(id || this.data.lastTextId)
+  },
 
   onMediaBlockTap() {},
 
   onPlusTouchStart() {
     this.clearFocusTimer()
+    this.clearKeyboardDismissTimer()
     this.openingPlusPanel = true
+    this.editorActive = false
+    this.keyboardHidePending = false
     this.ignoreBlankTapUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
+    this.flushTextDrafts(true)
     this.syncComposer({ plusPanelVisible: true, textFocused: false, keyboardHeight: 0 })
   },
 
   onPlusTap() {
     this.clearFocusTimer()
+    this.clearKeyboardDismissTimer()
     this.openingPlusPanel = true
+    this.editorActive = false
+    this.keyboardHidePending = false
     this.ignoreBlankTapUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
+    this.flushTextDrafts(true)
     this.syncComposer({ plusPanelVisible: true, textFocused: false, keyboardHeight: 0 })
   },
 
@@ -589,15 +759,31 @@ Page({
     const text = stripNoteTextMark(nextText) === '' && nextText.includes(NOTE_BACKSPACE_MARK)
       ? NOTE_BACKSPACE_MARK
       : stripNoteTextMark(nextText)
-    const blocks = this.data.blocks.map((block) => (block.id === id && block.type === 'text' ? { ...block, text } : block))
-    this.setData({ blocks, emptyHint: emptyHintFor(blocks) })
+    this.textDrafts[id] = text
+    this.lastCaretCursor = cursor
+    const preview = this.data.blocks.map((block) => (block.id === id && block.type === 'text' ? { ...block, text } : block))
+    const view = editorViewState(preview)
+    if (view.emptyHint !== this.data.emptyHint || view.lastTextHasCopy !== this.data.lastTextHasCopy) {
+      this.setData(view)
+    }
+    this.scheduleEnsureCaretVisible(id)
+  },
+
+  onTextLineChange(event: WechatMiniprogram.TextareaLineChange) {
+    const id = event.currentTarget.dataset.id as string
+    this.scheduleEnsureCaretVisible(id)
   },
 
   onTextFocus(event: WechatMiniprogram.TextareaFocus) {
-    if (Date.now() < this.ignoreBlankTapUntil && this.data.keyboardHeight <= 0) return
+    if (this.keyboardHidePending && Date.now() < this.ignoreBlankTapUntil) return
     const id = event.currentTarget.dataset.id as string
+    this.editorActive = true
+    this.keyboardHidePending = false
+    this.clearKeyboardDismissTimer()
     const index = this.data.blocks.findIndex((block) => block.id === id)
     const current = this.data.blocks[index]
+    this.lastCaretCursor = this.textDrafts[id]?.length
+      ?? (current && current.type === 'text' ? current.text.length : 0)
     const prev = index > 0 ? this.data.blocks[index - 1] : undefined
     let blocks = this.data.blocks
     if (
@@ -611,26 +797,25 @@ Page({
         block.id === id && block.type === 'text' ? { ...block, text: NOTE_BACKSPACE_MARK } : block,
       )
     }
+    const height = event.detail.height > 0 ? event.detail.height : this.data.keyboardHeight
+    if (this.data.textFocused && this.data.focusTextId === id && blocks === this.data.blocks) {
+      if (height > 0) this.applyKeyboardHeight(height)
+      else this.scheduleEnsureCaretVisible(id)
+      return
+    }
     this.syncComposer({
       plusPanelVisible: false,
       textFocused: true,
       focusTextId: id,
-      keyboardHeight: event.detail.height > 0 ? event.detail.height : this.data.keyboardHeight,
+      keyboardHeight: height,
     })
-    if (blocks !== this.data.blocks) this.setData({ blocks, emptyHint: emptyHintFor(blocks) })
+    if (blocks !== this.data.blocks) this.setData({ blocks, ...editorViewState(blocks) })
+    this.scheduleEnsureCaretVisible(id)
   },
 
   onTextBlur() {
-    const blocks = this.data.blocks.map((block) =>
-      block.type === 'text' ? { ...block, text: stripNoteTextMark(block.text) } : block,
-    )
-    this.setData({ blocks, emptyHint: emptyHintFor(blocks) })
-    this.pushHistory(blocks)
-    if (this.data.keyboardHeight <= 0) this.syncComposer({ textFocused: false })
-  },
-
-  onKeyboardHeightChange(event: WechatMiniprogram.TextareaKeyboardHeightChange) {
-    this.applyKeyboardHeight(Math.max(0, event.detail.height || 0))
+    this.keyboardHidePending = true
+    this.scheduleDismissKeyboard(NOTE_KEYBOARD_DISMISS_MS)
   },
 
   onLocationTap(event: WechatMiniprogram.TouchEvent) {
@@ -696,10 +881,11 @@ Page({
   },
 
   buildSubmitInput() {
+    const blocks = this.flushTextDrafts()
     return {
       draftId: this.draftMaterialId,
       originalAttachmentSignature: this.originalAttachmentSignature,
-      blocks: this.data.blocks,
+      blocks,
     }
   },
 
