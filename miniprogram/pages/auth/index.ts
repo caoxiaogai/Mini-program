@@ -1,4 +1,4 @@
-import { completeProfileLogin, continueAfterAuth } from '../../services/auth'
+import { completeProfileLogin, continueAfterAuth, hasCompletedLogin, resolveAuthGate } from '../../services/auth'
 import { DEFAULT_AVATAR_URL, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath } from '../../utils/auth'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
 import { HOME_PAGE_PATH } from '../../utils/share-material'
@@ -20,12 +20,25 @@ Page({
     busy: false,
     hasAvatar: false,
     canSubmit: false,
+    ready: false,
   },
 
   onLoad(options: Record<string, string | undefined>) {
+    const returnPath = safeReturnPath(options.return)
     this.setData({
-      returnPath: safeReturnPath(options.return),
+      returnPath,
       navigationHeight: getNavigationBarLayout().totalHeight,
+    })
+    if (hasCompletedLogin()) {
+      continueAfterAuth(returnPath)
+      return
+    }
+    resolveAuthGate().then((gate) => {
+      if (gate === 'ok') {
+        continueAfterAuth(returnPath)
+        return
+      }
+      this.setData({ ready: true })
     })
   },
 

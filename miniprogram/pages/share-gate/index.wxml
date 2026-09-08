@@ -1,4 +1,4 @@
-<view class="share-gate-page">
+<view wx:if="{{ready}}" class="share-gate-page">
   <view class="share-gate-page__hero">
     <navigation-bar title="" back="{{false}}" color="#000000" background="#f8f8f8" />
     <image class="share-gate-page__art" src="/assets/share-gate/group-98.svg" mode="aspectFit" />

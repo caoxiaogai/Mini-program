@@ -5,7 +5,7 @@ import test from 'node:test'
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
-function loadShareGatePage(auth, destinations) {
+function loadShareGatePage(auth, destinations, session = { completed: false }) {
   let page
   const source = stripTypeScriptTypes(read('miniprogram/pages/share-gate/index.ts').replace(/^import[^\n]+\n/gm, ''))
   new Function(
@@ -15,24 +15,43 @@ function loadShareGatePage(auth, destinations) {
     'buildMaterialDetailPath',
     'HOME_PAGE_PATH',
     'safeReturnPath',
+    'hasCompletedLogin',
+    'resolveAuthGate',
+    'continueAfterAuth',
     source,
   )(
     (value) => {
       page = value
+      page.setData = function setData(patch) {
+        this.data = { ...this.data, ...patch }
+      }
     },
     {
       navigateTo: ({ url }) => destinations.push(url),
       redirectTo: ({ url }) => destinations.push(url),
+      reLaunch: ({ url }) => destinations.push(url),
     },
     auth.buildAuthPath,
     (id, trackingId) => `/pages/material-detail/index?id=${id}${trackingId ? `&trackingId=${trackingId}` : ''}`,
     '/pages/index/index',
     auth.safeReturnPath,
+    () => session.completed,
+    () => Promise.resolve(session.completed ? 'ok' : 'login'),
+    (url) => destinations.push(url),
   )
   return page
 }
 
-test('查看更多 opens authorization even with an existing session and preserves the destination', async () => {
+test('logged-in users skip the share gate and open the destination', async () => {
+  const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
+  const destinations = []
+  const page = loadShareGatePage(auth, destinations, { completed: true })
+  page.onLoad({ id: 'work-1', trackingId: 'track-2' })
+  await Promise.resolve()
+  assert.deepEqual(destinations, ['/pages/material-detail/index?id=work-1&trackingId=track-2'])
+})
+
+test('查看更多 opens authorization for first-time users and preserves the destination', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
   const destinations = []
   const page = loadShareGatePage(auth, destinations)

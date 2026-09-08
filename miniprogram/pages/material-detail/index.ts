@@ -1,5 +1,5 @@
 import { deleteMaterials, getMaterialDetail } from '../../services/materials'
-import { runAuthed } from '../../services/auth'
+import { hasCompletedLogin, runAuthed } from '../../services/auth'
 import {
   calcImageViewProgress,
   calcVideoViewProgress,
@@ -90,13 +90,14 @@ Page({
   noteViewStartedAt: 0,
 
   onLoad(options: Record<string, string | undefined>) {
-    if (options.entry === 'share-gate' && options.id) {
-      const query = [`id=${encodeURIComponent(options.id)}`]
-      if (options.trackingId) query.push(`trackingId=${encodeURIComponent(options.trackingId)}`)
+    const { entry, ...rest } = options
+    if (entry === 'share-gate' && rest.id && !hasCompletedLogin()) {
+      const query = [`id=${encodeURIComponent(rest.id)}`]
+      if (rest.trackingId) query.push(`trackingId=${encodeURIComponent(rest.trackingId)}`)
       wx.redirectTo({ url: `/pages/share-gate/index?${query.join('&')}` })
       return
     }
-    runAuthed(buildReturnPath(MATERIAL_DETAIL_PATH, options), () => this.startDetail(options))
+    runAuthed(buildReturnPath(MATERIAL_DETAIL_PATH, rest), () => this.startDetail(rest))
   },
   startDetail(options: Record<string, string | undefined>) {
     this.materialId = options.id ?? ''

@@ -10,10 +10,18 @@ export const DEFAULT_AVATAR_URL =
 
 const PLACEHOLDER_NICKNAMES = new Set(['微信用户', '匿名访客'])
 
+export function usableLoginNickname(value?: string | null): string {
+  const nickname = (value ?? '').trim()
+  return nickname && !PLACEHOLDER_NICKNAMES.has(nickname) ? nickname : ''
+}
+
+export function usableLoginAvatar(value?: string | null): string {
+  const avatar = (value ?? '').trim()
+  return avatar && avatar !== DEFAULT_AVATAR_URL ? avatar : ''
+}
+
 export function isLoginProfileComplete(user: { nickname?: string | null; avatar?: string | null }): boolean {
-  const nickname = (user.nickname ?? '').trim()
-  const avatar = (user.avatar ?? '').trim()
-  return nickname !== '' && !PLACEHOLDER_NICKNAMES.has(nickname) && avatar !== '' && avatar !== DEFAULT_AVATAR_URL
+  return Boolean(usableLoginNickname(user.nickname) && usableLoginAvatar(user.avatar))
 }
 
 export function isLocalAvatarFile(url: string): boolean {

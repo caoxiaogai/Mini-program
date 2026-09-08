@@ -2,6 +2,7 @@
 // 页面不直接使用本文件；所有数据访问经由 services/ 下的业务 service。
 
 import type { ApiLoginData, ApiResponse } from '../types/api'
+import { usableLoginAvatar, usableLoginNickname } from '../utils/auth'
 import { DEV_LAN_ORIGIN, DEVTOOLS_ORIGIN, PROD_API_ORIGIN } from '../config/dev'
 import { isMaterialDeletedError } from '../utils/material-deleted'
 
@@ -218,13 +219,31 @@ let loginPromise: Promise<ApiLoginData> | null = null
 let cachedUser: ApiLoginData | null = null
 
 function persistLogin(data: ApiLoginData): ApiLoginData {
-  cachedUser = data
+  const previousNickname = usableLoginNickname(cachedUser?.nickname ?? wx.getStorageSync(STORAGE_KEY_NICKNAME))
+  const previousAvatar = usableLoginAvatar(cachedUser?.avatar ?? wx.getStorageSync(STORAGE_KEY_AVATAR))
+  cachedUser = {
+    ...data,
+    nickname: usableLoginNickname(data.nickname) || previousNickname || data.nickname,
+    avatar: usableLoginAvatar(data.avatar) || previousAvatar || data.avatar,
+  }
   wx.setStorageSync(STORAGE_KEY_AUTHORIZED, '1')
-  wx.setStorageSync(STORAGE_KEY_USER_ID, data.userId)
-  wx.setStorageSync(STORAGE_KEY_OPENID, data.openid)
-  wx.setStorageSync(STORAGE_KEY_NICKNAME, data.nickname ?? '')
-  wx.setStorageSync(STORAGE_KEY_AVATAR, data.avatar ?? '')
-  return data
+  wx.setStorageSync(STORAGE_KEY_USER_ID, cachedUser.userId)
+  wx.setStorageSync(STORAGE_KEY_OPENID, cachedUser.openid)
+  wx.setStorageSync(STORAGE_KEY_NICKNAME, cachedUser.nickname ?? '')
+  wx.setStorageSync(STORAGE_KEY_AVATAR, cachedUser.avatar ?? '')
+  return cachedUser
+}
+
+export function getCachedLogin(): ApiLoginData | null {
+  if (cachedUser) return cachedUser
+  if (!hasAuthorizedLogin()) return null
+  return {
+    userId: String(wx.getStorageSync(STORAGE_KEY_USER_ID) ?? ''),
+    openid: String(wx.getStorageSync(STORAGE_KEY_OPENID) ?? ''),
+    phone: null,
+    nickname: String(wx.getStorageSync(STORAGE_KEY_NICKNAME) ?? '') || null,
+    avatar: String(wx.getStorageSync(STORAGE_KEY_AVATAR) ?? '') || null,
+  }
 }
 
 function requestLogin(): Promise<ApiLoginData> {

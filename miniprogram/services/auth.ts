@@ -1,15 +1,22 @@
 import type { ApiLoginData } from '../types/api'
 import { AUTH_PAGE_ROUTE, buildShareGatePath, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath, type AuthGate } from '../utils/auth'
 import { HOME_PAGE_PATH } from '../utils/share-material'
-import { authorizeLogin, clearLogin, ensureLogin, patchCachedLogin } from './request'
+import { authorizeLogin, clearLogin, ensureLogin, getCachedLogin, hasAuthorizedLogin, patchCachedLogin } from './request'
 import { updateUserProfile, uploadUserAvatar } from './user'
 
 export { isLoginProfileComplete }
 
+export function hasCompletedLogin(): boolean {
+  const user = getCachedLogin()
+  return Boolean(user && isLoginProfileComplete(user))
+}
+
 export function resolveAuthGate(): Promise<AuthGate> {
+  if (hasCompletedLogin()) return Promise.resolve('ok')
+  if (!hasAuthorizedLogin()) return Promise.resolve('login')
   return ensureLogin()
     .then((user) => (isLoginProfileComplete(user) ? 'ok' : 'login'))
-    .catch(() => 'login' as AuthGate)
+    .catch(() => (hasCompletedLogin() ? 'ok' : 'login'))
 }
 
 export function requireAuth(returnPath: string): Promise<boolean> {

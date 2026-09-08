@@ -1,3 +1,4 @@
+import { continueAfterAuth, hasCompletedLogin, resolveAuthGate } from '../../services/auth'
 import { buildAuthPath, safeReturnPath } from '../../utils/auth'
 import { buildMaterialDetailPath, HOME_PAGE_PATH } from '../../utils/share-material'
 
@@ -13,6 +14,7 @@ const friendAvatars = [
 Page({
   data: {
     friendAvatars,
+    ready: false,
   },
 
   materialId: '',
@@ -23,12 +25,30 @@ Page({
     this.materialId = options.id ?? ''
     this.trackingId = options.trackingId ?? ''
     this.returnPath = safeReturnPath(options.return, HOME_PAGE_PATH)
+    if (this.leaveIfLoggedIn()) return
+    resolveAuthGate().then((gate) => {
+      if (gate === 'ok') {
+        continueAfterAuth(this.destinationPath())
+        return
+      }
+      this.setData({ ready: true })
+    })
+  },
+
+  destinationPath() {
+    return this.materialId
+      ? buildMaterialDetailPath(this.materialId, this.trackingId)
+      : this.returnPath
+  },
+
+  leaveIfLoggedIn() {
+    if (!hasCompletedLogin()) return false
+    continueAfterAuth(this.destinationPath())
+    return true
   },
 
   onMoreTap() {
-    const destination = this.materialId
-      ? buildMaterialDetailPath(this.materialId, this.trackingId)
-      : this.returnPath
-    wx.navigateTo({ url: buildAuthPath(destination) })
+    if (this.leaveIfLoggedIn()) return
+    wx.navigateTo({ url: buildAuthPath(this.destinationPath()) })
   },
 })
