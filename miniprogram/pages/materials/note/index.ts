@@ -46,7 +46,7 @@ function withFileLabels(blocks: NoteBlock[]): NoteBlock[] {
 const NOTE_TOOLBAR_RPX = 88
 const NOTE_ACTIONS_RPX = 108
 const NOTE_PLUS_PANEL_RPX = 200
-const NOTE_BLANK_TAP_GUARD_MS = 400
+const NOTE_BLANK_TAP_GUARD_MS = 480
 const NOTE_NAV_ACTION_BUTTON_RPX = 56
 const NOTE_NAV_ACTION_GAP_RPX = 4
 const NOTE_TITLE_ESTIMATE_PX = 34
@@ -267,16 +267,17 @@ Page({
       }
       return
     }
-    if (height <= 0) {
-      this.dismissKeyboard()
+    if (height > 0) {
+      const keyboardJustOpened = this.data.keyboardHeight <= 0
+      if (height === this.data.keyboardHeight) return
+      this.syncComposer({
+        keyboardHeight: height,
+        plusPanelVisible: false,
+      })
+      if (keyboardJustOpened) this.scrollFocusedBlockIntoView()
       return
     }
-    this.ignoreBlankTapUntil = 0
-    this.syncComposer({
-      keyboardHeight: height,
-      plusPanelVisible: false,
-    })
-    this.scrollFocusedBlockIntoView()
+    this.dismissKeyboard()
   },
 
   dismissKeyboard() {
@@ -341,18 +342,31 @@ Page({
       }
     }
 
+    const alreadyFocused = this.data.textFocused && this.data.focusTextId === focusTextId
+    if (alreadyFocused) return
+
+    this.ignoreBlankTapUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
     this.clearFocusTimer()
+    if (this.data.textFocused) {
+      this.syncComposer({
+        plusPanelVisible: false,
+        textFocused: false,
+        focusTextId,
+      })
+      this.focusTimer = setTimeout(() => {
+        this.focusTimer = 0
+        if (this.openingPlusPanel || this.data.plusPanelVisible) return
+        this.syncComposer({ textFocused: true, focusTextId })
+        if (this.data.keyboardHeight > 0) this.scrollFocusedBlockIntoView(focusTextId)
+      }, 40) as unknown as number
+      return
+    }
+
     this.syncComposer({
       plusPanelVisible: false,
-      textFocused: false,
+      textFocused: true,
       focusTextId,
     })
-    this.focusTimer = setTimeout(() => {
-      this.focusTimer = 0
-      if (Date.now() < this.ignoreBlankTapUntil) return
-      this.syncComposer({ textFocused: true, focusTextId })
-      this.scrollFocusedBlockIntoView(focusTextId)
-    }, 40) as unknown as number
   },
 
   resetHistory(blocks: NoteBlock[]) {
@@ -422,6 +436,7 @@ Page({
 
   onEditorBlankTap() {
     if (Date.now() < this.ignoreBlankTapUntil) return
+    if (this.data.textFocused || this.data.keyboardHeight > 0) return
     this.focusEditor()
   },
 
@@ -579,6 +594,7 @@ Page({
   },
 
   onTextFocus(event: WechatMiniprogram.TextareaFocus) {
+    if (Date.now() < this.ignoreBlankTapUntil && this.data.keyboardHeight <= 0) return
     const id = event.currentTarget.dataset.id as string
     const index = this.data.blocks.findIndex((block) => block.id === id)
     const current = this.data.blocks[index]
@@ -602,7 +618,6 @@ Page({
       keyboardHeight: event.detail.height > 0 ? event.detail.height : this.data.keyboardHeight,
     })
     if (blocks !== this.data.blocks) this.setData({ blocks, emptyHint: emptyHintFor(blocks) })
-    this.scrollFocusedBlockIntoView(id)
   },
 
   onTextBlur() {
