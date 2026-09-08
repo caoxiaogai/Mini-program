@@ -250,6 +250,21 @@ export function getMaterialDetail(materialId: string, ownerView = false): Promis
     })
 }
 
+/** 分享前置页用的列表预览图；未登录访客也可读取封面。 */
+export function getMaterialListPreview(materialId: string): Promise<string> {
+  const id = materialId.trim()
+  if (!id) return Promise.resolve('')
+
+  return request<ApiMaterial>({
+    method: 'GET',
+    path: `/material/${id}`,
+    silent: true,
+    skipAuth: true,
+  })
+    .then((material) => prepareMaterialThumbnail(material))
+    .catch(() => '')
+}
+
 /** 分享卡片用的标题和预览图，与详情页分享同一数据来源。 */
 export function getMaterialShareCard(
   materialId: string,

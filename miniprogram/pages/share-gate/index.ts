@@ -1,6 +1,9 @@
 import { continueAfterAuth, hasCompletedLogin, resolveAuthGate } from '../../services/auth'
+import { getMaterialListPreview } from '../../services/materials'
 import { buildAuthPath, safeReturnPath } from '../../utils/auth'
 import { buildMaterialDetailPath, HOME_PAGE_PATH } from '../../utils/share-material'
+
+const SHARE_GATE_DEFAULT_ART = '/assets/share-gate/group-98.svg'
 
 const friendAvatars = [
   '/assets/ranking/avatar-01.png',
@@ -15,6 +18,8 @@ Page({
   data: {
     friendAvatars,
     ready: false,
+    artSrc: SHARE_GATE_DEFAULT_ART,
+    artFromWork: false,
   },
 
   materialId: '',
@@ -26,6 +31,7 @@ Page({
     this.trackingId = options.trackingId ?? ''
     this.returnPath = safeReturnPath(options.return, HOME_PAGE_PATH)
     if (this.leaveIfLoggedIn()) return
+    this.loadWorkPreview()
     resolveAuthGate().then((gate) => {
       if (gate === 'ok') {
         continueAfterAuth(this.destinationPath())
@@ -39,6 +45,14 @@ Page({
     return this.materialId
       ? buildMaterialDetailPath(this.materialId, this.trackingId)
       : this.returnPath
+  },
+
+  loadWorkPreview() {
+    if (!this.materialId) return
+    getMaterialListPreview(this.materialId).then((url) => {
+      if (!url) return
+      this.setData({ artSrc: url, artFromWork: true })
+    })
   },
 
   leaveIfLoggedIn() {

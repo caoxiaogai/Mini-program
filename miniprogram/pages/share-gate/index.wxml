@@ -1,11 +1,14 @@
 <view wx:if="{{ready}}" class="share-gate-page">
-  <view class="share-gate-page__hero">
-    <navigation-bar title="" back="{{false}}" color="#000000" background="#f8f8f8" />
-    <image class="share-gate-page__art" src="/assets/share-gate/group-98.svg" mode="aspectFit" />
-    <view class="share-gate-page__headline">
-      <text>好产品</text>
-      <text>值得多了解一点</text>
-    </view>
+  <view class="share-gate-page__hero {{artFromWork ? 'share-gate-page__hero--work' : ''}}">
+    <navigation-bar title="" back="{{false}}" color="#000000" background="{{artFromWork ? 'transparent' : '#f8f8f8'}}" />
+    <image wx:if="{{artFromWork}}" class="share-gate-page__work-cover" src="{{artSrc}}" mode="aspectFill" />
+    <block wx:else>
+      <image class="share-gate-page__art" src="{{artSrc}}" mode="aspectFit" />
+      <view class="share-gate-page__headline">
+        <text>好产品</text>
+        <text>值得多了解一点</text>
+      </view>
+    </block>
   </view>
 
   <view class="share-gate-page__content">
