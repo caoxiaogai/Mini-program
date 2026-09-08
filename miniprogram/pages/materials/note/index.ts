@@ -47,8 +47,7 @@ const NOTE_TOOLBAR_RPX = 88
 const NOTE_ACTIONS_RPX = 108
 const NOTE_PLUS_PANEL_RPX = 200
 const NOTE_BLANK_TAP_GUARD_MS = 480
-const NOTE_KEYBOARD_DISMISS_MS = 320
-const NOTE_KEYBOARD_HEIGHT_SLACK = 24
+const NOTE_KEYBOARD_DISMISS_MS = 720
 const NOTE_CARET_SCROLL_MS = 64
 const NOTE_LINE_HEIGHT_RPX = 48
 const NOTE_FONT_SIZE_RPX = 32
@@ -140,6 +139,7 @@ Page({
   caretScrollTimer: 0,
   lastCaretCursor: 0,
   ignoreBlankTapUntil: 0,
+  suppressFocusUntil: 0,
   editorActive: false,
   keyboardHidePending: false,
   openingPlusPanel: false,
@@ -313,7 +313,7 @@ Page({
   },
 
   applyKeyboardHeight(height: number) {
-    if (this.openingPlusPanel || this.data.plusPanelVisible) {
+    if (this.openingPlusPanel) {
       if (height <= 0) {
         this.openingPlusPanel = false
         this.clearKeyboardDismissTimer()
@@ -326,10 +326,7 @@ Page({
       this.keyboardHidePending = false
       this.clearKeyboardDismissTimer()
       this.editorActive = true
-      if (Math.abs(height - this.data.keyboardHeight) < NOTE_KEYBOARD_HEIGHT_SLACK) {
-        this.scheduleEnsureCaretVisible(this.data.focusTextId)
-        return
-      }
+      if (this.data.keyboardHeight > 0) return
       this.setData({
         keyboardHeight: height,
         plusPanelVisible: false,
@@ -376,6 +373,7 @@ Page({
     this.editorActive = false
     this.keyboardHidePending = false
     this.ignoreBlankTapUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
+    this.suppressFocusUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
     this.flushTextDrafts(true)
     this.syncComposer({
       textFocused: false,
@@ -467,13 +465,28 @@ Page({
       : showComposerBar
         ? keyboardInset + this.toolbarHeightPx()
         : this.actionsReservePx()
+    const showActions = keyboardHeight === 0 && !plusPanelVisible && !textFocused
+    const focusTextId = patch.focusTextId ?? this.data.focusTextId
+    if (
+      keyboardHeight === this.data.keyboardHeight &&
+      plusPanelVisible === this.data.plusPanelVisible &&
+      textFocused === this.data.textFocused &&
+      focusTextId === this.data.focusTextId &&
+      showComposerBar === this.data.showComposerBar &&
+      showActions === this.data.showActions &&
+      keyboardInset === this.data.keyboardInset &&
+      composerReserve === this.data.composerReserve
+    ) {
+      return
+    }
     this.setData({
       ...patch,
       keyboardHeight,
       plusPanelVisible,
       textFocused,
+      focusTextId,
       showComposerBar,
-      showActions: keyboardHeight === 0 && !plusPanelVisible && !textFocused,
+      showActions,
       keyboardInset,
       composerReserve,
     })
@@ -618,6 +631,7 @@ Page({
     this.editorActive = false
     this.keyboardHidePending = false
     this.ignoreBlankTapUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
+    this.suppressFocusUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
     this.flushTextDrafts(true)
     this.syncComposer({ plusPanelVisible: true, textFocused: false, keyboardHeight: 0 })
   },
@@ -629,6 +643,7 @@ Page({
     this.editorActive = false
     this.keyboardHidePending = false
     this.ignoreBlankTapUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
+    this.suppressFocusUntil = Date.now() + NOTE_BLANK_TAP_GUARD_MS
     this.flushTextDrafts(true)
     this.syncComposer({ plusPanelVisible: true, textFocused: false, keyboardHeight: 0 })
   },
@@ -766,21 +781,14 @@ Page({
       : stripNoteTextMark(nextText)
     this.textDrafts[id] = text
     this.lastCaretCursor = cursor
-    const preview = this.data.blocks.map((block) => (block.id === id && block.type === 'text' ? { ...block, text } : block))
-    const view = editorViewState(preview)
-    if (view.emptyHint !== this.data.emptyHint || view.lastTextHasCopy !== this.data.lastTextHasCopy) {
-      this.setData(view)
-    }
-    this.scheduleEnsureCaretVisible(id)
+    if (current && current.type === 'text') current.text = text
   },
 
-  onTextLineChange(event: WechatMiniprogram.TextareaLineChange) {
-    const id = event.currentTarget.dataset.id as string
-    this.scheduleEnsureCaretVisible(id)
-  },
+  onTextLineChange() {},
 
   onTextFocus(event: WechatMiniprogram.TextareaFocus) {
-    if (this.keyboardHidePending && Date.now() < this.ignoreBlankTapUntil) return
+    if (this.openingPlusPanel) return
+    if (!this.editorActive && Date.now() < this.suppressFocusUntil) return
     const id = event.currentTarget.dataset.id as string
     this.editorActive = true
     this.keyboardHidePending = false
@@ -804,8 +812,7 @@ Page({
     }
     const height = event.detail.height > 0 ? event.detail.height : this.data.keyboardHeight
     if (this.data.textFocused && this.data.focusTextId === id && blocks === this.data.blocks) {
-      if (height > 0) this.applyKeyboardHeight(height)
-      else this.scheduleEnsureCaretVisible(id)
+      if (height > 0 && this.data.keyboardHeight <= 0) this.applyKeyboardHeight(height)
       return
     }
     this.syncComposer({
@@ -819,6 +826,8 @@ Page({
   },
 
   onTextBlur() {
+    if (this.openingPlusPanel) return
+    if (this.editorActive && this.data.keyboardHeight > 0) return
     this.keyboardHidePending = true
     this.scheduleDismissKeyboard(NOTE_KEYBOARD_DISMISS_MS)
   },
