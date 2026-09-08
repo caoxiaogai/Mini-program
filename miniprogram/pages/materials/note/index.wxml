@@ -50,6 +50,8 @@
           <textarea
             class="note-block__textarea"
             value="{{item.text}}"
+            placeholder="{{emptyHint}}"
+            placeholder-class="note-block__placeholder"
             data-id="{{item.id}}"
             maxlength="-1"
             auto-height="{{true}}"

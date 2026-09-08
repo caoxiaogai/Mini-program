@@ -9,6 +9,7 @@ import {
   deletePreviousAttachmentOnBackspace,
   extractNotePlainText,
   formatNoteFileSize,
+  hasNoteContent,
   isNoteAttachmentBlock,
   MAX_NOTE_BLOCKS,
   MAX_NOTE_IMAGES_PER_PICK,
@@ -49,6 +50,20 @@ const NOTE_BLANK_TAP_GUARD_MS = 400
 const NOTE_NAV_ACTION_BUTTON_RPX = 56
 const NOTE_NAV_ACTION_GAP_RPX = 4
 const NOTE_TITLE_ESTIMATE_PX = 34
+const NOTE_LOCATION_FALLBACK = { latitude: 30.659462, longitude: 104.065735 }
+const NOTE_EMPTY_HINT = '记录文字、图片、视频等'
+
+function emptyHintFor(blocks: NoteBlock[]): string {
+  return hasNoteContent(blocks) ? '' : NOTE_EMPTY_HINT
+}
+
+function isLocationAuthDenied(errMsg?: string): boolean {
+  return typeof errMsg === 'string' && /auth deny|auth denied|authorize/i.test(errMsg)
+}
+
+function isLocationPrivacyBlocked(errMsg?: string): boolean {
+  return typeof errMsg === 'string' && /privacy|not declared/i.test(errMsg)
+}
 
 function windowMetrics() {
   try {
@@ -99,6 +114,7 @@ Page({
 
   data: {
     blocks: withFileLabels([createEmptyTextBlock()]),
+    emptyHint: NOTE_EMPTY_HINT,
     canUndo: false,
     canRedo: false,
     videoPlayerVisible: false,
@@ -221,7 +237,7 @@ Page({
       this.draftMaterialId = remix ? null : draft.id
       this.originalAttachmentSignature = remix ? '' : noteAttachmentSignature(blocks)
       const first = blocks.find((block) => block.type === 'text')
-      this.setData({ blocks, focusTextId: first?.id ?? '' }, () => this.resetHistory(blocks))
+      this.setData({ blocks, emptyHint: emptyHintFor(blocks), focusTextId: first?.id ?? '' }, () => this.resetHistory(blocks))
     })
   },
 
@@ -359,7 +375,7 @@ Page({
 
   applyBlocks(blocks: NoteBlock[], recordHistory = true) {
     const next = withFileLabels(blocks)
-    this.setData({ blocks: next })
+    this.setData({ blocks: next, emptyHint: emptyHintFor(next) })
     if (recordHistory) this.pushHistory(next)
   },
 
@@ -383,8 +399,10 @@ Page({
   onUndoTap() {
     if (this.historyIndex <= 0) return
     this.historyIndex -= 1
+    const blocks = withFileLabels(cloneNoteBlocks(this.history[this.historyIndex] ?? []))
     this.setData({
-      blocks: withFileLabels(cloneNoteBlocks(this.history[this.historyIndex] ?? [])),
+      blocks,
+      emptyHint: emptyHintFor(blocks),
       canUndo: this.historyIndex > 0,
       canRedo: true,
     })
@@ -393,8 +411,10 @@ Page({
   onRedoTap() {
     if (this.historyIndex >= this.history.length - 1) return
     this.historyIndex += 1
+    const blocks = withFileLabels(cloneNoteBlocks(this.history[this.historyIndex] ?? []))
     this.setData({
-      blocks: withFileLabels(cloneNoteBlocks(this.history[this.historyIndex] ?? [])),
+      blocks,
+      emptyHint: emptyHintFor(blocks),
       canUndo: true,
       canRedo: this.historyIndex < this.history.length - 1,
     })
@@ -459,8 +479,9 @@ Page({
     this.chooseFiles()
   },
 
-  chooseLocation() {
+  chooseLocation(center?: { latitude: number; longitude: number }, isRetry = false) {
     wx.chooseLocation({
+      ...(center ? { latitude: center.latitude, longitude: center.longitude } : {}),
       success: (result) => {
         this.appendBlocks([
           {
@@ -474,7 +495,37 @@ Page({
         ])
       },
       fail: (error) => {
-        if (!isPickerCancel(error.errMsg)) wx.showToast({ title: '无法获取位置', icon: 'none' })
+        const errMsg = error.errMsg
+        if (isPickerCancel(errMsg)) return
+        if (isLocationAuthDenied(errMsg)) {
+          this.askLocationSetting()
+          return
+        }
+        if (!isRetry && !isLocationPrivacyBlocked(errMsg)) {
+          this.chooseLocation(NOTE_LOCATION_FALLBACK, true)
+          return
+        }
+        console.error('[note] chooseLocation failed', error)
+        wx.showToast({
+          title: isLocationPrivacyBlocked(errMsg) ? '请先同意位置隐私授权' : '无法获取位置',
+          icon: 'none',
+        })
+      },
+    })
+  },
+
+  askLocationSetting() {
+    wx.showModal({
+      title: '需要位置权限',
+      content: '请允许使用位置，以便在笔记中添加位置',
+      confirmText: '去设置',
+      success: (result) => {
+        if (!result.confirm) return
+        wx.openSetting({
+          success: (opened) => {
+            if (opened.authSetting['scope.userLocation']) this.chooseLocation()
+          },
+        })
       },
     })
   },
@@ -524,7 +575,7 @@ Page({
       ? NOTE_BACKSPACE_MARK
       : stripNoteTextMark(nextText)
     const blocks = this.data.blocks.map((block) => (block.id === id && block.type === 'text' ? { ...block, text } : block))
-    this.setData({ blocks })
+    this.setData({ blocks, emptyHint: emptyHintFor(blocks) })
   },
 
   onTextFocus(event: WechatMiniprogram.TextareaFocus) {
@@ -550,7 +601,7 @@ Page({
       focusTextId: id,
       keyboardHeight: event.detail.height > 0 ? event.detail.height : this.data.keyboardHeight,
     })
-    if (blocks !== this.data.blocks) this.setData({ blocks })
+    if (blocks !== this.data.blocks) this.setData({ blocks, emptyHint: emptyHintFor(blocks) })
     this.scrollFocusedBlockIntoView(id)
   },
 
@@ -558,7 +609,7 @@ Page({
     const blocks = this.data.blocks.map((block) =>
       block.type === 'text' ? { ...block, text: stripNoteTextMark(block.text) } : block,
     )
-    this.setData({ blocks })
+    this.setData({ blocks, emptyHint: emptyHintFor(blocks) })
     this.pushHistory(blocks)
     if (this.data.keyboardHeight <= 0) this.syncComposer({ textFocused: false })
   },
