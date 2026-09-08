@@ -145,6 +145,7 @@
     </view>
 
     <view wx:if="{{showComposerBar}}" class="note-page__toolbar">
+      <view class="note-page__done" catchtouchstart="onDoneTap" catchtap="onDoneTap" hover-class="note-page__done--pressed" hover-stay-time="80" aria-role="button" aria-label="完成">完成</view>
       <view class="note-page__plus" catchtouchstart="onPlusTouchStart" catchtap="onPlusTap" hover-class="note-page__plus--pressed" hover-stay-time="80" aria-role="button" aria-label="添加内容">
         <image src="/assets/materials/note-plus.svg" mode="aspectFit" />
       </view>

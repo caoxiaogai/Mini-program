@@ -57,7 +57,7 @@ const NOTE_NAV_ACTION_BUTTON_RPX = 56
 const NOTE_NAV_ACTION_GAP_RPX = 4
 const NOTE_TITLE_ESTIMATE_PX = 34
 const NOTE_LOCATION_FALLBACK = { latitude: 30.659462, longitude: 104.065735 }
-const NOTE_EMPTY_HINT = '记录文字、图片、视频等'
+const NOTE_EMPTY_HINT = '点此编辑文字'
 
 function estimateCaretLines(text: string, cursor: number, charsPerLine: number): number {
   const before = text.slice(0, Math.max(0, Math.min(cursor, text.length)))
@@ -161,9 +161,9 @@ Page({
     focusTextId: '',
     keyboardHeight: 0,
     keyboardInset: 0,
-    plusPanelVisible: false,
+    plusPanelVisible: true,
     showComposerBar: false,
-    showActions: true,
+    showActions: false,
     scrollIntoView: '',
     scrollTop: 0,
     composerReserve: 120,
@@ -605,6 +605,11 @@ Page({
   },
 
   onMediaBlockTap() {},
+
+  onDoneTap() {
+    this.openingPlusPanel = false
+    this.dismissKeyboard()
+  },
 
   onPlusTouchStart() {
     this.clearFocusTimer()
