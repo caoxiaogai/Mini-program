@@ -1,24 +1,26 @@
 page {
-  min-height: 100vh;
+  height: 100%;
   background: #ffffff;
 }
 
 .share-gate-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   width: 100%;
+  overflow: hidden;
   color: #000000;
   background: #ffffff;
 }
 
 .share-gate-page__hero {
   display: flex;
+  flex: 1;
   width: 100%;
-  height: auto;
   min-height: 0;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   padding: 0 20px 32px;
   box-sizing: border-box;
   overflow: hidden;
@@ -28,14 +30,24 @@ page {
 .share-gate-page__hero--work {
   position: relative;
   padding: 0;
-  min-height: calc(37vh + 200px);
-  max-height: 520px;
+  justify-content: flex-start;
   background: #dee2e7;
 }
 
 .share-gate-page__hero--work > navigation-bar {
   position: relative;
   z-index: 1;
+}
+
+.share-gate-page__graphic {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .share-gate-page__art {
@@ -45,7 +57,8 @@ page {
   max-width: 270px;
   height: 37vh;
   max-height: 313px;
-  margin-top: 30px;
+  min-height: 0;
+  margin-top: 0;
 }
 
 .share-gate-page__work-cover {
@@ -77,8 +90,7 @@ page {
 
 .share-gate-page__content {
   display: flex;
-  flex: 1;
-  min-height: 0;
+  flex: none;
   width: 100%;
   flex-direction: column;
   align-items: stretch;

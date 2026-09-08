@@ -3,10 +3,12 @@
     <navigation-bar title="" back="{{false}}" color="#000000" background="{{artFromWork ? 'transparent' : '#f8f8f8'}}" />
     <image wx:if="{{artFromWork}}" class="share-gate-page__work-cover" src="{{artSrc}}" mode="aspectFill" />
     <block wx:else>
-      <image class="share-gate-page__art" src="{{artSrc}}" mode="aspectFit" />
-      <view class="share-gate-page__headline">
-        <text>好产品</text>
-        <text>值得多了解一点</text>
+      <view class="share-gate-page__graphic">
+        <image class="share-gate-page__art" src="{{artSrc}}" mode="aspectFit" />
+        <view class="share-gate-page__headline">
+          <text>好产品</text>
+          <text>值得多了解一点</text>
+        </view>
       </view>
     </block>
   </view>
