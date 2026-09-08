@@ -1,4 +1,4 @@
-import { HOME_PAGE_PATH } from '../../utils/share-material'
+import { guardSinglePageAction, HOME_PAGE_PATH } from '../../utils/share-material'
 import { getNavigationBarLayout, isMenuButtonRectValid, toNavigationBarStyle } from '../../utils/navigation-layout'
 
 Component({
@@ -107,6 +107,7 @@ Component({
       })
     },
     back() {
+      if (guardSinglePageAction()) return
       const data = this.data
       if (data.delta) {
         wx.navigateBack({
@@ -119,6 +120,7 @@ Component({
       this.triggerEvent('back', { delta: data.delta }, {})
     },
     home() {
+      if (guardSinglePageAction()) return
       wx.reLaunch({ url: HOME_PAGE_PATH })
       this.triggerEvent('home', {})
     }

@@ -128,11 +128,14 @@ test('entry pages require authorized login and first-time profile setup', async 
   assert.match(authService, /buildShareGatePath\(returnPath\)/)
   assert.match(shareGateLogic, /leaveIfLoggedIn/)
   assert.match(shareGateLogic, /hasCompletedLogin/)
+  assert.doesNotMatch(shareGateLogic, /resolveAuthGate/)
   assert.match(authPage, /hasCompletedLogin/)
+  assert.doesNotMatch(authPage, /resolveAuthGate/)
   assert.match(authMarkup, /wx:if="\{\{ready\}\}"/)
   assert.match(read('miniprogram/pages/share-gate/index.wxml'), /wx:if="\{\{ready\}\}"/)
+  assert.match(detailLogic, /rest.id && \(rest.trackingId \|\| entry === 'share-gate'\)/)
   assert.match(detailLogic, /hasCompletedLogin\(\)/)
-  assert.match(detailLogic, /entry === 'share-gate' && rest.id && !hasCompletedLogin\(\)/)
+  assert.match(detailLogic, /openSharedMaterial\(rest.id, rest.trackingId, false\)/)
   assert.match(userService, /path: '\/user\/profile'/)
   assert.match(userService, /uploadFile\('\/user\/avatar'/)
   assert.match(authMarkup, /微信授权/)
@@ -2686,7 +2689,7 @@ test('materials home uses the Figma publish navigation and reserves space above 
   assert.match(logic, /label: '通知'/)
   assert.match(logic, /label: '分析'/)
   assert.match(logic, /label: '我的'/)
-  assert.match(markup, /<view class="materials-page .*?" style="--materials-navigation-height: \{\{materialsNavigationHeight\}\}px;">/)
+  assert.match(markup, /<view(?: wx:else)? class="materials-page .*?" style="--materials-navigation-height: \{\{materialsNavigationHeight\}\}px;">/)
   assert.match(homeMarkup, /<view class="materials-page .*?" style="--materials-navigation-height: \{\{analysisNavigationHeight\}\}px;">/)
   assert.match(logic, /isAndroid: false/)
   assert.match(homeLogic, /isAndroid: false/)
@@ -2782,7 +2785,7 @@ test('materials header reserves the navigation and filter space before the list'
   const logic = read('miniprogram/pages/materials/index.ts')
   const styles = read('miniprogram/pages/materials/index.less')
 
-  assert.match(markup, /<view class="materials-page .*?" style="--materials-navigation-height: \{\{materialsNavigationHeight\}\}px;">/)
+  assert.match(markup, /<view(?: wx:else)? class="materials-page .*?" style="--materials-navigation-height: \{\{materialsNavigationHeight\}\}px;">/)
   assert.match(homeMarkup, /<view class="materials-page .*?" style="--materials-navigation-height: \{\{analysisNavigationHeight\}\}px;">/)
   assert.match(logic, /import \{ getNavigationBarLayout \} from '..\/..\/utils\/navigation-layout'/)
   assert.match(logic, /materialsNavigationHeight: 91/)
@@ -3002,12 +3005,16 @@ test('shared material opens the authorization gate before the detail page', asyn
     buildMaterialShareGatePath,
     buildMaterialSharePath,
     buildMaterialShareQuery,
+    buildMaterialShareTimelineQuery,
     HOME_PAGE_PATH,
     MATERIAL_DETAIL_PATH,
   } = await import('../miniprogram/utils/share-material.ts')
+  const shareUtil = read('miniprogram/utils/share-material.ts')
   const homeLogic = read('miniprogram/pages/index/index.ts')
+  const materialsLogic = read('miniprogram/pages/materials/index.ts')
   const detailLogic = read('miniprogram/pages/material-detail/index.ts')
   const navigationLogic = read('miniprogram/components/navigation-bar/navigation-bar.ts')
+  const materialsService = read('miniprogram/services/materials.ts')
 
   assert.equal(HOME_PAGE_PATH, '/pages/index/index')
   assert.equal(MATERIAL_DETAIL_PATH, '/pages/material-detail/index')
@@ -3016,15 +3023,47 @@ test('shared material opens the authorization gate before the detail page', asyn
   assert.equal(buildMaterialDetailPath('abc', 't1'), '/pages/material-detail/index?id=abc&trackingId=t1')
   assert.equal(buildMaterialDetailPath('abc', undefined, true), '/pages/material-detail/index?id=abc&owner=1')
   assert.equal(buildMaterialShareQuery('abc', 't1'), 'id=abc&trackingId=t1')
+  assert.equal(buildMaterialShareTimelineQuery('abc', 't1'), 'id=abc&trackingId=t1')
+  assert.doesNotMatch(buildMaterialShareTimelineQuery('abc', 't1'), /entry=share-gate/)
   assert.notEqual(buildMaterialSharePath('abc', 't1'), buildMaterialDetailPath('abc', 't1'))
+  assert.match(shareUtil, /completedLogin\s*\?[\s\S]*buildMaterialDetailPath[\s\S]*buildMaterialShareGatePath/)
+  assert.match(shareUtil, /MOMENTS_SINGLE_PAGE_SCENE = 1154/)
+  assert.match(shareUtil, /browseOnly/)
+  assert.match(shareUtil, /if \(isSinglePageMode\(\)\) return/)
+  assert.match(detailLogic, /isSinglePageMode\(\)/)
+  assert.match(detailLogic, /showSinglePageShareGate\(rest.id\)/)
+  assert.match(homeLogic, /showSinglePageShareGate\(options.id\)/)
+  assert.match(materialsLogic, /showSinglePageShareGate\(options.id\)/)
+  assert.match(read('miniprogram/pages/material-detail/index.wxml'), /share-gate-view/)
+  assert.match(read('miniprogram/pages/index/index.wxml'), /share-gate-view/)
+  assert.match(read('miniprogram/pages/materials/index.wxml'), /share-gate-view/)
+  assert.match(shareUtil, /SINGLE_PAGE_OPEN_HINT = '请前往小程序'/)
+  assert.match(shareUtil, /function guardSinglePageAction/)
+  assert.match(read('miniprogram/components/share-gate-view/index.ts'), /guardSinglePageAction\(\)/)
+  assert.match(read('miniprogram/components/share-gate-view/index.wxml'), /bindtap="onPageTap"/)
+  assert.match(read('miniprogram/components/share-gate-view/index.wxml'), /catchtap="onMoreTap"/)
+  assert.match(read('miniprogram/components/single-page-guard/index.wxml'), /capture-catch:tap="onBlockedTap"/)
+  assert.match(read('miniprogram/pages/index/index.wxml'), /single-page-guard wx:else active="\{\{singlePageMode\}\}"/)
+  assert.match(read('miniprogram/pages/materials/index.wxml'), /single-page-guard wx:else active="\{\{singlePageMode\}\}"/)
+  assert.match(read('miniprogram/pages/material-detail/index.wxml'), /single-page-guard wx:else active="\{\{singlePageMode\}\}"/)
+  assert.match(read('miniprogram/components/navigation-bar/navigation-bar.ts'), /if \(guardSinglePageAction\(\)\) return/)
+  assert.match(read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.ts'), /if \(guardSinglePageAction\(\)\) return/)
+  assert.match(read('miniprogram/services/auth.ts'), /if \(isSinglePageMode\(\)\) \{\s*start\(\)/)
 
   assert.doesNotMatch(homeLogic, /options\.materialId/)
   assert.doesNotMatch(homeLogic, /buildHomeShareQuery/)
   assert.match(homeLogic, /buildMaterialShareTimelineQuery\(this\.data\.shareMaterialId, this\.data\.shareTrackingId\)/)
+  assert.match(homeLogic, /openSharedMaterial\(options\.id, options\.trackingId, hasCompletedLogin\(\)\)/)
+  assert.match(materialsLogic, /openSharedMaterial\(options\.id, options\.trackingId, hasCompletedLogin\(\)\)/)
+  assert.match(detailLogic, /rest.id && !hasCompletedLogin\(\)/)
+  assert.match(detailLogic, /openSharedMaterial\(rest.id, rest.trackingId, false\)/)
+  assert.match(detailLogic, /rest.id && \(rest.trackingId \|\| entry === 'share-gate'\)/)
+  assert.match(materialsService, /path: `\/material\/\$\{materialId\}`, silent: true, skipAuth: true/)
+  assert.match(materialsService, /!isSinglePageMode\(\) && hasAuthorizedLogin\(\)/)
   assert.doesNotMatch(detailLogic, /isRootPageStack/)
   assert.doesNotMatch(detailLogic, /wx\.reLaunch/)
   assert.match(navigationLogic, /fail: \(\) => \{\s*wx\.exitMiniProgram/)
-  assert.match(navigationLogic, /home\(\) \{\s*wx\.reLaunch\(\{ url: HOME_PAGE_PATH \}\)/)
+  assert.match(navigationLogic, /home\(\) \{\s*if \(guardSinglePageAction\(\)\) return\s*wx\.reLaunch\(\{ url: HOME_PAGE_PATH \}\)/)
 })
 
 test('material detail shares to friends from the forward action', () => {
@@ -4527,8 +4566,12 @@ test('home page exposes a temporary share-gate debug entry', () => {
 })
 
 test('share gate uses 16px social proof text and a 20px inset primary button', () => {
-  const markup = read('miniprogram/pages/share-gate/index.wxml')
-  const styles = read('miniprogram/pages/share-gate/index.less')
+  const markup = read('miniprogram/components/share-gate-view/index.wxml')
+  const styles = read('miniprogram/components/share-gate-view/index.less')
+  const pageMarkup = read('miniprogram/pages/share-gate/index.wxml')
+
+  assert.match(pageMarkup, /wx:if="\{\{ready\}\}"/)
+  assert.match(pageMarkup, /share-gate-view/)
 
   assert.match(styles, /\.share-gate-page__likes\s*\{[\s\S]*font-size:\s*16px;[\s\S]*white-space:\s*nowrap;/)
   assert.match(styles, /\.share-gate-page\s*\{[^}]*width:\s*100%;/)
@@ -4540,8 +4583,8 @@ test('share gate uses 16px social proof text and a 20px inset primary button', (
 })
 
 test('share gate hero adapts to the device width and keeps a 32px bottom inset', () => {
-  const markup = read('miniprogram/pages/share-gate/index.wxml')
-  const styles = read('miniprogram/pages/share-gate/index.less')
+  const markup = read('miniprogram/components/share-gate-view/index.wxml')
+  const styles = read('miniprogram/components/share-gate-view/index.less')
 
   assert.match(styles, /\.share-gate-page\s*\{[\s\S]*display:\s*flex;[\s\S]*flex-direction:\s*column;/)
   assert.match(styles, /\.share-gate-page\s*\{[\s\S]*height:\s*100vh;[\s\S]*overflow:\s*hidden;/)

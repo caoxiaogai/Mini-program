@@ -1,7 +1,7 @@
-import { runAuthed } from '../../services/auth'
+import { hasCompletedLogin, runAuthed } from '../../services/auth'
 import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards, enrichAnalysisCards, enrichAudienceUsers } from '../../services/analysis'
 import { getHomePageData } from '../../services/home'
-import { applyThumbnailMap, deleteMaterials, enrichThumbnailsByIds, getMaterialDetail, getMaterials } from '../../services/materials'
+import { applyThumbnailMap, deleteMaterials, enrichThumbnailsByIds, getMaterialDetail, getMaterialListPreview, getMaterials } from '../../services/materials'
 import { enrichNotificationCards, getNotifications } from '../../services/notifications'
 import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
 import type { HomePageViewModel } from '../../types/home'
@@ -18,7 +18,7 @@ import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTimelineQuery, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, MATERIAL_NOTE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTimelineQuery, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
 import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
@@ -164,14 +164,47 @@ Page({
     ...buildTotalTrendState('day'),
     profileData: null as ProfilePageViewModel | null,
     pullRefreshing: false,
+    singlePageMode: isSinglePageMode(),
+    singlePageGateVisible: false,
+    shareGateArtSrc: '/assets/share-gate/group-98.svg',
+    shareGateArtFromWork: false,
   },
   onLoad(options: Record<string, string | undefined>) {
+    if (isSinglePageMode()) {
+      if (!hasCompletedLogin()) {
+        this.showSinglePageShareGate(options.id)
+        return
+      }
+      const { platform } = wx.getSystemInfoSync()
+      this.setData({
+        analysisNavigationHeight: getNavigationBarLayout().totalHeight,
+        isAndroid: platform === 'android' || platform === 'devtools',
+      })
+      this.startHome(options)
+      return
+    }
+    if (options.id && !isPublishReturnQuery(options)) {
+      openSharedMaterial(options.id, options.trackingId, hasCompletedLogin())
+      return
+    }
     const { platform } = wx.getSystemInfoSync()
     this.setData({
       analysisNavigationHeight: getNavigationBarLayout().totalHeight,
       isAndroid: platform === 'android' || platform === 'devtools',
     })
     runAuthed(buildReturnPath(HOME_PAGE_PATH, options), () => this.startHome(options))
+  },
+  showSinglePageShareGate(materialId?: string) {
+    this.setData({
+      singlePageGateVisible: true,
+      shareGateArtSrc: '/assets/share-gate/group-98.svg',
+      shareGateArtFromWork: false,
+    })
+    if (!materialId) return
+    getMaterialListPreview(materialId).then((url) => {
+      if (!url) return
+      this.setData({ shareGateArtSrc: url, shareGateArtFromWork: true })
+    })
   },
   startHome(options: Record<string, string | undefined>) {
     this.authReady = true

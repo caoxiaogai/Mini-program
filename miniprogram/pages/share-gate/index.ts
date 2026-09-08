@@ -1,4 +1,4 @@
-import { continueAfterAuth, hasCompletedLogin, resolveAuthGate } from '../../services/auth'
+import { continueAfterAuth, hasCompletedLogin } from '../../services/auth'
 import { getMaterialListPreview } from '../../services/materials'
 import { buildAuthPath, safeReturnPath } from '../../utils/auth'
 import { buildMaterialDetailPath, HOME_PAGE_PATH } from '../../utils/share-material'
@@ -31,14 +31,8 @@ Page({
     this.trackingId = options.trackingId ?? ''
     this.returnPath = safeReturnPath(options.return, HOME_PAGE_PATH)
     if (this.leaveIfLoggedIn()) return
+    this.setData({ ready: true })
     this.loadWorkPreview()
-    resolveAuthGate().then((gate) => {
-      if (gate === 'ok') {
-        continueAfterAuth(this.destinationPath())
-        return
-      }
-      this.setData({ ready: true })
-    })
   },
 
   destinationPath() {

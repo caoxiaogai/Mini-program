@@ -1,0 +1,6 @@
+<view wx:if="{{active}}" class="single-page-guard" capture-catch:tap="onBlockedTap">
+  <slot />
+</view>
+<view wx:else class="single-page-guard">
+  <slot />
+</view>

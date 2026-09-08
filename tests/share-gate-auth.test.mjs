@@ -61,6 +61,7 @@ test('查看更多 opens authorization for first-time users and preserves the de
   const destinations = []
   const page = loadShareGatePage(auth, destinations)
   page.onLoad({ id: 'work-1', trackingId: 'track-2' })
+  assert.equal(page.data.ready, true)
   page.onMoreTap()
   await Promise.resolve()
   assert.deepEqual(destinations, [auth.buildAuthPath('/pages/material-detail/index?id=work-1&trackingId=track-2')])
@@ -71,6 +72,7 @@ test('first launch without a shared work still opens WeChat authorization from �
   const destinations = []
   const page = loadShareGatePage(auth, destinations)
   page.onLoad({ return: '/pages/index/index' })
+  assert.equal(page.data.ready, true)
   page.onMoreTap()
   await Promise.resolve()
   assert.deepEqual(destinations, [auth.buildAuthPath('/pages/index/index')])

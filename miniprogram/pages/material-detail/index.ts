@@ -1,4 +1,4 @@
-import { addMaterialComment, deleteMaterials, getMaterialDetail, getMaterialEngagement, listMaterialComments, mapMaterialEngagement, toggleMaterialLike } from '../../services/materials'
+import { addMaterialComment, deleteMaterials, getMaterialDetail, getMaterialEngagement, getMaterialListPreview, listMaterialComments, mapMaterialEngagement, toggleMaterialLike } from '../../services/materials'
 import { hasCompletedLogin, runAuthed } from '../../services/auth'
 import {
   calcImageViewProgress,
@@ -19,7 +19,9 @@ import {
   buildMaterialShareTimelineQuery,
   buildMaterialShareTitle,
   enableMaterialShareMenu,
+  isSinglePageMode,
   MATERIAL_DETAIL_PATH,
+  openSharedMaterial,
 } from '../../utils/share-material'
 
 const VIDEO_PROGRESS_INTERVAL_MS = 5000
@@ -58,6 +60,10 @@ Page({
     comments: [] as MaterialCommentViewModel[],
     commentDraft: '',
     shareImageUrl: '',
+    singlePageMode: isSinglePageMode(),
+    singlePageGateVisible: false,
+    shareGateArtSrc: '/assets/share-gate/group-98.svg',
+    shareGateArtFromWork: false,
   },
 
   materialId: '',
@@ -101,13 +107,37 @@ Page({
 
   onLoad(options: Record<string, string | undefined>) {
     const { entry, ...rest } = options
-    if (entry === 'share-gate' && rest.id && !hasCompletedLogin()) {
-      const query = [`id=${encodeURIComponent(rest.id)}`]
-      if (rest.trackingId) query.push(`trackingId=${encodeURIComponent(rest.trackingId)}`)
-      wx.redirectTo({ url: `/pages/share-gate/index?${query.join('&')}` })
+    if (isSinglePageMode()) {
+      if (!hasCompletedLogin()) {
+        this.showSinglePageShareGate(rest.id)
+        return
+      }
+      if (rest.id) {
+        this.startDetail(rest)
+        return
+      }
+    }
+    if (rest.id && !hasCompletedLogin()) {
+      openSharedMaterial(rest.id, rest.trackingId, false)
+      return
+    }
+    if (rest.id && (rest.trackingId || entry === 'share-gate')) {
+      this.startDetail(rest)
       return
     }
     runAuthed(buildReturnPath(MATERIAL_DETAIL_PATH, rest), () => this.startDetail(rest))
+  },
+  showSinglePageShareGate(materialId?: string) {
+    this.setData({
+      singlePageGateVisible: true,
+      shareGateArtSrc: '/assets/share-gate/group-98.svg',
+      shareGateArtFromWork: false,
+    })
+    if (!materialId) return
+    getMaterialListPreview(materialId).then((url) => {
+      if (!url) return
+      this.setData({ shareGateArtSrc: url, shareGateArtFromWork: true })
+    })
   },
   startDetail(options: Record<string, string | undefined>) {
     this.materialId = options.id ?? ''
@@ -152,10 +182,12 @@ Page({
         this.shareImageToken += 1
         const shareImageToken = this.shareImageToken
         this.setData({ detail, unavailableMessage: '', shareImageUrl: '' }, () => {
+          if (isSinglePageMode()) return
           if (detail.fileType === 'VIDEO' && detail.videoUrl) {
             this.getVideoContext()?.play()
           }
         })
+        if (isSinglePageMode()) return
         this.prepareShareImage(detail.previewUrl, shareImageToken)
 
         this.reportOpenedPlay()

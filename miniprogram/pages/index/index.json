@@ -13,7 +13,9 @@
     "publish-success-modal": "/components/publish-success-modal/index",
     "date-range-picker": "/components/date-range-picker/index",
     "publish-type-sheet": "/components/publish-type-sheet/index",
-    "loading-skeleton": "/components/loading-skeleton/index"
+    "loading-skeleton": "/components/loading-skeleton/index",
+    "share-gate-view": "/components/share-gate-view/index",
+    "single-page-guard": "/components/single-page-guard/index"
   },
   "disableScroll": true,
   "enableShareAppMessage": true,

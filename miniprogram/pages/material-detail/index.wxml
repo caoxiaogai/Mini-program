@@ -1,3 +1,5 @@
+<share-gate-view wx:if="{{singlePageGateVisible}}" art-src="{{shareGateArtSrc}}" art-from-work="{{shareGateArtFromWork}}" />
+<single-page-guard wx:else active="{{singlePageMode}}">
 <view class="material-detail-page">
   <view class="material-detail-page__header">
     <navigation-bar title="作品" back="{{true}}" home-button="{{true}}" color="#000000" background="#ffffff" />
@@ -292,3 +294,4 @@
     bind:close="onCloseVideoPlayer"
   />
 </view>
+</single-page-guard>

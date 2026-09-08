@@ -27,9 +27,9 @@ import {
   toNoteDisplayBlocks,
 } from '../utils/note'
 import { prepareShareCardImage } from '../utils/share-image'
-import { buildMaterialShareTitle } from '../utils/share-material'
+import { buildMaterialShareTitle, isSinglePageMode } from '../utils/share-material'
 import { prepareDocumentPageImage } from './document'
-import { ensureLogin, request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
+import { ensureLogin, getCachedLogin, hasAuthorizedLogin, request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
 
 const materialsFilters: MaterialsFilterViewModel[] = [
   { id: 'all', label: '全部' },
@@ -288,12 +288,14 @@ export function addMaterialComment(materialId: string, content: string): Promise
 
 export function getMaterialDetail(materialId: string, ownerView = false): Promise<MaterialDetailViewModel | null> {
   return Promise.all([
-    request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true }),
+    request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true, skipAuth: true }),
     getMaterialEngagement(materialId).catch(() => EMPTY_ENGAGEMENT),
   ]).then(async ([material, engagement]) => {
       const fileType = material.fileType ?? 'IMAGE'
       const previewUrl = await prepareMaterialThumbnail(material)
-      const user = await ensureLogin()
+      const user = !isSinglePageMode() && hasAuthorizedLogin()
+        ? await ensureLogin().catch(() => getCachedLogin())
+        : getCachedLogin()
 
       let images: string[] = []
       let videoUrl = ''
@@ -325,7 +327,7 @@ export function getMaterialDetail(materialId: string, ownerView = false): Promis
         pdfFileName,
         noteBlocks,
         descriptionLines: splitMaterialCopy(resolveMaterialCopy(material)),
-        isOwner: ownerView || String(material.userId) === String(user.userId),
+        isOwner: ownerView || Boolean(user && String(material.userId) === String(user.userId)),
         ...mapMaterialEngagement(engagement),
       }
     })

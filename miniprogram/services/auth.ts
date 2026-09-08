@@ -1,6 +1,6 @@
 import type { ApiLoginData } from '../types/api'
 import { AUTH_PAGE_ROUTE, buildShareGatePath, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath, type AuthGate } from '../utils/auth'
-import { HOME_PAGE_PATH } from '../utils/share-material'
+import { HOME_PAGE_PATH, isSinglePageMode } from '../utils/share-material'
 import { authorizeLogin, clearLogin, ensureLogin, getCachedLogin, hasAuthorizedLogin, patchCachedLogin } from './request'
 import { updateUserProfile, uploadUserAvatar } from './user'
 
@@ -36,6 +36,10 @@ export function continueAfterAuth(returnPath: string): void {
 }
 
 export function runAuthed(returnPath: string, start: () => void): void {
+  if (isSinglePageMode()) {
+    start()
+    return
+  }
   requireAuth(returnPath).then((ok) => {
     if (ok) start()
   })

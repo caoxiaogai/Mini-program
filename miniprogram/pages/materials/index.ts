@@ -1,10 +1,10 @@
-import { applyThumbnailMap, deleteMaterials, enrichThumbnailsByIds, getMaterialDetail, getMaterials } from '../../services/materials'
-import { runAuthed } from '../../services/auth'
+import { applyThumbnailMap, deleteMaterials, enrichThumbnailsByIds, getMaterialDetail, getMaterialListPreview, getMaterials } from '../../services/materials'
+import { hasCompletedLogin, runAuthed } from '../../services/auth'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTimelineQuery, buildMaterialShareTitle, enableMaterialShareMenu, MATERIAL_NOTE_PATH, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTimelineQuery, buildMaterialShareTitle, enableMaterialShareMenu, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
@@ -75,15 +75,48 @@ Page({
     pullRefreshing: false,
     publishTypeSheetVisible: false,
     publishSourceSheetVisible: false,
+    singlePageMode: isSinglePageMode(),
+    singlePageGateVisible: false,
+    shareGateArtSrc: '/assets/share-gate/group-98.svg',
+    shareGateArtFromWork: false,
   },
   authReady: false,
   onLoad(options: Record<string, string | undefined>) {
+    if (isSinglePageMode()) {
+      if (!hasCompletedLogin()) {
+        this.showSinglePageShareGate(options.id)
+        return
+      }
+      const { platform } = wx.getSystemInfoSync()
+      this.setData({
+        materialsNavigationHeight: getNavigationBarLayout().totalHeight,
+        isAndroid: platform === 'android' || platform === 'devtools',
+      })
+      this.startMaterials(options)
+      return
+    }
+    if (options.id && !isPublishReturnQuery(options)) {
+      openSharedMaterial(options.id, options.trackingId, hasCompletedLogin())
+      return
+    }
     const { platform } = wx.getSystemInfoSync()
     this.setData({
       materialsNavigationHeight: getNavigationBarLayout().totalHeight,
       isAndroid: platform === 'android' || platform === 'devtools',
     })
     runAuthed(buildReturnPath('/pages/materials/index', options), () => this.startMaterials(options))
+  },
+  showSinglePageShareGate(materialId?: string) {
+    this.setData({
+      singlePageGateVisible: true,
+      shareGateArtSrc: '/assets/share-gate/group-98.svg',
+      shareGateArtFromWork: false,
+    })
+    if (!materialId) return
+    getMaterialListPreview(materialId).then((url) => {
+      if (!url) return
+      this.setData({ shareGateArtSrc: url, shareGateArtFromWork: true })
+    })
   },
   startMaterials(options: Record<string, string | undefined>) {
     this.authReady = true

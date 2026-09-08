@@ -1,3 +1,5 @@
+import { guardSinglePageAction } from '../../utils/share-material'
+
 Component({
   data: {
     isAndroid: false,
@@ -31,10 +33,12 @@ Component({
   },
   methods: {
     onTabTap(event: WechatMiniprogram.TouchEvent) {
+      if (guardSinglePageAction()) return
       wx.vibrateShort({ type: 'light' })
       this.triggerEvent('tabtap', { id: event.currentTarget.dataset.id })
     },
     onPlusTap() {
+      if (guardSinglePageAction()) return
       wx.vibrateShort({ type: 'light' })
       this.triggerEvent('plus')
     },

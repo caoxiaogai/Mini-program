@@ -1,3 +1,5 @@
+<share-gate-view wx:if="{{singlePageGateVisible}}" art-src="{{shareGateArtSrc}}" art-from-work="{{shareGateArtFromWork}}" />
+<single-page-guard wx:else active="{{singlePageMode}}">
 <view class="home-page" style="--analysis-navigation-height: {{analysisNavigationHeight}}px; --notification-navigation-height: {{analysisNavigationHeight}}px;">
   <view class="home-page__tabs">
     <view class="home-page__tab-panel" hidden="{{activeTabIndex !== 0}}">
@@ -285,3 +287,4 @@
     bind:sharemoments="onShareMomentsTap"
   />
 </view>
+</single-page-guard>

@@ -24,9 +24,61 @@ export function buildMaterialShareGatePath(materialId: string, trackingId?: stri
   return `${MATERIAL_SHARE_GATE_PATH}?${buildMaterialShareQuery(materialId, trackingId)}`
 }
 
-/** 朋友圈分享仍由当前页面承载，通过标记让详情页先转入授权前置页。 */
+/** 朋友圈只能打开当前页；query 带作品 id，落地后再转到作品详情。 */
 export function buildMaterialShareTimelineQuery(materialId: string, trackingId?: string): string {
-  return `${buildMaterialShareQuery(materialId, trackingId)}&entry=share-gate`
+  return buildMaterialShareQuery(materialId, trackingId)
+}
+
+const MOMENTS_SINGLE_PAGE_SCENE = 1154
+
+/** 朋友圈先打开单页模式，不能跳转或登录，只能渲染当前页。 */
+export function isSinglePageMode(): boolean {
+  try {
+    const getApiCategory = (wx as WechatMiniprogram.Wx & { getApiCategory?: () => string }).getApiCategory
+    if (typeof getApiCategory === 'function' && getApiCategory() === 'browseOnly') return true
+  } catch {
+    // 旧基础库没有该接口
+  }
+
+  try {
+    const options = typeof wx.getEnterOptionsSync === 'function'
+      ? wx.getEnterOptionsSync()
+      : wx.getLaunchOptionsSync()
+    return options.scene === MOMENTS_SINGLE_PAGE_SCENE
+  } catch {
+    return false
+  }
+}
+
+export const SINGLE_PAGE_OPEN_HINT = '请前往小程序'
+
+/** 单页模式不能跳转或登录，点按钮时提示去完整小程序。 */
+export function promptOpenFullMiniProgram(): void {
+  wx.showToast({ title: SINGLE_PAGE_OPEN_HINT, icon: 'none' })
+}
+
+/** 单页模式拦截交互并提示；调用方应立即 return。 */
+export function guardSinglePageAction(): boolean {
+  if (!isSinglePageMode()) return false
+  promptOpenFullMiniProgram()
+  return true
+}
+
+/** 发布成功回跳带 tab / publishSuccess，不要当成朋友圈打开作品。 */
+export function isPublishReturnQuery(options: Record<string, string | undefined>): boolean {
+  return options.tab === 'materials' || options.publishSuccess === '1'
+}
+
+/** 首次进入先到前置页，已登录才直接打开作品详情。单页模式不能跳转。 */
+export function openSharedMaterial(materialId: string, trackingId: string | undefined, completedLogin: boolean): void {
+  if (isSinglePageMode()) return
+  const url = completedLogin
+    ? buildMaterialDetailPath(materialId, trackingId)
+    : buildMaterialShareGatePath(materialId, trackingId)
+  wx.redirectTo({
+    url,
+    fail: () => wx.reLaunch({ url }),
+  })
 }
 
 /** 小程序内打开素材详情；ownerView 只由已登录用户的作品入口传入。 */
