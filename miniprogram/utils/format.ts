@@ -8,6 +8,17 @@ export function formatCount(value: number | null | undefined): string {
   return String(count).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
+/** 互动数量：不足万直接数字，1 万起用万，10 万起用「万+」 */
+export function formatCompactCount(value: number | null | undefined): string {
+  const count = Math.max(0, Math.trunc(Number(value) || 0))
+  if (count >= 100000) return `${Math.floor(count / 10000)}万+`
+  if (count >= 10000) {
+    const wan = (count / 10000).toFixed(1)
+    return `${wan.endsWith('.0') ? wan.slice(0, -2) : wan}万`
+  }
+  return String(count)
+}
+
 /** 环比差值：增加带 +，减少带 -，例如 6 -> '+6'，-3 -> '-3' */
 export function formatSignedCountDelta(value: number | null | undefined): string {
   const delta = Math.trunc(Number(value) || 0)

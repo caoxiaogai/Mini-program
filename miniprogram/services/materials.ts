@@ -1,6 +1,7 @@
-import type { ApiMaterial } from '../types/api'
+import type { ApiMaterial, ApiMaterialComment, ApiMaterialEngagement } from '../types/api'
 import type {
   MaterialCardViewModel,
+  MaterialCommentViewModel,
   MaterialDetailViewModel,
   MaterialDraftEditViewModel,
   MaterialsFilterViewModel,
@@ -10,7 +11,7 @@ import type {
   PublishMediaViewModel,
 } from '../types/materials'
 import type { NoteBlock, NoteDraftViewModel, NoteSubmitInput } from '../types/note'
-import { formatDateKey } from '../utils/format'
+import { formatCompactCount, formatDateKey, formatRelativeDayTime } from '../utils/format'
 import { prepareMediaUrl, prepareMediaUrls } from '../utils/media'
 import {
   extractNotePlainText,
@@ -208,9 +209,87 @@ export function deleteMaterials(ids: string[]): Promise<void> {
   )
 }
 
+const EMPTY_ENGAGEMENT: ApiMaterialEngagement = {
+  likeCount: 0,
+  forwardCount: 0,
+  commentCount: 0,
+  liked: false,
+}
+
+const COMMENT_AVATAR_PLACEHOLDER = '/assets/auth/avatar-placeholder.svg'
+
+function normalizeEngagement(data: ApiMaterialEngagement | null | undefined): ApiMaterialEngagement {
+  return {
+    likeCount: Math.max(0, Math.trunc(Number(data?.likeCount) || 0)),
+    forwardCount: Math.max(0, Math.trunc(Number(data?.forwardCount) || 0)),
+    commentCount: Math.max(0, Math.trunc(Number(data?.commentCount) || 0)),
+    liked: Boolean(data?.liked),
+  }
+}
+
+export function mapMaterialEngagement(
+  engagement: ApiMaterialEngagement | null | undefined,
+): Pick<
+  MaterialDetailViewModel,
+  'likeCount' | 'forwardCount' | 'commentCount' | 'liked' | 'likeCountLabel' | 'forwardCountLabel' | 'commentCountLabel'
+> {
+  const next = normalizeEngagement(engagement)
+  return {
+    ...next,
+    likeCountLabel: formatCompactCount(next.likeCount),
+    forwardCountLabel: formatCompactCount(next.forwardCount),
+    commentCountLabel: formatCompactCount(next.commentCount),
+  }
+}
+
+export function getMaterialEngagement(materialId: string): Promise<ApiMaterialEngagement> {
+  return request<ApiMaterialEngagement>({
+    method: 'GET',
+    path: `/material/${materialId}/engagement`,
+    silent: true,
+  }).then(normalizeEngagement)
+}
+
+export function toggleMaterialLike(materialId: string): Promise<ApiMaterialEngagement> {
+  return request<ApiMaterialEngagement>({
+    method: 'POST',
+    path: `/material/${materialId}/like`,
+    silent: true,
+  }).then(normalizeEngagement)
+}
+
+function mapMaterialComment(comment: ApiMaterialComment): MaterialCommentViewModel {
+  return {
+    id: String(comment.id),
+    userId: String(comment.userId),
+    nickname: comment.nickname?.trim() || '用户',
+    avatar: resolveMediaUrl(comment.avatar) || COMMENT_AVATAR_PLACEHOLDER,
+    content: comment.content ?? '',
+    timeLabel: formatRelativeDayTime(comment.createTime),
+  }
+}
+
+export function listMaterialComments(materialId: string): Promise<MaterialCommentViewModel[]> {
+  return request<ApiMaterialComment[]>({
+    method: 'GET',
+    path: `/material/${materialId}/comments`,
+    silent: true,
+  }).then((comments) => (Array.isArray(comments) ? comments.map(mapMaterialComment) : []))
+}
+
+export function addMaterialComment(materialId: string, content: string): Promise<MaterialCommentViewModel> {
+  return request<ApiMaterialComment>({
+    method: 'POST',
+    path: `/material/${materialId}/comments`,
+    data: { content },
+  }).then(mapMaterialComment)
+}
+
 export function getMaterialDetail(materialId: string, ownerView = false): Promise<MaterialDetailViewModel | null> {
-  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true })
-    .then(async (material) => {
+  return Promise.all([
+    request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true }),
+    getMaterialEngagement(materialId).catch(() => EMPTY_ENGAGEMENT),
+  ]).then(async ([material, engagement]) => {
       const fileType = material.fileType ?? 'IMAGE'
       const previewUrl = await prepareMaterialThumbnail(material)
       const user = await ensureLogin()
@@ -246,6 +325,7 @@ export function getMaterialDetail(materialId: string, ownerView = false): Promis
         noteBlocks,
         descriptionLines: splitMaterialCopy(resolveMaterialCopy(material)),
         isOwner: ownerView || String(material.userId) === String(user.userId),
+        ...mapMaterialEngagement(engagement),
       }
     })
 }

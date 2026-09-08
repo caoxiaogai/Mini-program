@@ -39,8 +39,24 @@ export interface MaterialDetailViewModel {
   descriptionLines: string[]
   /** 笔记块；仅 fileType=NOTE */
   noteBlocks: NoteDisplayBlock[]
-  /** 当前登录用户是否为素材作者；作者详情显示二次编辑，访客仍显示分享到朋友圈 */
+  /** 当前登录用户是否为素材作者；作者底栏显示更多（删除/编辑） */
   isOwner: boolean
+  likeCount: number
+  forwardCount: number
+  commentCount: number
+  liked: boolean
+  likeCountLabel: string
+  forwardCountLabel: string
+  commentCountLabel: string
+}
+
+export interface MaterialCommentViewModel {
+  id: string
+  userId: string
+  nickname: string
+  avatar: string
+  content: string
+  timeLabel: string
 }
 
 export interface MaterialsViewModel {

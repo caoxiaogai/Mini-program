@@ -1,4 +1,4 @@
-import { deleteMaterials, getMaterialDetail } from '../../services/materials'
+import { addMaterialComment, deleteMaterials, getMaterialDetail, getMaterialEngagement, listMaterialComments, mapMaterialEngagement, toggleMaterialLike } from '../../services/materials'
 import { hasCompletedLogin, runAuthed } from '../../services/auth'
 import {
   calcImageViewProgress,
@@ -7,8 +7,9 @@ import {
   reportTrackingEvent,
 } from '../../services/tracking'
 import { calcNoteScrollProgress } from '../../utils/note'
-import type { MaterialDetailViewModel } from '../../types/materials'
+import type { MaterialCommentViewModel, MaterialDetailViewModel } from '../../types/materials'
 import { buildReturnPath } from '../../utils/auth'
+import { formatCompactCount } from '../../utils/format'
 import { MATERIAL_DELETED_MESSAGE } from '../../utils/material-deleted'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import {
@@ -18,7 +19,6 @@ import {
   buildMaterialShareTitle,
   enableMaterialShareMenu,
   MATERIAL_DETAIL_PATH,
-  showMomentsShareGuide,
 } from '../../utils/share-material'
 
 const VIDEO_PROGRESS_INTERVAL_MS = 5000
@@ -51,6 +51,11 @@ Page({
     videoPlayerSrc: '',
     videoPlayerPoster: '',
     deletingMaterial: false,
+    commentSheetVisible: false,
+    commentsLoading: false,
+    commentsError: false,
+    comments: [] as MaterialCommentViewModel[],
+    commentDraft: '',
   },
 
   materialId: '',
@@ -88,6 +93,8 @@ Page({
   noteScrollReportTimer: 0,
   lastNoteProgress: 0,
   noteViewStartedAt: 0,
+  likingMaterial: false,
+  commentSubmitting: false,
 
   onLoad(options: Record<string, string | undefined>) {
     const { entry, ...rest } = options
@@ -166,6 +173,7 @@ Page({
 
   onShow() {
     enableMaterialShareMenu()
+    if (this.data.detail) this.refreshEngagement()
   },
 
   onHide() {
@@ -922,6 +930,7 @@ Page({
   onShareAppMessage() {
     const detail = this.data.detail
     this.reportForwardTracking()
+    this.refreshEngagement()
     if (!detail) return
 
     return {
@@ -934,6 +943,7 @@ Page({
   onShareTimeline() {
     const detail = this.data.detail
     this.reportForwardTracking()
+    this.refreshEngagement()
     if (!detail) return
 
     return {
@@ -943,8 +953,114 @@ Page({
     }
   },
 
-  onShareMomentsTap() {
-    showMomentsShareGuide()
+  refreshEngagement() {
+    if (!this.materialId) return
+
+    getMaterialEngagement(this.materialId)
+      .then((engagement) => {
+        const detail = this.data.detail
+        if (!detail) return
+        this.setData({ detail: { ...detail, ...mapMaterialEngagement(engagement) } })
+      })
+      .catch(() => undefined)
+  },
+
+  onLikeTap() {
+    if (!this.materialId || this.likingMaterial) return
+
+    this.likingMaterial = true
+    toggleMaterialLike(this.materialId)
+      .then((engagement) => {
+        const detail = this.data.detail
+        if (!detail) return
+        this.setData({ detail: { ...detail, ...mapMaterialEngagement(engagement) } })
+      })
+      .catch(() => {
+        wx.showToast({ title: '点赞失败，请稍后重试', icon: 'none' })
+      })
+      .then(() => {
+        this.likingMaterial = false
+      })
+  },
+
+  onCommentTap() {
+    this.setData({ commentSheetVisible: true })
+    this.loadComments()
+  },
+
+  onCloseCommentSheet() {
+    this.setData({ commentSheetVisible: false, commentDraft: '' })
+  },
+
+  onCommentSheetBlockMove() {},
+
+  onRetryCommentsTap() {
+    this.loadComments()
+  },
+
+  loadComments() {
+    if (!this.materialId) return
+
+    this.setData({ commentsLoading: true, commentsError: false })
+    listMaterialComments(this.materialId)
+      .then((comments) => {
+        this.setData({ comments, commentsLoading: false, commentsError: false })
+      })
+      .catch(() => {
+        this.setData({ commentsLoading: false, commentsError: true })
+      })
+  },
+
+  onCommentInput(event: WechatMiniprogram.Input) {
+    this.setData({ commentDraft: event.detail.value })
+  },
+
+  onCommentSubmit() {
+    if (this.commentSubmitting || !this.materialId) return
+
+    const content = this.data.commentDraft.trim()
+    if (!content) {
+      wx.showToast({ title: '请输入评论', icon: 'none' })
+      return
+    }
+
+    this.commentSubmitting = true
+    addMaterialComment(this.materialId, content)
+      .then((comment) => {
+        const detail = this.data.detail
+        const commentCount = (detail?.commentCount ?? 0) + 1
+        this.setData({
+          commentDraft: '',
+          comments: [comment, ...this.data.comments],
+          commentsError: false,
+          detail: detail
+            ? {
+                ...detail,
+                commentCount,
+                commentCountLabel: formatCompactCount(commentCount),
+              }
+            : detail,
+        })
+      })
+      .catch(() => {
+        wx.showToast({ title: '评论失败，请稍后重试', icon: 'none' })
+      })
+      .then(() => {
+        this.commentSubmitting = false
+      })
+  },
+
+  onOwnerMoreTap() {
+    const detail = this.data.detail
+    if (!detail || !detail.isOwner) return
+
+    wx.showActionSheet({
+      itemList: ['二次编辑', '删除'],
+      success: (result) => {
+        if (result.tapIndex === 0) this.onSecondaryEditTap()
+        if (result.tapIndex === 1) this.onOwnerDeleteTap()
+      },
+    })
   },
 
   onSecondaryEditTap() {

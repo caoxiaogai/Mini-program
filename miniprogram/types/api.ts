@@ -265,3 +265,21 @@ export interface ApiMaterial {
   createTime: string | null
   updateTime: string | null
 }
+
+/** GET /material/{id}/engagement 与 POST /material/{id}/like 响应 */
+export interface ApiMaterialEngagement {
+  likeCount: number
+  forwardCount: number
+  commentCount: number
+  liked: boolean
+}
+
+/** GET /material/{id}/comments 列表项 */
+export interface ApiMaterialComment {
+  id: string
+  userId: string
+  nickname: string
+  avatar: string | null
+  content: string
+  createTime: string | null
+}
