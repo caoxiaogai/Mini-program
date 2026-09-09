@@ -1,10 +1,6 @@
 import { prepareMediaUrl } from './media'
 
-/** 与素材列表卡片预览一致：内容区左右 40rpx、两列间距 18rpx、预览高度 460rpx */
-export const MATERIAL_LIST_PREVIEW_WIDTH_RPX = (750 - 40 * 2 - 18) / 2
-export const MATERIAL_LIST_PREVIEW_HEIGHT_RPX = 460
-
-/** 微信分享卡片显示比例为 5:4，先按此尺寸出图，避免平台再裁切。 */
+/** 微信分享卡片显示比例为 5:4，先按此尺寸出图并铺满图片区，避免平台再裁切或两侧留白。 */
 export const SHARE_CARD_WIDTH = 500
 export const SHARE_CARD_HEIGHT = 400
 export const SHARE_CARD_BACKGROUND = '#DEE2E7'
@@ -29,28 +25,6 @@ type OffscreenCanvas2D = {
   createImage(): WechatMiniprogram.Image
 }
 
-export function containDestRect(
-  innerWidth: number,
-  innerHeight: number,
-  outerWidth: number,
-  outerHeight: number,
-): { dx: number; dy: number; dw: number; dh: number } {
-  if (innerWidth <= 0 || innerHeight <= 0 || outerWidth <= 0 || outerHeight <= 0) {
-    return { dx: 0, dy: 0, dw: 0, dh: 0 }
-  }
-
-  const scale = Math.min(outerWidth / innerWidth, outerHeight / innerHeight)
-  const dw = innerWidth * scale
-  const dh = innerHeight * scale
-  return {
-    dx: (outerWidth - dw) / 2,
-    dy: (outerHeight - dh) / 2,
-    dw,
-    dh,
-  }
-}
-
-/** 与列表 `mode="aspectFill"` 相同：铺满盒子、居中裁切溢出。 */
 export function coverDestRect(
   sourceWidth: number,
   sourceHeight: number,
@@ -74,7 +48,7 @@ export function coverDestRect(
   }
 }
 
-/** 生成好友/朋友圈分享图：按素材列表预览框 aspectFill，再放入 5:4 卡片。 */
+/** 生成好友/朋友圈分享图：按 5:4 居中铺满裁切，不在图片区留白。 */
 export function prepareShareCardImage(url: string | undefined | null): Promise<string> {
   const source = (url ?? '').trim()
   if (!source) return Promise.resolve('')
@@ -99,18 +73,12 @@ async function cropShareCardImage(source: string): Promise<string> {
   ctx.fillStyle = SHARE_CARD_BACKGROUND
   ctx.fillRect(0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT)
 
-  const frame = containDestRect(
-    MATERIAL_LIST_PREVIEW_WIDTH_RPX,
-    MATERIAL_LIST_PREVIEW_HEIGHT_RPX,
-    SHARE_CARD_WIDTH,
-    SHARE_CARD_HEIGHT,
-  )
   const image = await loadCanvasImage(canvas, info.path)
-  const draw = coverDestRect(info.width, info.height, frame.dx, frame.dy, frame.dw, frame.dh)
+  const draw = coverDestRect(info.width, info.height, 0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT)
 
   ctx.save()
   ctx.beginPath()
-  ctx.rect(frame.dx, frame.dy, frame.dw, frame.dh)
+  ctx.rect(0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT)
   ctx.clip()
   ctx.drawImage(image, draw.dx, draw.dy, draw.dw, draw.dh)
   ctx.restore()

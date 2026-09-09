@@ -2655,53 +2655,37 @@ test('publish success share card uses the material preview instead of a page scr
   }
 })
 
-test('share cards crop with the materials list aspectFill', () => {
+test('share cards fill the WeChat 5:4 image area', () => {
   const shareImage = read('miniprogram/utils/share-image.ts')
   const mathSource = shareImage
     .replace(/^import[^\n]+\n/gm, '')
     .replace(/\nexport function prepareShareCardImage[\s\S]*$/, '\n')
     .replace(/^export /gm, '')
   const {
-    MATERIAL_LIST_PREVIEW_WIDTH_RPX,
-    MATERIAL_LIST_PREVIEW_HEIGHT_RPX,
     SHARE_CARD_WIDTH,
     SHARE_CARD_HEIGHT,
-    SHARE_CARD_BACKGROUND,
-    containDestRect,
     coverDestRect,
-  } = new Function(`${stripTypeScriptTypes(mathSource, { mode: 'strip' })}; return { MATERIAL_LIST_PREVIEW_WIDTH_RPX, MATERIAL_LIST_PREVIEW_HEIGHT_RPX, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT, SHARE_CARD_BACKGROUND, containDestRect, coverDestRect }`)()
-  const listStyles = read('miniprogram/pages/materials/index.less')
-  const listMarkup = read('miniprogram/pages/materials/index.wxml')
+  } = new Function(`${stripTypeScriptTypes(mathSource, { mode: 'strip' })}; return { SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT, coverDestRect }`)()
   const materials = read('miniprogram/services/materials.ts')
   const detailLogic = read('miniprogram/pages/material-detail/index.ts')
   const homeLogic = read('miniprogram/pages/index/index.ts')
   const materialsLogic = read('miniprogram/pages/materials/index.ts')
 
-  assert.equal(MATERIAL_LIST_PREVIEW_WIDTH_RPX, (750 - 80 - 18) / 2)
-  assert.equal(MATERIAL_LIST_PREVIEW_HEIGHT_RPX, 460)
   assert.equal(SHARE_CARD_WIDTH / SHARE_CARD_HEIGHT, 5 / 4)
-  assert.equal(SHARE_CARD_BACKGROUND, '#DEE2E7')
-  assert.match(listStyles, /\.materials-page__content \{[\s\S]*? 40rpx /)
-  assert.match(listStyles, /gap: 20rpx 18rpx/)
-  assert.match(listStyles, /\.materials-card__preview \{[\s\S]*?height: 460rpx/)
-  assert.match(listMarkup, /class="materials-card__image" src="\{\{item\.thumbnailUrl\}\}" mode="aspectFill"/)
+  assert.doesNotMatch(shareImage, /containDestRect/)
+  assert.doesNotMatch(shareImage, /MATERIAL_LIST_PREVIEW/)
+  assert.match(shareImage, /coverDestRect\(info\.width, info\.height, 0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT\)/)
 
-  const landscape = coverDestRect(1920, 1080, 0, 0, MATERIAL_LIST_PREVIEW_WIDTH_RPX, MATERIAL_LIST_PREVIEW_HEIGHT_RPX)
-  assert.ok(Math.abs(landscape.dh - MATERIAL_LIST_PREVIEW_HEIGHT_RPX) < 1e-6)
-  assert.ok(landscape.dw > MATERIAL_LIST_PREVIEW_WIDTH_RPX)
+  const landscape = coverDestRect(1920, 1080, 0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT)
+  assert.ok(Math.abs(landscape.dh - SHARE_CARD_HEIGHT) < 1e-6)
+  assert.ok(landscape.dw > SHARE_CARD_WIDTH)
   assert.ok(landscape.dx < 0)
 
-  const frame = containDestRect(
-    MATERIAL_LIST_PREVIEW_WIDTH_RPX,
-    MATERIAL_LIST_PREVIEW_HEIGHT_RPX,
-    SHARE_CARD_WIDTH,
-    SHARE_CARD_HEIGHT,
-  )
-  assert.ok(Math.abs(frame.dh - SHARE_CARD_HEIGHT) < 1e-6)
-  assert.ok(frame.dw < SHARE_CARD_WIDTH)
-  assert.ok(frame.dx > 0)
+  const portrait = coverDestRect(1080, 1920, 0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT)
+  assert.ok(Math.abs(portrait.dw - SHARE_CARD_WIDTH) < 1e-6)
+  assert.ok(portrait.dh > SHARE_CARD_HEIGHT)
+  assert.ok(portrait.dy < 0)
 
-  assert.match(shareImage, /mode="aspectFill"/)
   assert.match(materials, /prepareShareCardImage\(sourceUrl\)/)
   assert.doesNotMatch(
     materials.slice(
