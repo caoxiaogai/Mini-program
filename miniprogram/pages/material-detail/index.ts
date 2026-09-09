@@ -1045,8 +1045,15 @@ Page({
   },
 
   onCloseCommentSheet() {
+    wx.hideKeyboard()
     this.setData({ commentSheetVisible: false, commentDraft: '' })
   },
+
+  onCommentDismissKeyboard() {
+    wx.hideKeyboard()
+  },
+
+  onCommentComposerTap() {},
 
   onCommentSheetBlockMove() {},
 

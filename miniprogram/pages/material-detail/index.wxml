@@ -261,29 +261,31 @@
 
   <view wx:if="{{commentSheetVisible}}" class="material-detail-comments" catchtouchmove="onCommentSheetBlockMove">
     <view class="material-detail-comments__mask" catchtap="onCloseCommentSheet"></view>
-    <view class="material-detail-comments__panel">
+    <view class="material-detail-comments__panel" bindtap="onCommentDismissKeyboard">
       <view class="material-detail-comments__header">
         <text class="material-detail-comments__title">评论</text>
-        <view class="material-detail-comments__close" bindtap="onCloseCommentSheet" aria-label="关闭">关闭</view>
+        <view class="material-detail-comments__close" catchtap="onCloseCommentSheet" aria-label="关闭">关闭</view>
       </view>
       <scroll-view class="material-detail-comments__list" scroll-y show-scrollbar="{{false}}">
-        <view wx:if="{{commentsLoading}}" class="material-detail-comments__hint">加载中</view>
-        <view wx:elif="{{commentsError}}" class="material-detail-comments__hint" bindtap="onRetryCommentsTap">加载失败，点击重试</view>
-        <view wx:elif="{{comments.length === 0}}" class="material-detail-comments__hint">还没有评论</view>
-        <block wx:else>
-          <view wx:for="{{comments}}" wx:key="id" class="material-detail-comments__item">
-            <image class="material-detail-comments__avatar" src="{{item.avatar}}" mode="aspectFill" />
-            <view class="material-detail-comments__body">
-              <view class="material-detail-comments__meta">
-                <text class="material-detail-comments__name">{{item.nickname}}</text>
-                <text class="material-detail-comments__time">{{item.timeLabel}}</text>
+        <view class="material-detail-comments__list-inner">
+          <view wx:if="{{commentsLoading}}" class="material-detail-comments__hint">加载中</view>
+          <view wx:elif="{{commentsError}}" class="material-detail-comments__hint" catchtap="onRetryCommentsTap">加载失败，点击重试</view>
+          <view wx:elif="{{comments.length === 0}}" class="material-detail-comments__hint">还没有评论</view>
+          <block wx:else>
+            <view wx:for="{{comments}}" wx:key="id" class="material-detail-comments__item">
+              <image class="material-detail-comments__avatar" src="{{item.avatar}}" mode="aspectFill" />
+              <view class="material-detail-comments__body">
+                <view class="material-detail-comments__meta">
+                  <text class="material-detail-comments__name">{{item.nickname}}</text>
+                  <text class="material-detail-comments__time">{{item.timeLabel}}</text>
+                </view>
+                <text class="material-detail-comments__content">{{item.content}}</text>
               </view>
-              <text class="material-detail-comments__content">{{item.content}}</text>
             </view>
-          </view>
-        </block>
+          </block>
+        </view>
       </scroll-view>
-      <view class="material-detail-comments__composer">
+      <view class="material-detail-comments__composer" catchtap="onCommentComposerTap">
         <input
           class="material-detail-comments__input"
           value="{{commentDraft}}"
