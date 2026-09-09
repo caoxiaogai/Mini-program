@@ -97,7 +97,8 @@
 }
 
 .home-profile__membership--inactive {
-  margin-top: 88rpx;
+  height: 136rpx;
+  margin-top: 40rpx;
 }
 
 .home-profile__membership--pressed {
@@ -137,14 +138,17 @@
 }
 
 .home-profile__membership-active-title {
-  color: #fff2c5;
+  color: transparent;
+  background: linear-gradient(90deg, #d76e36 0%, #aa5018 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-size: 44rpx;
   font-weight: 700;
   line-height: 52rpx;
 }
 
 .home-profile__membership-active-expire {
-  color: #8a8e94;
+  color: #8b4a26;
   font-size: 24rpx;
   line-height: 32rpx;
 }
@@ -154,7 +158,7 @@
   gap: 12rpx;
   align-items: center;
   margin-top: 20rpx;
-  color: #8ca7aa;
+  color: #8b4a26;
   font-size: 24rpx;
   line-height: 32rpx;
   white-space: nowrap;
@@ -177,13 +181,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #8a8e94;
+  color: #8b4a26;
   font-size: 24rpx;
   line-height: 32rpx;
 }
 
 .home-profile__membership-active-tracking-label text:last-child {
-  color: #ffffff;
+  color: #8b4a26;
 }
 
 .home-profile__membership-active-progress {
@@ -198,11 +202,11 @@
   flex: none;
   width: 4rpx;
   height: 12rpx;
-  background: #d9d9d9;
+  background: #ffffff;
 }
 
 .home-profile__membership-active-segment--active {
-  background: #0ec8d9;
+  background: #8b4a26;
 }
 
 .home-profile__membership-premium-background {
@@ -230,14 +234,17 @@
 }
 
 .home-profile__membership-premium-title {
-  color: #ffa283;
+  color: transparent;
+  background: linear-gradient(90deg, #f89432 0%, #c6561f 46.368%, #ff9b0a 96.591%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-size: 44rpx;
   font-weight: 700;
   line-height: 52rpx;
 }
 
 .home-profile__membership-premium-expire {
-  color: #8a8e94;
+  color: #9e6c56;
   font-size: 24rpx;
   line-height: 32rpx;
 }
@@ -245,7 +252,7 @@
 .home-profile__membership-premium-subtitle {
   display: block;
   margin-top: 20rpx;
-  color: #adb4b4;
+  color: #9e6c56;
   font-size: 24rpx;
   line-height: 32rpx;
   white-space: nowrap;
@@ -260,118 +267,105 @@
   justify-content: center;
   height: 64rpx;
   padding: 0 28rpx;
-  border: 2rpx solid #ffffff;
+  border: 2rpx solid #dab26f;
   border-radius: 140rpx;
-  background: linear-gradient(180deg, #d16100 0%, #feefd5 100%);
+  background: linear-gradient(180deg, #f1ad30 0%, #feefd5 100%);
   box-shadow: 0 4rpx 4rpx rgba(0, 0, 0, 0.1);
-  color: #000000;
+  color: #481d0d;
   font-size: 24rpx;
   font-weight: 510;
   line-height: 24rpx;
   box-sizing: border-box;
 }
 
-.home-profile__membership-outer {
+.home-profile__membership-inactive {
   position: absolute;
-  top: 20rpx;
-  left: 8rpx;
-  display: block;
-  width: 658.964rpx;
-  height: 128.554rpx;
-  transform: rotate(-6.5deg);
-  transform-origin: right center;
-}
-
-.home-profile__membership-card {
-  position: absolute;
-  top: 54rpx;
   left: 0;
   width: 100%;
   height: 136rpx;
   overflow: hidden;
+  border-radius: 24rpx;
 }
 
-.home-profile__membership-mask {
+.home-profile__membership-inactive-background,
+.home-profile__membership-inactive-border {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
 }
 
-.home-profile__membership-rings {
+.home-profile__membership-inactive-rings {
   position: absolute;
-  top: -90rpx;
-  left: 468rpx;
+  top: -92rpx;
+  left: 466rpx;
   display: block;
   width: 480rpx;
   height: 480rpx;
 }
 
-.home-profile__membership-crown {
+.home-profile__membership-inactive-copy {
   position: absolute;
-  top: 40rpx;
-  left: 40rpx;
-  display: block;
-  width: 64rpx;
-  height: 64rpx;
-}
-
-.home-profile__membership-copy {
-  position: absolute;
-  top: 28rpx;
+  top: 36rpx;
   right: 40rpx;
-  left: 116rpx;
-  height: 70rpx;
+  left: 40rpx;
   display: flex;
   align-items: center;
-  justify-content: space-between;
 }
 
-.home-profile__membership-text {
+.home-profile__membership-inactive-crown {
+  display: block;
+  flex: none;
+  width: 62rpx;
+  height: 56rpx;
+}
+
+.home-profile__membership-inactive-text {
   display: flex;
-  width: 352rpx;
+  min-width: 0;
+  flex: 1;
   flex-direction: column;
   gap: 8rpx;
+  margin-left: 8rpx;
 }
 
-.home-profile__membership-title {
-  font-family: 'TencentSansW7', sans-serif;
-  color: #ffffff;
-  font-size: 30rpx;
-  font-weight: 700;
-  line-height: 36rpx;
-}
-
-.home-profile__membership-subtitle {
-  display: flex;
-  flex-direction: row;
-  font-size: 22rpx;
-  line-height: 26rpx;
+.home-profile__membership-inactive-title {
+  overflow: hidden;
+  color: #8b4a26;
+  font-size: 26rpx;
+  font-weight: 510;
+  line-height: 32rpx;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.home-profile__membership-subtitle-char {
+.home-profile__membership-inactive-subtitle {
+  overflow: hidden;
+  color: #b77a32;
   font-size: 22rpx;
-  line-height: 26rpx;
+  line-height: 28rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.home-profile__membership-action {
+.home-profile__membership-inactive-action {
   display: flex;
+  flex: none;
   gap: 8rpx;
   align-items: center;
-  color: #ffffff;
+  margin-left: 16rpx;
+  color: #8b4a26;
   font-size: 26rpx;
   font-weight: 510;
   line-height: 32rpx;
   white-space: nowrap;
 }
 
-.home-profile__membership-arrow {
+.home-profile__membership-inactive-arrow {
   display: block;
-  width: 6rpx;
-  height: 14rpx;
+  width: 8rpx;
+  height: 16rpx;
 }
 
 .home-profile__features {
@@ -447,7 +441,7 @@
   height: 76rpx;
   padding: 0 48rpx;
   border-radius: 84rpx;
-  background: #59c8d4;
+  background: #ff8901;
   color: #ffffff;
   font-size: 28rpx;
   line-height: 36rpx;

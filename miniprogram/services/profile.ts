@@ -1,4 +1,5 @@
 import type { ProfileMembershipTrackingSegment, ProfileMembershipViewModel, ProfilePageViewModel } from '../types/profile'
+import { DEVTOOLS_PROFILE_MEMBERSHIP_CARD } from '../config/dev'
 import { MEMBERSHIP_VISITOR_LIMIT_NONE } from '../utils/membership'
 import { prepareMediaUrl } from '../utils/media'
 import { getMembershipStatusSilent } from './membership'
@@ -51,6 +52,39 @@ function mapProfileMembership(
   }
 }
 
+function getDevtoolsProfileMembershipPreview(): ProfileMembershipViewModel | null {
+  const previewCard = DEVTOOLS_PROFILE_MEMBERSHIP_CARD
+  if (previewCard === '' || wx.getSystemInfoSync().platform !== 'devtools') return null
+
+  if (previewCard === 'premium') {
+    return {
+      active: true,
+      tier: 'pro',
+      cardKind: 'premium',
+      isPremium: true,
+      isStandard: false,
+      isInactive: false,
+      expireLabel: '2026.11.20',
+      trackingLabel: '',
+      trackingSegments: [],
+    }
+  }
+
+  const used = 22
+  const limit = 80
+  return {
+    active: true,
+    tier: 'regular',
+    cardKind: 'standard',
+    isPremium: false,
+    isStandard: true,
+    isInactive: false,
+    expireLabel: '2026.11.20',
+    trackingLabel: '58/80',
+    trackingSegments: createTrackingSegments(used, limit),
+  }
+}
+
 // TODO(API): 接入「我的余额 / 提现」真实接口
 // Method: 待后端确认
 // Endpoint: 待后端确认（aisales 当前无余额、提现查询；资料仅来自 POST /wechat/login 的 nickname、avatar）
@@ -69,7 +103,7 @@ export function getProfilePageData(): Promise<ProfilePageViewModel> {
       balance: '0',
       balanceLabel: '我的余额',
       withdrawLabel: '提现',
-      membership: mapProfileMembership(membership),
+      membership: getDevtoolsProfileMembershipPreview() ?? mapProfileMembership(membership),
       pendingTitle: '尽情期待',
       pendingDescription: '更多功能，即将呈现',
     }))
