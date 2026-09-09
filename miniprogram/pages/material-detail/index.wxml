@@ -154,51 +154,109 @@
     </view>
   </view>
 
-  <view wx:if="{{detail}}" class="material-detail-engage">
-    <view class="material-detail-engage__actions">
-      <view
-        class="material-detail-engage__action"
-        bindtap="onLikeTap"
-        hover-class="material-detail-engage__action--pressed"
-        hover-stay-time="80"
-        aria-label="点赞"
-      >
-        <image
-          class="material-detail-engage__icon"
-          src="{{detail.liked ? '/assets/materials/detail-like-filled.svg' : '/assets/materials/detail-like.svg'}}"
-          mode="aspectFit"
-        />
-        <text class="material-detail-engage__count">{{detail.likeCountLabel}}</text>
-      </view>
-      <button
-        class="material-detail-engage__action material-detail-engage__share"
-        open-type="share"
-        hover-class="material-detail-engage__action--pressed"
-        hover-stay-time="80"
-        aria-label="转发"
-      >
-        <image class="material-detail-engage__icon" src="/assets/materials/detail-forward.svg" mode="aspectFit" />
-        <text class="material-detail-engage__count">{{detail.forwardCountLabel}}</text>
-      </button>
-      <view
-        class="material-detail-engage__action"
-        bindtap="onCommentTap"
-        hover-class="material-detail-engage__action--pressed"
-        hover-stay-time="80"
-        aria-label="评论"
-      >
-        <image class="material-detail-engage__icon" src="/assets/materials/detail-comment.svg" mode="aspectFit" />
-        <text class="material-detail-engage__count">{{detail.commentCountLabel}}</text>
-      </view>
-    </view>
+  <view wx:if="{{detail}}" class="material-detail-engage {{detail.isOwner ? 'material-detail-engage--owner' : 'material-detail-engage--visitor'}}">
     <view
       wx:if="{{detail.isOwner}}"
-      class="material-detail-engage__more"
+      class="material-detail-engage__owner-actions"
       bindtap="onOwnerMoreTap"
       hover-class="material-detail-engage__action--pressed"
       hover-stay-time="80"
-      aria-label="更多"
-    >更多</view>
+      aria-label="更多操作：编辑和删除作品"
+    >
+      <view class="material-detail-engage__owner-title">
+        <image class="material-detail-engage__owner-icon" src="/assets/materials/detail-owner-more.svg" mode="aspectFit" />
+        <text>更多操作</text>
+      </view>
+      <view class="material-detail-engage__owner-description">
+        <text>编辑和删除作品</text>
+        <image class="material-detail-engage__owner-chevron" src="/assets/materials/detail-owner-chevron.svg" mode="aspectFit" />
+      </view>
+    </view>
+    <view
+      wx:if="{{!detail.isOwner}}"
+      class="material-detail-engage__comment-entry"
+      bindtap="onCommentTap"
+      hover-class="material-detail-engage__comment-entry--pressed"
+      hover-stay-time="80"
+      aria-label="说点什么，打开留言"
+    >
+      <image class="material-detail-engage__comment-entry-icon" src="/assets/materials/detail-visitor-comment-entry.svg" mode="aspectFit" />
+      <text>说点什么</text>
+    </view>
+    <view class="material-detail-engage__actions">
+      <block wx:if="{{detail.isOwner}}">
+        <button
+          class="material-detail-engage__action material-detail-engage__action--owner material-detail-engage__share"
+          open-type="share"
+          hover-class="material-detail-engage__action--pressed"
+          hover-stay-time="80"
+          aria-label="转发"
+        >
+          <image class="material-detail-engage__icon" src="/assets/materials/detail-forward.svg" mode="aspectFit" />
+          <text class="material-detail-engage__count">{{detail.forwardCount > 0 ? detail.forwardCountLabel : '转发'}}</text>
+        </button>
+        <view
+          class="material-detail-engage__action material-detail-engage__action--owner"
+          bindtap="onLikeTap"
+          hover-class="material-detail-engage__action--pressed"
+          hover-stay-time="80"
+          aria-label="点赞"
+        >
+          <image
+            class="material-detail-engage__icon material-detail-engage__like-icon {{detail.liked ? 'material-detail-engage__like-icon--liked' : ''}}"
+            src="{{detail.liked ? '/assets/materials/detail-like-filled.svg' : '/assets/materials/detail-like.svg'}}"
+            mode="aspectFit"
+          />
+          <text class="material-detail-engage__count">{{detail.likeCount > 0 ? detail.likeCountLabel : '点赞'}}</text>
+        </view>
+        <view
+          class="material-detail-engage__action material-detail-engage__action--owner"
+          bindtap="onCommentTap"
+          hover-class="material-detail-engage__action--pressed"
+          hover-stay-time="80"
+          aria-label="留言"
+        >
+          <image class="material-detail-engage__icon" src="/assets/materials/detail-comment.svg" mode="aspectFit" />
+          <text class="material-detail-engage__count">{{detail.commentCount > 0 ? detail.commentCountLabel : '留言'}}</text>
+        </view>
+      </block>
+      <block wx:else>
+        <button
+          class="material-detail-engage__action material-detail-engage__share"
+          open-type="share"
+          hover-class="material-detail-engage__action--pressed"
+          hover-stay-time="80"
+          aria-label="转发"
+        >
+          <image class="material-detail-engage__icon" src="/assets/materials/detail-forward.svg" mode="aspectFit" />
+          <text class="material-detail-engage__count">{{detail.forwardCount > 0 ? detail.forwardCountLabel : '转发'}}</text>
+        </button>
+        <view
+          class="material-detail-engage__action"
+          bindtap="onLikeTap"
+          hover-class="material-detail-engage__action--pressed"
+          hover-stay-time="80"
+          aria-label="点赞"
+        >
+          <image
+            class="material-detail-engage__icon material-detail-engage__like-icon {{detail.liked ? 'material-detail-engage__like-icon--liked' : ''}}"
+            src="{{detail.liked ? '/assets/materials/detail-like-filled.svg' : '/assets/materials/detail-like.svg'}}"
+            mode="aspectFit"
+          />
+          <text class="material-detail-engage__count">{{detail.likeCount > 0 ? detail.likeCountLabel : '点赞'}}</text>
+        </view>
+        <view
+          class="material-detail-engage__action"
+          bindtap="onCommentTap"
+          hover-class="material-detail-engage__action--pressed"
+          hover-stay-time="80"
+          aria-label="留言"
+        >
+          <image class="material-detail-engage__icon" src="/assets/materials/detail-comment.svg" mode="aspectFit" />
+          <text class="material-detail-engage__count">{{detail.commentCount > 0 ? detail.commentCountLabel : '留言'}}</text>
+        </view>
+      </block>
+    </view>
   </view>
 
   <view wx:if="{{commentSheetVisible}}" class="material-detail-comments" catchtouchmove="onCommentSheetBlockMove">

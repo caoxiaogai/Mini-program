@@ -70,6 +70,7 @@ Page({
   shareImageToken: 0,
   pageTrackingId: '',
   ownerView: false,
+  forceVisitorView: false,
   trackingSessionId: '',
   viewedImageIndices: [] as number[],
   hasReportedComplete: false,
@@ -144,6 +145,7 @@ Page({
     this.pageTrackingId = options.trackingId ?? ''
     // 内部详情入口没有分享追踪参数；分享链接带 trackingId 时保持访客视角。
     this.ownerView = options.owner === '1' || (!options.trackingId && options.owner !== '0')
+    this.forceVisitorView = options.owner === '0'
     this.trackingSessionId = createTrackingSessionId()
     this.viewedImageIndices = []
     this.hasReportedComplete = false
@@ -170,7 +172,7 @@ Page({
   loadDetail() {
     if (!this.materialId) return Promise.resolve()
 
-    return getMaterialDetail(this.materialId, this.ownerView)
+    return getMaterialDetail(this.materialId, this.ownerView, this.forceVisitorView)
       .then((detail) => {
         if (!detail) {
           this.shareImageToken += 1

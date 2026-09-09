@@ -286,7 +286,11 @@ export function addMaterialComment(materialId: string, content: string): Promise
   }).then(mapMaterialComment)
 }
 
-export function getMaterialDetail(materialId: string, ownerView = false): Promise<MaterialDetailViewModel | null> {
+export function getMaterialDetail(
+  materialId: string,
+  ownerView = false,
+  forceVisitorView = false,
+): Promise<MaterialDetailViewModel | null> {
   return Promise.all([
     request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true, skipAuth: true }),
     getMaterialEngagement(materialId).catch(() => EMPTY_ENGAGEMENT),
@@ -327,7 +331,7 @@ export function getMaterialDetail(materialId: string, ownerView = false): Promis
         pdfFileName,
         noteBlocks,
         descriptionLines: splitMaterialCopy(resolveMaterialCopy(material)),
-        isOwner: ownerView || Boolean(user && String(material.userId) === String(user.userId)),
+        isOwner: forceVisitorView ? false : ownerView || Boolean(user && String(material.userId) === String(user.userId)),
         ...mapMaterialEngagement(engagement),
       }
     })
