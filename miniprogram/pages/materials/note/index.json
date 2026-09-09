@@ -1,7 +1,8 @@
 {
   "usingComponents": {
     "navigation-bar": "/components/navigation-bar/navigation-bar",
-    "note-video-player": "/components/note-video-player/index"
+    "note-video-player": "/components/note-video-player/index",
+    "upload-loading": "/components/upload-loading/index"
   },
   "renderer": "webview",
   "disableScroll": true,

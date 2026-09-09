@@ -340,10 +340,7 @@ export function uploadFile(path: string, filePath: string): Promise<string> {
   return ensureLogin().then(
     () =>
       new Promise<string>((resolve, reject) => {
-        beginLoading()
-
         const finish = (error: ApiError | null, value?: string): void => {
-          endLoading()
           if (!error) {
             resolve(value as string)
             return

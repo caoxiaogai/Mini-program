@@ -460,6 +460,35 @@ function persistMediaFiles(items: PublishMediaViewModel[]): Promise<string[]> {
   )
 }
 
+function isDraftMediaUnchanged(input: MaterialSubmitInput): boolean {
+  return (
+    input.draftId !== null &&
+    input.originalMediaPaths.length === input.media.length &&
+    input.media.every((item, index) => item.path === input.originalMediaPaths[index])
+  )
+}
+
+/** 只上传本地文件到 MinIO，不创建素材、不跳转。 */
+export function uploadMaterialFiles(input: MaterialSubmitInput): Promise<PublishMediaViewModel[]> {
+  if (input.media.length === 0 || isDraftMediaUnchanged(input)) return Promise.resolve(input.media)
+  return runRequestQueue(
+    input.media.map((item) => () =>
+      persistMediaFile(item).then((fileUrl) => {
+        const coverTask =
+          item.previewPath && shouldUploadLocalPath(item.previewPath)
+            ? uploadLocalFile(item.previewPath).catch(() => item.previewPath)
+            : Promise.resolve(item.previewPath)
+        return coverTask.then((previewPath) => ({
+          ...item,
+          remoteUrl: fileUrl,
+          previewPath: previewPath || item.previewPath,
+        }))
+      }),
+    ),
+    UPLOAD_CONCURRENCY,
+  )
+}
+
 function createMaterial(input: {
   fileType: 'IMAGE' | 'VIDEO' | 'PDF' | 'NOTE'
   fileUrl: string
@@ -472,6 +501,7 @@ function createMaterial(input: {
   return request<ApiMaterial>({
     method: 'POST',
     path: '/material',
+    silent: true,
     data: {
       title: buildMaterialTitle(input.copy, input.fallbackTitle),
       content: input.content ?? input.copy,
@@ -539,16 +569,12 @@ function persistMaterial(input: MaterialSubmitInput): Promise<string> {
     return Promise.reject(new Error('material media required'))
   }
 
-  const mediaUnchanged =
-    input.draftId !== null &&
-    input.originalMediaPaths.length === input.media.length &&
-    input.media.every((item, index) => item.path === input.originalMediaPaths[index])
-
-  if (input.draftId !== null && mediaUnchanged) {
+  if (input.draftId !== null && isDraftMediaUnchanged(input)) {
     const draftId = input.draftId
     return request<ApiMaterial>({
       method: 'PUT',
       path: `/material/${draftId}`,
+      silent: true,
       data: { content: input.copy },
     }).then(() => draftId)
   }
@@ -564,7 +590,7 @@ export function saveMaterialDraft(input: MaterialSubmitInput): Promise<string> {
 /** 发表：素材落库后生成分享链接（后端置 publishStatus=1），返回素材 ID */
 export function publishMaterial(input: MaterialSubmitInput): Promise<string> {
   return persistMaterial(input).then((materialId) =>
-    request<ApiMaterial>({ method: 'POST', path: `/material/${materialId}/share` }).then(() => materialId),
+    request<ApiMaterial>({ method: 'POST', path: `/material/${materialId}/share`, silent: true }).then(() => materialId),
   )
 }
 
@@ -648,6 +674,18 @@ function firstNoteCover(blocks: NoteBlock[]): { fileUrl: string; coverUrl: strin
   return { fileUrl: NOTE_PLACEHOLDER_FILE_URL, coverUrl: '', duration: 0 }
 }
 
+/** 只上传笔记本地附件到 MinIO，不创建素材、不跳转。 */
+export function uploadNoteFiles(input: NoteSubmitInput): Promise<NoteBlock[]> {
+  if (!hasNoteContent(input.blocks)) return Promise.resolve(input.blocks)
+  if (input.draftId !== null && noteAttachmentSignature(input.blocks) === input.originalAttachmentSignature) {
+    return Promise.resolve(input.blocks)
+  }
+  return runRequestQueue(
+    input.blocks.map((block) => () => persistNoteBlock(block)),
+    UPLOAD_CONCURRENCY,
+  )
+}
+
 function persistNoteMaterial(input: NoteSubmitInput): Promise<string> {
   if (!hasNoteContent(input.blocks)) {
     wx.showToast({ title: '请先添加笔记内容', icon: 'none' })
@@ -662,6 +700,7 @@ function persistNoteMaterial(input: NoteSubmitInput): Promise<string> {
     return request<ApiMaterial>({
       method: 'PUT',
       path: `/material/${draftId}`,
+      silent: true,
       data: { content: serializeNoteContent(input.blocks) },
     }).then(() => draftId)
   }
@@ -689,6 +728,6 @@ export function saveNoteDraft(input: NoteSubmitInput): Promise<string> {
 
 export function publishNote(input: NoteSubmitInput): Promise<string> {
   return persistNoteMaterial(input).then((materialId) =>
-    request<ApiMaterial>({ method: 'POST', path: `/material/${materialId}/share` }).then(() => materialId),
+    request<ApiMaterial>({ method: 'POST', path: `/material/${materialId}/share`, silent: true }).then(() => materialId),
   )
 }

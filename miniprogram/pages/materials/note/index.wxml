@@ -167,4 +167,5 @@
     poster="{{videoPlayerPoster}}"
     bind:close="onCloseVideoPlayer"
   />
+  <upload-loading visible="{{uploading}}" />
 </view>

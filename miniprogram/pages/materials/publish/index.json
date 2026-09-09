@@ -1,7 +1,8 @@
 {
   "usingComponents": {
     "navigation-bar": "/components/navigation-bar/navigation-bar",
-    "publish-type-sheet": "/components/publish-type-sheet/index"
+    "publish-type-sheet": "/components/publish-type-sheet/index",
+    "upload-loading": "/components/upload-loading/index"
   },
   "renderer": "webview",
   "enablePullDownRefresh": true,

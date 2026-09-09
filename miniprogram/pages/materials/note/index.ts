@@ -1,6 +1,6 @@
-import { getMaterialShareCard, getNoteDraft, publishNote, saveNoteDraft } from '../../../services/materials'
+import { getMaterialShareCard, getNoteDraft, publishNote, saveNoteDraft, uploadNoteFiles } from '../../../services/materials'
 import { runAuthed } from '../../../services/auth'
-import type { NoteBlock, NoteFileBlock } from '../../../types/note'
+import type { NoteBlock, NoteFileBlock, NoteSubmitInput } from '../../../types/note'
 import { buildReturnPath } from '../../../utils/auth'
 import {
   cloneNoteBlocks,
@@ -168,6 +168,7 @@ Page({
     scrollTop: 0,
     composerReserve: 120,
     navActionRight: 104,
+    uploading: false,
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -903,28 +904,45 @@ Page({
     }
   },
 
-  onDraftTap() {
-    if (this.submitting) return
+  beginSubmit(): boolean {
+    if (this.submitting) return false
     this.submitting = true
-    saveNoteDraft(this.buildSubmitInput())
-      .then((materialId) => {
-        this.draftMaterialId = materialId
-        this.originalAttachmentSignature = noteAttachmentSignature(this.data.blocks)
-        wx.showToast({ title: '已保存草稿', icon: 'success' })
-        returnToMaterialsList({ materialId, showSuccessModal: false })
+    return true
+  },
+
+  uploadThenSubmit(work: (input: NoteSubmitInput) => Promise<void>): void {
+    const input = this.buildSubmitInput()
+    this.setData({ uploading: true, blocks: withFileLabels(input.blocks) })
+    uploadNoteFiles(input)
+      .then((blocks) => {
+        this.setData({ blocks: withFileLabels(blocks) })
+        return work({ ...input, blocks })
       })
-      .catch(() => undefined)
+      .catch(() => {
+        this.setData({ uploading: false })
+      })
       .then(() => {
         this.submitting = false
       })
   },
 
+  onDraftTap() {
+    if (!this.beginSubmit()) return
+    this.uploadThenSubmit((input) =>
+      saveNoteDraft(input).then((materialId) => {
+        this.draftMaterialId = materialId
+        this.originalAttachmentSignature = noteAttachmentSignature(this.data.blocks)
+        wx.showToast({ title: '已保存草稿', icon: 'success' })
+        returnToMaterialsList({ materialId, showSuccessModal: false })
+      }),
+    )
+  },
+
   onPublishTap() {
-    if (this.submitting) return
-    this.submitting = true
+    if (!this.beginSubmit()) return
     const copy = extractNotePlainText(this.data.blocks)
-    publishNote(this.buildSubmitInput())
-      .then((materialId) => {
+    this.uploadThenSubmit((input) =>
+      publishNote(input).then((materialId) => {
         this.draftMaterialId = materialId
         this.originalAttachmentSignature = noteAttachmentSignature(this.data.blocks)
         return getMaterialShareCard(materialId, copy, this.firstShareImage()).then((card) => {
@@ -936,10 +954,7 @@ Page({
             shareTrackingId: card.shareTrackingId,
           })
         })
-      })
-      .catch(() => undefined)
-      .then(() => {
-        this.submitting = false
-      })
+      }),
+    )
   },
 })

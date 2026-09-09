@@ -1,0 +1,51 @@
+.upload-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-loading__mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.upload-loading__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+  min-width: 240rpx;
+  padding: 40rpx 48rpx;
+  border-radius: 16rpx;
+  background: rgba(0, 0, 0, 0.78);
+  box-sizing: border-box;
+}
+
+.upload-loading__spinner {
+  width: 48rpx;
+  height: 48rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.28);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: upload-loading-spin 0.75s linear infinite;
+}
+
+.upload-loading__text {
+  color: #ffffff;
+  font-size: 28rpx;
+  line-height: 40rpx;
+}
+
+@keyframes upload-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

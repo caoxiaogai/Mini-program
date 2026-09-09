@@ -1,4 +1,4 @@
-import { getMaterialDraft, getMaterialShareCard, publishMaterial, saveMaterialDraft } from '../../../services/materials'
+import { getMaterialDraft, getMaterialShareCard, publishMaterial, saveMaterialDraft, uploadMaterialFiles } from '../../../services/materials'
 import { runAuthed } from '../../../services/auth'
 import { ensureEmojiPresentation } from '../../../utils/emoji'
 import { returnToMaterialsList } from '../../../utils/publish-return'
@@ -32,6 +32,7 @@ Page({
     copyFocused: false,
     publishTypeSheetVisible: false,
     publishSourceSheetVisible: false,
+    uploading: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     const selectedEntryType = getPublishEntryType(options.type)
@@ -192,28 +193,43 @@ Page({
     if (copy !== this.data.copy) this.setData({ copy })
     if (copy !== event.detail.value) return copy
   },
-  onDraftTap() {
-    if (this.submitting) return
+  beginSubmit(): boolean {
+    if (this.submitting) return false
     this.submitting = true
-
-    saveMaterialDraft(this.buildSubmitInput())
-      .then((materialId) => {
-        this.draftMaterialId = materialId
-        this.draftMediaPaths = this.data.media.map((item) => item.path)
-        wx.showToast({ title: '已保存草稿', icon: 'success' })
-        returnToMaterialsList({ materialId, showSuccessModal: false })
+    return true
+  },
+  uploadThenSubmit(work: (input: MaterialSubmitInput) => Promise<void>): void {
+    const input = this.buildSubmitInput()
+    this.setData({ uploading: true })
+    uploadMaterialFiles(input)
+      .then((media) => {
+        this.setData({ media })
+        return work({ ...input, media })
       })
-      .catch(() => undefined)
+      .catch(() => {
+        this.setData({ uploading: false })
+      })
       .then(() => {
         this.submitting = false
       })
   },
-  onPublishTap() {
-    if (this.submitting) return
-    this.submitting = true
+  onDraftTap() {
+    if (!this.beginSubmit()) return
 
-    publishMaterial(this.buildSubmitInput())
-      .then((materialId) => {
+    this.uploadThenSubmit((input) =>
+      saveMaterialDraft(input).then((materialId) => {
+        this.draftMaterialId = materialId
+        this.draftMediaPaths = this.data.media.map((item) => item.path)
+        wx.showToast({ title: '已保存草稿', icon: 'success' })
+        returnToMaterialsList({ materialId, showSuccessModal: false })
+      }),
+    )
+  },
+  onPublishTap() {
+    if (!this.beginSubmit()) return
+
+    this.uploadThenSubmit((input) =>
+      publishMaterial(input).then((materialId) => {
         this.draftMaterialId = materialId
         this.draftMediaPaths = this.data.media.map((item) => item.path)
         return getMaterialShareCard(materialId, this.data.copy, getPublishShareImageUrl(this.data.media)).then((card) => {
@@ -225,10 +241,7 @@ Page({
             shareTrackingId: card.shareTrackingId,
           })
         })
-      })
-      .catch(() => undefined)
-      .then(() => {
-        this.submitting = false
-      })
+      }),
+    )
   },
 })

@@ -169,6 +169,8 @@ test('note editor can add text, location, image, video, file and save like other
   assert.match(markup, />文件</)
   assert.match(markup, /存草稿/)
   assert.match(markup, /发表/)
+  assert.match(markup, /<upload-loading visible="\{\{uploading\}\}"/)
+  assert.match(logic, /this\.uploadThenSubmit\(\(input\) =>\s*saveNoteDraft\(input\)/)
   assert.match(logic, /focusEditor/)
   assert.match(logic, /onKeyboardHeightChange/)
   assert.match(logic, /deletePreviousAttachmentOnBackspace/)
