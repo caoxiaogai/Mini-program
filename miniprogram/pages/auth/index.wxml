@@ -59,14 +59,14 @@
         hover-class="auth-page__primary--pressed"
         disabled="{{busy}}"
         bind:chooseavatar="onChooseAvatar"
-      >使用微信一键登录</button>
+      >使用微信一键授权</button>
       <button
         wx:elif="{{!canSubmit}}"
         class="auth-page__primary"
         hover-class="auth-page__primary--pressed"
         disabled="{{busy}}"
         bindtap="onContinueNicknameTap"
-      >使用微信一键登录</button>
+      >使用微信一键授权</button>
       <button
         wx:else
         class="auth-page__primary"

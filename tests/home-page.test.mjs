@@ -149,7 +149,7 @@ test('entry pages require authorized login and first-time profile setup', async 
   assert.match(authMarkup, /微信授权/)
   assert.match(authMarkup, /open-type="chooseAvatar"/)
   assert.match(authMarkup, /type="nickname"/)
-  assert.match(authMarkup, /使用微信一键登录/)
+  assert.match(authMarkup, /使用微信一键授权/)
   assert.match(authMarkup, /授权查看/)
   assert.match(authMarkup, /form-type="submit"/)
   assert.match(authPage, /syncAuthAction\(/)
