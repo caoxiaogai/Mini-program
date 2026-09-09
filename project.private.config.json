@@ -18,5 +18,24 @@
     "useLanDebug": true,
     "ignoreDevUnusedFiles": false
   },
-  "condition": {}
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "分享授权页",
+          "pathName": "pages/share-gate/index",
+          "query": "id=2092577721627000833",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "客户视角详情",
+          "pathName": "pages/material-detail/index",
+          "query": "id=2094718609789456385&owner=0",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
 }

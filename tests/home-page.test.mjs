@@ -24,7 +24,7 @@ const trendPageDeps = {
 
 const loadPageDefinition = (path, dependencies = {}) => {
   const source = read(path)
-    .replace(/^import[^\n]+\n/gm, '')
+    .replace(/^import[\s\S]*?from [^\n]+\n/gm, '')
     .replace(/^Page\(/m, 'capturePage(')
   const executable = stripTypeScriptTypes(source, { mode: 'strip' })
   let definition = null
@@ -33,6 +33,14 @@ const loadPageDefinition = (path, dependencies = {}) => {
 
   new Function(...names, executable)(...values)
   return definition
+}
+
+const loadMaterialsService = (dependencies = {}) => {
+  const source = read('miniprogram/services/materials.ts')
+    .replace(/^import[\s\S]*?from [^\n]+\n/gm, '')
+    .replace(/^export /gm, '')
+  const executable = stripTypeScriptTypes(source, { mode: 'strip' })
+  return new Function(...Object.keys(dependencies), `${executable}\nreturn { getMaterialDetail }`)(...Object.values(dependencies))
 }
 
 const getPngDimensions = (path) => {
@@ -2216,6 +2224,12 @@ test('user journey service loads real tracking events through the request layer'
     `${stripTypeScriptTypes(executable, { mode: 'strip' })}; return { formatForwardDetail, mapUserJourney }`,
   )(formatRelativeDayTime)
 
+  for (const [intentLevel, label] of [['high', '#高意向'], ['medium', '#中意向'], ['low', '#低意向']]) {
+    const product = mapUserJourney({ intentLevel, events: [] }, '').product
+    assert.equal(product.intentLevel, intentLevel)
+    assert.equal(product.intentLabel, label)
+  }
+
   assert.match(service, /path: '\/analysis\/customer\/journey'/)
   assert.match(service, /customerId: userId/)
   assert.match(service, /mapUserJourney/)
@@ -2917,8 +2931,8 @@ test('material detail uses the shared page background above and below the media'
 
   assert.match(markup, /<navigation-bar title="作品" back="\{\{true\}\}" home-button="\{\{true\}\}" color="#000000" background="#ffffff" \/>/)
   assert.match(styles, /\.material-detail-page__header\s*\{[^}]*background:\s*@app-page-background;/)
-  assert.match(styles, /\.material-detail__swiper\s*\{[\s\S]*background:\s*#ebebeb;/)
-  assert.match(styles, /\.material-detail__media\s*\{[\s\S]*background:\s*#ebebeb;/)
+  assert.match(styles, /\.material-detail__swiper\s*\{[^}]*background:\s*#ffffff;/)
+  assert.match(styles, /\.material-detail__media\s*\{[^}]*background:\s*#ffffff;/)
   assert.match(styles, /\.material-detail__description\s*\{[^}]*background:\s*@app-page-background;/)
   assert.match(styles, /\.material-detail-engage\s*\{[^}]*background:\s*@app-page-background;/)
   assert.match(styles, /\.material-detail-engage__share::before,[\s\S]*\.material-detail-engage__share::after \{[\s\S]*display: none;/)
@@ -3108,6 +3122,115 @@ test('material detail navigation shows a home button beside back', () => {
   assert.match(read('miniprogram/assets/navigation/home-outline.svg'), /stroke="#000000"/)
 })
 
+test('owner material detail uses the confirmed action bar while visitor actions stay separate', () => {
+  const markup = read('miniprogram/pages/material-detail/index.wxml')
+  const styles = read('miniprogram/pages/material-detail/index.less')
+
+  assert.match(markup, /wx:if="\{\{detail\.isOwner\}\}"[\s\S]*class="material-detail-engage__owner-actions"/)
+  assert.match(markup, /更多操作/)
+  assert.match(markup, /编辑和删除作品/)
+  assert.match(markup, /detail-forward\.svg[\s\S]*detail-like\.svg[\s\S]*detail-comment\.svg/)
+  assert.match(styles, /\.material-detail-engage__owner-actions\s*\{[^}]*display: flex;[^}]*margin-right: auto;/)
+  assert.match(styles, /\.material-detail-engage__actions\s*\{[^}]*gap: 40rpx;/)
+  assert.match(styles, /\.material-detail-engage--owner\s*\{[^}]*padding: 20rpx 40rpx 48rpx;/)
+  assert.match(styles, /\.material-detail-engage--owner \.material-detail-engage__share\s*\{[^}]*font-weight: 400;/)
+  assert.match(styles, /(?:^|\n)\.material-detail-engage__count\s*\{[^}]*color: #000000;[^}]*font-size: 22rpx;[^}]*font-weight: 400;[^}]*line-height: 28rpx;/)
+  assert.doesNotMatch(styles, /\.material-detail-engage--owner \.material-detail-engage__count/)
+  assert.match(markup, /\{\{detail\.forwardCount > 0 \? detail\.forwardCountLabel : '转发'\}\}/)
+  assert.match(markup, /\{\{detail\.likeCount > 0 \? detail\.likeCountLabel : '点赞'\}\}/)
+  assert.match(markup, /\{\{detail\.commentCount > 0 \? detail\.commentCountLabel : '留言'\}\}/)
+  assert.match(markup, /material-detail-engage__like-icon \{\{detail\.liked \? 'material-detail-engage__like-icon--liked' : ''\}\}/)
+  assert.match(styles, /\.material-detail-engage__like-icon--liked\s*\{[^}]*animation: material-detail-like-bounce 260ms ease-out;/)
+  assert.match(styles, /@keyframes material-detail-like-bounce\s*\{[\s\S]*scale\(0\.72\)[\s\S]*scale\(1\.24\)[\s\S]*scale\(1\);/)
+  assert.match(read('miniprogram/assets/materials/detail-like-filled.svg'), /fill="#FC1616"/)
+  assert.doesNotMatch(read('miniprogram/assets/materials/detail-like-filled.svg'), /M7\.25 10\.5/)
+})
+
+test('visitor material detail opens the existing comment sheet from the Figma comment entry', () => {
+  const markup = read('miniprogram/pages/material-detail/index.wxml')
+  const logic = read('miniprogram/pages/material-detail/index.ts')
+  const styles = read('miniprogram/pages/material-detail/index.less')
+  const actionsStart = markup.indexOf('<view class="material-detail-engage__actions">')
+  const visitorActionsStart = markup.indexOf('<block wx:else>', actionsStart)
+  const visitorActions = markup.slice(visitorActionsStart, markup.indexOf('</block>', visitorActionsStart))
+
+  assert.match(markup, /class="material-detail-engage__comment-entry"[\s\S]*bindtap="onCommentTap"[\s\S]*说点什么/)
+  assert.match(markup, /detail-visitor-comment-entry\.svg/)
+  assert.match(markup, /material-detail-engage__comment-entry[\s\S]*detail-forward\.svg[\s\S]*detail-like\.svg[\s\S]*detail-comment\.svg/)
+  assert.match(visitorActions, /\{\{detail\.forwardCount > 0 \? detail\.forwardCountLabel : '转发'\}\}[\s\S]*\{\{detail\.likeCount > 0 \? detail\.likeCountLabel : '点赞'\}\}[\s\S]*\{\{detail\.commentCount > 0 \? detail\.commentCountLabel : '留言'\}\}/)
+  assert.match(logic, /onCommentTap\(\) \{[\s\S]*commentSheetVisible: true[\s\S]*this\.loadComments\(\)/)
+  assert.match(styles, /\.material-detail-engage--visitor\s*\{[^}]*padding: 20rpx 40rpx 48rpx;/)
+  assert.match(styles, /\.material-detail-engage--visitor \.material-detail-engage__comment-entry\s*\{[^}]*width: 360rpx;[^}]*height: 64rpx;[^}]*background: #f0f0f0;/)
+  assert.equal(existsSync(new URL('../miniprogram/assets/materials/detail-visitor-comment-entry.svg', import.meta.url)), true)
+})
+
+test('explicit visitor detail stays a visitor view for the material author', async () => {
+  const material = {
+    id: 'material-1',
+    userId: 'current-user',
+    fileType: 'IMAGE',
+    fileUrl: null,
+    content: '测试作品',
+    title: '测试作品',
+  }
+  const { getMaterialDetail } = loadMaterialsService({
+    formatCompactCount: (value) => String(value),
+    formatDateKey: () => '',
+    formatRelativeDayTime: () => '',
+    prepareMediaUrl: async (value) => value,
+    prepareMediaUrls: async (values) => values,
+    extractNotePlainText: () => '',
+    extractNoteTitle: () => '',
+    hasNoteContent: () => false,
+    isNoteFileType: () => false,
+    NOTE_DEFAULT_TITLE: '笔记',
+    NOTE_FILE_TYPE: 'NOTE',
+    NOTE_PLACEHOLDER_FILE_URL: '',
+    noteAttachmentSignature: () => '',
+    parseNoteContent: () => null,
+    serializeNoteContent: () => '',
+    toNoteDisplayBlocks: () => [],
+    prepareShareCardImage: async (value) => value,
+    buildMaterialShareTitle: () => '',
+    isSinglePageMode: () => false,
+    prepareDocumentPageImage: async () => '',
+    ensureLogin: async () => ({ userId: 'current-user' }),
+    getCachedLogin: () => ({ userId: 'current-user' }),
+    hasAuthorizedLogin: () => true,
+    request: async ({ path }) => (path.endsWith('/engagement')
+      ? { likeCount: 0, forwardCount: 0, commentCount: 0, liked: false }
+      : material),
+    resolveMediaUrl: (value) => value ?? '',
+    runRequestQueue: async () => [],
+    uploadFile: async () => '',
+  })
+
+  const detail = await getMaterialDetail('material-1', false, true)
+
+  assert.equal(detail.isOwner, false)
+})
+
+test('customer compile query passes the explicit visitor intent to material detail loading', () => {
+  let detailArgs = []
+  const page = loadPageDefinition('miniprogram/pages/material-detail/index.ts', {
+    isSinglePageMode: () => false,
+    createTrackingSessionId: () => 'tracking-session',
+    getMaterialDetail: (...args) => {
+      detailArgs = args
+      return new Promise(() => {})
+    },
+  })
+  const context = {
+    ...page,
+    setData: () => {},
+    resetPreviewZoomState: () => {},
+  }
+
+  page.startDetail.call(context, { id: 'material-1', owner: '0' })
+
+  assert.deepEqual(detailArgs, ['material-1', false, true])
+})
+
 test('owner material detail puts delete and edit behind more while visitors only see engagement actions', async () => {
   const markup = read('miniprogram/pages/material-detail/index.wxml')
   const logic = read('miniprogram/pages/material-detail/index.ts')
@@ -3136,10 +3259,10 @@ test('owner material detail puts delete and edit behind more while visitors only
   assert.match(service, /path: `\/material\/\$\{materialId\}\/like`/)
   assert.match(service, /path: `\/material\/\$\{materialId\}\/comments`/)
   assert.match(markup, /class="material-detail-engage"/)
-  assert.match(markup, /detail-like\.svg/)
-  assert.match(markup, /detail-forward\.svg/)
-  assert.match(markup, /detail-comment\.svg/)
-  assert.match(markup, /wx:if="\{\{detail\.isOwner\}\}"[\s\S]*>更多</)
+  assert.match(markup, /class="material-detail-engage__owner-actions"/)
+  assert.match(markup, /更多操作/)
+  assert.match(markup, /编辑和删除作品/)
+  assert.match(markup, /detail-forward\.svg[\s\S]*detail-like\.svg[\s\S]*detail-comment\.svg/)
   assert.doesNotMatch(markup, /note-more\.svg/)
   assert.match(markup, /\{\{detail\.likeCountLabel\}\}/)
   assert.match(markup, /\{\{detail\.forwardCountLabel\}\}/)
@@ -3160,10 +3283,11 @@ test('owner material detail puts delete and edit behind more while visitors only
   assert.match(logic, /toggleMaterialLike/)
   assert.match(logic, /listMaterialComments/)
   assert.match(logic, /addMaterialComment/)
-  assert.match(styles, /\.material-detail-engage__actions \{[\s\S]*gap: 12rpx;/)
+  assert.match(styles, /\.material-detail-engage__actions \{[\s\S]*gap: 40rpx;/)
+  assert.match(styles, /\.material-detail-engage--visitor \.material-detail-engage__actions \{[\s\S]*gap: 12rpx;/)
   assert.match(styles, /\.material-detail-engage__action \{[\s\S]*width: 64rpx;/)
   assert.match(styles, /\.material-detail-engage__share \{[\s\S]*min-width: 64rpx;[\s\S]*max-width: 64rpx;/)
-  assert.match(styles, /\.material-detail-engage__more \{[\s\S]*margin-left: auto;/)
+  assert.match(styles, /\.material-detail-engage__owner-actions \{[\s\S]*margin-right: auto;/)
   assert.match(service, /getMaterialDetail\(materialId: string, ownerView = false\)/)
   assert.match(service, /isOwner: ownerView \|\| String\(material\.userId\) === String\(user\.userId\)/)
   assert.match(homeLogic, /buildMaterialDetailPath\(materialId, undefined, true\)/)
@@ -4621,4 +4745,11 @@ test('wechat preview source stays under the 2MB upload limit', () => {
   }, 0)
   const packagedBytes = getFileBytes(root) - ignoredBytes
   assert.ok(packagedBytes < 2 * 1024 * 1024, `packaged miniprogram source is ${Math.round(packagedBytes / 1024)}KB`)
+})
+
+ test('visitor engagement bar keeps the local border removal after upstream redesign', () => {
+  const styles = read('miniprogram/pages/material-detail/index.less')
+  const markup = read('miniprogram/pages/material-detail/index.wxml')
+  assert.match(styles, /\.material-detail-engage--visitor\s*\{[^}]*border-top: none;/)
+  assert.match(markup, /detail.isOwner \? '' : 'material-detail-engage--visitor'/)
 })
