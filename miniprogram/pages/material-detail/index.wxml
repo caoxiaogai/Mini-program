@@ -111,6 +111,13 @@
           <view class="material-detail__pdf-badge">{{detail.fileType === 'TABLE' ? '表格' : 'PDF'}}</view>
           <text class="material-detail__pdf-name">{{detail.pdfFileName}}</text>
         </view>
+        <view wx:if="{{detail.fileType === 'PDF'}}" class="material-detail__pdf-fade" aria-hidden="true" />
+        <view wx:if="{{detail.fileType === 'PDF'}}" class="material-detail__pdf-open">
+          <view class="material-detail__pdf-open-button">
+            <text>点击查看</text>
+          </view>
+          <text class="material-detail__pdf-open-hint">这是PDF文件，需要点击查看详情</text>
+        </view>
       </view>
     </block>
 
