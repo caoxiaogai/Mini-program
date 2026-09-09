@@ -4,29 +4,41 @@
   <view class="publish-page__content">
     <view class="publish-page__image-grid">
       <view
-        wx:for="{{media}}"
-        wx:key="id"
-        class="publish-page__image-slot publish-page__image-slot--filled"
+        wx:for="{{mediaSlots}}"
+        wx:key="index"
+        wx:if="{{item.visible}}"
+        id="publish-media-{{item.index}}"
+        class="publish-page__image-slot publish-page__image-slot--visible {{item.media ? 'publish-page__image-slot--filled' : item.isAdd ? 'publish-page__image-slot--add' : 'publish-page__image-slot--empty'}} {{item.media && draggingMediaId === item.media.id ? 'publish-page__image-slot--dragging' : ''}} {{dragTargetSlotIndex === item.index ? 'publish-page__image-slot--drag-target' : ''}}"
+        data-id="{{item.media ? item.media.id : ''}}"
+        data-slot-index="{{item.index}}"
+        bindtap="onMediaPreviewTap"
+        hover-class="{{item.media ? 'publish-page__image-slot--preview-pressed' : ''}}"
+        hover-stay-time="80"
+        bindlongpress="onMediaLongPress"
+        catchtouchmove="onMediaTouchMove"
+        catchtouchend="onMediaTouchEnd"
+        catchtouchcancel="onMediaTouchCancel"
       >
         <image
-          wx:if="{{item.kind !== 'pdf'}}"
+          wx:if="{{item.media && item.media.kind !== 'pdf'}}"
           class="publish-page__image"
-          src="{{item.kind === 'video' && item.previewPath ? item.previewPath : item.path}}"
+          src="{{item.media.kind === 'video' && item.media.previewPath ? item.media.previewPath : item.media.path}}"
           mode="aspectFill"
         />
         <image
-          wx:if="{{item.kind === 'video'}}"
+          wx:if="{{item.media && item.media.kind === 'video'}}"
           class="publish-page__video-play"
           src="/assets/materials/material-play.svg"
           mode="aspectFit"
         />
-        <view wx:if="{{item.kind === 'pdf'}}" class="publish-page__pdf-slot">
+        <view wx:if="{{item.media && item.media.kind === 'pdf'}}" class="publish-page__pdf-slot">
           <text class="publish-page__pdf-badge">PDF</text>
-          <text class="publish-page__pdf-name">{{item.name}}</text>
+          <text class="publish-page__pdf-name">{{item.media.name}}</text>
         </view>
         <view
+          wx:if="{{item.media}}"
           class="publish-page__image-delete"
-          data-id="{{item.id}}"
+          data-id="{{item.media.id}}"
           catchtap="onDeleteMediaTap"
           hover-class="publish-page__image-delete--pressed"
           hover-stay-time="80"
@@ -35,21 +47,30 @@
         >
           <image class="publish-page__image-delete-icon" src="/assets/materials/publish-delete.svg" mode="aspectFit" />
         </view>
-      </view>
-      <view
-        wx:if="{{canAddMedia}}"
-        class="publish-page__image-slot publish-page__image-slot--add"
-        bindtap="onAddMediaTap"
-        hover-class="publish-page__image-slot--pressed"
-        hover-stay-time="80"
-        aria-role="button"
-        aria-label="添加素材"
-      >
-        <view class="publish-page__add-icon" aria-hidden="true">
-          <view class="publish-page__add-icon-horizontal"></view>
-          <view class="publish-page__add-icon-vertical"></view>
+        <view
+          wx:if="{{item.isAdd}}"
+          class="publish-page__add-button"
+          bindtap="onAddMediaTap"
+          hover-class="publish-page__image-slot--pressed"
+          hover-stay-time="80"
+          aria-role="button"
+          aria-label="添加素材"
+        >
+          <view class="publish-page__add-icon" aria-hidden="true">
+            <view class="publish-page__add-icon-horizontal"></view>
+            <view class="publish-page__add-icon-vertical"></view>
+          </view>
         </view>
       </view>
+    </view>
+
+    <view
+      wx:if="{{dragPreviewPath}}"
+      class="publish-page__drag-preview {{dragPreviewSettling ? 'publish-page__drag-preview--settling' : ''}}"
+      style="width: {{dragPreviewWidth}}px; height: {{dragPreviewHeight}}px; transform: translate3d({{dragPreviewX}}px, {{dragPreviewY}}px, 0) scale(1.06);"
+      aria-hidden="true"
+    >
+      <image class="publish-page__drag-preview-image" src="{{dragPreviewPath}}" mode="aspectFill" />
     </view>
 
     <view class="publish-page__copy-area" bindtap="onCopyAreaTap">
