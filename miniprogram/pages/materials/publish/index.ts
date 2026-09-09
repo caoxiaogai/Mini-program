@@ -30,7 +30,6 @@ Page({
     canAddMedia: canAddPublishMedia(initialMedia),
     copy: '',
     copyFocused: false,
-    publishTypeSheetVisible: false,
     publishSourceSheetVisible: false,
     uploading: false,
   },
@@ -92,30 +91,18 @@ Page({
   },
   onAddMediaTap() {
     if (!this.data.canAddMedia) return
-    if (this.data.media.length === 0) {
-      this.setData({ publishTypeSheetVisible: true })
+    if (this.entryType === 'pdf') {
+      this.choosePdfFromChat()
+      return
+    }
+    if (this.entryType === 'video') {
+      this.pendingMediaType = 'video'
+      this.setData({ publishSourceSheetVisible: true })
       return
     }
 
     this.pendingMediaType = 'image'
-    this.entryType = 'image'
     this.setData({ publishSourceSheetVisible: true })
-  },
-  onPublishTypeSelect(event: WechatMiniprogram.CustomEvent<{ type: PublishEntryType }>) {
-    const type = event.detail.type
-    this.setData({ publishTypeSheetVisible: false }, () => {
-      this.entryType = type
-      if (type === 'pdf') {
-        this.choosePdfFromChat()
-        return
-      }
-      if (type !== 'image' && type !== 'video') return
-      this.pendingMediaType = type
-      this.setData({ publishSourceSheetVisible: true })
-    })
-  },
-  onPublishTypeCancel() {
-    this.setData({ publishTypeSheetVisible: false })
   },
   onPublishSourceSelect(event: WechatMiniprogram.CustomEvent<{ source: PublishMediaSource }>) {
     const source = event.detail.source
