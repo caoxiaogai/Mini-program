@@ -21,12 +21,18 @@ Component({
   },
   methods: {
     onCompactCloseTap() {
-      if (!this.data.compact || this.data.compactExpanded) return
-      this.setData({ compactExpanded: true })
+      if (this.data.compact) {
+        if (this.data.compactExpanded) return
+        this.setData({ compactExpanded: true })
+        return
+      }
+      this.triggerEvent('markallread')
     },
     onCompactMarkAllReadTap() {
-      if (!this.data.compact || !this.data.compactExpanded) return
-      this.setData({ compactExpanded: false })
+      if (this.data.compact) {
+        if (!this.data.compactExpanded) return
+        this.setData({ compactExpanded: false })
+      }
       this.triggerEvent('markallread')
     },
     onCompactDismissTap() {
