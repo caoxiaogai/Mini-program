@@ -18,7 +18,7 @@
 
       <view class="publish-success-modal__share-actions">
         <button
-          class="publish-success-modal__share-button publish-success-modal__share-button--secondary"
+          class="publish-success-modal__share-button publish-success-modal__share-button--primary"
           open-type="{{shareReady ? 'share' : ''}}"
           hover-class="publish-success-modal__share-button--pressed"
           hover-stay-time="80"
@@ -26,17 +26,6 @@
         >
           <text>分享给好友</text>
           <image class="publish-success-modal__share-icon" src="/assets/materials/detail-share.svg" mode="aspectFit" />
-        </button>
-        <button
-          class="publish-success-modal__share-button publish-success-modal__share-button--primary"
-          bindtap="onShareMomentsTap"
-          hover-class="publish-success-modal__share-button--pressed"
-          hover-stay-time="80"
-        >
-          <text>分享到朋友圈</text>
-          <view class="publish-success-modal__moments-icon-wrap">
-            <image class="publish-success-modal__moments-icon" src="/assets/materials/detail-moments.png" mode="aspectFit" />
-          </view>
         </button>
       </view>
     </view>

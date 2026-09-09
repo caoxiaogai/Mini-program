@@ -284,7 +284,6 @@
     share-ready="{{shareImageUrl ? true : false}}"
     share-image-url="{{shareImageUrl}}"
     bind:close="onPublishSuccessClose"
-    bind:sharemoments="onShareMomentsTap"
   />
 </view>
 </single-page-guard>

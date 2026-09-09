@@ -132,18 +132,8 @@ export function pickShareImageUrl(
   return thumbnail || undefined
 }
 
-export function enableMaterialShareMenu(): void {
+export function enableMaterialShareMenu(includeTimeline = false): void {
   wx.showShareMenu({
-    menus: ['shareAppMessage', 'shareTimeline'],
-  })
-}
-
-/** 平台不允许按钮直接分享小程序卡片到朋友圈，引导用户使用右上角菜单。 */
-export function showMomentsShareGuide(): void {
-  wx.showModal({
-    title: '分享到朋友圈',
-    content: '请点击右上角「···」，选择「分享到朋友圈」',
-    showCancel: false,
-    confirmText: '我知道了',
+    menus: includeTimeline ? ['shareAppMessage', 'shareTimeline'] : ['shareAppMessage'],
   })
 }

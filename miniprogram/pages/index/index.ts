@@ -18,7 +18,7 @@ import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTimelineQuery, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl } from '../../utils/share-material'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
 import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
@@ -1010,20 +1010,6 @@ Page({
       path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl,
     }
-  },
-  onShareTimeline() {
-    const imageUrl = pickShareImageUrl(this.data.shareImageUrl, this.data.materials?.items ?? [], this.data.shareMaterialId)
-    if (!this.data.shareMaterialId || !imageUrl) return
-
-    this.closePublishSuccessModalAfterShare()
-    return {
-      title: this.data.shareTitle || buildMaterialShareTitle([]),
-      query: buildMaterialShareTimelineQuery(this.data.shareMaterialId, this.data.shareTrackingId),
-      imageUrl,
-    }
-  },
-  onShareMomentsTap() {
-    showMomentsShareGuide()
   },
   onPlusTap() {
     this.setActiveTab(2)

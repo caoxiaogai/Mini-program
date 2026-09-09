@@ -4,7 +4,7 @@ import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } fro
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTimelineQuery, buildMaterialShareTitle, enableMaterialShareMenu, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, showMomentsShareGuide } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
@@ -432,19 +432,5 @@ Page({
       path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId),
       imageUrl,
     }
-  },
-  onShareTimeline() {
-    const imageUrl = pickShareImageUrl(this.data.shareImageUrl, this.data.visibleMaterials, this.data.shareMaterialId)
-    if (!this.data.shareMaterialId || !imageUrl) return
-
-    this.closePublishSuccessModalAfterShare()
-    return {
-      title: this.data.shareTitle || buildMaterialShareTitle([]),
-      query: buildMaterialShareTimelineQuery(this.data.shareMaterialId, this.data.shareTrackingId),
-      imageUrl,
-    }
-  },
-  onShareMomentsTap() {
-    showMomentsShareGuide()
   },
 })

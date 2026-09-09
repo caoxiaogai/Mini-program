@@ -213,7 +213,7 @@ Page({
   },
 
   onShow() {
-    enableMaterialShareMenu()
+    enableMaterialShareMenu(true)
     if (this.data.detail) this.refreshEngagement()
   },
 

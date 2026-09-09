@@ -18,6 +18,5 @@
     "single-page-guard": "/components/single-page-guard/index"
   },
   "disableScroll": true,
-  "enableShareAppMessage": true,
-  "enableShareTimeline": true
+  "enableShareAppMessage": true
 }

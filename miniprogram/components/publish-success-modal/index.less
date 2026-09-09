@@ -99,11 +99,6 @@
   display: none;
 }
 
-.publish-success-modal__share-button--secondary {
-  background: #ffffff;
-  color: #000000;
-}
-
 .publish-success-modal__share-button--primary {
   border: 0;
   background: @publish-success-accent;
@@ -115,31 +110,11 @@
   transform: scale(0.98);
 }
 
-.publish-success-modal__share-icon,
-.publish-success-modal__moments-icon-wrap {
+.publish-success-modal__share-icon {
+  display: block;
   width: 48rpx;
   height: 48rpx;
   flex: 0 0 48rpx;
-}
-
-.publish-success-modal__share-icon {
-  display: block;
-}
-
-.publish-success-modal__moments-icon-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8rpx;
-  border-radius: 26rpx;
-  background: #ffffff;
-  box-sizing: border-box;
-}
-
-.publish-success-modal__moments-icon {
-  display: block;
-  width: 36rpx;
-  height: 36rpx;
 }
 
 @keyframes publish-success-overlay-enter {
