@@ -23,7 +23,7 @@
       hover-stay-time="80"
     >
       <block wx:if="{{showPremiumCard}}">
-        <image class="home-profile__membership-premium-background" src="/assets/profile/membership-premium-card.png" mode="scaleToFill" aria-hidden="true" />
+        <image class="home-profile__membership-premium-background" src="/assets/profile/membership-premium-background.svg" mode="scaleToFill" aria-hidden="true" />
         <view class="home-profile__membership-premium-copy">
           <view class="home-profile__membership-premium-header">
             <text class="home-profile__membership-premium-title">尊享会员</text>
@@ -36,7 +36,7 @@
         </view>
       </block>
       <block wx:elif="{{showStandardCard}}">
-        <image class="home-profile__membership-active-background" src="/assets/profile/membership-card-active.svg" mode="scaleToFill" aria-hidden="true" />
+        <image class="home-profile__membership-active-background" src="/assets/profile/membership-standard-background.svg" mode="scaleToFill" aria-hidden="true" />
         <view class="home-profile__membership-active-copy">
           <view class="home-profile__membership-active-header">
             <text class="home-profile__membership-active-title">标准会员</text>
@@ -44,7 +44,7 @@
           </view>
           <view class="home-profile__membership-active-upgrade">
             <text>升级尊享会员，畅享无限人数追踪</text>
-            <image class="home-profile__membership-active-arrow" src="/assets/profile/membership-card-arrow.svg" mode="aspectFit" aria-hidden="true" />
+            <image class="home-profile__membership-active-arrow" src="/assets/profile/membership-inactive-arrow.svg" mode="aspectFit" aria-hidden="true" />
           </view>
           <view class="home-profile__membership-active-tracking">
             <view class="home-profile__membership-active-tracking-label">
@@ -62,21 +62,19 @@
         </view>
       </block>
       <block wx:else>
-        <image class="home-profile__membership-outer" src="/assets/profile/membership-card-outer.svg" mode="scaleToFill" aria-hidden="true" />
-        <view class="home-profile__membership-card">
-          <image class="home-profile__membership-mask" src="/assets/profile/membership-card-mask.svg" mode="scaleToFill" aria-hidden="true" />
-          <image class="home-profile__membership-rings" src="/assets/profile/membership-card-rings.svg" mode="scaleToFill" aria-hidden="true" />
-          <image class="home-profile__membership-crown" src="/assets/profile/membership-card-crown.svg" mode="aspectFit" aria-hidden="true" />
-          <view class="home-profile__membership-copy">
-            <view class="home-profile__membership-text">
-              <text class="home-profile__membership-title">解锁言界阿乐会员</text>
-              <view class="home-profile__membership-subtitle">
-                <text wx:for="{{inactiveSubtitleChars}}" wx:key="id" class="home-profile__membership-subtitle-char" style="color: {{item.color}}">{{item.char}}</text>
-              </view>
+        <view class="home-profile__membership-inactive">
+          <image class="home-profile__membership-inactive-background" src="/assets/profile/membership-inactive-background.svg" mode="scaleToFill" aria-hidden="true" />
+          <image class="home-profile__membership-inactive-rings" src="/assets/profile/membership-inactive-rings.svg" mode="scaleToFill" aria-hidden="true" />
+          <image class="home-profile__membership-inactive-border" src="/assets/profile/membership-inactive-border.svg" mode="scaleToFill" aria-hidden="true" />
+          <view class="home-profile__membership-inactive-copy">
+            <image class="home-profile__membership-inactive-crown" src="/assets/profile/membership-inactive-crown.png" mode="aspectFit" aria-hidden="true" />
+            <view class="home-profile__membership-inactive-text">
+              <text class="home-profile__membership-inactive-title">解锁言界阿乐会员</text>
+              <text class="home-profile__membership-inactive-subtitle">专属分析功能，不漏掉任何潜在用户</text>
             </view>
-            <view class="home-profile__membership-action">
+            <view class="home-profile__membership-inactive-action">
               <text>开通会员</text>
-              <image class="home-profile__membership-arrow" src="/assets/profile/membership-card-arrow.svg" mode="aspectFit" aria-hidden="true" />
+              <image class="home-profile__membership-inactive-arrow" src="/assets/profile/membership-inactive-arrow.svg" mode="aspectFit" aria-hidden="true" />
             </view>
           </view>
         </view>

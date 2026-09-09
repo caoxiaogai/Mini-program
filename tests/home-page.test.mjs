@@ -840,7 +840,7 @@ test('profile pending module centers the Figma 902:12850 content group', () => {
   assert.match(component, /class="home-profile__pending" data-node-id="902:12850"/)
   assert.match(styles, /.home-profile__pending \{[\s\S]*width: 252rpx;[\s\S]*align-items: center;/)
   assert.match(styles, /.home-profile__pending \{[\s\S]*margin: 34rpx auto 0;/)
-  assert.match(styles, /.home-profile__pending-button \{[\s\S]*padding: 0 48rpx;[\s\S]*border-radius: 84rpx;/)
+  assert.match(styles, /.home-profile__pending-button \{[\s\S]*padding: 0 48rpx;[\s\S]*border-radius: 84rpx;[\s\S]*background: #ff8901;/)
 })
 
 test('profile page does not frost real content with a locked overlay', () => {
@@ -1011,45 +1011,47 @@ test('home renders the Figma 1055:2593 hidden-visitor prompt inside interaction 
   assert.match(read('miniprogram/pages/index/index.ts'), /onHomeMembershipLimitTap\(\) \{[\s\S]*limitPromptTargetTier/)
 })
 
-test('profile membership card uses the original Figma 911:13452 vector layers', () => {
+test('inactive membership card uses the Figma 1256:5031 compact orange design', () => {
   const markup = read('miniprogram/components/home-profile/index.wxml')
   const styles = read('miniprogram/components/home-profile/index.less')
 
-  assert.match(markup, /membership-card-outer\.svg/)
-  assert.match(markup, /membership-card-mask\.svg/)
-  assert.match(markup, /membership-card-rings\.svg/)
-  assert.match(markup, /membership-card-crown\.svg/)
-  assert.match(markup, /membership-card-arrow\.svg/)
-  assert.doesNotMatch(markup, /src="\/assets\/profile\/membership-(base|outline|rings|crown|chevron)\.svg"/)
-  assert.match(styles, /\.home-profile__membership\s*\{[\s\S]*?z-index: 4;[\s\S]*?height: 190rpx;[\s\S]*?margin-top: 40rpx;[\s\S]*?overflow: hidden;/)
-  assert.match(styles, /\.home-profile__membership--inactive\s*\{[\s\S]*?margin-top: 88rpx;/)
-  assert.match(styles, /\.home-profile__membership-outer\s*\{[\s\S]*?top: 20rpx;[\s\S]*?transform: rotate\(-6\.5deg\);[\s\S]*?transform-origin: right center;/)
-  assert.match(styles, /\.home-profile__membership-card\s*\{[\s\S]*?top: 54rpx;[\s\S]*?height: 136rpx;/)
-  assert.match(markup, /inactiveSubtitleChars/)
-  assert.match(read('miniprogram/components/home-profile/index.ts'), /专属分析功能，不漏掉任何潜在用户/)
-  assert.match(read('miniprogram/components/home-profile/index.ts'), /255, 235, 176/)
-  assert.match(read('miniprogram/components/home-profile/index.ts'), /234, 131, 255/)
-  assert.match(read('miniprogram/components/home-profile/index.ts'), /24, 158, 145/)
-  assert.doesNotMatch(styles, /\.home-profile__membership-subtitle\s*\{[\s\S]*?background-clip:\s*text/)
+  assert.match(markup, /class="home-profile__membership-inactive"/)
+  assert.match(markup, /membership-inactive-background\.svg/)
+  assert.match(markup, /membership-inactive-rings\.svg/)
+  assert.match(markup, /membership-inactive-crown\.png/)
+  assert.match(markup, /membership-inactive-arrow\.svg/)
+  assert.doesNotMatch(markup, /membership-card-outer\.svg/)
+  assert.doesNotMatch(markup, /membership-card-mask\.svg/)
+  assert.match(styles, /\.home-profile__membership--inactive\s*\{[^}]*height: 136rpx;[^}]*margin-top: 40rpx;/)
+  assert.match(styles, /\.home-profile__membership-inactive\s*\{[^}]*height: 136rpx;[^}]*border-radius: 24rpx;/)
+  assert.match(styles, /\.home-profile__membership-inactive-title\s*\{[^}]*color: #8b4a26;[^}]*font-size: 26rpx;/)
+  assert.match(styles, /\.home-profile__membership-inactive-subtitle\s*\{[^}]*color: #b77a32;[^}]*font-size: 22rpx;/)
 })
 
-test('profile uses Figma 949:2541 for the standard membership card', () => {
+test('profile uses Figma 1256:5977 for the standard membership card', () => {
   const markup = read('miniprogram/components/home-profile/index.wxml')
   const styles = read('miniprogram/components/home-profile/index.less')
   const profileType = read('miniprogram/types/profile.ts')
   const service = read('miniprogram/services/profile.ts')
 
   assert.match(markup, /wx:elif="{{showStandardCard}}"/)
-  assert.match(markup, /membership-card-active\.svg/)
-  assert.equal(existsSync(new URL('../miniprogram/assets/profile/membership-card-active.svg', import.meta.url)), true)
+  assert.match(markup, /membership-standard-background\.svg/)
+  assert.equal(existsSync(new URL('../miniprogram/assets/profile/membership-standard-background.svg', import.meta.url)), true)
+  assert.match(markup, /membership-inactive-arrow\.svg/)
   assert.match(markup, /标准会员/)
   assert.match(markup, /{{profile\.membership\.expireLabel}} 到期/)
   assert.match(markup, /升级尊享会员，畅享无限人数追踪/)
   assert.match(markup, /剩余追踪人数|trackingSegments/)
   assert.match(styles, /\.home-profile__membership--active\s*\{[\s\S]*?height: 320rpx;/)
   assert.match(styles, /\.home-profile__membership-active-copy\s*\{[\s\S]*?top: 40rpx;[\s\S]*?bottom: 40rpx;[\s\S]*?left: 40rpx;/)
-  assert.match(styles, /\.home-profile__membership-active-title\s*\{[\s\S]*?font-size: 44rpx;/)
+  assert.match(styles, /\.home-profile__membership-active-title\s*\{[\s\S]*?color: transparent;[\s\S]*?background: linear-gradient\(90deg, #d76e36 0%, #aa5018 100%\);[\s\S]*?font-size: 44rpx;/)
+  assert.match(styles, /\.home-profile__membership-active-expire\s*\{[\s\S]*?color: #8b4a26;/)
+  assert.match(styles, /\.home-profile__membership-active-upgrade\s*\{[\s\S]*?gap: 12rpx;[\s\S]*?color: #8b4a26;/)
+  assert.match(styles, /\.home-profile__membership-active-tracking-label\s*\{[\s\S]*?color: #8b4a26;/)
+  assert.match(styles, /\.home-profile__membership-active-tracking-label text:last-child\s*\{[\s\S]*?color: #8b4a26;/)
   assert.match(styles, /\.home-profile__membership-active-progress\s*\{[\s\S]*?gap: 4rpx;/)
+  assert.match(styles, /\.home-profile__membership-active-segment\s*\{[\s\S]*?background: #ffffff;/)
+  assert.match(styles, /\.home-profile__membership-active-segment--active\s*\{[\s\S]*?background: #8b4a26;/)
   assert.match(profileType, /interface ProfileMembershipViewModel/)
   assert.match(profileType, /cardKind: ProfileMembershipCardKind/)
   assert.match(profileType, /isPremium: boolean/)
@@ -1059,26 +1061,51 @@ test('profile uses Figma 949:2541 for the standard membership card', () => {
   assert.match(service, /isPremium/)
 })
 
-test('profile uses Figma 953:4412 for the premium membership card', () => {
+test('profile membership cards map GET /membership/me instead of a local preview', () => {
+  const profileService = read('miniprogram/services/profile.ts')
+  const membershipService = read('miniprogram/services/membership.ts')
+  const markup = read('miniprogram/components/home-profile/index.wxml')
+
+  assert.match(membershipService, /path: '\/membership\/me'/)
+  assert.match(profileService, /getMembershipStatusSilent/)
+  assert.match(profileService, /membership: mapProfileMembership\(membership\)/)
+  assert.match(profileService, /usedVisitorCount/)
+  assert.match(profileService, /visitorLimit/)
+  assert.match(profileService, /expireLabel/)
+  assert.doesNotMatch(profileService, /DEVTOOLS_PROFILE_MEMBERSHIP_CARD/)
+  assert.doesNotMatch(profileService, /getDevtoolsProfileMembershipPreview/)
+  assert.match(markup, /profile\.membership\.expireLabel/)
+  assert.match(markup, /profile\.membership\.trackingLabel/)
+  assert.match(markup, /profile\.membership\.trackingSegments/)
+})
+
+test('profile uses Figma 1257:6281 for the premium membership card', () => {
   const markup = read('miniprogram/components/home-profile/index.wxml')
   const styles = read('miniprogram/components/home-profile/index.less')
   const service = read('miniprogram/services/profile.ts')
 
   assert.match(markup, /wx:if="{{showPremiumCard}}"/)
-  assert.match(markup, /membership-premium-card\.png/)
-  assert.equal(existsSync(new URL('../miniprogram/assets/profile/membership-premium-card.png', import.meta.url)), true)
+  assert.match(markup, /membership-premium-background\.svg/)
+  assert.equal(existsSync(new URL('../miniprogram/assets/profile/membership-premium-background.svg', import.meta.url)), true)
   assert.match(read('miniprogram/components/home-profile/index.ts'), /showPremiumCard/)
   assert.match(markup, /尊享会员/)
   assert.match(markup, /你是尊贵的尊享会员，享无限追踪人数/)
   assert.match(markup, /class="home-profile__membership-premium-renew"/)
-  assert.match(styles, /\.home-profile__membership-premium-title\s*\{[\s\S]*?#ffa283/)
-  assert.match(styles, /\.home-profile__membership-premium-renew\s*\{[\s\S]*?#d16100/)
+  assert.match(styles, /\.home-profile__membership-premium-title\s*\{[\s\S]*?color: transparent;[\s\S]*?background: linear-gradient\(90deg, #f89432 0%, #c6561f 46\.368%, #ff9b0a 96\.591%\);/)
+  assert.match(styles, /\.home-profile__membership-premium-expire\s*\{[\s\S]*?color: #9e6c56;/)
+  assert.match(styles, /\.home-profile__membership-premium-subtitle\s*\{[\s\S]*?color: #9e6c56;/)
+  assert.match(styles, /\.home-profile__membership-premium-renew\s*\{[\s\S]*?border: 2rpx solid #dab26f;[\s\S]*?background: linear-gradient\(180deg, #f1ad30 0%, #feefd5 100%\);[\s\S]*?color: #481d0d;/)
   assert.match(service, /'premium'/)
 })
 
 test('profile feature list follows Figma 917:13737', () => {
   const markup = read('miniprogram/components/home-profile/index.wxml')
   const styles = read('miniprogram/components/home-profile/index.less')
+  const featureIcons = [
+    'miniprogram/assets/profile/profile-list-wallet.svg',
+    'miniprogram/assets/profile/profile-list-collect.svg',
+    'miniprogram/assets/profile/profile-list-other.svg',
+  ].map(read)
 
   assert.match(markup, /profile-list-wallet\.svg/)
   assert.match(markup, /profile-list-collect\.svg/)
@@ -1090,6 +1117,10 @@ test('profile feature list follows Figma 917:13737', () => {
   assert.match(styles, /\.home-profile__feature\s*\{[\s\S]*?height: 40rpx;[\s\S]*?font-size: 26rpx;/)
   assert.match(styles, /\.home-profile__feature-leading\s*\{[\s\S]*?gap: 20rpx;/)
   assert.doesNotMatch(styles, /home-profile__features::after|filter: blur\(1\.5rpx\)/)
+  featureIcons.forEach((icon) => {
+    assert.match(icon, /stroke="#FF8901"/)
+    assert.doesNotMatch(icon, /#00B7E6/)
+  })
 })
 
 test('profile feature mask begins directly below the membership card', () => {
@@ -3141,7 +3172,9 @@ test('owner material detail uses the confirmed action bar while visitor actions 
   assert.match(markup, /detail-forward\.svg[\s\S]*detail-like\.svg[\s\S]*detail-comment\.svg/)
   assert.match(styles, /\.material-detail-engage__owner-actions\s*\{[^}]*display: flex;[^}]*margin-right: auto;/)
   assert.match(styles, /\.material-detail-engage__actions\s*\{[^}]*gap: 40rpx;/)
-  assert.match(styles, /\.material-detail-engage--owner\s*\{[^}]*padding: 20rpx 40rpx 48rpx;/)
+  assert.match(styles, /\.material-detail-engage--owner,\s*\.material-detail-engage--visitor\s*\{[^}]*padding: 10px 40rpx 48rpx;/)
+  assert.match(styles, /\.material-detail-engage__action,\s*\.material-detail-engage__more\s*\{[^}]*padding: 0;/)
+  assert.match(styles, /\.material-detail-engage__share\s*\{[^}]*padding: 0;/)
   assert.match(styles, /\.material-detail-engage--owner \.material-detail-engage__share\s*\{[^}]*font-weight: 400;/)
   assert.match(styles, /(?:^|\n)\.material-detail-engage__count\s*\{[^}]*color: #000000;[^}]*font-size: 22rpx;[^}]*font-weight: 400;[^}]*line-height: 28rpx;/)
   assert.doesNotMatch(styles, /\.material-detail-engage--owner \.material-detail-engage__count/)
@@ -3172,7 +3205,7 @@ test('visitor material detail opens the existing comment sheet from the Figma co
   assert.match(markup, /material-detail-comments__composer" catchtap="onCommentComposerTap"/)
   assert.match(logic, /onCommentDismissKeyboard\(\) \{\s*wx\.hideKeyboard\(\)/)
   assert.match(logic, /onCloseCommentSheet\(\) \{\s*wx\.hideKeyboard\(\)/)
-  assert.match(styles, /\.material-detail-engage--visitor\s*\{[^}]*padding: 20rpx 40rpx 48rpx;/)
+  assert.match(styles, /\.material-detail-engage--owner,\s*\.material-detail-engage--visitor\s*\{[^}]*padding: 10px 40rpx 48rpx;/)
   assert.match(styles, /\.material-detail-engage--visitor \.material-detail-engage__comment-entry\s*\{[^}]*width: 360rpx;[^}]*height: 64rpx;[^}]*background: #f0f0f0;/)
   assert.equal(existsSync(new URL('../miniprogram/assets/materials/detail-visitor-comment-entry.svg', import.meta.url)), true)
 })
