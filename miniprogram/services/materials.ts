@@ -26,6 +26,7 @@ import {
   serializeNoteContent,
   toNoteDisplayBlocks,
 } from '../utils/note'
+import { isMaterialDeletedError } from '../utils/material-deleted'
 import { prepareShareCardImage } from '../utils/share-image'
 import { buildMaterialShareTitle, isSinglePageMode } from '../utils/share-material'
 import { prepareDocumentPageImage } from './document'
@@ -336,10 +337,10 @@ export function getMaterialDetail(
     })
 }
 
-/** 分享前置页用的列表预览图；未登录访客也可读取封面。 */
-export function getMaterialListPreview(materialId: string): Promise<string> {
+/** 分享前置页用的列表预览图；未登录访客也可读取封面，并区分作品是否已删除。 */
+export function getMaterialListPreview(materialId: string): Promise<{ url: string; deleted: boolean }> {
   const id = materialId.trim()
-  if (!id) return Promise.resolve('')
+  if (!id) return Promise.resolve({ url: '', deleted: false })
 
   return request<ApiMaterial>({
     method: 'GET',
@@ -348,7 +349,11 @@ export function getMaterialListPreview(materialId: string): Promise<string> {
     skipAuth: true,
   })
     .then((material) => prepareMaterialThumbnail(material))
-    .catch(() => '')
+    .then((url) => ({ url, deleted: false }))
+    .catch((error) => ({
+      url: '',
+      deleted: isMaterialDeletedError(error),
+    }))
 }
 
 /** 分享卡片用的标题和预览图，与详情页分享同一数据来源。 */

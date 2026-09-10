@@ -23,6 +23,13 @@ export function shareGateHeroArt(materialId?: string, coverUrl?: string): { artS
   }
 }
 
+/** 确认作品已删除后改回默认气泡图；有封面才换成作品图。 */
+export function shareGateArtFromPreview(preview: { url: string; deleted: boolean }): { artSrc: string; artFromWork: boolean } | null {
+  if (preview.deleted) return { artSrc: SHARE_GATE_DEFAULT_ART, artFromWork: false }
+  if (preview.url) return { artSrc: preview.url, artFromWork: true }
+  return null
+}
+
 const MATERIAL_ID_QUERY_KEY = 'id'
 const MATERIAL_OWNER_QUERY_KEY = 'owner'
 const DEFAULT_SHARE_TITLE = '图文素材'

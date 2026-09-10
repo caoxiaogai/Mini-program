@@ -16,6 +16,7 @@ function loadShareGatePage(auth, destinations, session = { completed: false }, p
     'HOME_PAGE_PATH',
     'SHARE_GATE_DEFAULT_ART',
     'shareGateHeroArt',
+    'shareGateArtFromPreview',
     'safeReturnPath',
     'hasCompletedLogin',
     'resolveAuthGate',
@@ -45,13 +46,20 @@ function loadShareGatePage(auth, destinations, session = { completed: false }, p
         artFromWork: false,
       }
     },
+    (preview) => {
+      if (preview.deleted) {
+        return { artSrc: '/assets/share-gate/default-background.png', artFromWork: false }
+      }
+      if (preview.url) return { artSrc: preview.url, artFromWork: true }
+      return null
+    },
     auth.safeReturnPath,
     () => session.completed,
     () => Promise.resolve(session.completed ? 'ok' : 'login'),
     (url) => destinations.push(url),
     (id) => {
       preview.requestedId = id
-      return Promise.resolve(preview.url)
+      return Promise.resolve({ url: preview.url, deleted: Boolean(preview.deleted) })
     },
   )
   return page
@@ -96,7 +104,38 @@ test('shared cover query shows the work image before the preview request', async
   assert.equal(page.data.artSrc, 'https://cdn.example/cover.jpg')
   assert.equal(page.data.artFromWork, true)
   await Promise.resolve()
-  assert.equal(preview.requestedId, '')
+  await Promise.resolve()
+  assert.equal(preview.requestedId, 'work-1')
+  assert.equal(page.data.artSrc, 'https://cdn.example/thumb.jpg')
+  assert.equal(page.data.artFromWork, true)
+})
+
+test('deleted work shows the default share-gate art even with a cover query', async () => {
+  const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
+  const preview = { url: '', requestedId: '', deleted: true }
+  const page = loadShareGatePage(auth, [], { completed: false }, preview)
+  page.onLoad({ id: 'work-1', cover: 'https://cdn.example/cover.jpg' })
+  assert.equal(page.data.artSrc, 'https://cdn.example/cover.jpg')
+  assert.equal(page.data.artFromWork, true)
+  await Promise.resolve()
+  await Promise.resolve()
+  assert.equal(preview.requestedId, 'work-1')
+  assert.equal(page.data.artSrc, '/assets/share-gate/default-background.png')
+  assert.equal(page.data.artFromWork, false)
+})
+
+test('deleted work without a cover query shows the default share-gate art', async () => {
+  const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
+  const preview = { url: '', requestedId: '', deleted: true }
+  const page = loadShareGatePage(auth, [], { completed: false }, preview)
+  page.onLoad({ id: 'work-1' })
+  assert.equal(page.data.artSrc, '')
+  assert.equal(page.data.artFromWork, false)
+  await Promise.resolve()
+  await Promise.resolve()
+  assert.equal(preview.requestedId, 'work-1')
+  assert.equal(page.data.artSrc, '/assets/share-gate/default-background.png')
+  assert.equal(page.data.artFromWork, false)
 })
 
 test('shared work replaces the default share-gate art with the list thumbnail', async () => {

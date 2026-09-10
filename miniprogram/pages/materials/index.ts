@@ -4,7 +4,7 @@ import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } fro
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateHeroArt } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
@@ -113,10 +113,14 @@ Page({
       shareGateArtSrc: art.artSrc,
       shareGateArtFromWork: art.artFromWork,
     })
-    if (!materialId || art.artFromWork) return
-    getMaterialListPreview(materialId).then((url) => {
-      if (!url) return
-      this.setData({ shareGateArtSrc: url, shareGateArtFromWork: true })
+    if (!materialId) return
+    getMaterialListPreview(materialId).then((preview) => {
+      const next = shareGateArtFromPreview(preview)
+      if (!next) return
+      this.setData({
+        shareGateArtSrc: next.artSrc,
+        shareGateArtFromWork: next.artFromWork,
+      })
     })
   },
   startMaterials(options: Record<string, string | undefined>) {

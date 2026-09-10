@@ -18,7 +18,7 @@ import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis
 import { takeMaterialsListNeedsRefresh, takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateHeroArt } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
 import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
@@ -201,10 +201,14 @@ Page({
       shareGateArtSrc: art.artSrc,
       shareGateArtFromWork: art.artFromWork,
     })
-    if (!materialId || art.artFromWork) return
-    getMaterialListPreview(materialId).then((url) => {
-      if (!url) return
-      this.setData({ shareGateArtSrc: url, shareGateArtFromWork: true })
+    if (!materialId) return
+    getMaterialListPreview(materialId).then((preview) => {
+      const next = shareGateArtFromPreview(preview)
+      if (!next) return
+      this.setData({
+        shareGateArtSrc: next.artSrc,
+        shareGateArtFromWork: next.artFromWork,
+      })
     })
   },
   startHome(options: Record<string, string | undefined>) {

@@ -1,7 +1,7 @@
 import { continueAfterAuth, hasCompletedLogin } from '../../services/auth'
 import { getMaterialListPreview } from '../../services/materials'
 import { buildAuthPath, safeReturnPath } from '../../utils/auth'
-import { buildMaterialDetailPath, HOME_PAGE_PATH, SHARE_GATE_DEFAULT_ART, shareGateHeroArt } from '../../utils/share-material'
+import { buildMaterialDetailPath, HOME_PAGE_PATH, SHARE_GATE_DEFAULT_ART, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
 
 const friendAvatars = [
   '/assets/ranking/avatar-01.png',
@@ -33,7 +33,7 @@ Page({
     if (this.leaveIfLoggedIn()) return
     const art = shareGateHeroArt(this.materialId, this.coverUrl)
     this.setData({ ready: true, ...art })
-    if (!art.artFromWork) this.loadWorkPreview()
+    this.loadWorkPreview()
   },
 
   destinationPath() {
@@ -44,9 +44,10 @@ Page({
 
   loadWorkPreview() {
     if (!this.materialId) return
-    getMaterialListPreview(this.materialId).then((url) => {
-      if (!url) return
-      this.setData({ artSrc: url, artFromWork: true })
+    getMaterialListPreview(this.materialId).then((preview) => {
+      const art = shareGateArtFromPreview(preview)
+      if (!art) return
+      this.setData(art)
     })
   },
 

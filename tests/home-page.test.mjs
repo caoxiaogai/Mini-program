@@ -3061,6 +3061,7 @@ test('shared material opens the authorization gate before the detail page', asyn
     buildMaterialShareQuery,
     buildMaterialShareTimelineQuery,
     shareGateHeroArt,
+    shareGateArtFromPreview,
     HOME_PAGE_PATH,
     MATERIAL_DETAIL_PATH,
   } = await import('../miniprogram/utils/share-material.ts')
@@ -3088,6 +3089,15 @@ test('shared material opens the authorization gate before the detail page', asyn
     artSrc: 'https://cdn.example/cover.jpg',
     artFromWork: true,
   })
+  assert.deepEqual(shareGateArtFromPreview({ url: '', deleted: true }), {
+    artSrc: '/assets/share-gate/default-background.png',
+    artFromWork: false,
+  })
+  assert.deepEqual(shareGateArtFromPreview({ url: 'https://cdn.example/thumb.jpg', deleted: false }), {
+    artSrc: 'https://cdn.example/thumb.jpg',
+    artFromWork: true,
+  })
+  assert.equal(shareGateArtFromPreview({ url: '', deleted: false }), null)
   assert.doesNotMatch(buildMaterialShareTimelineQuery('abc', 't1'), /entry=share-gate/)
   assert.notEqual(buildMaterialSharePath('abc', 't1'), buildMaterialDetailPath('abc', 't1'))
   assert.match(shareUtil, /completedLogin\s*\?[\s\S]*buildMaterialDetailPath[\s\S]*buildMaterialShareGatePath/)
@@ -4803,9 +4813,15 @@ test('share gate hero removes legal copy and keeps the primary content 32px abov
   assert.ok(existsSync(new URL(`../${defaultBackgroundPath}`, import.meta.url)))
   assert.deepEqual(getPngDimensions(defaultBackgroundPath), { width: 1179, height: 2556 })
   assert.match(read('miniprogram/pages/share-gate/index.ts'), /shareGateHeroArt\(this\.materialId, this\.coverUrl\)/)
+  assert.match(read('miniprogram/pages/share-gate/index.ts'), /shareGateArtFromPreview/)
   assert.match(read('miniprogram/pages/material-detail/index.ts'), /shareGateHeroArt\(materialId, coverUrl\)/)
+  assert.match(read('miniprogram/pages/material-detail/index.ts'), /shareGateArtFromPreview/)
+  assert.match(read('miniprogram/pages/index/index.ts'), /shareGateArtFromPreview/)
+  assert.match(read('miniprogram/pages/materials/index.ts'), /shareGateArtFromPreview/)
   assert.match(read('miniprogram/utils/share-material.ts'), /if \(cover\) return \{ artSrc: cover, artFromWork: true \}/)
+  assert.match(read('miniprogram/utils/share-material.ts'), /if \(preview.deleted\) return \{ artSrc: SHARE_GATE_DEFAULT_ART, artFromWork: false \}/)
   assert.match(read('miniprogram/services/materials.ts'), /export function getMaterialListPreview/)
+  assert.match(read('miniprogram/services/materials.ts'), /deleted: isMaterialDeletedError\(error\)/)
   assert.match(read('miniprogram/services/materials.ts'), /skipAuth: true/)
 })
 

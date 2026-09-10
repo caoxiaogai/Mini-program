@@ -23,6 +23,7 @@ import {
   isSinglePageMode,
   MATERIAL_DETAIL_PATH,
   openSharedMaterial,
+  shareGateArtFromPreview,
   shareGateHeroArt,
 } from '../../utils/share-material'
 
@@ -140,10 +141,14 @@ Page({
       shareGateArtSrc: art.artSrc,
       shareGateArtFromWork: art.artFromWork,
     })
-    if (!materialId || art.artFromWork) return
-    getMaterialListPreview(materialId).then((url) => {
-      if (!url) return
-      this.setData({ shareGateArtSrc: url, shareGateArtFromWork: true })
+    if (!materialId) return
+    getMaterialListPreview(materialId).then((preview) => {
+      const next = shareGateArtFromPreview(preview)
+      if (!next) return
+      this.setData({
+        shareGateArtSrc: next.artSrc,
+        shareGateArtFromWork: next.artFromWork,
+      })
     })
   },
   startDetail(options: Record<string, string | undefined>) {
