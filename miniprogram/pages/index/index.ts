@@ -166,7 +166,7 @@ Page({
     pullRefreshing: false,
     singlePageMode: isSinglePageMode(),
     singlePageGateVisible: false,
-    shareGateArtSrc: '/assets/share-gate/group-98.svg',
+    shareGateArtSrc: '/assets/share-gate/default-background.png',
     shareGateArtFromWork: false,
   },
   onLoad(options: Record<string, string | undefined>) {
@@ -197,7 +197,7 @@ Page({
   showSinglePageShareGate(materialId?: string) {
     this.setData({
       singlePageGateVisible: true,
-      shareGateArtSrc: '/assets/share-gate/group-98.svg',
+      shareGateArtSrc: '/assets/share-gate/default-background.png',
       shareGateArtFromWork: false,
     })
     if (!materialId) return
