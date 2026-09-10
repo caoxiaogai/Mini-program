@@ -20,21 +20,43 @@ export function takePendingPublishReturn(): PendingPublishReturn | null {
   return pending
 }
 
-const MATERIALS_RETURN_ROUTES = new Set(['pages/index/index', 'pages/materials/index'])
+let materialDetailNeedsRefresh = false
+let materialsListNeedsRefresh = false
 
-/** 从发布页回到素材列表：二次编辑时栈上还有详情页，需要一次越过。 */
-export function getMaterialsReturnDelta(routes: string[]): number {
-  for (let index = routes.length - 2; index >= 0; index -= 1) {
-    if (MATERIALS_RETURN_ROUTES.has(routes[index] ?? '')) {
-      return routes.length - 1 - index
-    }
-  }
-  return 1
+export function markMaterialDetailNeedsRefresh(): void {
+  materialDetailNeedsRefresh = true
+}
+
+export function takeMaterialDetailNeedsRefresh(): boolean {
+  const needsRefresh = materialDetailNeedsRefresh
+  materialDetailNeedsRefresh = false
+  return needsRefresh
+}
+
+export function markMaterialsListNeedsRefresh(): void {
+  materialsListNeedsRefresh = true
+}
+
+export function takeMaterialsListNeedsRefresh(): boolean {
+  const needsRefresh = materialsListNeedsRefresh
+  materialsListNeedsRefresh = false
+  return needsRefresh
+}
+
+function refreshStackedMaterialsLists(): void {
+  getCurrentPages().forEach((page) => {
+    const route = page.route ?? ''
+    if (route !== 'pages/index/index' && route !== 'pages/materials/index') return
+    const loadMaterials = (page as { loadMaterials?: () => void }).loadMaterials
+    if (typeof loadMaterials === 'function') loadMaterials.call(page)
+  })
 }
 
 /** 创建成功后打开作品详情，替换发布页，避免再回到列表。 */
 export function openCreatedMaterial(result: PendingPublishReturn): void {
   setPendingPublishReturn(result)
+  markMaterialsListNeedsRefresh()
+  refreshStackedMaterialsLists()
   const url = buildMaterialDetailPath(result.materialId, undefined, true)
   wx.redirectTo({
     url,
@@ -44,19 +66,23 @@ export function openCreatedMaterial(result: PendingPublishReturn): void {
   })
 }
 
-/** 存草稿后回到原来的素材列表，避免再 push 一层首页。 */
-export function returnToMaterialsList(result: PendingPublishReturn): void {
-  setPendingPublishReturn(result)
+/** 修改已有作品后回到详情并刷新，不再新建一层详情。 */
+export function returnToEditedMaterial(materialId: string): void {
+  markMaterialDetailNeedsRefresh()
+  markMaterialsListNeedsRefresh()
+  refreshStackedMaterialsLists()
   const pages = getCurrentPages()
-  if (pages.length > 1) {
-    wx.navigateBack({
-      delta: getMaterialsReturnDelta(pages.map((page) => page.route ?? '')),
-    })
+  const previous = pages[pages.length - 2]
+  if (pages.length > 1 && previous?.route === 'pages/material-detail/index') {
+    wx.navigateBack()
     return
   }
 
-  const params = ['tab=materials']
-  if (result.showSuccessModal) params.push('publishSuccess=1')
-  if (result.materialId) params.push(`id=${encodeURIComponent(result.materialId)}`)
-  wx.reLaunch({ url: `/pages/index/index?${params.join('&')}` })
+  const url = buildMaterialDetailPath(materialId, undefined, true)
+  wx.redirectTo({
+    url,
+    fail: () => {
+      wx.reLaunch({ url })
+    },
+  })
 }

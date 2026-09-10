@@ -89,14 +89,11 @@
   </view>
 
   <view class="publish-page__actions">
-    <view class="publish-page__draft-button" bindtap="onDraftTap" hover-class="publish-page__button--pressed" hover-stay-time="80">
-      <text>存草稿</text>
-    </view>
     <view class="publish-page__publish-button" bindtap="onPublishTap" hover-class="publish-page__button--pressed" hover-stay-time="80">
-      <text>创建</text>
+      <text>{{submitLabel}}</text>
     </view>
   </view>
 
   <publish-type-sheet kind="source" visible="{{publishSourceSheetVisible}}" bind:select="onPublishSourceSelect" bind:cancel="onPublishSourceCancel" />
-  <upload-loading visible="{{uploading}}" />
+  <upload-loading visible="{{uploading}}" text="{{submitLabel}}中" />
 </view>

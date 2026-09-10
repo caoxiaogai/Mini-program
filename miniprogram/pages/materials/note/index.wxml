@@ -152,11 +152,8 @@
     </view>
 
     <view wx:if="{{showActions}}" class="note-page__actions">
-      <view class="note-page__draft-button" bindtap="onDraftTap" hover-class="note-page__button--pressed" hover-stay-time="80">
-        <text>存草稿</text>
-      </view>
       <view class="note-page__publish-button" bindtap="onPublishTap" hover-class="note-page__button--pressed" hover-stay-time="80">
-        <text>创建</text>
+        <text>{{submitLabel}}</text>
       </view>
     </view>
   </view>
@@ -167,5 +164,5 @@
     poster="{{videoPlayerPoster}}"
     bind:close="onCloseVideoPlayer"
   />
-  <upload-loading visible="{{uploading}}" />
+  <upload-loading visible="{{uploading}}" text="{{submitLabel}}中" />
 </view>

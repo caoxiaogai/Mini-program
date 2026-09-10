@@ -12,7 +12,7 @@ import { buildReturnPath } from '../../utils/auth'
 import { formatCompactCount } from '../../utils/format'
 import { MATERIAL_DELETED_MESSAGE } from '../../utils/material-deleted'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
-import { takePendingPublishReturn } from '../../utils/publish-return'
+import { takeMaterialDetailNeedsRefresh, takePendingPublishReturn } from '../../utils/publish-return'
 import { prepareShareCardImage } from '../../utils/share-image'
 import {
   buildMaterialEditPath,
@@ -223,6 +223,10 @@ Page({
   onShow() {
     enableMaterialShareMenu(true)
     this.closePublishSuccessModalAfterShareReturn()
+    if (takeMaterialDetailNeedsRefresh()) {
+      this.loadDetail()
+      return
+    }
     if (this.data.detail) this.refreshEngagement()
   },
 
@@ -1159,7 +1163,7 @@ Page({
     if (!detail || !detail.isOwner) return
 
     wx.showActionSheet({
-      itemList: ['二次编辑', '删除'],
+      itemList: ['修改', '删除'],
       success: (result) => {
         if (result.tapIndex === 0) this.onSecondaryEditTap()
         if (result.tapIndex === 1) this.onOwnerDeleteTap()
@@ -1170,7 +1174,7 @@ Page({
   onSecondaryEditTap() {
     const detail = this.data.detail
     if (!detail || !detail.isOwner) return
-    wx.navigateTo({ url: buildMaterialEditPath(detail.id, detail.fileType === 'NOTE' ? 'note' : '', true) })
+    wx.navigateTo({ url: buildMaterialEditPath(detail.id, detail.fileType === 'NOTE' ? 'note' : '') })
   },
   onOwnerDeleteTap() {
     const detail = this.data.detail

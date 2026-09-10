@@ -43,7 +43,6 @@
         >
           <view class="materials-card__preview">
             <image class="materials-card__image" src="{{item.thumbnailUrl}}" mode="aspectFill" />
-            <view wx:if="{{item.isDraft}}" class="materials-card__draft">草稿</view>
             <image wx:if="{{item.kind === 'video' && !materialSelecting}}" class="materials-card__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
             <view wx:if="{{materialSelecting}}" class="materials-card__check {{item.selected ? 'materials-card__check--selected' : ''}}" />
           </view>

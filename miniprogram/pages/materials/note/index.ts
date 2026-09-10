@@ -1,4 +1,4 @@
-import { getMaterialShareCard, getNoteDraft, publishNote, saveNoteDraft, uploadNoteFiles } from '../../../services/materials'
+import { getMaterialShareCard, getNoteDraft, publishNote, uploadNoteFiles } from '../../../services/materials'
 import { runAuthed } from '../../../services/auth'
 import type { NoteBlock, NoteFileBlock, NoteSubmitInput } from '../../../types/note'
 import { buildReturnPath } from '../../../utils/auth'
@@ -24,13 +24,13 @@ import {
   showPublishPickerError,
 } from '../../../utils/publish-media'
 import type { PublishMediaViewModel } from '../../../types/materials'
-import { openCreatedMaterial, returnToMaterialsList } from '../../../utils/publish-return'
+import { openCreatedMaterial, returnToEditedMaterial } from '../../../utils/publish-return'
 import {
   getNavigationBarLayout,
   isMenuButtonRectValid,
   resolveNavActionsRight,
 } from '../../../utils/navigation-layout'
-import { MATERIAL_NOTE_PATH, isPublishRemixQuery } from '../../../utils/share-material'
+import { MATERIAL_NOTE_PATH } from '../../../utils/share-material'
 
 function withFileLabels(blocks: NoteBlock[]): NoteBlock[] {
   return blocks.map((block) => {
@@ -169,6 +169,7 @@ Page({
     composerReserve: 120,
     navActionRight: 104,
     uploading: false,
+    submitLabel: '创建',
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -268,7 +269,6 @@ Page({
       return
     }
 
-    const remix = isPublishRemixQuery(options.remix)
     getNoteDraft(materialId).then((draft) => {
       if (!draft) {
         wx.showToast({ title: '笔记不存在', icon: 'none' })
@@ -276,10 +276,10 @@ Page({
       }
 
       const blocks = withFileLabels(draft.blocks.length > 0 ? draft.blocks : [createEmptyTextBlock()])
-      this.draftMaterialId = remix ? null : draft.id
-      this.originalAttachmentSignature = remix ? '' : noteAttachmentSignature(blocks)
+      this.draftMaterialId = draft.id
+      this.originalAttachmentSignature = noteAttachmentSignature(blocks)
       const first = blocks.find((block) => block.type === 'text')
-      this.setData({ blocks, ...editorViewState(blocks), focusTextId: first?.id ?? '' }, () => this.resetHistory(blocks))
+      this.setData({ blocks, ...editorViewState(blocks), focusTextId: first?.id ?? '', submitLabel: '修改' }, () => this.resetHistory(blocks))
     })
   },
 
@@ -926,25 +926,18 @@ Page({
       })
   },
 
-  onDraftTap() {
-    if (!this.beginSubmit()) return
-    this.uploadThenSubmit((input) =>
-      saveNoteDraft(input).then((materialId) => {
-        this.draftMaterialId = materialId
-        this.originalAttachmentSignature = noteAttachmentSignature(this.data.blocks)
-        wx.showToast({ title: '已保存草稿', icon: 'success' })
-        returnToMaterialsList({ materialId, showSuccessModal: false })
-      }),
-    )
-  },
-
   onPublishTap() {
     if (!this.beginSubmit()) return
+    const editing = Boolean(this.draftMaterialId)
     const copy = extractNotePlainText(this.data.blocks)
     this.uploadThenSubmit((input) =>
       publishNote(input).then((materialId) => {
         this.draftMaterialId = materialId
         this.originalAttachmentSignature = noteAttachmentSignature(this.data.blocks)
+        if (editing) {
+          returnToEditedMaterial(materialId)
+          return
+        }
         return getMaterialShareCard(materialId, copy, this.firstShareImage()).then((card) => {
           openCreatedMaterial({
             materialId,

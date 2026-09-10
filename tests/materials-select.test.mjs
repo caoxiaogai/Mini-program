@@ -46,7 +46,7 @@ test('material list long-press enters multi-select and turns publish into delete
   assert.match(homeLogic, /stillThere/)
   assert.match(materialsLogic, /deleteMaterials\(ids\)/)
   assert.match(materialsLogic, /stillThere/)
-  assert.match(homeLogic, /草稿和已发布作品都会删除/)
+  assert.match(homeLogic, /确定删除已选的 \$\{ids\.length\} 个作品？/)
   assert.match(detailMarkup, /unavailableMessage/)
   assert.match(detailLogic, /MATERIAL_DELETED_MESSAGE/)
   assert.match(documentLogic, /MATERIAL_DELETED_MESSAGE/)

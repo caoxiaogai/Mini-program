@@ -6,7 +6,6 @@ export const MATERIAL_NOTE_PATH = '/pages/materials/note/index'
 
 const MATERIAL_ID_QUERY_KEY = 'id'
 const MATERIAL_OWNER_QUERY_KEY = 'owner'
-const PUBLISH_REMIX_QUERY_KEY = 'remix'
 const DEFAULT_SHARE_TITLE = '图文素材'
 
 function withTrackingId(query: string, trackingId?: string): string {
@@ -87,22 +86,15 @@ export function buildMaterialDetailPath(materialId: string, trackingId?: string,
   return `${MATERIAL_DETAIL_PATH}?${ownerView ? `${query}&${MATERIAL_OWNER_QUERY_KEY}=1` : query}`
 }
 
-export function isPublishRemixQuery(value?: string): boolean {
-  return value === '1'
+export function buildMaterialPublishPath(materialId?: string): string {
+  return buildMaterialEditPath(materialId)
 }
 
-/** 打开发布页；remix 时预填已发布素材，发表为新作品，不覆盖原素材 */
-export function buildMaterialPublishPath(materialId?: string, remix = false): string {
-  return buildMaterialEditPath(materialId, undefined, remix)
-}
-
-/** 笔记草稿/二次编辑走笔记页，其余素材走原发布页 */
-export function buildMaterialEditPath(materialId?: string, kind?: string, remix = false): string {
+/** 修改已有作品：笔记走笔记页，其余素材走发布页 */
+export function buildMaterialEditPath(materialId?: string, kind?: string): string {
   const basePath = kind === 'note' || kind === 'NOTE' ? MATERIAL_NOTE_PATH : MATERIAL_PUBLISH_PATH
   if (!materialId) return basePath
-  const query = [`${MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`]
-  if (remix) query.push(`${PUBLISH_REMIX_QUERY_KEY}=1`)
-  return `${basePath}?${query.join('&')}`
+  return `${basePath}?${MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`
 }
 
 export function buildMaterialShareQuery(materialId: string, trackingId?: string): string {

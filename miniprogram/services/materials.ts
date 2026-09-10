@@ -190,7 +190,6 @@ export function getMaterials(): Promise<MaterialsViewModel> {
         date: formatDateKey(material.createTime),
         thumbnailUrl: resolveThumbnail(sources[index]),
         kind: materialKinds[material.fileType] ?? 'pdf',
-        isDraft: material.publishStatus === 0,
       })),
     }
   })
@@ -449,7 +448,7 @@ function uploadLocalFile(path: string): Promise<string> {
   return shouldUploadLocalPath(path) ? uploadFile('/material/upload-file', path) : Promise.resolve(path)
 }
 
-/** 二次编辑/草稿预填的远端文件可直接复用；用户新选的本地文件才上传。 */
+/** 已有作品预填的远端文件可直接复用；用户新选的本地文件才上传。 */
 function persistMediaFile(item: PublishMediaViewModel): Promise<string> {
   if (!shouldUploadLocalPath(item.path)) return Promise.resolve(item.path)
   const remoteUrl = item.remoteUrl ?? ''
@@ -464,7 +463,7 @@ function persistMediaFiles(items: PublishMediaViewModel[]): Promise<string[]> {
   )
 }
 
-function isDraftMediaUnchanged(input: MaterialSubmitInput): boolean {
+function isExistingMediaUnchanged(input: MaterialSubmitInput): boolean {
   return (
     input.draftId !== null &&
     input.originalMediaPaths.length === input.media.length &&
@@ -472,9 +471,28 @@ function isDraftMediaUnchanged(input: MaterialSubmitInput): boolean {
   )
 }
 
+function fallbackTitleFor(input: MaterialSubmitInput): string {
+  const first = input.media[0]
+  if (first?.kind === 'video') return MATERIAL_DEFAULT_TITLES.VIDEO
+  if (first?.kind === 'pdf') return first.name.replace(/\.pdf$/i, '').trim() || MATERIAL_DEFAULT_TITLES.PDF
+  return MATERIAL_DEFAULT_TITLES.IMAGE
+}
+
+function updateMaterial(
+  materialId: string,
+  data: { title?: string; content?: string; fileUrl?: string; coverUrl?: string; duration?: number },
+): Promise<string> {
+  return request<ApiMaterial>({
+    method: 'PUT',
+    path: `/material/${materialId}`,
+    silent: true,
+    data,
+  }).then(() => materialId)
+}
+
 /** 只上传本地文件到 MinIO，不创建素材、不跳转。 */
 export function uploadMaterialFiles(input: MaterialSubmitInput): Promise<PublishMediaViewModel[]> {
-  if (input.media.length === 0 || isDraftMediaUnchanged(input)) return Promise.resolve(input.media)
+  if (input.media.length === 0 || isExistingMediaUnchanged(input)) return Promise.resolve(input.media)
   return runRequestQueue(
     input.media.map((item) => () =>
       persistMediaFile(item).then((fileUrl) => {
@@ -517,81 +535,86 @@ function createMaterial(input: {
   }).then((material) => String(material.id))
 }
 
-function persistNewMaterial(input: MaterialSubmitInput): Promise<string> {
+function persistMaterialFields(input: MaterialSubmitInput): Promise<{
+  fileType: 'IMAGE' | 'VIDEO' | 'PDF'
+  fileUrl: string
+  coverUrl: string
+  duration: number
+  fallbackTitle: string
+}> {
   const kind = input.media[0]?.kind
   if (kind === 'video') {
     const video = input.media[0]
     return persistMediaFile(video).then((fileUrl) => {
       const coverTask = video.previewPath ? uploadLocalFile(video.previewPath).catch(() => '') : Promise.resolve('')
-      return coverTask.then((coverUrl) =>
-        createMaterial({
-          fileType: 'VIDEO',
-          fileUrl,
-          coverUrl,
-          duration: Math.round(video.duration),
-          copy: input.copy,
-          fallbackTitle: MATERIAL_DEFAULT_TITLES.VIDEO,
-        }),
-      )
+      return coverTask.then((coverUrl) => ({
+        fileType: 'VIDEO' as const,
+        fileUrl,
+        coverUrl,
+        duration: Math.round(video.duration),
+        fallbackTitle: MATERIAL_DEFAULT_TITLES.VIDEO,
+      }))
     })
   }
 
   if (kind === 'pdf') {
     const pdf = input.media[0]
     const fallbackTitle = pdf.name.replace(/\.pdf$/i, '').trim() || MATERIAL_DEFAULT_TITLES.PDF
-    return persistMediaFile(pdf).then((fileUrl) =>
-      createMaterial({
-        fileType: 'PDF',
-        fileUrl,
-        coverUrl: '',
-        duration: 0,
-        copy: input.copy,
-        fallbackTitle,
-      }),
-    )
+    return persistMediaFile(pdf).then((fileUrl) => ({
+      fileType: 'PDF' as const,
+      fileUrl,
+      coverUrl: '',
+      duration: 0,
+      fallbackTitle,
+    }))
   }
 
-  return persistMediaFiles(input.media).then((imageUrls) =>
-    createMaterial({
-      fileType: 'IMAGE',
-      fileUrl: JSON.stringify(imageUrls),
-      coverUrl: imageUrls[0] ?? '',
-      duration: 0,
-      copy: input.copy,
-      fallbackTitle: MATERIAL_DEFAULT_TITLES.IMAGE,
-    }),
-  )
+  return persistMediaFiles(input.media).then((imageUrls) => ({
+    fileType: 'IMAGE' as const,
+    fileUrl: JSON.stringify(imageUrls),
+    coverUrl: imageUrls[0] ?? '',
+    duration: 0,
+    fallbackTitle: MATERIAL_DEFAULT_TITLES.IMAGE,
+  }))
 }
 
-/**
- * 保存素材：编辑既有草稿且文件未改动时仅更新文案（PUT）；
- * 其余情况上传本地文件后创建新素材（后端暂无「更新素材文件」接口，见 HANDOFF 待确认项）。
- */
 function persistMaterial(input: MaterialSubmitInput): Promise<string> {
   if (input.media.length === 0) {
     wx.showToast({ title: '请先添加素材', icon: 'none' })
     return Promise.reject(new Error('material media required'))
   }
 
-  if (input.draftId !== null && isDraftMediaUnchanged(input)) {
-    const draftId = input.draftId
-    return request<ApiMaterial>({
-      method: 'PUT',
-      path: `/material/${draftId}`,
-      silent: true,
-      data: { content: input.copy },
-    }).then(() => draftId)
+  const materialId = input.draftId
+  if (materialId && isExistingMediaUnchanged(input)) {
+    return updateMaterial(materialId, {
+      title: buildMaterialTitle(input.copy, fallbackTitleFor(input)),
+      content: input.copy,
+    })
   }
 
-  return persistNewMaterial(input)
+  return persistMaterialFields(input).then((fields) => {
+    if (materialId) {
+      return updateMaterial(materialId, {
+        title: buildMaterialTitle(input.copy, fields.fallbackTitle),
+        content: input.copy,
+        fileUrl: fields.fileUrl,
+        coverUrl: fields.coverUrl,
+        duration: fields.duration,
+      })
+    }
+
+    return createMaterial({
+      fileType: fields.fileType,
+      fileUrl: fields.fileUrl,
+      coverUrl: fields.coverUrl,
+      duration: fields.duration,
+      copy: input.copy,
+      fallbackTitle: fields.fallbackTitle,
+    })
+  })
 }
 
-/** 存草稿：素材落库但不生成分享链接（publishStatus 保持 0），返回素材 ID */
-export function saveMaterialDraft(input: MaterialSubmitInput): Promise<string> {
-  return persistMaterial(input)
-}
-
-/** 发表：素材落库后生成分享链接（后端置 publishStatus=1），返回素材 ID */
+/** 创建或修改作品后生成分享链接（已发布作品不会更换追踪码），返回素材 ID */
 export function publishMaterial(input: MaterialSubmitInput): Promise<string> {
   return persistMaterial(input).then((materialId) =>
     request<ApiMaterial>({ method: 'POST', path: `/material/${materialId}/share`, silent: true }).then(() => materialId),
@@ -700,13 +723,10 @@ function persistNoteMaterial(input: NoteSubmitInput): Promise<string> {
     input.draftId !== null && noteAttachmentSignature(input.blocks) === input.originalAttachmentSignature
 
   if (attachmentsUnchanged && input.draftId) {
-    const draftId = input.draftId
-    return request<ApiMaterial>({
-      method: 'PUT',
-      path: `/material/${draftId}`,
-      silent: true,
-      data: { content: serializeNoteContent(input.blocks) },
-    }).then(() => draftId)
+    return updateMaterial(input.draftId, {
+      title: extractNoteTitle(input.blocks),
+      content: serializeNoteContent(input.blocks),
+    })
   }
 
   return runRequestQueue(
@@ -714,20 +734,24 @@ function persistNoteMaterial(input: NoteSubmitInput): Promise<string> {
     UPLOAD_CONCURRENCY,
   ).then((blocks) => {
     const media = firstNoteCover(blocks)
-    return createMaterial({
-      fileType: NOTE_FILE_TYPE,
+    const payload = {
+      title: extractNoteTitle(blocks),
+      content: serializeNoteContent(blocks),
       fileUrl: media.fileUrl || NOTE_PLACEHOLDER_FILE_URL,
       coverUrl: media.coverUrl,
       duration: media.duration,
+    }
+    if (input.draftId) return updateMaterial(input.draftId, payload)
+    return createMaterial({
+      fileType: NOTE_FILE_TYPE,
+      fileUrl: payload.fileUrl,
+      coverUrl: payload.coverUrl,
+      duration: payload.duration,
       copy: extractNotePlainText(blocks),
-      fallbackTitle: extractNoteTitle(blocks),
-      content: serializeNoteContent(blocks),
+      fallbackTitle: payload.title,
+      content: payload.content,
     })
   })
-}
-
-export function saveNoteDraft(input: NoteSubmitInput): Promise<string> {
-  return persistNoteMaterial(input)
 }
 
 export function publishNote(input: NoteSubmitInput): Promise<string> {

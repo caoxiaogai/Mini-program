@@ -1,8 +1,8 @@
-import { getMaterialDraft, getMaterialShareCard, publishMaterial, saveMaterialDraft, uploadMaterialFiles } from '../../../services/materials'
+import { getMaterialDraft, getMaterialShareCard, publishMaterial, uploadMaterialFiles } from '../../../services/materials'
 import { runAuthed } from '../../../services/auth'
 import { ensureEmojiPresentation } from '../../../utils/emoji'
-import { openCreatedMaterial, returnToMaterialsList } from '../../../utils/publish-return'
-import { buildMaterialPublishPath, getPublishShareImageUrl, isPublishRemixQuery } from '../../../utils/share-material'
+import { openCreatedMaterial, returnToEditedMaterial } from '../../../utils/publish-return'
+import { buildMaterialPublishPath, getPublishShareImageUrl } from '../../../utils/share-material'
 import type { MaterialSubmitInput, PublishMediaViewModel } from '../../../types/materials'
 import { takePendingPublishSelection } from '../../../utils/publish-selection'
 import {
@@ -133,6 +133,7 @@ Page({
     dragPreviewWidth: 0,
     dragPreviewHeight: 0,
     dragPreviewSettling: false,
+    submitLabel: '创建',
   },
   onLoad(options: Record<string, string | undefined>) {
     const selectedEntryType = getPublishEntryType(options.type)
@@ -148,20 +149,19 @@ Page({
       const materialId = options.id
       if (!materialId) return
 
-      const remix = isPublishRemixQuery(options.remix)
       getMaterialDraft(materialId).then((draft) => {
         if (!draft) {
           wx.showToast({ title: '素材不存在', icon: 'none' })
           return
         }
 
-        this.draftMaterialId = remix ? null : draft.id
-        this.draftMediaPaths = remix ? [] : draft.media.map((item) => item.path)
+        this.draftMaterialId = draft.id
+        this.draftMediaPaths = draft.media.map((item) => item.path)
         if (!selectedEntryType && draft.media[0]) this.entryType = draft.media[0].kind
         if (this.entryType === 'image' || this.entryType === 'video') this.pendingMediaType = this.entryType
 
         this.setPublishMedia(draft.media)
-        this.setData({ copy: ensureEmojiPresentation(draft.copy) })
+        this.setData({ copy: ensureEmojiPresentation(draft.copy), submitLabel: '修改' })
       })
     })
   },
@@ -426,25 +426,18 @@ Page({
         this.submitting = false
       })
   },
-  onDraftTap() {
-    if (!this.beginSubmit()) return
-
-    this.uploadThenSubmit((input) =>
-      saveMaterialDraft(input).then((materialId) => {
-        this.draftMaterialId = materialId
-        this.draftMediaPaths = this.data.media.map((item) => item.path)
-        wx.showToast({ title: '已保存草稿', icon: 'success' })
-        returnToMaterialsList({ materialId, showSuccessModal: false })
-      }),
-    )
-  },
   onPublishTap() {
     if (!this.beginSubmit()) return
+    const editing = Boolean(this.draftMaterialId)
 
     this.uploadThenSubmit((input) =>
       publishMaterial(input).then((materialId) => {
         this.draftMaterialId = materialId
         this.draftMediaPaths = this.data.media.map((item) => item.path)
+        if (editing) {
+          returnToEditedMaterial(materialId)
+          return
+        }
         return getMaterialShareCard(materialId, this.data.copy, getPublishShareImageUrl(this.data.media)).then((card) => {
           openCreatedMaterial({
             materialId,

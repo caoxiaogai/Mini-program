@@ -4,7 +4,7 @@ import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } fro
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialEditPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl } from '../../utils/share-material'
 import { buildReturnPath } from '../../utils/auth'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
@@ -199,11 +199,7 @@ Page({
     const material = this.data.visibleMaterials.find((item) => item.id === materialId)
     if (!material) return
 
-    const url = material.isDraft
-      ? buildMaterialEditPath(materialId, material.kind)
-      : buildMaterialDetailPath(materialId, undefined, true)
-
-    wx.navigateTo({ url })
+    wx.navigateTo({ url: buildMaterialDetailPath(materialId, undefined, true) })
   },
   onMaterialCardLongPress(event: WechatMiniprogram.TouchEvent) {
     const materialId = event.currentTarget.dataset.id as string | undefined
@@ -249,7 +245,7 @@ Page({
 
     wx.showModal({
       title: '删除素材',
-      content: `确定删除已选的 ${ids.length} 个素材？草稿和已发布作品都会删除。`,
+      content: `确定删除已选的 ${ids.length} 个作品？`,
       confirmText: '删除',
       confirmColor: '#e45454',
       success: (result) => {

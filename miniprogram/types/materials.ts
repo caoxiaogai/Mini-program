@@ -14,7 +14,6 @@ export interface MaterialCardViewModel {
   date: string
   thumbnailUrl: string
   kind: MaterialCardKind
-  isDraft?: boolean
   selected?: boolean
 }
 
@@ -87,9 +86,9 @@ export interface MaterialDraftEditViewModel {
 }
 
 export interface MaterialSubmitInput {
-  /** 正在编辑的既有草稿素材 ID；新建时为 null */
+  /** 正在修改的作品 ID；新建时为 null */
   draftId: string | null
-  /** 进入编辑时草稿的原始文件路径，用于判断素材是否被改动 */
+  /** 进入编辑时的原始文件路径，用于判断素材是否被改动 */
   originalMediaPaths: string[]
   media: PublishMediaViewModel[]
   copy: string
