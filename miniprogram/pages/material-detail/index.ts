@@ -74,6 +74,7 @@ Page({
   materialId: '',
   shareImageToken: 0,
   publishSuccessShared: false,
+  pendingPublishSuccess: false,
   pageTrackingId: '',
   ownerView: false,
   forceVisitorView: false,
@@ -175,6 +176,7 @@ Page({
       return
     }
 
+    this.pendingPublishSuccess = false
     this.applyPendingPublishReturn()
     this.loadDetail()
   },
@@ -188,6 +190,7 @@ Page({
       .then((detail) => {
         if (!detail) {
           this.shareImageToken += 1
+          this.pendingPublishSuccess = false
           this.setData({ detail: null, unavailableMessage: MATERIAL_DELETED_MESSAGE, shareImageUrl: '' })
           return
         }
@@ -195,8 +198,9 @@ Page({
         this.videoDurationSec = detail.duration
         this.shareImageToken += 1
         const shareImageToken = this.shareImageToken
-        const keepShareImage = this.data.showPublishSuccessModal && Boolean(this.data.shareImageUrl)
+        const keepShareImage = this.pendingPublishSuccess && Boolean(this.data.shareImageUrl)
         this.setData({ detail, unavailableMessage: '', shareImageUrl: keepShareImage ? this.data.shareImageUrl : '' }, () => {
+          this.revealPublishSuccessModal(detail)
           if (isSinglePageMode()) return
           if (detail.fileType === 'VIDEO' && detail.videoUrl) {
             this.getVideoContext()?.play()
@@ -219,6 +223,7 @@ Page({
       })
       .catch(() => {
         this.shareImageToken += 1
+        this.pendingPublishSuccess = false
         this.setData({
           detail: null,
           unavailableMessage: MATERIAL_DELETED_MESSAGE,
@@ -1008,10 +1013,22 @@ Page({
 
     if (pending.shareTrackingId) this.pageTrackingId = pending.shareTrackingId
     this.publishSuccessShared = false
+    this.pendingPublishSuccess = true
     this.setData({
-      showPublishSuccessModal: true,
       shareTitle: pending.shareTitle || this.data.shareTitle,
       shareImageUrl: pending.shareImageUrl || this.data.shareImageUrl,
+    })
+  },
+
+  revealPublishSuccessModal(detail: MaterialDetailViewModel) {
+    if (!this.pendingPublishSuccess) return
+    this.pendingPublishSuccess = false
+    const shareTitle = this.data.shareTitle || buildMaterialShareTitle(detail.descriptionLines)
+    wx.nextTick(() => {
+      this.setData({
+        showPublishSuccessModal: true,
+        shareTitle,
+      })
     })
   },
 
@@ -1038,7 +1055,14 @@ Page({
     this.closePublishSuccessModalAfterShare()
     this.reportForwardTracking()
     this.refreshEngagement()
-    if (!detail) return
+    if (!detail) {
+      if (!this.data.shareTitle && !this.data.shareImageUrl) return
+      return {
+        title: this.data.shareTitle || buildMaterialShareTitle([]),
+        path: buildMaterialSharePath(this.materialId, this.pageTrackingId, this.data.shareImageUrl),
+        imageUrl: this.data.shareImageUrl || undefined,
+      }
+    }
 
     return {
       title: this.data.shareTitle || buildMaterialShareTitle(detail.descriptionLines),
