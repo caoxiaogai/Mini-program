@@ -60,6 +60,8 @@ test('publish editor reads the selected type and limits native pickers', () => {
   assert.match(page, /getPublishEntryType\(options\.type\)/)
   assert.match(picker, /mediaType:\s*options\.type === 'mix' \? \['image', 'video'\] : \[options\.type\]/)
   assert.match(picker, /sourceType:\s*\[options\.source\]/)
+  assert.match(picker, /sizeType:\s*\['original', 'compressed'\]/)
+  assert.doesNotMatch(picker, /sizeType:\s*\['compressed'\]/)
   assert.match(page, /takePendingPublishSelection\(\)/)
   assert.match(page, /onAddMediaTap\(\) \{[\s\S]*this\.entryType === 'pdf'[\s\S]*choosePdfFromChat\(\)/)
   assert.match(page, /onAddMediaTap\(\) \{[\s\S]*this\.entryType === 'video'[\s\S]*pendingMediaType = 'video'/)

@@ -44,7 +44,7 @@ export function choosePublishImageOrVideo(options: {
       mediaType: options.type === 'mix' ? ['image', 'video'] : [options.type],
       sourceType: [options.source],
       maxDuration: MAX_VIDEO_DURATION_SECONDS,
-      sizeType: ['compressed'],
+      sizeType: ['original', 'compressed'],
       success: (result) => resolve(mediaFilesToPublishItems(result.tempFiles, result.type)),
       fail: (error) => reject(error),
     })
