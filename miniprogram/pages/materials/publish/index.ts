@@ -1,7 +1,7 @@
 import { getMaterialDraft, getMaterialShareCard, publishMaterial, saveMaterialDraft, uploadMaterialFiles } from '../../../services/materials'
 import { runAuthed } from '../../../services/auth'
 import { ensureEmojiPresentation } from '../../../utils/emoji'
-import { returnToMaterialsList } from '../../../utils/publish-return'
+import { openCreatedMaterial, returnToMaterialsList } from '../../../utils/publish-return'
 import { buildMaterialPublishPath, getPublishShareImageUrl, isPublishRemixQuery } from '../../../utils/share-material'
 import type { MaterialSubmitInput, PublishMediaViewModel } from '../../../types/materials'
 import { takePendingPublishSelection } from '../../../utils/publish-selection'
@@ -446,7 +446,7 @@ Page({
         this.draftMaterialId = materialId
         this.draftMediaPaths = this.data.media.map((item) => item.path)
         return getMaterialShareCard(materialId, this.data.copy, getPublishShareImageUrl(this.data.media)).then((card) => {
-          returnToMaterialsList({
+          openCreatedMaterial({
             materialId,
             showSuccessModal: true,
             shareTitle: card.shareTitle,

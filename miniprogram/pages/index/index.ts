@@ -234,6 +234,9 @@ Page({
     if (rootTabIds[this.data.activeTabIndex] === 'notifications') {
       this.loadNotifications()
     }
+    if (rootTabIds[this.data.activeTabIndex] === 'materials') {
+      this.loadMaterials()
+    }
     if (rootTabIds[this.data.activeTabIndex] === 'profile') {
       this.loadProfileData()
     }

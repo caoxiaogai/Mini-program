@@ -4,7 +4,8 @@
     "note-video-player": "/components/note-video-player/index",
     "loading-skeleton": "/components/loading-skeleton/index",
     "share-gate-view": "/components/share-gate-view/index",
-    "single-page-guard": "/components/single-page-guard/index"
+    "single-page-guard": "/components/single-page-guard/index",
+    "publish-success-modal": "/components/publish-success-modal/index"
   },
   "enableShareAppMessage": true,
   "enableShareTimeline": true,

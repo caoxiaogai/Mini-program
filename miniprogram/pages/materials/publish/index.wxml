@@ -93,7 +93,7 @@
       <text>存草稿</text>
     </view>
     <view class="publish-page__publish-button" bindtap="onPublishTap" hover-class="publish-page__button--pressed" hover-stay-time="80">
-      <text>发表</text>
+      <text>创建</text>
     </view>
   </view>
 

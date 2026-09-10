@@ -12,6 +12,7 @@ import { buildReturnPath } from '../../utils/auth'
 import { formatCompactCount } from '../../utils/format'
 import { MATERIAL_DELETED_MESSAGE } from '../../utils/material-deleted'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
+import { takePendingPublishReturn } from '../../utils/publish-return'
 import { prepareShareCardImage } from '../../utils/share-image'
 import {
   buildMaterialEditPath,
@@ -60,6 +61,8 @@ Page({
     comments: [] as MaterialCommentViewModel[],
     commentDraft: '',
     shareImageUrl: '',
+    shareTitle: '',
+    showPublishSuccessModal: false,
     singlePageMode: isSinglePageMode(),
     singlePageGateVisible: false,
     shareGateArtSrc: '/assets/share-gate/group-98.svg',
@@ -68,6 +71,7 @@ Page({
 
   materialId: '',
   shareImageToken: 0,
+  publishSuccessShared: false,
   pageTrackingId: '',
   ownerView: false,
   forceVisitorView: false,
@@ -164,6 +168,7 @@ Page({
       return
     }
 
+    this.applyPendingPublishReturn()
     this.loadDetail()
   },
   onPullDownRefresh() {
@@ -183,14 +188,15 @@ Page({
         this.videoDurationSec = detail.duration
         this.shareImageToken += 1
         const shareImageToken = this.shareImageToken
-        this.setData({ detail, unavailableMessage: '', shareImageUrl: '' }, () => {
+        const keepShareImage = this.data.showPublishSuccessModal && Boolean(this.data.shareImageUrl)
+        this.setData({ detail, unavailableMessage: '', shareImageUrl: keepShareImage ? this.data.shareImageUrl : '' }, () => {
           if (isSinglePageMode()) return
           if (detail.fileType === 'VIDEO' && detail.videoUrl) {
             this.getVideoContext()?.play()
           }
         })
         if (isSinglePageMode()) return
-        this.prepareShareImage(detail.previewUrl, shareImageToken)
+        if (!keepShareImage) this.prepareShareImage(detail.previewUrl, shareImageToken)
 
         this.reportOpenedPlay()
 
@@ -216,6 +222,7 @@ Page({
 
   onShow() {
     enableMaterialShareMenu(true)
+    this.closePublishSuccessModalAfterShareReturn()
     if (this.data.detail) this.refreshEngagement()
   },
 
@@ -983,14 +990,47 @@ Page({
     return this.data.shareImageUrl || previewUrl || undefined
   },
 
+  applyPendingPublishReturn() {
+    const pending = takePendingPublishReturn()
+    if (!pending?.showSuccessModal) return
+    if (pending.materialId && this.materialId && pending.materialId !== this.materialId) return
+
+    if (pending.shareTrackingId) this.pageTrackingId = pending.shareTrackingId
+    this.publishSuccessShared = false
+    this.setData({
+      showPublishSuccessModal: true,
+      shareTitle: pending.shareTitle || this.data.shareTitle,
+      shareImageUrl: pending.shareImageUrl || this.data.shareImageUrl,
+    })
+  },
+
+  onPublishSuccessClose() {
+    this.setData({
+      showPublishSuccessModal: false,
+      shareTitle: '',
+    })
+  },
+
+  closePublishSuccessModalAfterShare() {
+    if (!this.data.showPublishSuccessModal) return
+    this.publishSuccessShared = true
+  },
+
+  closePublishSuccessModalAfterShareReturn() {
+    if (!this.publishSuccessShared) return
+    this.publishSuccessShared = false
+    this.onPublishSuccessClose()
+  },
+
   onShareAppMessage() {
     const detail = this.data.detail
+    this.closePublishSuccessModalAfterShare()
     this.reportForwardTracking()
     this.refreshEngagement()
     if (!detail) return
 
     return {
-      title: buildMaterialShareTitle(detail.descriptionLines),
+      title: this.data.shareTitle || buildMaterialShareTitle(detail.descriptionLines),
       path: buildMaterialSharePath(detail.id, detail.trackingId || this.pageTrackingId),
       imageUrl: this.resolveShareImageUrl(detail.previewUrl),
     }
@@ -998,6 +1038,7 @@ Page({
 
   onShareTimeline() {
     const detail = this.data.detail
+    this.closePublishSuccessModalAfterShare()
     this.reportForwardTracking()
     this.refreshEngagement()
     if (!detail) return

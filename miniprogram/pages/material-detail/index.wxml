@@ -360,5 +360,11 @@
     poster="{{videoPlayerPoster}}"
     bind:close="onCloseVideoPlayer"
   />
+  <publish-success-modal
+    visible="{{showPublishSuccessModal}}"
+    share-ready="{{shareImageUrl ? true : false}}"
+    share-image-url="{{shareImageUrl}}"
+    bind:close="onPublishSuccessClose"
+  />
 </view>
 </single-page-guard>

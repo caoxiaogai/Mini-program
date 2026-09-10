@@ -24,7 +24,7 @@ import {
   showPublishPickerError,
 } from '../../../utils/publish-media'
 import type { PublishMediaViewModel } from '../../../types/materials'
-import { returnToMaterialsList } from '../../../utils/publish-return'
+import { openCreatedMaterial, returnToMaterialsList } from '../../../utils/publish-return'
 import {
   getNavigationBarLayout,
   isMenuButtonRectValid,
@@ -946,7 +946,7 @@ Page({
         this.draftMaterialId = materialId
         this.originalAttachmentSignature = noteAttachmentSignature(this.data.blocks)
         return getMaterialShareCard(materialId, copy, this.firstShareImage()).then((card) => {
-          returnToMaterialsList({
+          openCreatedMaterial({
             materialId,
             showSuccessModal: true,
             shareTitle: card.shareTitle,

@@ -1,3 +1,5 @@
+import { buildMaterialDetailPath } from './share-material'
+
 export interface PendingPublishReturn {
   materialId: string
   showSuccessModal: boolean
@@ -30,7 +32,19 @@ export function getMaterialsReturnDelta(routes: string[]): number {
   return 1
 }
 
-/** 发表/存草稿后回到原来的素材列表，避免再 push 一层首页。 */
+/** 创建成功后打开作品详情，替换发布页，避免再回到列表。 */
+export function openCreatedMaterial(result: PendingPublishReturn): void {
+  setPendingPublishReturn(result)
+  const url = buildMaterialDetailPath(result.materialId, undefined, true)
+  wx.redirectTo({
+    url,
+    fail: () => {
+      wx.reLaunch({ url })
+    },
+  })
+}
+
+/** 存草稿后回到原来的素材列表，避免再 push 一层首页。 */
 export function returnToMaterialsList(result: PendingPublishReturn): void {
   setPendingPublishReturn(result)
   const pages = getCurrentPages()

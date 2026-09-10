@@ -1,7 +1,7 @@
-<view wx:if="{{visible}}" class="upload-loading" catchtouchmove="preventMove" aria-role="alert" aria-label="文件上传中">
+<view wx:if="{{visible}}" class="upload-loading" catchtouchmove="preventMove" aria-role="alert" aria-label="创建中">
   <view class="upload-loading__mask" />
   <view class="upload-loading__panel">
     <view class="upload-loading__spinner" />
-    <text class="upload-loading__text">文件上传中</text>
+    <text class="upload-loading__text">创建中</text>
   </view>
 </view>

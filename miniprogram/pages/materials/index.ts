@@ -127,7 +127,6 @@ Page({
 
     if (options.id) this.loadShareMaterial(options.id)
 
-    this.loadMaterials()
     this.refreshAuthenticatedMaterials()
   },
   onShow() {
@@ -138,6 +137,7 @@ Page({
     enableMaterialShareMenu()
     this.applyPendingPublishReturn()
     this.closePublishSuccessModalAfterShareReturn()
+    this.loadMaterials()
   },
   loadMaterials() {
     return getMaterials().then((materials) => {
@@ -400,7 +400,6 @@ Page({
       shareImageUrl: pending.shareImageUrl || this.data.shareImageUrl,
       shareTrackingId: pending.shareTrackingId || this.data.shareTrackingId,
     })
-    this.loadMaterials()
     if (pending.showSuccessModal && pending.materialId) this.loadShareMaterial(pending.materialId)
   },
   onPublishSuccessClose() {
