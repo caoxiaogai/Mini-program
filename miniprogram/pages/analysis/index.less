@@ -77,7 +77,7 @@ page { min-height: 100vh; background: @app-page-background; }
 .analysis-user__stat-divider { width: 1px; height: 10px; flex: none; background: #b0b0b0; }
 .analysis-user__line { width: 100%; height: 1px; background: #f4f5f5; }
 .analysis-total-panel { display: flex; flex-direction: column; gap: 15px; margin-top: 0; }
-.analysis-total__overview-card { display: flex; flex-direction: column; gap: 20px; padding: 0 20px 20px; border: 1px solid #808080; border-radius: 20px; background: #ffffff; box-sizing: border-box; }
+.analysis-total__overview-card { display: flex; flex-direction: column; gap: 20px; min-width: 0; padding: 0 20px 20px; border: 1px solid #808080; border-radius: 20px; background: #ffffff; box-sizing: border-box; overflow: hidden; }
 .analysis-total__chart-card { display: flex; flex-direction: column; gap: 20px; padding: 0 20px 20px; border: 1px solid #808080; border-radius: 20px; background: #ffffff; box-sizing: border-box; }
 .analysis-total__overview-header { display: flex; width: 100%; height: 55px; align-items: center; justify-content: space-between; gap: 5px; padding: 15px 0; box-sizing: border-box; }
 .analysis-total__overview-title { display: flex; min-width: 0; align-items: center; gap: 5px; }
@@ -98,10 +98,10 @@ page { min-height: 100vh; background: @app-page-background; }
 .analysis-total__hero-delta--down,
 .analysis-total__hero-delta--down text { color: #ff4343; }
 .analysis-total__hero-metric--secondary { margin-left: 32rpx; padding-left: 32rpx; }
-.analysis-total__overview-grid { display: grid; grid-template-columns: repeat(3, 98px); gap: 10px; justify-content: space-between; width: 100%; }
-.analysis-total__overview-item { display: flex; width: 98px; height: 63px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; padding: 10px; border: 1px solid #ebebeb; border-radius: 12px; background: #ffffff; box-sizing: border-box; }
-.analysis-total__overview-label { color: #666666; font-size: 12px; line-height: normal; white-space: nowrap; }
-.analysis-total__overview-value { color: #000000; font-size: 16px; font-weight: 510; line-height: normal; white-space: nowrap; }
+.analysis-total__overview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%; min-width: 0; box-sizing: border-box; }
+.analysis-total__overview-item { display: flex; width: 100%; min-width: 0; height: 63px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; padding: 10px; border: 1px solid #ebebeb; border-radius: 12px; background: #ffffff; box-sizing: border-box; }
+.analysis-total__overview-label { max-width: 100%; overflow: hidden; color: #666666; font-size: 12px; line-height: normal; white-space: nowrap; text-overflow: ellipsis; }
+.analysis-total__overview-value { max-width: 100%; overflow: hidden; color: #000000; font-size: 16px; font-weight: 510; line-height: normal; white-space: nowrap; text-overflow: ellipsis; }
 .analysis-total__chart { position: relative; height: 330rpx; width: 100%; padding-right: 68rpx; box-sizing: border-box; }
 .analysis-total__chart--axis { height: 336rpx; }
 .analysis-total__chart-gridline { position: absolute; right: 68rpx; left: 0; height: 2rpx; border-top: 2rpx dashed #f0f0f0; color: #cccccc; font-size: 18rpx; line-height: normal; }
