@@ -507,7 +507,7 @@ Page({
     this.setData({ activeImageIndex })
 
     const detail = this.data.detail
-    if (!detail) return
+      if (!detail) return
 
     this.markImageViewed(activeImageIndex, detail)
   },

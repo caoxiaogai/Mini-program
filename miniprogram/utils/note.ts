@@ -19,6 +19,49 @@ export function cloneNoteBlocks(blocks: NoteBlock[]): NoteBlock[] {
   return blocks.map((block) => ({ ...block }))
 }
 
+export const NOTE_HISTORY_LIMIT = 200
+
+export type NoteHistory = {
+  entries: NoteBlock[][]
+  index: number
+}
+
+export function sameNoteBlocks(left: NoteBlock[], right: NoteBlock[]): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+export function createNoteHistory(blocks: NoteBlock[]): NoteHistory {
+  return { entries: [cloneNoteBlocks(blocks)], index: 0 }
+}
+
+export function noteHistoryFlags(history: NoteHistory): { canUndo: boolean; canRedo: boolean } {
+  return {
+    canUndo: history.index > 0,
+    canRedo: history.index < history.entries.length - 1,
+  }
+}
+
+export function pushNoteHistory(history: NoteHistory, blocks: NoteBlock[]): NoteHistory & { changed: boolean } {
+  const snapshot = cloneNoteBlocks(blocks)
+  const current = history.entries[history.index]
+  if (current && sameNoteBlocks(current, snapshot)) {
+    return { entries: history.entries, index: history.index, changed: false }
+  }
+  const entries = history.entries.slice(0, history.index + 1)
+  entries.push(snapshot)
+  if (entries.length > NOTE_HISTORY_LIMIT) entries.shift()
+  return { entries, index: entries.length - 1, changed: true }
+}
+
+export function stepNoteHistory(history: NoteHistory, direction: -1 | 1): { history: NoteHistory; blocks: NoteBlock[] } | null {
+  const index = history.index + direction
+  if (index < 0 || index >= history.entries.length) return null
+  return {
+    history: { entries: history.entries, index },
+    blocks: cloneNoteBlocks(history.entries[index] ?? []),
+  }
+}
+
 export function isNoteFileType(fileType: string | null | undefined): boolean {
   return (fileType ?? '').toUpperCase() === NOTE_FILE_TYPE
 }

@@ -3,9 +3,9 @@ import { runAuthed } from '../../../services/auth'
 import type { NoteBlock, NoteFileBlock, NoteSubmitInput } from '../../../types/note'
 import { buildReturnPath } from '../../../utils/auth'
 import {
-  cloneNoteBlocks,
   createEmptyTextBlock,
   createNoteBlockId,
+  createNoteHistory,
   deletePreviousAttachmentOnBackspace,
   extractNotePlainText,
   formatNoteFileSize,
@@ -16,8 +16,12 @@ import {
   NOTE_BACKSPACE_MARK,
   noteAttachmentSignature,
   noteFileExt,
+  noteHistoryFlags,
+  pushNoteHistory,
+  stepNoteHistory,
   stripNoteTextMark,
 } from '../../../utils/note'
+import type { NoteHistory } from '../../../utils/note'
 import {
   choosePublishImageOrVideo,
   isPickerCancel,
@@ -131,8 +135,8 @@ Page({
   draftMaterialId: null as string | null,
   originalAttachmentSignature: '',
   submitting: false,
-  history: [] as NoteBlock[][],
-  historyIndex: -1,
+  noteHistory: createNoteHistory([]) as NoteHistory,
+  restoringHistory: false,
   keyboardHeightListener: null as ((result: WechatMiniprogram.OnKeyboardHeightChangeListenerResult) => void) | null,
   focusTimer: 0,
   keyboardDismissTimer: 0,
@@ -541,21 +545,35 @@ Page({
   },
 
   resetHistory(blocks: NoteBlock[]) {
-    this.history = [cloneNoteBlocks(blocks)]
-    this.historyIndex = 0
+    this.noteHistory = createNoteHistory(blocks)
     this.setData({ canUndo: false, canRedo: false })
   },
 
   pushHistory(blocks: NoteBlock[]) {
-    const next = this.history.slice(0, this.historyIndex + 1)
-    next.push(cloneNoteBlocks(blocks))
-    if (next.length > 40) next.shift()
-    this.history = next
-    this.historyIndex = next.length - 1
+    const next = pushNoteHistory(this.noteHistory, blocks)
+    if (!next.changed) return
+    this.noteHistory = { entries: next.entries, index: next.index }
+    const flags = noteHistoryFlags(this.noteHistory)
+    if (flags.canUndo === this.data.canUndo && flags.canRedo === this.data.canRedo) return
+    this.setData(flags)
+  },
+
+  applyHistoryStep(blocks: NoteBlock[]) {
+    this.textDrafts = {}
+    this.restoringHistory = true
+    const next = withFileLabels(blocks)
+    const focusTextId = this.data.focusTextId && next.some((block) => block.id === this.data.focusTextId)
+      ? this.data.focusTextId
+      : lastTextIdOf(next)
     this.setData({
-      canUndo: this.historyIndex > 0,
-      canRedo: false,
+      blocks: next,
+      ...editorViewState(next),
+      ...noteHistoryFlags(this.noteHistory),
+      focusTextId,
+    }, () => {
+      this.restoringHistory = false
     })
+    if (this.data.keyboardHeight > 0) this.scheduleEnsureCaretVisible(focusTextId)
   },
 
   applyBlocks(blocks: NoteBlock[], recordHistory = true) {
@@ -582,27 +600,17 @@ Page({
   },
 
   onUndoTap() {
-    if (this.historyIndex <= 0) return
-    this.historyIndex -= 1
-    const blocks = withFileLabels(cloneNoteBlocks(this.history[this.historyIndex] ?? []))
-    this.setData({
-      blocks,
-      ...editorViewState(blocks),
-      canUndo: this.historyIndex > 0,
-      canRedo: true,
-    })
+    const stepped = stepNoteHistory(this.noteHistory, -1)
+    if (!stepped) return
+    this.noteHistory = stepped.history
+    this.applyHistoryStep(stepped.blocks)
   },
 
   onRedoTap() {
-    if (this.historyIndex >= this.history.length - 1) return
-    this.historyIndex += 1
-    const blocks = withFileLabels(cloneNoteBlocks(this.history[this.historyIndex] ?? []))
-    this.setData({
-      blocks,
-      ...editorViewState(blocks),
-      canUndo: true,
-      canRedo: this.historyIndex < this.history.length - 1,
-    })
+    const stepped = stepNoteHistory(this.noteHistory, 1)
+    if (!stepped) return
+    this.noteHistory = stepped.history
+    this.applyHistoryStep(stepped.blocks)
   },
 
   onEditorBlankTap() {
@@ -783,6 +791,8 @@ Page({
     this.textDrafts[id] = text
     this.lastCaretCursor = cursor
     if (current && current.type === 'text') current.text = text
+    if (this.restoringHistory) return
+    this.pushHistory(this.data.blocks)
   },
 
   onTextLineChange() {},

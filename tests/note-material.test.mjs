@@ -57,6 +57,54 @@ test('note visitor progress uses full-note scroll, not embedded video or pdf', a
   assert.doesNotMatch(fileTap, /document-reader/)
 })
 
+test('note undo history records each text change as its own step', async () => {
+  const {
+    createNoteHistory,
+    NOTE_HISTORY_LIMIT,
+    noteHistoryFlags,
+    pushNoteHistory,
+    stepNoteHistory,
+  } = await import('../miniprogram/utils/note.ts')
+
+  let history = createNoteHistory([{ id: 't1', type: 'text', text: '' }])
+  assert.deepEqual(noteHistoryFlags(history), { canUndo: false, canRedo: false })
+
+  history = pushNoteHistory(history, [{ id: 't1', type: 'text', text: '案' }])
+  history = pushNoteHistory(history, [{ id: 't1', type: 'text', text: '案例' }])
+  assert.equal(history.changed, true)
+  assert.deepEqual(noteHistoryFlags(history), { canUndo: true, canRedo: false })
+
+  const skipped = pushNoteHistory(history, [{ id: 't1', type: 'text', text: '案例' }])
+  assert.equal(skipped.changed, false)
+  assert.equal(skipped.index, 2)
+
+  const undoOnce = stepNoteHistory(history, -1)
+  assert.ok(undoOnce)
+  assert.equal(undoOnce.blocks[0] && undoOnce.blocks[0].type === 'text' ? undoOnce.blocks[0].text : '', '案')
+  assert.deepEqual(noteHistoryFlags(undoOnce.history), { canUndo: true, canRedo: true })
+
+  const undoTwice = stepNoteHistory(undoOnce.history, -1)
+  assert.ok(undoTwice)
+  assert.equal(undoTwice.blocks[0] && undoTwice.blocks[0].type === 'text' ? undoTwice.blocks[0].text : '', '')
+  assert.deepEqual(noteHistoryFlags(undoTwice.history), { canUndo: false, canRedo: true })
+
+  const redoOnce = stepNoteHistory(undoTwice.history, 1)
+  assert.ok(redoOnce)
+  assert.equal(redoOnce.blocks[0] && redoOnce.blocks[0].type === 'text' ? redoOnce.blocks[0].text : '', '案')
+
+  const afterEdit = pushNoteHistory(redoOnce.history, [{ id: 't1', type: 'text', text: '方案' }])
+  assert.equal(afterEdit.index, 2)
+  assert.equal(noteHistoryFlags(afterEdit).canRedo, false)
+  assert.equal(stepNoteHistory(afterEdit, 1), null)
+
+  let capped = createNoteHistory([{ id: 't1', type: 'text', text: '0' }])
+  for (let index = 1; index <= NOTE_HISTORY_LIMIT; index += 1) {
+    capped = pushNoteHistory(capped, [{ id: 't1', type: 'text', text: String(index) }])
+  }
+  assert.equal(capped.entries.length, NOTE_HISTORY_LIMIT)
+  assert.equal(capped.entries[0][0].type === 'text' ? capped.entries[0][0].text : '', '1')
+})
+
 test('backspace at the start of following text deletes the previous note attachment', async () => {
   const { deletePreviousAttachmentOnBackspace } = await import('../miniprogram/utils/note.ts')
 
@@ -185,6 +233,10 @@ test('note editor can add text, location, image, video, file and save like other
   assert.match(logic, /if \(this\.data\.keyboardHeight > 0\) return/)
   assert.match(logic, /if \(this\.editorActive && this\.data\.keyboardHeight > 0\) return/)
   assert.match(logic, /if \(current && current\.type === 'text'\) current\.text = text/)
+  assert.match(logic, /this\.pushHistory\(this\.data\.blocks\)/)
+  assert.match(logic, /stepNoteHistory\(this\.noteHistory, -1\)/)
+  assert.match(logic, /stepNoteHistory\(this\.noteHistory, 1\)/)
+  assert.match(logic, /restoringHistory/)
   assert.match(logic, /suppressFocusUntil/)
   assert.doesNotMatch(logic, /bindkeyboardheightchange/)
   assert.match(logic, /plusPanelVisible: true,\s*showComposerBar: false,\s*showActions: false/)
