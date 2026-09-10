@@ -1,15 +1,9 @@
 <view class="share-gate-page" bindtap="onPageTap">
   <view class="share-gate-page__hero {{artFromWork ? 'share-gate-page__hero--work' : ''}}">
-    <navigation-bar title="" back="{{false}}" color="#000000" background="{{artFromWork ? 'transparent' : '#f8f8f8'}}" />
+    <navigation-bar title="" back="{{false}}" color="#000000" background="transparent" />
     <image wx:if="{{artFromWork}}" class="share-gate-page__work-cover" src="{{artSrc}}" mode="aspectFill" />
     <block wx:else>
-      <view class="share-gate-page__graphic">
-        <image class="share-gate-page__art" src="{{artSrc}}" mode="aspectFit" />
-        <view class="share-gate-page__headline">
-          <text>好产品</text>
-          <text>值得多了解一点</text>
-        </view>
-      </view>
+      <image class="share-gate-page__art" src="{{artSrc}}" mode="aspectFill" />
     </block>
   </view>
 
@@ -19,9 +13,8 @@
       <view class="share-gate-page__avatars">
         <image wx:for="{{friendAvatars}}" wx:key="*this" class="share-gate-page__avatar" src="{{item}}" mode="aspectFill" />
       </view>
-      <text class="share-gate-page__likes">你有 <text class="share-gate-page__likes-count">6</text> 个好友赞了该内容</text>
+      <text class="share-gate-page__likes">以上好友赞了该内容</text>
     </view>
     <view class="share-gate-page__primary-wrap"><button class="share-gate-page__primary" catchtap="onMoreTap" hover-class="share-gate-page__primary--pressed">查看更多</button></view>
-    <text class="share-gate-page__legal">微信安全协议保护，内容仅对授权用户可见</text>
   </view>
 </view>

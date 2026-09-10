@@ -98,6 +98,6 @@ test('first launch without a shared work keeps the default share-gate art', asyn
   await Promise.resolve()
   await Promise.resolve()
   assert.equal(preview.requestedId, '')
-  assert.equal(page.data.artSrc, '/assets/share-gate/group-98.svg')
+  assert.equal(page.data.artSrc, '/assets/share-gate/default-background.png')
   assert.equal(page.data.artFromWork, false)
 })

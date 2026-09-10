@@ -1,6 +1,6 @@
 import { guardSinglePageAction } from '../../utils/share-material'
 
-const SHARE_GATE_DEFAULT_ART = '/assets/share-gate/group-98.svg'
+const SHARE_GATE_DEFAULT_ART = '/assets/share-gate/default-background.png'
 
 const friendAvatars = [
   '/assets/ranking/avatar-01.png',
