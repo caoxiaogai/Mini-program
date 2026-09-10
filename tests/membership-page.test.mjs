@@ -142,7 +142,7 @@ test('active membership shows expire date and renew copy', async () => {
   assert.equal(page.statusSubtitle, '有效期至 2026-10-01')
   assert.equal(page.actionLabel, '续费会员')
   assert.equal(page.tier, 'regular')
-  assert.equal(page.visitorLimit, 10)
+  assert.equal(page.visitorLimit, 80)
   assert.equal(page.showVisitorQuota, true)
   assert.equal(page.usedVisitorCount, 0)
 })
@@ -241,7 +241,7 @@ test('membership visitor limits follow none / regular / pro', async () => {
   } = await import('../miniprogram/utils/membership.ts')
 
   assert.equal(visitorLimitForTier('none'), 8)
-  assert.equal(visitorLimitForTier('regular'), 10)
+  assert.equal(visitorLimitForTier('regular'), 80)
   assert.equal(visitorLimitForTier('pro'), null)
   assert.equal(resolveVisitorLimit(null), null)
   assert.equal(resolveVisitorLimit(undefined), 8)

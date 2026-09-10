@@ -10,8 +10,7 @@ import type {
 } from '../types/membership'
 
 export const MEMBERSHIP_VISITOR_LIMIT_NONE = 8
-/** 正式为 80；联调暂改为 10，方便验证普通会员上限 */
-export const MEMBERSHIP_VISITOR_LIMIT_REGULAR = 10
+export const MEMBERSHIP_VISITOR_LIMIT_REGULAR = 80
 
 function trackingBenefitLabel(limit: number | null): string {
   return limit == null ? '追踪人数无限' : `追踪人数 ${limit} 人`
