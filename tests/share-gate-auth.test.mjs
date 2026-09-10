@@ -14,6 +14,8 @@ function loadShareGatePage(auth, destinations, session = { completed: false }, p
     'buildAuthPath',
     'buildMaterialDetailPath',
     'HOME_PAGE_PATH',
+    'SHARE_GATE_DEFAULT_ART',
+    'shareGateHeroArt',
     'safeReturnPath',
     'hasCompletedLogin',
     'resolveAuthGate',
@@ -35,6 +37,14 @@ function loadShareGatePage(auth, destinations, session = { completed: false }, p
     auth.buildAuthPath,
     (id, trackingId) => `/pages/material-detail/index?id=${id}${trackingId ? `&trackingId=${trackingId}` : ''}`,
     '/pages/index/index',
+    '/assets/share-gate/default-background.png',
+    (materialId, coverUrl) => {
+      if (coverUrl && /^https:\/\//i.test(coverUrl)) return { artSrc: coverUrl, artFromWork: true }
+      return {
+        artSrc: materialId ? '' : '/assets/share-gate/default-background.png',
+        artFromWork: false,
+      }
+    },
     auth.safeReturnPath,
     () => session.completed,
     () => Promise.resolve(session.completed ? 'ok' : 'login'),
@@ -78,11 +88,24 @@ test('first launch without a shared work still opens WeChat authorization from æ
   assert.deepEqual(destinations, [auth.buildAuthPath('/pages/index/index')])
 })
 
+test('shared cover query shows the work image before the preview request', async () => {
+  const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
+  const preview = { url: 'https://cdn.example/thumb.jpg', requestedId: '' }
+  const page = loadShareGatePage(auth, [], { completed: false }, preview)
+  page.onLoad({ id: 'work-1', cover: 'https://cdn.example/cover.jpg' })
+  assert.equal(page.data.artSrc, 'https://cdn.example/cover.jpg')
+  assert.equal(page.data.artFromWork, true)
+  await Promise.resolve()
+  assert.equal(preview.requestedId, '')
+})
+
 test('shared work replaces the default share-gate art with the list thumbnail', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
   const preview = { url: 'https://cdn.example/thumb.jpg', requestedId: '' }
   const page = loadShareGatePage(auth, [], { completed: false }, preview)
   page.onLoad({ id: 'work-1', trackingId: 'track-2' })
+  assert.equal(page.data.artSrc, '')
+  assert.equal(page.data.artFromWork, false)
   await Promise.resolve()
   await Promise.resolve()
   assert.equal(preview.requestedId, 'work-1')

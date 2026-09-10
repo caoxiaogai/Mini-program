@@ -3,6 +3,25 @@ export const MATERIAL_DETAIL_PATH = '/pages/material-detail/index'
 export const MATERIAL_SHARE_GATE_PATH = '/pages/share-gate/index'
 export const MATERIAL_PUBLISH_PATH = '/pages/materials/publish/index'
 export const MATERIAL_NOTE_PATH = '/pages/materials/note/index'
+export const SHARE_GATE_DEFAULT_ART = '/assets/share-gate/default-background.png'
+const SHARE_COVER_QUERY_KEY = 'cover'
+const MAX_SHARE_QUERY_LENGTH = 980
+
+/** 仅远程封面能给访客立刻显示；本地临时路径带不过去。 */
+export function shareableCoverUrl(url?: string): string {
+  const value = (url ?? '').trim()
+  return /^https:\/\//i.test(value) ? value : ''
+}
+
+/** 分享卡片上的作品图可直接铺开；没有封面时有作品 ID 先留空，避免闪默认气泡图。 */
+export function shareGateHeroArt(materialId?: string, coverUrl?: string): { artSrc: string; artFromWork: boolean } {
+  const cover = shareableCoverUrl(coverUrl)
+  if (cover) return { artSrc: cover, artFromWork: true }
+  return {
+    artSrc: materialId ? '' : SHARE_GATE_DEFAULT_ART,
+    artFromWork: false,
+  }
+}
 
 const MATERIAL_ID_QUERY_KEY = 'id'
 const MATERIAL_OWNER_QUERY_KEY = 'owner'
@@ -14,18 +33,18 @@ function withTrackingId(query: string, trackingId?: string): string {
 }
 
 /** 分享卡片先进入授权前置页，授权后再打开作品详情。 */
-export function buildMaterialSharePath(materialId: string, trackingId?: string): string {
-  return buildMaterialShareGatePath(materialId, trackingId)
+export function buildMaterialSharePath(materialId: string, trackingId?: string, coverUrl?: string): string {
+  return buildMaterialShareGatePath(materialId, trackingId, coverUrl)
 }
 
 /** 分享进入授权前置页，用户授权后再进入作品详情。 */
-export function buildMaterialShareGatePath(materialId: string, trackingId?: string): string {
-  return `${MATERIAL_SHARE_GATE_PATH}?${buildMaterialShareQuery(materialId, trackingId)}`
+export function buildMaterialShareGatePath(materialId: string, trackingId?: string, coverUrl?: string): string {
+  return `${MATERIAL_SHARE_GATE_PATH}?${buildMaterialShareQuery(materialId, trackingId, coverUrl)}`
 }
 
-/** 朋友圈只能打开当前页；query 带作品 id，落地后再转到作品详情。 */
-export function buildMaterialShareTimelineQuery(materialId: string, trackingId?: string): string {
-  return buildMaterialShareQuery(materialId, trackingId)
+/** 朋友圈只能打开当前页；query 带作品 id 和封面，单页第一帧就能显示作品图。 */
+export function buildMaterialShareTimelineQuery(materialId: string, trackingId?: string, coverUrl?: string): string {
+  return buildMaterialShareQuery(materialId, trackingId, coverUrl)
 }
 
 const MOMENTS_SINGLE_PAGE_SCENE = 1154
@@ -97,8 +116,12 @@ export function buildMaterialEditPath(materialId?: string, kind?: string): strin
   return `${basePath}?${MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`
 }
 
-export function buildMaterialShareQuery(materialId: string, trackingId?: string): string {
-  return withTrackingId(`${MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`, trackingId)
+export function buildMaterialShareQuery(materialId: string, trackingId?: string, coverUrl?: string): string {
+  const query = withTrackingId(`${MATERIAL_ID_QUERY_KEY}=${encodeURIComponent(materialId)}`, trackingId)
+  const cover = shareableCoverUrl(coverUrl)
+  if (!cover) return query
+  const next = `${query}&${SHARE_COVER_QUERY_KEY}=${encodeURIComponent(cover)}`
+  return next.length > MAX_SHARE_QUERY_LENGTH ? query : next
 }
 
 export function buildMaterialShareTitle(lines: string[]): string {

@@ -1,10 +1,8 @@
 <view class="share-gate-page" bindtap="onPageTap">
-  <view class="share-gate-page__hero {{artFromWork ? 'share-gate-page__hero--work' : ''}}">
+  <view class="share-gate-page__hero {{artFromWork || !artSrc ? 'share-gate-page__hero--work' : ''}}">
     <navigation-bar title="" back="{{false}}" color="#000000" background="transparent" />
     <image wx:if="{{artFromWork}}" class="share-gate-page__work-cover" src="{{artSrc}}" mode="aspectFill" />
-    <block wx:else>
-      <image class="share-gate-page__art" src="{{artSrc}}" mode="aspectFill" />
-    </block>
+    <image wx:elif="{{artSrc}}" class="share-gate-page__art" src="{{artSrc}}" mode="aspectFill" />
   </view>
 
   <view class="share-gate-page__content">

@@ -18,7 +18,7 @@ import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis
 import { takeMaterialsListNeedsRefresh, takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateHeroArt } from '../../utils/share-material'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
 import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
@@ -172,7 +172,7 @@ Page({
   onLoad(options: Record<string, string | undefined>) {
     if (isSinglePageMode()) {
       if (!hasCompletedLogin()) {
-        this.showSinglePageShareGate(options.id)
+        this.showSinglePageShareGate(options.id, options.cover)
         return
       }
       const { platform } = wx.getSystemInfoSync()
@@ -194,13 +194,14 @@ Page({
     })
     runAuthed(buildReturnPath(HOME_PAGE_PATH, options), () => this.startHome(options))
   },
-  showSinglePageShareGate(materialId?: string) {
+  showSinglePageShareGate(materialId?: string, coverUrl?: string) {
+    const art = shareGateHeroArt(materialId, coverUrl)
     this.setData({
       singlePageGateVisible: true,
-      shareGateArtSrc: '/assets/share-gate/default-background.png',
-      shareGateArtFromWork: false,
+      shareGateArtSrc: art.artSrc,
+      shareGateArtFromWork: art.artFromWork,
     })
-    if (!materialId) return
+    if (!materialId || art.artFromWork) return
     getMaterialListPreview(materialId).then((url) => {
       if (!url) return
       this.setData({ shareGateArtSrc: url, shareGateArtFromWork: true })
@@ -1007,7 +1008,7 @@ Page({
     this.closePublishSuccessModalAfterShare()
     return {
       title: this.data.shareTitle || buildMaterialShareTitle([]),
-      path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId),
+      path: buildMaterialSharePath(this.data.shareMaterialId, this.data.shareTrackingId, imageUrl),
       imageUrl,
     }
   },

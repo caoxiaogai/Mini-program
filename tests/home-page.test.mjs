@@ -3060,6 +3060,7 @@ test('shared material opens the authorization gate before the detail page', asyn
     buildMaterialSharePath,
     buildMaterialShareQuery,
     buildMaterialShareTimelineQuery,
+    shareGateHeroArt,
     HOME_PAGE_PATH,
     MATERIAL_DETAIL_PATH,
   } = await import('../miniprogram/utils/share-material.ts')
@@ -3078,6 +3079,15 @@ test('shared material opens the authorization gate before the detail page', asyn
   assert.equal(buildMaterialDetailPath('abc', undefined, true), '/pages/material-detail/index?id=abc&owner=1')
   assert.equal(buildMaterialShareQuery('abc', 't1'), 'id=abc&trackingId=t1')
   assert.equal(buildMaterialShareTimelineQuery('abc', 't1'), 'id=abc&trackingId=t1')
+  assert.equal(
+    buildMaterialShareTimelineQuery('abc', 't1', 'https://cdn.example/cover.jpg'),
+    'id=abc&trackingId=t1&cover=https%3A%2F%2Fcdn.example%2Fcover.jpg',
+  )
+  assert.equal(buildMaterialShareTimelineQuery('abc', 't1', 'wxfile://tmp/cover.jpg'), 'id=abc&trackingId=t1')
+  assert.deepEqual(shareGateHeroArt('abc', 'https://cdn.example/cover.jpg'), {
+    artSrc: 'https://cdn.example/cover.jpg',
+    artFromWork: true,
+  })
   assert.doesNotMatch(buildMaterialShareTimelineQuery('abc', 't1'), /entry=share-gate/)
   assert.notEqual(buildMaterialSharePath('abc', 't1'), buildMaterialDetailPath('abc', 't1'))
   assert.match(shareUtil, /completedLogin\s*\?[\s\S]*buildMaterialDetailPath[\s\S]*buildMaterialShareGatePath/)
@@ -3085,9 +3095,9 @@ test('shared material opens the authorization gate before the detail page', asyn
   assert.match(shareUtil, /browseOnly/)
   assert.match(shareUtil, /if \(isSinglePageMode\(\)\) return/)
   assert.match(detailLogic, /isSinglePageMode\(\)/)
-  assert.match(detailLogic, /showSinglePageShareGate\(rest.id\)/)
-  assert.match(homeLogic, /showSinglePageShareGate\(options.id\)/)
-  assert.match(materialsLogic, /showSinglePageShareGate\(options.id\)/)
+  assert.match(detailLogic, /showSinglePageShareGate\(rest.id, rest.cover\)/)
+  assert.match(homeLogic, /showSinglePageShareGate\(options.id, options.cover\)/)
+  assert.match(materialsLogic, /showSinglePageShareGate\(options.id, options.cover\)/)
   assert.match(read('miniprogram/pages/material-detail/index.wxml'), /share-gate-view/)
   assert.match(read('miniprogram/pages/index/index.wxml'), /share-gate-view/)
   assert.match(read('miniprogram/pages/materials/index.wxml'), /share-gate-view/)
@@ -3135,7 +3145,7 @@ test('material detail shares to friends from the forward action', () => {
   assert.match(logic, /onShareAppMessage\(\)[\s\S]*?reportForwardTracking\(\)/)
   assert.match(logic, /onShareTimeline\(\)[\s\S]*?reportForwardTracking\(\)/)
   assert.match(logic, /buildMaterialSharePath\(detail\.id, detail\.trackingId/)
-  assert.match(logic, /buildMaterialShareTimelineQuery\(detail\.id, detail\.trackingId/)
+  assert.match(logic, /buildMaterialShareTimelineQuery\(detail\.id, detail\.trackingId \|\| this\.pageTrackingId, imageUrl\)/)
   assert.match(logic, /enableMaterialShareMenu\(true\)/)
   assert.match(shareUtil, /includeTimeline \? \['shareAppMessage', 'shareTimeline'\] : \['shareAppMessage'\]/)
   assert.doesNotMatch(shareUtil, /wx\.showShareImageMenu\(/)
@@ -4783,7 +4793,7 @@ test('share gate hero removes legal copy and keeps the primary content 32px abov
   assert.match(markup, /share-gate-page__work-cover/)
   assert.match(markup, /share-gate-page__hero--work/)
   assert.match(markup, /src="\{\{artSrc\}\}"/)
-  assert.match(markup, /<image class="share-gate-page__art" src="\{\{artSrc\}\}" mode="aspectFill"\s*\/>/)
+  assert.match(markup, /<image wx:elif="\{\{artSrc\}\}" class="share-gate-page__art" src="\{\{artSrc\}\}" mode="aspectFill"\s*\/>/)
   assert.match(markup, /mode="aspectFill"/)
   assert.match(styles, /\.share-gate-page__work-cover/)
   assert.match(read('miniprogram/pages/share-gate/index.ts'), /getMaterialListPreview/)
@@ -4792,7 +4802,9 @@ test('share gate hero removes legal copy and keeps the primary content 32px abov
   assert.match(componentLogic, /const SHARE_GATE_DEFAULT_ART = '\/assets\/share-gate\/default-background\.png'/)
   assert.ok(existsSync(new URL(`../${defaultBackgroundPath}`, import.meta.url)))
   assert.deepEqual(getPngDimensions(defaultBackgroundPath), { width: 1179, height: 2556 })
-  assert.match(read('miniprogram/pages/share-gate/index.ts'), /SHARE_GATE_DEFAULT_ART/)
+  assert.match(read('miniprogram/pages/share-gate/index.ts'), /shareGateHeroArt\(this\.materialId, this\.coverUrl\)/)
+  assert.match(read('miniprogram/pages/material-detail/index.ts'), /shareGateHeroArt\(materialId, coverUrl\)/)
+  assert.match(read('miniprogram/utils/share-material.ts'), /if \(cover\) return \{ artSrc: cover, artFromWork: true \}/)
   assert.match(read('miniprogram/services/materials.ts'), /export function getMaterialListPreview/)
   assert.match(read('miniprogram/services/materials.ts'), /skipAuth: true/)
 })

@@ -23,6 +23,7 @@ import {
   isSinglePageMode,
   MATERIAL_DETAIL_PATH,
   openSharedMaterial,
+  shareGateHeroArt,
 } from '../../utils/share-material'
 
 const VIDEO_PROGRESS_INTERVAL_MS = 5000
@@ -114,7 +115,7 @@ Page({
     const { entry, ...rest } = options
     if (isSinglePageMode()) {
       if (!hasCompletedLogin()) {
-        this.showSinglePageShareGate(rest.id)
+        this.showSinglePageShareGate(rest.id, rest.cover)
         return
       }
       if (rest.id) {
@@ -132,13 +133,14 @@ Page({
     }
     runAuthed(buildReturnPath(MATERIAL_DETAIL_PATH, rest), () => this.startDetail(rest))
   },
-  showSinglePageShareGate(materialId?: string) {
+  showSinglePageShareGate(materialId?: string, coverUrl?: string) {
+    const art = shareGateHeroArt(materialId, coverUrl)
     this.setData({
       singlePageGateVisible: true,
-      shareGateArtSrc: '/assets/share-gate/default-background.png',
-      shareGateArtFromWork: false,
+      shareGateArtSrc: art.artSrc,
+      shareGateArtFromWork: art.artFromWork,
     })
-    if (!materialId) return
+    if (!materialId || art.artFromWork) return
     getMaterialListPreview(materialId).then((url) => {
       if (!url) return
       this.setData({ shareGateArtSrc: url, shareGateArtFromWork: true })
@@ -1035,7 +1037,7 @@ Page({
 
     return {
       title: this.data.shareTitle || buildMaterialShareTitle(detail.descriptionLines),
-      path: buildMaterialSharePath(detail.id, detail.trackingId || this.pageTrackingId),
+      path: buildMaterialSharePath(detail.id, detail.trackingId || this.pageTrackingId, this.resolveShareImageUrl(detail.previewUrl)),
       imageUrl: this.resolveShareImageUrl(detail.previewUrl),
     }
   },
@@ -1046,11 +1048,12 @@ Page({
     this.reportForwardTracking()
     this.refreshEngagement()
     if (!detail) return
+    const imageUrl = this.resolveShareImageUrl(detail.previewUrl)
 
     return {
       title: buildMaterialShareTitle(detail.descriptionLines),
-      query: buildMaterialShareTimelineQuery(detail.id, detail.trackingId || this.pageTrackingId),
-      imageUrl: this.resolveShareImageUrl(detail.previewUrl),
+      query: buildMaterialShareTimelineQuery(detail.id, detail.trackingId || this.pageTrackingId, imageUrl),
+      imageUrl,
     }
   },
 
