@@ -255,7 +255,9 @@ test('materials publish button uses the orange publish color', () => {
 })
 
 test('publish editor submit button uses the orange theme color', () => {
-  const styles = read('miniprogram/pages/materials/publish/index.less')
+  const publishStyles = read('miniprogram/pages/materials/publish/index.less')
+  const noteStyles = read('miniprogram/pages/materials/note/index.less')
 
-  assert.match(styles, /\.publish-page__publish-button\s*\{[^}]*background:\s*#ff8901;/)
+  assert.match(publishStyles, /\.publish-page__publish-button\s*\{[^}]*background:\s*#ff8901;/)
+  assert.match(noteStyles, /\.note-page__publish-button\s*\{[^}]*background:\s*#ff8901;/)
 })
