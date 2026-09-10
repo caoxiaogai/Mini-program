@@ -174,7 +174,7 @@ function splitMaterialCopy(copy: string): string[] {
 }
 
 export function getMaterials(): Promise<MaterialsViewModel> {
-  return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine' }).then((materials) => {
+  return request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).then((materials) => {
     const sources = materials.map((material) => ({
       id: String(material.id),
       fileType: material.fileType,

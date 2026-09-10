@@ -82,11 +82,11 @@ export function getHomePageData(): Promise<HomePageViewModel> {
   const notifyRange = buildCustomRangeQuery(NOTIFICATION_RANGE_DAYS)
 
   return Promise.all([
-    request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: { timeRange: 'today' } }),
-    request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: { timeRange: 'today' } }),
-    request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query: { timeRange: 'today' } }),
-    request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: { timeRange: 'today' } }),
-    request<ApiNotificationEvent[]>({ method: 'GET', path: '/analysis/notify/list', query: { ...notifyRange } }),
+    request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: { timeRange: 'today' }, silent: true }),
+    request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: { timeRange: 'today' }, silent: true }),
+    request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query: { timeRange: 'today' }, silent: true }),
+    request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: { timeRange: 'today' }, silent: true }),
+    request<ApiNotificationEvent[]>({ method: 'GET', path: '/analysis/notify/list', query: { ...notifyRange }, silent: true }),
     request<ApiMaterial[]>({ method: 'GET', path: '/material/mine', silent: true }).catch(() => [] as ApiMaterial[]),
     getMembershipAccessSilent(),
   ]).then(async ([dashboard, , contents, intentCustomers, notifyEvents, materials, membershipAccess]) => {

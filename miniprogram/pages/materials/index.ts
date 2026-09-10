@@ -54,6 +54,7 @@ Page({
   publishSuccessShared: false,
   shareImageToken: 0,
   pendingPublishType: null as 'image' | 'video' | null,
+  skipNextShowRefresh: false,
   data: {
     materials: null as MaterialsViewModel | null,
     tabItems: materialsTabItems,
@@ -136,6 +137,11 @@ Page({
   },
   onShow() {
     if (!this.authReady) return
+    if (this.skipNextShowRefresh) {
+      this.skipNextShowRefresh = false
+      enableMaterialShareMenu()
+      return
+    }
     this.refreshAuthenticatedMaterials()
   },
   refreshAuthenticatedMaterials() {
@@ -314,6 +320,7 @@ Page({
     })
   },
   openPublishEditorFromPicker(type: 'image' | 'video', source: PublishMediaSource) {
+    this.skipNextShowRefresh = true
     choosePublishImageOrVideo({
       type,
       source,
@@ -324,10 +331,12 @@ Page({
         wx.navigateTo({ url: `/pages/materials/publish/index?type=${type}` })
       })
       .catch((error: WechatMiniprogram.GeneralCallbackResult) => {
+        this.skipNextShowRefresh = false
         showPublishPickerError(error.errMsg)
       })
   },
   choosePdfForPublish() {
+    this.skipNextShowRefresh = true
     wx.chooseMessageFile({
       count: 1,
       type: 'file',
@@ -347,6 +356,7 @@ Page({
         wx.navigateTo({ url: '/pages/materials/publish/index?type=pdf' })
       },
       fail: (error) => {
+        this.skipNextShowRefresh = false
         showPublishPickerError(error.errMsg)
       },
     })

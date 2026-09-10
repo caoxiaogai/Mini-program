@@ -64,6 +64,7 @@ test('scrollable list pages load more on scroll instead of rendering the full li
   assert.match(userDetailLogic, /onReachBottom\(\)/)
   assert.match(materialsService, /rememberMaterialThumbnailSources/)
   assert.match(materialsService, /enrichThumbnailsByIds/)
+  assert.match(materialsService, /path: '\/material\/mine', silent: true/)
   assert.doesNotMatch(
     materialsService.slice(materialsService.indexOf('export function getMaterials'), materialsService.indexOf('export function getMaterialDetail')),
     /prepareMaterialThumbnails/,
