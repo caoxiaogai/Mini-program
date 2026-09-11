@@ -1,5 +1,3 @@
-import type { ProfilePageViewModel } from '../../types/profile'
-
 Component({
   properties: {
     profile: {
@@ -15,10 +13,11 @@ Component({
     featureMaskClass: '',
   },
   observers: {
-    profile(profile: ProfilePageViewModel | null) {
-      const membership = profile?.membership
-      const showPremiumCard = membership?.isPremium === true || membership?.cardKind === 'premium'
-      const showStandardCard = !showPremiumCard && (membership?.isStandard === true || membership?.cardKind === 'standard')
+    'profile.membership.cardKind, profile.membership.expireLabel, profile.membership.trackingLabel'(
+      cardKind?: string,
+    ) {
+      const showPremiumCard = cardKind === 'premium'
+      const showStandardCard = cardKind === 'standard'
       const showInactiveCard = !showPremiumCard && !showStandardCard
       this.setData({
         showPremiumCard,

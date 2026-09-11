@@ -10,6 +10,7 @@ import {
   MEMBERSHIP_IOS_MIN_AMOUNT_FEN,
   MEMBERSHIP_TIER_QUERY,
   membershipPageUrl,
+  openHomeProfileTab,
   parseMembershipUiTier,
   type MembershipPageViewModel,
   type MembershipPlanId,
@@ -70,12 +71,15 @@ function supportsVirtualPayment(): boolean {
   }
 }
 
-function showMembershipResult(title: string, content: string): void {
+function showMembershipResult(title: string, content: string, onConfirm?: () => void): void {
   wx.showModal({
     title,
     content,
     showCancel: false,
     confirmText: '知道了',
+    success: (result) => {
+      if (result.confirm) onConfirm?.()
+    },
   })
 }
 
@@ -250,8 +254,7 @@ Page({
         this.setData({ paying: false })
         if (paid) {
           const planTitle = this.data.selectedPlan?.displayTitle || '会员'
-          showMembershipResult('开通成功', `${planTitle}已开通，现在可以使用会员权益。`)
-          this.loadMembership(true)
+          showMembershipResult('开通成功', `${planTitle}已开通，现在可以使用会员权益。`, () => openHomeProfileTab())
           return
         }
         showMembershipResult(

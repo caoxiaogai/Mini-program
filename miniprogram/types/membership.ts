@@ -1,5 +1,45 @@
 export const MEMBERSHIP_PAGE_PATH = '/pages/membership/index'
 export const MEMBERSHIP_TIER_QUERY = 'tier'
+export const HOME_PAGE_ROUTE = 'pages/index/index'
+export const HOME_PROFILE_TAB = 'profile'
+
+let pendingHomeProfileTab = false
+
+/** 开通成功后先记下要打开「我的」，再返回首页；首页 onShow 再切 Tab，避免 setData 还没落地。 */
+export function markOpenHomeProfileTab(): void {
+  pendingHomeProfileTab = true
+}
+
+export function takeOpenHomeProfileTab(): boolean {
+  const pending = pendingHomeProfileTab
+  pendingHomeProfileTab = false
+  return pending
+}
+
+export function homeProfileTabUrl(): string {
+  return `/${HOME_PAGE_ROUTE}?tab=${HOME_PROFILE_TAB}`
+}
+
+/** 回到首页「我的」并立刻让首页实例刷新会员卡，不依赖 onShow（Skyline 下底层页可能一直显示）。 */
+export function openHomeProfileTab(): void {
+  markOpenHomeProfileTab()
+  const pages = getCurrentPages()
+  const homeIndex = pages.findIndex((page) => (page.route ?? '') === HOME_PAGE_ROUTE)
+  if (homeIndex >= 0) {
+    const home = pages[homeIndex] as { showProfileTab?: () => void }
+    if (typeof home.showProfileTab === 'function') home.showProfileTab()
+    const delta = pages.length - 1 - homeIndex
+    if (delta > 0) {
+      wx.navigateBack({
+        delta,
+        fail: () => wx.reLaunch({ url: homeProfileTabUrl() }),
+      })
+      return
+    }
+    return
+  }
+  wx.reLaunch({ url: homeProfileTabUrl() })
+}
 
 /** iOS 走 Apple 支付，官方最低 1 元 */
 export const MEMBERSHIP_IOS_MIN_AMOUNT_FEN = 100

@@ -67,6 +67,7 @@ test('membership page is registered and uses the typed service seam', () => {
   assert.match(types, /export const MEMBERSHIP_PAGE_PATH = '\/pages\/membership\/index'/)
   assert.match(types, /export const MEMBERSHIP_TIER_QUERY = 'tier'/)
   assert.match(types, /export function membershipPageUrl/)
+  assert.match(types, /export function openHomeProfileTab/)
   assert.match(types, /month_pro/)
   assert.match(types, /quarter_pro/)
   assert.match(types, /half_year_pro/)
@@ -206,7 +207,9 @@ test('membership page does not invent payment success or feature gating', () => 
   const profile = read('miniprogram/services/profile.ts')
 
   assert.match(logic, /showMembershipResult/)
-  assert.match(logic, /开通成功/)
+  assert.match(logic, /开通成功[\s\S]*openHomeProfileTab\(\)/)
+  assert.match(logic, /confirmText: '知道了'/)
+  assert.match(logic, /result\.confirm\) onConfirm/)
   assert.match(logic, /开通失败/)
   assert.match(logic, /支付已提交，但暂未确认会员是否开通成功/)
   assert.match(logic, /已取消支付，会员未开通/)
@@ -223,6 +226,21 @@ test('membership page does not invent payment success or feature gating', () => 
   assert.doesNotMatch(service, /wx\.requestPayment/)
   assert.doesNotMatch(service, /wx\.requestVirtualPayment/)
   assert.doesNotMatch(profile, /分析功能已解锁/)
+})
+
+test('membership success confirm opens the profile tab once', async () => {
+  const { markOpenHomeProfileTab, takeOpenHomeProfileTab, homeProfileTabUrl } = await import('../miniprogram/types/membership.ts')
+  const logic = read('miniprogram/pages/membership/index.ts')
+  const types = read('miniprogram/types/membership.ts')
+
+  markOpenHomeProfileTab()
+  assert.equal(takeOpenHomeProfileTab(), true)
+  assert.equal(takeOpenHomeProfileTab(), false)
+  assert.equal(homeProfileTabUrl(), '/pages/index/index?tab=profile')
+  assert.match(logic, /开通成功[\s\S]*openHomeProfileTab\(\)/)
+  assert.match(types, /wx\.navigateBack/)
+  assert.match(types, /wx\.reLaunch/)
+  assert.match(types, /showProfileTab/)
 })
 
 test('membership visitor limits follow none / regular / pro', async () => {

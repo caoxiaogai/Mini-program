@@ -30,7 +30,7 @@ import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishP
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
-import { MEMBERSHIP_PAGE_PATH, membershipPageUrl } from '../../types/membership'
+import { MEMBERSHIP_PAGE_PATH, membershipPageUrl, takeOpenHomeProfileTab } from '../../types/membership'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
@@ -221,6 +221,8 @@ Page({
       })
       this.setActiveTab(2)
       if (shareMaterialId) this.loadShareMaterial(shareMaterialId)
+    } else if (options.tab === 'profile' || takeOpenHomeProfileTab()) {
+      this.showProfileTab()
     }
     this.loadHomeData()
     this.loadProfileData()
@@ -239,6 +241,7 @@ Page({
     enableMaterialShareMenu()
     this.applyPendingPublishReturn()
     this.closePublishSuccessModalAfterShareReturn()
+    if (takeOpenHomeProfileTab()) this.showProfileTab()
     this.loadHomeData(true)
     if (rootTabIds[this.data.activeTabIndex] === 'notifications') {
       this.loadNotifications()
@@ -493,6 +496,11 @@ Page({
     return getProfilePageData()
       .then((profileData) => this.setData({ profileData }))
       .catch(() => this.setData({ profileData: null }))
+  },
+  showProfileTab() {
+    const index = rootTabIds.indexOf('profile')
+    this.setActiveTab(index)
+    this.loadProfileData()
   },
   onProfileSettingsTap() {
     wx.navigateTo({ url: '/pages/settings/index' })
