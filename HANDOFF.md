@@ -67,7 +67,8 @@
 - 首页首屏移除右侧箭头和蓝色星形装饰，并删除对应无用资源；标题旁火焰图标保留。
 - 首页引导文案按 Figma `1335:6448` 更新为 13px、`#333333`、700 字重的三段文本，段间使用 Figma 导出的 20×12px 本地箭头图标 `assets/home-new/home-guide-arrow.svg`；「待跟进」后的互动消息数字提示背景使用首页主题黄色 `#FFC247`。
 - 开发接口配置仍用本地局域网 / 开发者工具地址，不改为线上主机；个人中心会员卡继续走 `GET /membership/me`，不使用远程 `DEVTOOLS_PROFILE_MEMBERSHIP_CARD` 假数据。用户轨迹意向标签的颜色档位来自接口 `intentLevel`。
-
+- 首页「超级榜单」卡片和排行榜详情页的奖杯资源均替换为用户提供的 SVG（`assets/home-new/ranking-trophy-latest.svg`、`assets/ranking/ranking-trophy.svg`）；现有展示尺寸和浮动动画保持不变。
+- 首页「超级榜单」的「查看详情」按钮按 Figma `1335:5811` 更新为 `#F8F9FA` 背景、`#F0F0F0` 描边、70px 胶囊圆角、12px 常规文字和 Figma 箭头图标；尺寸与卡片布局保持不变。榜单数据仍走 `GET /analysis/ranking`。
 
 ### 2026-09-10：修改后返回列表会刷新
 

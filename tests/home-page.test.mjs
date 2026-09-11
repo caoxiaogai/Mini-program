@@ -1180,6 +1180,17 @@ test('home ranking trophy has an infinite vertical float animation', () => {
   assert.match(styles, /\.home-ranking-entry__trophy\s*\{[\s\S]*animation:\s*home-ranking-trophy-float 2\.8s ease-in-out infinite;/)
 })
 
+test('home ranking detail button follows Figma 1335:5811', () => {
+  const markup = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+  const arrow = read('miniprogram/assets/home-new/ranking-detail-arrow.svg')
+
+  assert.match(markup, /class="home-ranking-entry__button"><text>查看详情<\/text><image class="home-ranking-entry__arrow" src="\/assets\/home-new\/ranking-detail-arrow\.svg" mode="aspectFit" \/>/)
+  assert.match(styles, /\.home-ranking-entry__button\s*\{[^}]*?width: 188rpx;[^}]*?height: 64rpx;[^}]*?gap: 16rpx;[^}]*?border: 2rpx solid #f0f0f0;[^}]*?border-radius: 140rpx;[^}]*?background: #f8f9fa;[^}]*?font-size: 24rpx;[^}]*?font-weight: 400;[^}]*?line-height: 44rpx;/)
+  assert.match(styles, /\.home-ranking-entry__arrow\s*\{[^}]*?width: 20rpx;[^}]*?height: 20rpx;/)
+  assert.match(arrow, /<svg[\s\S]*?<path/)
+})
+
 test('ranking reuses the profile striped background and fades its content to white', () => {
   const markup = read('miniprogram/pages/ranking/index.wxml')
   const styles = read('miniprogram/pages/ranking/index.less')
