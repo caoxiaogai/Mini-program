@@ -80,6 +80,7 @@ export type AnalysisUserDetailViewModel = {
 }
 
 export type UserJourneyProduct = {
+  intentLevel: AnalysisIntentLevel
   id: string
   thumbnailUrl: string
   title: string

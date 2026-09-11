@@ -13,7 +13,7 @@
       <image class="user-journey-product-card__thumbnail" src="{{journey.product.thumbnailUrl}}" mode="aspectFill" />
       <view class="user-journey-product-card__copy">
         <text class="user-journey-product-card__title">{{journey.product.title}}</text>
-        <text class="user-journey-product-card__intent">{{journey.product.intentLabel}}</text>
+        <text class="user-journey-product-card__intent user-journey-product-card__intent--{{journey.product.intentLevel}}">{{journey.product.intentLabel}}</text>
       </view>
     </view>
 

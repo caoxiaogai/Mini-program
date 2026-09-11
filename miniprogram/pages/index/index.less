@@ -14,6 +14,7 @@
 @home-muted: #8a8e94;
 @home-muted-light: #999999;
 @home-accent: #0ec8d9;
+@home-theme-yellow: #ffc247;
 
 page {
   min-height: 100vh;
@@ -47,9 +48,29 @@ page {
 .home-page__tabs > .home-page__tab-panel:first-child > .home-page__tab-scroll {
   position: relative;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(204, 204, 204, var(--home-header-gradient-opacity)) 0%, rgba(255, 255, 255, 0) 100%);
-  background-size: 100% 200px;
-  background-repeat: no-repeat;
+  background: transparent;
+}
+
+.home-page__theme-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 380px;
+  pointer-events: none;
+}
+
+.home-page__theme-fade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  height: 380px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 1) 100%);
+  pointer-events: none;
 }
 
 .home-page__notification-panel {
@@ -131,7 +152,7 @@ page {
 
 .home-page__content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   padding: 0 40rpx 200rpx;
 }
 
@@ -157,16 +178,6 @@ page {
   gap: 0;
 }
 
-.home-hero__arrow {
-  position: absolute;
-  top: 42px;
-  right: 20px;
-  z-index: 0;
-  display: block;
-  width: 138px;
-  height: 115px;
-}
-
 .home-hero__line {
   display: flex;
   align-items: center;
@@ -185,16 +196,6 @@ page {
   height: 70rpx;
 }
 
-.home-hero__star {
-  position: absolute;
-  top: 135px;
-  right: 32px;
-  z-index: 1;
-  display: block;
-  width: 30px;
-  height: 28px;
-}
-
 @keyframes home-greeting-float {
   from {
     transform: translateY(0);
@@ -209,13 +210,8 @@ page {
   }
 }
 
-.home-hero__headline-icon,
-.home-hero__star {
+.home-hero__headline-icon {
   animation: home-greeting-float 2.4s ease-in-out infinite;
-}
-
-.home-hero__star {
-  animation-delay: -1.2s;
 }
 
 .home-hero__headline,
@@ -232,10 +228,21 @@ page {
 }
 
 .home-hero__guide {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
   margin-top: 10px;
-  color: #666666;
-  font-size: 30rpx;
-  line-height: 48rpx;
+  color: #333333;
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 26rpx;
+}
+
+.home-hero__guide-arrow {
+  display: block;
+  flex: none;
+  width: 40rpx;
+  height: 24rpx;
 }
 
 .home-section {
@@ -285,7 +292,7 @@ page {
   height: 40rpx;
   padding: 0 12rpx;
   border-radius: 40rpx;
-  background: #666666;
+  background: @home-theme-yellow;
   color: #ffffff;
   font-size: 26rpx;
   line-height: 40rpx;

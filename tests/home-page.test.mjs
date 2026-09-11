@@ -443,13 +443,17 @@ test('home page shows a layout-preserving skeleton while data is loading', () =>
   assert.match(styles, /\.home-skeleton__card \{[\s\S]*border: 2rpx solid #f0f0f0;[\s\S]*background: #ffffff;/)
 })
 
-test('home page draws a 200px header gradient on the scroll surface', () => {
+test('home page renders a replaceable theme image under a 380px white fade', () => {
   const page = read('miniprogram/pages/index/index.wxml')
   const styles = read('miniprogram/pages/index/index.less')
 
-  assert.match(page, /<scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll"[\s\S]*style="--home-header-gradient-opacity: \{\{homeHeaderGradientOpacity\}\};"/)
-  assert.doesNotMatch(page, /home-header-background\.svg/)
-  assert.match(styles, /\.home-page__tabs\s*>\s*\.home-page__tab-panel:first-child\s*>\s*\.home-page__tab-scroll\s*\{[\s\S]*position:\s*relative;[\s\S]*z-index:\s*1;[\s\S]*background:\s*linear-gradient\(180deg,\s*rgba\(204, 204, 204, var\(--home-header-gradient-opacity\)\) 0%,\s*rgba\(255, 255, 255, 0\) 100%\);[\s\S]*background-size:\s*100% 200px;[\s\S]*background-repeat:\s*no-repeat;/)
+  assert.match(page, /<scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll"/)
+  assert.match(page, /<image class="home-page__theme-image" src="\/assets\/home-new\/home-theme-sunset\.jpg" mode="aspectFill" \/>/)
+  assert.match(page, /<view class="home-page__theme-fade" \/>/)
+  assert.doesNotMatch(page, /homeHeaderGradientOpacity/)
+  assert.match(styles, /\.home-page__tabs\s*>\s*\.home-page__tab-panel:first-child\s*>\s*\.home-page__tab-scroll\s*\{[\s\S]*position:\s*relative;[\s\S]*z-index:\s*1;[\s\S]*background:\s*transparent;/)
+  assert.match(styles, /\.home-page__theme-image\s*\{[^}]*?position: absolute;[^}]*?top: 0;[^}]*?left: 0;[^}]*?z-index: 0;[^}]*?width: 100%;[^}]*?height: 380px;/)
+  assert.match(styles, /\.home-page__theme-fade\s*\{[^}]*?position: absolute;[^}]*?top: 0;[^}]*?left: 0;[^}]*?z-index: 1;[^}]*?width: 100%;[^}]*?height: 380px;[^}]*?background: linear-gradient\(180deg, rgba\(255, 255, 255, 0\.2\) 0%, rgba\(255, 255, 255, 1\) 100%\);/)
 })
 
 test('home greeting title uses the Tencent Sans W7 subset and Figma top spacing', () => {
@@ -463,23 +467,22 @@ test('home greeting title uses the Tencent Sans W7 subset and Figma top spacing'
   assert.match(styles, /\.home-hero__subtitle\s*\{[^}]*font-family:\s*['"]TencentSansW7['"][^}]*font-size:\s*60rpx;[^}]*font-weight:\s*500;/)
 })
 
-test('home greeting lines include the Figma companion icons and quoted headline', () => {
+test('home greeting line keeps only the flame companion icon', () => {
   const page = read('miniprogram/pages/index/index.wxml')
   const styles = read('miniprogram/pages/index/index.less')
 
   assert.equal(existsSync(new URL('../miniprogram/assets/home-new/home-greeting-flame.png', import.meta.url)), true)
-  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/home-greeting-star.png', import.meta.url)), true)
-  assert.match(page, /class="[^"]*home-hero__headline-row[^"]*"[\s\S]*<text class="home-hero__headline">“\{\{greetingHeadline\}\}”<\/text>[\s\S]*class="home-hero__headline-icon" src="\/assets\/home-new\/home-greeting-flame\.png"/)
-  assert.match(page, /class="[^"]*home-hero__subtitle-row[^"]*"[\s\S]*class="home-hero__subtitle-icon" src="\/assets\/home-new\/home-greeting-star\.png"/)
+  assert.match(page, /class="[^"]*home-hero__headline-row[^"]*"[\s\S]*class="home-hero__headline">\{\{greetingHeadline\}\}<\/text>[\s\S]*class="home-hero__headline-icon" src="\/assets\/home-new\/home-greeting-flame\.png"/)
+  assert.doesNotMatch(page, /home-hero__(arrow|star|subtitle-icon)/)
   assert.match(styles, /\.home-hero__headline-row\s*,\s*\.home-hero__subtitle-row\s*\{[\s\S]*display:\s*flex;/)
 })
 
-test('home greeting icons float vertically in an infinite staggered loop', () => {
+test('home greeting flame floats vertically', () => {
   const styles = read('miniprogram/pages/index/index.less')
 
   assert.match(styles, /@keyframes home-greeting-float\s*\{[\s\S]*from\s*\{[\s\S]*transform:\s*translateY\(0\);[\s\S]*50%\s*\{[\s\S]*transform:\s*translateY\(-8rpx\);[\s\S]*to\s*\{[\s\S]*transform:\s*translateY\(0\);/)
-  assert.match(styles, /\.home-hero__headline-icon\s*,\s*\.home-hero__subtitle-icon\s*\{[\s\S]*animation:\s*home-greeting-float 2\.4s ease-in-out infinite;/)
-  assert.match(styles, /\.home-hero__subtitle-icon\s*\{[\s\S]*animation-delay:\s*-1\.2s;/)
+  assert.match(styles, /\.home-hero__headline-icon\s*\{[\s\S]*animation:\s*home-greeting-float 2\.4s ease-in-out infinite;/)
+  assert.doesNotMatch(styles, /\.home-hero__(star|subtitle-icon)\s*\{/)
 })
 
 test('home hero aligns the greeting title with Figma 899:12847', () => {
@@ -925,15 +928,15 @@ test('home navigation title and background fade in over 100px of scroll', async 
   const page = read('miniprogram/pages/index/index.wxml')
   const logic = read('miniprogram/pages/index/index.ts')
   const styles = read('miniprogram/pages/index/index.less')
-  const { getHomeHeaderOpacity, getHomeHeaderGradientOpacity } = await import('../miniprogram/utils/home-header.ts')
+  const { getHomeHeaderOpacity } = await import('../miniprogram/utils/home-header.ts')
 
   assert.match(page, /<scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll"/)
   assert.match(page, /<navigation-bar back="\{\{false\}\}" title="首页" color="rgba\(0,0,0, \{\{homeHeaderOpacity\}\}\)"/)
   assert.match(page, /background="rgba\(255,255,255, \{\{homeHeaderOpacity\}\}\)"/)
-  assert.match(page, /style="--home-header-gradient-opacity: \{\{homeHeaderGradientOpacity\}\};"/)
-  assert.doesNotMatch(page, /home-header-background\.svg/)
+  assert.match(page, /<image class="home-page__theme-image" src="\/assets\/home-new\/home-theme-sunset\.jpg" mode="aspectFill" \/>/)
+  assert.doesNotMatch(page, /homeHeaderGradientOpacity/)
   assert.match(logic, /homeHeaderOpacity: 0/)
-  assert.match(logic, /homeHeaderGradientOpacity: 1/)
+  assert.doesNotMatch(logic, /homeHeaderGradientOpacity/)
   assert.match(logic, /homeNotificationMarkAllReadCollapseKey: 0/)
   assert.match(logic, /homeScrollTop: 0/)
   assert.match(logic, /onHomeScroll\(event: WechatMiniprogram\.ScrollViewScrollEvent\)/)
@@ -942,10 +945,6 @@ test('home navigation title and background fade in over 100px of scroll', async 
   assert.equal(getHomeHeaderOpacity(50), 0.5)
   assert.equal(getHomeHeaderOpacity(100), 1)
   assert.equal(getHomeHeaderOpacity(180), 1)
-  assert.equal(getHomeHeaderGradientOpacity(0), 1)
-  assert.equal(getHomeHeaderGradientOpacity(50), 0.5)
-  assert.equal(getHomeHeaderGradientOpacity(100), 0)
-  assert.equal(getHomeHeaderGradientOpacity(180), 0)
 })
 
 test('primary page backgrounds stay fixed while first-screen content pulls down', () => {
@@ -1433,31 +1432,28 @@ test('home release follows Figma 1055:663 copy and outlined card language', () =
   const page = read('miniprogram/pages/index/index.wxml')
   const logic = read('miniprogram/pages/index/index.ts')
   const styles = read('miniprogram/pages/index/index.less')
-  const navigationStyles = read('miniprogram/components/bottom-tab-bar/bottom-tab-bar.less')
 
   assert.match(logic, /greetingHeadline: '发布作品'/)
-  assert.match(logic, /greetingSubtitle: '快速找到高意向客户'/)
-  assert.match(logic, /greetingGuide: '发布素材 → 跟进浏览 → 识别客户'/)
+  assert.match(logic, /greetingSubtitle: '找到高意向客户'/)
+  assert.doesNotMatch(logic, /greetingGuide/)
   assert.match(page, /<text class="home-hero__headline">\{\{greetingHeadline\}\}<\/text>/)
   assert.doesNotMatch(page, /“\{\{greetingHeadline\}\}”/)
-  assert.match(page, /class="home-hero__guide">\{\{greetingGuide\}\}<\/text>/)
+  assert.match(page, /<view class="home-hero__guide">[\s\S]*?<text>发布素材<\/text>[\s\S]*?<text>跟进浏览<\/text>[\s\S]*?<text>识别客户<\/text>/)
   assert.match(page, /home-section--notifications[\s\S]*<text class="home-section__title">待跟进<\/text>/)
   assert.match(styles, /\.home-hero \{[\s\S]*height: 388rpx;/)
-  assert.match(styles, /\.home-hero__headline \{[\s\S]*font-size: 60rpx;[\s\S]*line-height: 80rpx;/)
-  assert.match(styles, /\.home-hero__guide \{[\s\S]*font-size: 32rpx;[\s\S]*color: #666666;/)
+  assert.match(styles, /\.home-hero__headline,\s*\.home-hero__subtitle\s*\{[\s\S]*font-size: 56rpx;[\s\S]*line-height: 80rpx;/)
+  assert.match(styles, /\.home-hero__guide \{[\s\S]*font-size: 26rpx;[\s\S]*color: #333333;/)
   assert.match(styles, /\.home-notification-card,[\s\S]*\.home-content-card \{[\s\S]*border: 2rpx solid #808080;[\s\S]*border-radius: 32rpx;/)
   assert.match(styles, /\.home-today-card \{[\s\S]*height: 572rpx;/)
   assert.match(styles, /\.home-ranking-entry \{[\s\S]*height: 300rpx;[\s\S]*border: 2rpx solid #808080;[\s\S]*background: #ffffff;/)
   assert.match(styles, /\.home-intent-card \{[\s\S]*height: 474rpx;[\s\S]*background: #ffffff;/)
-  assert.match(navigationStyles, /\.bottom-tab-bar__glass \{[\s\S]*background: #f0f0f0;/)
-  assert.match(navigationStyles, /\.bottom-tab-bar__effects \{[\s\S]*box-shadow: 0 0 10px rgba\(0, 0, 0, 0\.05\);/)
 })
 
 test('home hero guide uses the follow-up browsing copy', () => {
-  const logic = read('miniprogram/pages/index/index.ts')
+  const page = read('miniprogram/pages/index/index.wxml')
 
-  assert.match(logic, /greetingGuide: '发布素材 → 跟进浏览 → 识别客户'/)
-  assert.doesNotMatch(logic, /greetingGuide: '发布素材 → 追踪浏览 → 识别客户'/)
+  assert.match(page, /<view class="home-hero__guide">[\s\S]*?<text>发布素材<\/text>[\s\S]*?<text>跟进浏览<\/text>[\s\S]*?<text>识别客户<\/text>/)
+  assert.doesNotMatch(page, /追踪浏览/)
 })
 
 test('home hero matches the confirmed Figma 1106:8082 composition', () => {
@@ -1469,22 +1465,38 @@ test('home hero matches the confirmed Figma 1106:8082 composition', () => {
   assert.match(page, /class="[^\"]*home-hero__headline-row[^\"]*"[\s\S]*class="home-hero__headline-icon" src="\/assets\/home-new\/home-greeting-flame\.png"/)
   assert.match(page, /class="[^\"]*home-hero__subtitle-row[^\"]*"[\s\S]*class="home-hero__subtitle">\{\{greetingSubtitle\}\}<\/text>/)
   assert.doesNotMatch(page, /home-hero__subtitle-row[\s\S]*home-hero__subtitle-icon/)
-  assert.match(page, /class="home-hero__arrow" src="\/assets\/home-new\/home-hero-arrow\.svg"/)
-  assert.match(page, /class="home-hero__star" src="\/assets\/home-new\/home-greeting-star\.png"/)
+  assert.doesNotMatch(page, /home-hero__(arrow|star)/)
   assert.match(styles, /\.home-hero__headline,\s*\.home-hero__subtitle\s*\{[\s\S]*font-size:\s*56rpx;[\s\S]*line-height:\s*80rpx;/)
-  assert.match(styles, /\.home-hero__guide\s*\{[\s\S]*margin-top:\s*10px;[\s\S]*font-size:\s*30rpx;[\s\S]*line-height:\s*48rpx;/)
-  assert.match(styles, /\.home-hero__arrow\s*\{[\s\S]*right:\s*20px;[\s\S]*width:\s*138px;[\s\S]*height:\s*115px;/)
-  assert.match(styles, /\.home-hero__star\s*\{[\s\S]*right:\s*32px;[\s\S]*width:\s*30px;[\s\S]*height:\s*28px;/)
+  assert.match(styles, /\.home-hero__guide\s*\{[\s\S]*margin-top:\s*10px;[\s\S]*font-size:\s*26rpx;[\s\S]*line-height:\s*26rpx;/)
+  assert.doesNotMatch(styles, /\.home-hero__(arrow|star)\s*\{/)
 })
 
-test('home hero uses the supplied star artwork without changing its motion hook', () => {
+test('home hero keeps the supplied flame artwork as its only decoration', () => {
   const page = read('miniprogram/pages/index/index.wxml')
   const styles = read('miniprogram/pages/index/index.less')
-  const dimensions = getPngDimensions('miniprogram/assets/home-new/home-greeting-star.png')
 
-  assert.deepEqual(dimensions, { width: 90, height: 84 })
-  assert.match(page, /class="home-hero__star" src="\/assets\/home-new\/home-greeting-star\.png"/)
-  assert.match(styles, /\.home-hero__headline-icon\s*,\s*\.home-hero__star\s*\{[\s\S]*animation:\s*home-greeting-float 2\.4s ease-in-out infinite;/)
+  assert.match(page, /class="home-hero__headline-icon" src="\/assets\/home-new\/home-greeting-flame\.png"/)
+  assert.doesNotMatch(page, /home-hero__(arrow|star)/)
+  assert.match(styles, /\.home-hero__headline-icon\s*\{[\s\S]*animation:\s*home-greeting-float 2\.4s ease-in-out infinite;/)
+})
+
+test('home hero guide follows Figma 1335:6448', () => {
+  const page = read('miniprogram/pages/index/index.wxml')
+  const logic = read('miniprogram/pages/index/index.ts')
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(page, /<view class="home-hero__guide">\s*<text>发布素材<\/text>\s*<image class="home-hero__guide-arrow" src="\/assets\/home-new\/home-guide-arrow\.svg" mode="aspectFit" \/>\s*<text>跟进浏览<\/text>\s*<image class="home-hero__guide-arrow" src="\/assets\/home-new\/home-guide-arrow\.svg" mode="aspectFit" \/>\s*<text>识别客户<\/text>\s*<\/view>/)
+  assert.doesNotMatch(logic, /greetingGuide/)
+  assert.match(styles, /\.home-hero__guide\s*\{[^}]*?display: flex;[^}]*?align-items: center;[^}]*?gap: 20rpx;[^}]*?color: #333333;[^}]*?font-size: 26rpx;[^}]*?font-weight: 700;[^}]*?line-height: 26rpx;/)
+  assert.match(styles, /\.home-hero__guide-arrow\s*\{[^}]*?display: block;[^}]*?width: 40rpx;[^}]*?height: 24rpx;/)
+  assert.equal(existsSync(new URL('../miniprogram/assets/home-new/home-guide-arrow.svg', import.meta.url)), true)
+})
+
+test('home interaction badge uses the theme yellow background', () => {
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(styles, /@home-theme-yellow: #ffc247;/)
+  assert.match(styles, /\.home-section__badge\s*\{[^}]*?background: @home-theme-yellow;/)
 })
 
 test('data-driven pages render reusable skeleton states while loading', () => {
@@ -1643,7 +1655,7 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   assert.equal(headerConfig.usingComponents['segmented-filter'], '/components/segmented-filter/index')
   assert.match(headerLogic, /wx\.vibrateShort\(\{ type: 'light' \}\)/)
   assert.match(appStyles, /@page-top-tab-height: 64rpx;/)
-  assert.match(headerStyles, /\.notification-page__header \{[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f0f1f2 0%, #f0f1f2 65\.141%, rgba\(240, 241, 242, 0\) 100%\);/)
+  assert.match(headerStyles, /\.notification-page__header \{[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #ffffff 0%, #ffffff 65\.141%, rgba\(255, 255, 255, 0\) 100%\);/)
   assert.doesNotMatch(headerStyles, /\.notification-page__header \{[\s\S]*background-color: #ffffff;/)
   assert.match(headerStyles, /\.notification-page__header \.weui-navigation-bar__center \{[^}]*font-size: 32rpx;/)
   assert.match(styles, /\.notification-page__content \{[\s\S]*padding: calc\(var\(--notification-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\) 40rpx 220rpx;/)
@@ -2070,8 +2082,8 @@ test('home analysis keeps the notification-style header outside its scroll area'
   assert.match(header, /class="analysis-page__header \{\{embedded \? 'analysis-page__header--embedded' : ''\}\} \{\{navigationHeight > 0 \? 'analysis-page__header--measured' : ''\}\} \{\{analysisTabs.length \? '' : 'analysis-page__header--title-only'\}\}"/)
   assert.match(header, /<segmented-filter items="\{\{analysisTabs\}\}" active-id="\{\{activeAnalysisTab\}\}" variant="notification" bind:change="onAnalysisTabTap"/)
   assert.match(headerStyles, /\.analysis-page__header--embedded \{[\s\S]*position: relative;[\s\S]*top: auto;[\s\S]*left: auto;/)
-  assert.match(styles, /\.analysis-page--embedded \.analysis-page__content--work \{[\s\S]*padding-top: calc\(var\(--analysis-navigation-height, 91px\) \+ @page-top-tab-height \+ 60rpx\);/)
-  assert.match(headerStyles, /\.analysis-page__header \{[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #f0f1f2 0%, #f0f1f2 65\.141%, rgba\(240, 241, 242, 0\) 100%\);/)
+  assert.match(styles, /\.analysis-page--embedded \.analysis-page__content \{[\s\S]*padding-top: calc\(var\(--analysis-navigation-height, 91px\) \+ 84rpx \+ 20px\);/)
+  assert.match(headerStyles, /\.analysis-page__header \{[\s\S]*height: calc\(@notification-header-height \+ 20rpx\);[\s\S]*background: linear-gradient\(180deg, #ffffff 0%, #ffffff 65\.141%, rgba\(255, 255, 255, 0\) 100%\);/)
   const homeStyles = read('miniprogram/pages/index/index.less')
   assert.match(homeStyles, /\.home-page__analysis-panel \{[\s\S]*position: relative;/)
   assert.match(homeStyles, /\.home-page__analysis-panel > analysis-header \{[\s\S]*position: absolute;[\s\S]*z-index: 1001;/)
@@ -2797,8 +2809,8 @@ test('materials home uses the mine API and keeps the fixed Figma top layers', ()
   assert.match(service, /resolveMaterialCopy/)
   assert.match(service, /title: resolveMaterialCopy\(material\)/)
   assert.doesNotMatch(service, /from '\.\.\/mocks\//)
-  assert.match(markup, /<view class="materials-page__top">[\s\S]*?<view class="materials-page__gradient" \/>[\s\S]*?<view class="materials-page__header">/)
-  assert.match(homeMarkup, /<view class="materials-page__top">[\s\S]*?<view class="materials-page__gradient" \/>[\s\S]*?<view class="materials-page__header">/)
+  assert.match(markup, /<view class="materials-page__top">[\s\S]*?<view class="materials-page__header-gradient" \/>[\s\S]*?<view class="materials-page__header">/)
+  assert.match(homeMarkup, /<view class="materials-page__top">[\s\S]*?<view class="materials-page__header-gradient" \/>[\s\S]*?<view class="materials-page__header">/)
   assert.doesNotMatch(markup, /materials-stripes\.svg/)
   assert.doesNotMatch(homeMarkup, /materials-stripes\.svg/)
   assert.match(markup, /class="materials-card__image" src="\{\{item\.thumbnailUrl\}\}" mode="aspectFill"/)
@@ -2806,8 +2818,10 @@ test('materials home uses the mine API and keeps the fixed Figma top layers', ()
   assert.doesNotMatch(styles, /\.materials-page__base\s*\{/)
   assert.doesNotMatch(markup, /materials-page__base/)
   assert.doesNotMatch(homeMarkup, /materials-page__base/)
-  assert.match(styles, /\.materials-page__top\s*\{[\s\S]*?position: fixed;[\s\S]*?z-index: 4;[\s\S]*?height: calc\(var\(--materials-navigation-height\) \+ 84rpx\);/)
-  assert.match(styles, /\.materials-page__gradient\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 0;[\s\S]*?z-index: 0;[\s\S]*?width: 100%;[\s\S]*?height: 131px;[\s\S]*?background: linear-gradient\(180deg, rgba\(240, 241, 242, 1\) 0, rgba\(240, 241, 242, 1\) 100px, rgba\(240, 241, 242, 0\) 131px\);/)
+  assert.match(styles, /\.materials-page__top\s*\{[^}]*?position: fixed;[^}]*?z-index: 4;[^}]*?height: calc\(var\(--materials-navigation-height\) \+ 84rpx\);[^}]*?pointer-events: none;/)
+  assert.doesNotMatch(styles, /\.materials-page__top\s*\{[^}]*?background:/)
+  assert.match(styles, /\.materials-page__header-gradient\s*\{[^}]*?position: absolute;[^}]*?top: 0;[^}]*?left: 0;[^}]*?z-index: 0;[^}]*?width: 100%;[^}]*?height: 136px;[^}]*?background: linear-gradient\(180deg, #ffffff 0%, rgba\(255, 255, 255, 0\) 100%\);/)
+  assert.doesNotMatch(styles, /\.materials-page__gradient\s*\{/)
   assert.doesNotMatch(styles, /\.materials-page__stripes\s*\{/)
   assert.match(styles, /\.materials-page__header\s*\{[\s\S]*?z-index: 2;/)
   assert.match(styles, /\.materials-page__content\s*\{[\s\S]*?z-index: 1;/)
@@ -4236,6 +4250,33 @@ test('home analysis sort sheet is rendered above the fixed analysis header', () 
   assert.match(homeMarkup, /<view wx:if="\{\{analysisSortSheetVisible\}\}" class="analysis-sort-sheet">[\s\S]*catchtap="onAnalysisSortMaskTap"[\s\S]*bindtap="onHomeAnalysisSortOptionTap"/)
   assert.match(homeLogic, /onHomeAnalysisSortOptionTap\(event: WechatMiniprogram\.TouchEvent\)/)
   assert.match(componentMarkup, /wx:if="\{\{analysisSortSheetVisible && !embedded\}\}" class="analysis-sort-sheet"/)
+})
+
+test('notification, analysis, and publish headers use the white top gradient', () => {
+  const notificationHeaderStyles = read('miniprogram/components/notification-header/index.less')
+  const analysisHeaderStyles = read('miniprogram/components/analysis-header/index.less')
+  const materialsStyles = read('miniprogram/pages/materials/index.less')
+  const materialsMarkup = read('miniprogram/pages/index/index.wxml')
+
+  assert.match(notificationHeaderStyles, /background: linear-gradient\(180deg, #ffffff 0%, #ffffff 65\.141%, rgba\(255, 255, 255, 0\) 100%\);/)
+  assert.match(analysisHeaderStyles, /background: linear-gradient\(180deg, #ffffff 0%, #ffffff 65\.141%, rgba\(255, 255, 255, 0\) 100%\);/)
+  assert.match(materialsStyles, /background: linear-gradient\(180deg, #ffffff 0%, rgba\(255, 255, 255, 0\) 100%\);/)
+  assert.match(materialsMarkup, /<view class="materials-page__header-gradient" \/>/)
+  assert.doesNotMatch(materialsMarkup, /publish-header-gradient\.png/)
+  assert.doesNotMatch(materialsStyles, /\.materials-page__gradient\s*\{/)
+})
+
+test('home hero removes its grey top gradient and uses the theme layers', () => {
+  const markup = read('miniprogram/pages/index/index.wxml')
+  const styles = read('miniprogram/pages/index/index.less')
+
+  assert.match(markup, /<scroll-view[^>]*class="home-page__tab-scroll"[^>]*>[\s\S]*?<image class="home-page__theme-image" src="\/assets\/home-new\/home-theme-sunset\.jpg" mode="aspectFill" \/>[\s\S]*?<view class="home-page__theme-fade" \/>[\s\S]*?<navigation-bar back="\{\{false\}\}" title="首页"/)
+  const themeImage = new URL('../miniprogram/assets/home-new/home-theme-sunset.jpg', import.meta.url)
+  assert.ok(existsSync(themeImage))
+  assert.ok(statSync(themeImage).size < 150 * 1024, 'theme image must leave room for the 2MB real-device upload limit')
+  assert.match(styles, /\.home-page__theme-image\s*\{[^}]*?height: 380px;/)
+  assert.match(styles, /\.home-page__theme-fade\s*\{[^}]*?height: 380px;[^}]*?background: linear-gradient\(180deg, rgba\(255, 255, 255, 0\.2\) 0%, rgba\(255, 255, 255, 1\) 100%\);/)
+  assert.doesNotMatch(styles, /\.home-page__tabs > \.home-page__tab-panel:first-child > \.home-page__tab-scroll\s*\{[\s\S]*?rgba\(204, 204, 204, var\(--home-header-gradient-opacity\)\)/)
 })
 
 test('navigation bar clears the status bar and WeChat capsule on every platform', async () => {

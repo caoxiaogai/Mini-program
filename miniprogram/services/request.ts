@@ -24,7 +24,7 @@ function localDevApiBase(): string {
 
 /**
  * 正式版走线上 /api。体验版、以及 DEV_LAN 指到同一线上主机时的真机调试，走 /dev/api。
- * 开发者工具走本机 DEVTOOLS_ORIGIN。
+ * 开发者工具使用 DEVTOOLS_ORIGIN；指向线上主机时走 /dev/api。
  */
 export function getApiBaseUrl(): string {
   if (cachedApiBaseUrl) return cachedApiBaseUrl
@@ -40,7 +40,9 @@ export function getApiBaseUrl(): string {
       return cachedApiBaseUrl
     }
     if (wx.getSystemInfoSync().platform === 'devtools') {
-      cachedApiBaseUrl = `${DEVTOOLS_ORIGIN}/api`
+      cachedApiBaseUrl = sameOrigin(DEVTOOLS_ORIGIN, PROD_API_ORIGIN)
+        ? onlineDevApiBase()
+        : `${DEVTOOLS_ORIGIN}/api`
       return cachedApiBaseUrl
     }
   } catch {

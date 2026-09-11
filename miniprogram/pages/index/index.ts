@@ -9,7 +9,7 @@ import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } fro
 import type { NotificationFilterId, NotificationGroupViewModel, NotificationsViewModel } from '../../types/notifications'
 import type { ProfilePageViewModel } from '../../types/profile'
 import { getProfilePageData } from '../../services/profile'
-import { getHomeHeaderGradientOpacity, getHomeHeaderOpacity } from '../../utils/home-header'
+import { getHomeHeaderOpacity } from '../../utils/home-header'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
 import type { DateRange } from '../../utils/date-range'
 import { sortAnalysisUsers } from '../../utils/analysis-users'
@@ -92,7 +92,6 @@ Page({
     analysisNavigationHeight: 91,
     greetingHeadline: '发布作品',
     greetingSubtitle: '找到高意向客户',
-    greetingGuide: '发布素材 → 跟进浏览 → 识别客户',
     homeData: null as HomePageViewModel | null,
     isLoading: true,
     loadError: false,
@@ -101,7 +100,6 @@ Page({
     isAndroid: false,
     activeTabIndex: 0,
     homeHeaderOpacity: 0,
-    homeHeaderGradientOpacity: 1,
     homeScrollTop: 0,
     homeNotificationMarkAllReadCollapseKey: 0,
     notifications: null as NotificationsViewModel | null,
@@ -255,12 +253,10 @@ Page({
   onHomeScroll(event: WechatMiniprogram.ScrollViewScrollEvent) {
     const scrollTop = event.detail.scrollTop
     const homeHeaderOpacity = getHomeHeaderOpacity(scrollTop)
-    const homeHeaderGradientOpacity = getHomeHeaderGradientOpacity(scrollTop)
     const scrollChanged = scrollTop !== this.data.homeScrollTop
-    if (homeHeaderOpacity === this.data.homeHeaderOpacity && homeHeaderGradientOpacity === this.data.homeHeaderGradientOpacity && !scrollChanged) return
+    if (homeHeaderOpacity === this.data.homeHeaderOpacity && !scrollChanged) return
     this.setData({
       homeHeaderOpacity,
-      homeHeaderGradientOpacity,
       homeScrollTop: scrollTop,
       ...(scrollChanged ? { homeNotificationMarkAllReadCollapseKey: this.data.homeNotificationMarkAllReadCollapseKey + 1 } : {}),
     })
