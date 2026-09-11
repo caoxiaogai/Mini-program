@@ -4,7 +4,7 @@
   <view class="home-page__tabs">
     <view class="home-page__tab-panel" hidden="{{activeTabIndex !== 0}}">
       <scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">
-        <image class="home-page__theme-image" src="/assets/home-new/home-theme-sunset.png" mode="aspectFill" />
+        <image class="home-page__theme-image" src="/assets/home-new/home-theme-sunset.jpg" mode="aspectFill" />
         <view class="home-page__theme-fade" />
         <navigation-bar back="{{false}}" title="首页" color="rgba(0,0,0, {{homeHeaderOpacity}})" background="rgba(255,255,255, {{homeHeaderOpacity}})" />
         <view class="home-page__content">
