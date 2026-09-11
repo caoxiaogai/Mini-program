@@ -5,12 +5,12 @@
  *
  * 查看本机 IP：Windows 运行 ipconfig，找当前 Wi-Fi 的 IPv4 地址。
  */
-export const DEV_LAN_ORIGIN = 'http://192.168.13.101:8081'
+export const DEV_LAN_ORIGIN = 'https://www.yjxzhang.com'
 
 /**
  * 开发者工具同样访问当前电脑局域网地址；后端运行在本机或同事电脑时都不要回退到 localhost。
  */
-export const DEVTOOLS_ORIGIN = 'http://127.0.0.1:8081'
+export const DEVTOOLS_ORIGIN = 'https://www.yjxzhang.com'
 
 /**
  * 线上 HTTPS 主机。正式版请求 /api，体验版请求 /dev/api。
@@ -23,3 +23,9 @@ export const PROD_API_ORIGIN = 'https://www.yjxzhang.com'
  * 仅在无法连接后端时临时打开；该开关只属于开发配置，不代表真实业务状态。
  */
 export const DEV_UI_PREVIEW = false
+
+/**
+ * 个人中心视觉调试专用：仅开发者工具内展示所选会员卡；不参与真机、体验版或生产环境的会员状态判断。
+ * 完成样式调整后可改为 '' 关闭。
+ */
+export const DEVTOOLS_PROFILE_MEMBERSHIP_CARD: 'standard' | 'premium' | '' = 'premium'

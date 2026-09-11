@@ -2,7 +2,7 @@
 <single-page-guard wx:else active="{{singlePageMode}}">
 <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{materialsNavigationHeight}}px;">
   <view class="materials-page__top">
-    <view class="materials-page__gradient" />
+    <image class="materials-page__header-art" src="/assets/materials/publish-header-gradient.png" mode="scaleToFill" />
     <view class="materials-page__header">
     <navigation-bar back="{{true}}" title="{{materialSelecting ? '已选 ' + selectedMaterialCount : '素材'}}" color="#000000" background="transparent">
       <view wx:if="{{materialSelecting}}" slot="right" class="materials-select-cancel" bindtap="onMaterialSelectCancelTap" hover-class="materials-select-cancel--pressed">取消</view>

@@ -22,10 +22,6 @@ function isVideoFileType(fileType: string): boolean {
   return fileType === 'VIDEO'
 }
 
-function resolveIntentLabel(level: string | null | undefined): string {
-  if (level === 'high' || level === 'medium' || level === 'low') return intentLabels[level]
-  return intentLabels.low
-}
 
 /** 1 → 一，11 → 十一，21 → 二十一 */
 export function formatChineseCount(value: number): string {
@@ -101,6 +97,7 @@ export function mapUserJourney(
 ): UserJourneyViewModel {
   const fileType = (raw.fileType ?? '').toUpperCase()
   const pageCount = raw.pageCount ?? 0
+  const intentLevel = raw.intentLevel === 'high' || raw.intentLevel === 'medium' ? raw.intentLevel : 'low'
 
   return {
     userId: String(raw.customerId ?? ''),
@@ -109,7 +106,8 @@ export function mapUserJourney(
       id: String(raw.materialId ?? ''),
       thumbnailUrl,
       title: (raw.title ?? '').trim() || '未命名作品',
-      intentLabel: resolveIntentLabel(raw.intentLevel),
+      intentLevel,
+      intentLabel: intentLabels[intentLevel],
     },
     events: asList(raw.events).map((event) => mapUserJourneyEvent(event, fileType, pageCount, now)),
   }

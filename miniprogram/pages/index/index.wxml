@@ -3,7 +3,9 @@
 <view class="home-page" style="--analysis-navigation-height: {{analysisNavigationHeight}}px; --notification-navigation-height: {{analysisNavigationHeight}}px;">
   <view class="home-page__tabs">
     <view class="home-page__tab-panel" hidden="{{activeTabIndex !== 0}}">
-      <scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh" style="--home-header-gradient-opacity: {{homeHeaderGradientOpacity}};">
+      <scroll-view scroll-y class="home-page__tab-scroll" bindscroll="onHomeScroll" refresher-enabled="{{true}}" refresher-triggered="{{pullRefreshing}}" bindrefresherrefresh="onPullRefresh">
+        <image class="home-page__theme-image" src="/assets/home-new/home-theme-sunset.png" mode="aspectFill" />
+        <view class="home-page__theme-fade" />
         <navigation-bar back="{{false}}" title="首页" color="rgba(0,0,0, {{homeHeaderOpacity}})" background="rgba(255,255,255, {{homeHeaderOpacity}})" />
         <view class="home-page__content">
           <view wx:if="{{isLoading}}" class="home-hero home-hero--loading">
@@ -14,13 +16,17 @@
             </view>
           </view>
           <view wx:else class="home-hero">
-            <image class="home-hero__arrow" src="/assets/home-new/home-hero-arrow.svg" mode="aspectFit" aria-hidden="true" />
             <view class="home-hero__copy">
               <view class="home-hero__line home-hero__headline-row"><text class="home-hero__headline">{{greetingHeadline}}</text><image class="home-hero__headline-icon" src="/assets/home-new/home-greeting-flame.png" mode="aspectFit" /></view>
               <view class="home-hero__line home-hero__subtitle-row"><text class="home-hero__subtitle">{{greetingSubtitle}}</text></view>
-              <text class="home-hero__guide">{{greetingGuide}}</text>
+              <view class="home-hero__guide">
+                <text>发布素材</text>
+                <image class="home-hero__guide-arrow" src="/assets/home-new/home-guide-arrow.svg" mode="aspectFit" />
+                <text>跟进浏览</text>
+                <image class="home-hero__guide-arrow" src="/assets/home-new/home-guide-arrow.svg" mode="aspectFit" />
+                <text>识别客户</text>
+              </view>
             </view>
-            <image class="home-hero__star" src="/assets/home-new/home-greeting-star.png" mode="aspectFit" aria-hidden="true" />
           </view>
           <view wx:if="{{isLoading}}" class="home-skeleton" aria-label="首页加载中">
             <view class="home-skeleton__section home-skeleton__section--followup">
@@ -194,7 +200,7 @@
     <view class="home-page__tab-panel home-page__materials-panel" hidden="{{activeTabIndex !== 2}}">
       <view class="materials-page {{isAndroid ? 'materials-page--android' : ''}}" style="--materials-navigation-height: {{analysisNavigationHeight}}px;">
         <view class="materials-page__top">
-          <view class="materials-page__gradient" />
+          <image class="materials-page__header-art" src="/assets/materials/publish-header-gradient.png" mode="scaleToFill" />
           <view class="materials-page__header">
           <navigation-bar back="{{false}}" title="{{materialSelecting ? '已选 ' + selectedMaterialCount : '素材'}}" color="#000000" background="transparent">
             <view wx:if="{{materialSelecting}}" slot="right" class="materials-select-cancel" bindtap="onMaterialSelectCancelTap" hover-class="materials-select-cancel--pressed">取消</view>
