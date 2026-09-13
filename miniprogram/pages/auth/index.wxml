@@ -1,6 +1,6 @@
 <view wx:if="{{ready}}" class="auth-page">
   <view class="auth-page__header">
-    <navigation-bar title="" back="{{false}}" color="#000000" background="#ffffff" />
+    <navigation-bar title="" back="{{true}}" color="#000000" background="#ffffff" />
   </view>
 
   <form bindsubmit="onFormSubmit">

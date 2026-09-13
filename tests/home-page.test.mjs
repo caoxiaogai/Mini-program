@@ -145,6 +145,7 @@ test('entry pages require authorized login and first-time profile setup', async 
   assert.match(authPage, /hasCompletedLogin/)
   assert.doesNotMatch(authPage, /resolveAuthGate/)
   assert.match(authMarkup, /wx:if="\{\{ready\}\}"/)
+  assert.match(authMarkup, /<navigation-bar title="" back="\{\{true\}\}" color="#000000" background="#ffffff" \/>/)
   assert.match(read('miniprogram/pages/share-gate/index.wxml'), /wx:if="\{\{ready\}\}"/)
   assert.match(detailLogic, /rest.id && \(rest.trackingId \|\| entry === 'share-gate'\)/)
   assert.match(detailLogic, /hasCompletedLogin\(\)/)
