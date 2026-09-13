@@ -99,12 +99,12 @@ test('membership plans keep API prices and add the confirmed Figma display label
     active: false,
     expireAt: null,
     plans: [
-      { id: 'month', title: '一个月', durationMonths: 1, amountFen: 1, priceYuan: '0.01' },
-      { id: 'quarter', title: '三个月', durationMonths: 3, amountFen: 2, priceYuan: '0.02' },
-      { id: 'half_year', title: '半年', durationMonths: 6, amountFen: 101, priceYuan: '1.01' },
-      { id: 'month_pro', title: '一个月', durationMonths: 1, amountFen: 3, priceYuan: '0.03' },
-      { id: 'quarter_pro', title: '三个月', durationMonths: 3, amountFen: 4, priceYuan: '0.04' },
-      { id: 'half_year_pro', title: '半年', durationMonths: 6, amountFen: 5, priceYuan: '0.05' },
+      { id: 'month', title: '一个月', durationMonths: 1, amountFen: 3888, priceYuan: '38.88' },
+      { id: 'quarter', title: '三个月', durationMonths: 3, amountFen: 8888, priceYuan: '88.88' },
+      { id: 'half_year', title: '半年', durationMonths: 6, amountFen: 16888, priceYuan: '168.88' },
+      { id: 'month_pro', title: '一个月', durationMonths: 1, amountFen: 8088, priceYuan: '80.88' },
+      { id: 'quarter_pro', title: '三个月', durationMonths: 3, amountFen: 20888, priceYuan: '208.88' },
+      { id: 'half_year_pro', title: '半年', durationMonths: 6, amountFen: 38888, priceYuan: '388.88' },
     ],
   })
 
@@ -118,12 +118,12 @@ test('membership plans keep API prices and add the confirmed Figma display label
   assert.deepEqual(
     page.plans.map((plan) => [plan.id, plan.displayTitle, plan.discountLabel, plan.priceLabel, plan.amountFen]),
     [
-      ['month', '一个月', '优惠力度 0%', '¥0.01', 1],
-      ['quarter', '三个月', '优惠力度 14%', '¥0.02', 2],
-      ['half_year', '半年', '优惠力度 20%', '¥1.01', 101],
-      ['month_pro', '一个月', '优惠力度 0%', '¥0.03', 3],
-      ['quarter_pro', '三个月', '优惠力度 14%', '¥0.04', 4],
-      ['half_year_pro', '半年', '优惠力度 20%', '¥0.05', 5],
+      ['month', '一个月', '优惠力度 0%', '¥38.88', 3888],
+      ['quarter', '三个月', '优惠力度 24%', '¥88.88', 8888],
+      ['half_year', '半年', '优惠力度 28%', '¥168.88', 16888],
+      ['month_pro', '一个月', '优惠力度 0%', '¥80.88', 8088],
+      ['quarter_pro', '三个月', '优惠力度 14%', '¥208.88', 20888],
+      ['half_year_pro', '半年', '优惠力度 20%', '¥388.88', 38888],
     ],
   )
 })
@@ -134,7 +134,7 @@ test('active membership shows expire date and renew copy', async () => {
   const page = mapMembershipPage({
     active: true,
     expireAt: '2026-10-01 12:00:00',
-    plans: [{ id: 'month', title: '1个月', durationMonths: 1, amountFen: 1, priceYuan: '0.01' }],
+    plans: [{ id: 'month', title: '1个月', durationMonths: 1, amountFen: 3888, priceYuan: '38.88' }],
   })
 
   assert.equal(page.active, true)
@@ -154,12 +154,12 @@ test('membership page defaults to the Figma-selected three-month plan', async ()
     active: false,
     expireAt: null,
     plans: [
-      { id: 'month', title: '1个月', durationMonths: 1, amountFen: 1, priceYuan: '0.01' },
-      { id: 'quarter', title: '3个月', durationMonths: 3, amountFen: 2, priceYuan: '0.02' },
-      { id: 'half_year', title: '半年', durationMonths: 6, amountFen: 3, priceYuan: '0.03' },
-      { id: 'month_pro', title: '一个月会员pro', durationMonths: 1, amountFen: 3, priceYuan: '0.03' },
-      { id: 'quarter_pro', title: '季度会员pro', durationMonths: 3, amountFen: 4, priceYuan: '0.04' },
-      { id: 'half_year_pro', title: '半年会员pro', durationMonths: 6, amountFen: 5, priceYuan: '0.05' },
+      { id: 'month', title: '1个月', durationMonths: 1, amountFen: 3888, priceYuan: '38.88' },
+      { id: 'quarter', title: '3个月', durationMonths: 3, amountFen: 8888, priceYuan: '88.88' },
+      { id: 'half_year', title: '半年', durationMonths: 6, amountFen: 16888, priceYuan: '168.88' },
+      { id: 'month_pro', title: '一个月会员pro', durationMonths: 1, amountFen: 8088, priceYuan: '80.88' },
+      { id: 'quarter_pro', title: '季度会员pro', durationMonths: 3, amountFen: 20888, priceYuan: '208.88' },
+      { id: 'half_year_pro', title: '半年会员pro', durationMonths: 6, amountFen: 38888, priceYuan: '388.88' },
     ],
   })
 

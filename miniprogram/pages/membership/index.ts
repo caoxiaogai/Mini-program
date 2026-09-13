@@ -240,7 +240,7 @@ Page({
     if (isIosDevice() && plan.amountFen < MEMBERSHIP_IOS_MIN_AMOUNT_FEN) {
       showMembershipResult(
         '开通失败',
-        `苹果支付最低 1 元。当前套餐是联调测试价 ${plan.priceLabel}。iPhone 必须走 Apple 支付，这个金额无法在苹果手机上完成支付。请用安卓测试，或把套餐改到至少 1 元后再用 iPhone 付。会员未开通。`,
+        `苹果支付最低 1 元。当前套餐是 ${plan.priceLabel}。iPhone 必须走 Apple 支付，这个金额无法在苹果手机上完成支付。请把套餐改到至少 1 元后再用 iPhone 付。会员未开通。`,
       )
       return
     }
@@ -366,7 +366,7 @@ Page({
       ) {
         showMembershipResult(
           '开通失败',
-          '苹果支付未完成。iPhone 走的是 Apple 支付。请确认：虚拟支付后台已打开「苹果支付」开关、小程序简称已审核通过、微信 8.0.68 以上、使用中国大陆 App Store 账号。当前测试价低于 1 元时苹果也会直接失败。会员未开通。',
+          '苹果支付未完成。iPhone 走的是 Apple 支付。请确认：虚拟支付后台已打开「苹果支付」开关、小程序简称已审核通过、微信 8.0.68 以上、使用中国大陆 App Store 账号。金额低于 1 元时苹果也会直接失败。会员未开通。',
         )
         return
       }

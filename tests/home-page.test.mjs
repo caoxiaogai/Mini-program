@@ -166,11 +166,27 @@ test('entry pages require authorized login and first-time profile setup', async 
   assert.doesNotMatch(read('miniprogram/app.ts'), /initPrivacyAuthorization/)
   assert.match(shareGateLogic, /onMoreTap\(\)/)
   assert.match(shareGateLogic, /buildAuthPath\(/)
+  assert.match(shareGateLogic, /HOME_MATERIALS_TAB_PATH/)
+  assert.match(shareGateLogic, /if \(this\.materialId\)/)
   assert.match(homeLogic, /runAuthed\(buildReturnPath\(HOME_PAGE_PATH, options\)/)
   assert.match(detailLogic, /runAuthed\(buildReturnPath\(MATERIAL_DETAIL_PATH, rest\)/)
   assert.match(documentLogic, /runAuthed\(buildReturnPath\('\/pages\/document-reader\/index', options\)/)
   assert.match(journeyLogic, /runAuthed\(buildReturnPath\('\/pages\/analysis-user-journey\/index', options\)/)
   assert.match(read('miniprogram/app.ts'), /if \(!hasAuthorizedLogin\(\)\) return/)
+})
+
+test('guest materials tab from share-gate requires login on any action', () => {
+  const logic = read('miniprogram/pages/index/index.ts')
+  const markup = read('miniprogram/pages/index/index.wxml')
+
+  assert.match(logic, /showGuestMaterialsPreview\(\)/)
+  assert.match(logic, /!hasCompletedLogin\(\) && options\.tab === 'materials'/)
+  assert.match(logic, /buildAuthPath\(HOME_MATERIALS_TAB_PATH\)/)
+  assert.match(logic, /guestPreview: false/)
+  assert.match(markup, /wx:if="\{\{guestPreview\}\}"[\s\S]*catchtap="onGuestGuardTap"/)
+  assert.match(logic, /onMaterialPublishTap\(\) \{[\s\S]*requireLoginForAction\(\)/)
+  assert.match(logic, /onTabTap[\s\S]*requireLoginForAction\(\)/)
+  assert.match(logic, /onPlusTap\(\) \{[\s\S]*requireLoginForAction\(\)/)
 })
 
 test('the app uses one shared page background color', () => {
@@ -2517,8 +2533,8 @@ test('publish belongs to the root swiper and does not navigate to a separate mat
   assert.match(homeMarkup, /home-page__materials-panel/)
   assert.match(homeMarkup, /bindtap="onMaterialPublishTap"/)
   assert.match(homeLogic, /const rootTabIds: HomeTabId\[\] = \['home', 'notifications', 'materials', 'analysis', 'profile'\]/)
-  assert.match(homeLogic, /onPlusTap\(\)\s*\{\s*this\.setActiveTab\(2\)\s*}/)
-  assert.match(homeLogic, /onMaterialPublishTap\(\)\s*\{\s*this\.setData\(\{ publishTypeSheetVisible: true \}\)\s*}/)
+  assert.match(homeLogic, /onPlusTap\(\)\s*\{[\s\S]*this\.setActiveTab\(2\)\s*}/)
+  assert.match(homeLogic, /onMaterialPublishTap\(\)\s*\{[\s\S]*this\.setData\(\{ publishTypeSheetVisible: true \}\)/)
   assert.doesNotMatch(homeLogic, /onPlusTap\(\)\s*\{[\s\S]*?wx\.navigateTo/)
   assert.match(homeLogic, /loadMaterials\(\)/)
   assert.match(homeConfig, /publish-success-modal/)

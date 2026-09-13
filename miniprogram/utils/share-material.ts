@@ -1,4 +1,5 @@
 export const HOME_PAGE_PATH = '/pages/index/index'
+export const HOME_MATERIALS_TAB_PATH = `${HOME_PAGE_PATH}?tab=materials`
 export const MATERIAL_DETAIL_PATH = '/pages/material-detail/index'
 export const MATERIAL_SHARE_GATE_PATH = '/pages/share-gate/index'
 export const MATERIAL_PUBLISH_PATH = '/pages/materials/publish/index'

@@ -14,6 +14,7 @@ function loadShareGatePage(auth, destinations, session = { completed: false }, p
     'buildAuthPath',
     'buildMaterialDetailPath',
     'HOME_PAGE_PATH',
+    'HOME_MATERIALS_TAB_PATH',
     'SHARE_GATE_DEFAULT_ART',
     'shareGateHeroArt',
     'shareGateArtFromPreview',
@@ -38,6 +39,7 @@ function loadShareGatePage(auth, destinations, session = { completed: false }, p
     auth.buildAuthPath,
     (id, trackingId) => `/pages/material-detail/index?id=${id}${trackingId ? `&trackingId=${trackingId}` : ''}`,
     '/pages/index/index',
+    '/pages/index/index?tab=materials',
     '/assets/share-gate/default-background.png',
     (materialId, coverUrl) => {
       if (coverUrl && /^https:\/\//i.test(coverUrl)) return { artSrc: coverUrl, artFromWork: true }
@@ -85,7 +87,7 @@ test('查看更多 opens authorization for first-time users and preserves the de
   assert.deepEqual(destinations, [auth.buildAuthPath('/pages/material-detail/index?id=work-1&trackingId=track-2')])
 })
 
-test('first launch without a shared work still opens WeChat authorization from 查看更多', async () => {
+test('first launch without a shared work opens the materials tab from 查看更多', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
   const destinations = []
   const page = loadShareGatePage(auth, destinations)
@@ -93,7 +95,7 @@ test('first launch without a shared work still opens WeChat authorization from �
   assert.equal(page.data.ready, true)
   page.onMoreTap()
   await Promise.resolve()
-  assert.deepEqual(destinations, [auth.buildAuthPath('/pages/index/index')])
+  assert.deepEqual(destinations, ['/pages/index/index?tab=materials'])
 })
 
 test('shared cover query shows the work image before the preview request', async () => {

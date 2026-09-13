@@ -1,7 +1,7 @@
 import { continueAfterAuth, hasCompletedLogin } from '../../services/auth'
 import { getMaterialListPreview } from '../../services/materials'
 import { buildAuthPath, safeReturnPath } from '../../utils/auth'
-import { buildMaterialDetailPath, HOME_PAGE_PATH, SHARE_GATE_DEFAULT_ART, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
+import { buildMaterialDetailPath, HOME_MATERIALS_TAB_PATH, HOME_PAGE_PATH, SHARE_GATE_DEFAULT_ART, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
 
 const friendAvatars = [
   '/assets/ranking/avatar-01.png',
@@ -59,6 +59,13 @@ Page({
 
   onMoreTap() {
     if (this.leaveIfLoggedIn()) return
-    wx.navigateTo({ url: buildAuthPath(this.destinationPath()) })
+    if (this.materialId) {
+      wx.navigateTo({ url: buildAuthPath(this.destinationPath()) })
+      return
+    }
+    wx.redirectTo({
+      url: HOME_MATERIALS_TAB_PATH,
+      fail: () => wx.reLaunch({ url: HOME_MATERIALS_TAB_PATH }),
+    })
   },
 })

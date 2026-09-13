@@ -37,8 +37,8 @@ const MEMBERSHIP_BENEFITS: Record<MembershipUiTier, MembershipBenefitViewModel[]
 
 const PLAN_DISPLAY: Record<MembershipPlanId, { title: string; discountLabel: string }> = {
   month: { title: '一个月', discountLabel: '优惠力度 0%' },
-  quarter: { title: '三个月', discountLabel: '优惠力度 14%' },
-  half_year: { title: '半年', discountLabel: '优惠力度 20%' },
+  quarter: { title: '三个月', discountLabel: '优惠力度 24%' },
+  half_year: { title: '半年', discountLabel: '优惠力度 28%' },
   month_pro: { title: '一个月', discountLabel: '优惠力度 0%' },
   quarter_pro: { title: '三个月', discountLabel: '优惠力度 14%' },
   half_year_pro: { title: '半年', discountLabel: '优惠力度 20%' },

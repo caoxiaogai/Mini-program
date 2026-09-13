@@ -18,13 +18,13 @@ import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis
 import { takeMaterialsListNeedsRefresh, takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_PAGE_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_MATERIALS_TAB_PATH, HOME_PAGE_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
 import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed, markHomeNotificationsViewed } from './home-notification-preview'
-import { buildReturnPath } from '../../utils/auth'
+import { buildAuthPath, buildReturnPath } from '../../utils/auth'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
@@ -82,12 +82,23 @@ function getVisibleMaterials(items: MaterialCardViewModel[], filterId: Materials
   return filterId === 'all' ? items : items.filter((item) => item.kind === filterId)
 }
 
+const guestMaterialsPreview: MaterialsViewModel = {
+  filters: [
+    { id: 'all', label: '全部' },
+    { id: 'image', label: '图片' },
+    { id: 'video', label: '视频' },
+    { id: 'pdf', label: 'PDF' },
+  ],
+  items: [],
+}
+
 Page({
   publishSuccessShared: false,
   shareImageToken: 0,
   authReady: false,
   skipNextShowRefresh: false,
   pendingPublishType: null as 'image' | 'video' | null,
+  loginRedirecting: false,
   data: {
     analysisNavigationHeight: 91,
     greetingHeadline: '发布作品',
@@ -167,6 +178,7 @@ Page({
     singlePageGateVisible: false,
     shareGateArtSrc: '/assets/share-gate/default-background.png',
     shareGateArtFromWork: false,
+    guestPreview: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     if (isSinglePageMode()) {
@@ -191,7 +203,39 @@ Page({
       analysisNavigationHeight: getNavigationBarLayout().totalHeight,
       isAndroid: platform === 'android' || platform === 'devtools',
     })
+    if (!hasCompletedLogin() && options.tab === 'materials') {
+      this.showGuestMaterialsPreview()
+      return
+    }
     runAuthed(buildReturnPath(HOME_PAGE_PATH, options), () => this.startHome(options))
+  },
+  showGuestMaterialsPreview() {
+    const index = rootTabIds.indexOf('materials')
+    this.setData({
+      guestPreview: true,
+      isLoading: false,
+      activeTabIndex: index,
+      tabItems: this.data.tabItems.map((item) => ({ ...item, active: false })),
+      plusActive: true,
+      materials: guestMaterialsPreview,
+      visibleMaterials: [],
+      hasVisibleMaterials: false,
+      materialsVisibleCount: 0,
+    })
+  },
+  requireLoginForAction(): boolean {
+    if (!this.data.guestPreview || hasCompletedLogin()) return false
+    if (this.loginRedirecting) return true
+    this.loginRedirecting = true
+    const url = buildAuthPath(HOME_MATERIALS_TAB_PATH)
+    wx.navigateTo({
+      url,
+      fail: () => wx.redirectTo({ url, fail: () => wx.reLaunch({ url }) }),
+    })
+    return true
+  },
+  onGuestGuardTap() {
+    this.requireLoginForAction()
   },
   showSinglePageShareGate(materialId?: string, coverUrl?: string) {
     const art = shareGateHeroArt(materialId, coverUrl)
@@ -229,6 +273,10 @@ Page({
     this.refreshAuthenticatedHome()
   },
   onShow() {
+    if (this.data.guestPreview) {
+      this.loginRedirecting = false
+      return
+    }
     if (!this.authReady) return
     if (this.skipNextShowRefresh) {
       this.skipNextShowRefresh = false
@@ -315,6 +363,7 @@ Page({
     this.applyNotificationWindow(this.data.notifications?.groups ?? [], this.data.activeNotificationFilter, next)
   },
   loadMaterials() {
+    if (this.data.guestPreview) return Promise.resolve()
     return getMaterials().then((materials) => {
       this.setData({ materials })
       this.applyMaterialsWindow(materials.items, this.data.activeMaterialFilter, LIST_PAGE_SIZE)
@@ -537,6 +586,10 @@ Page({
     return this.loadHomeData(true)
   },
   onPullRefresh() {
+    if (this.requireLoginForAction()) {
+      this.setData({ pullRefreshing: false })
+      return
+    }
     this.setData({ pullRefreshing: true })
     runPullRefresh(this.refreshActiveTab(), () => this.setData({ pullRefreshing: false }))
   },
@@ -576,6 +629,7 @@ Page({
     if (id === 'profile') this.loadProfileData()
   },
   onTabTap(event: WechatMiniprogram.CustomEvent<{ id?: HomeTabId }>) {
+    if (this.requireLoginForAction()) return
     const id = event.detail?.id ?? (event.currentTarget.dataset.id as HomeTabId | undefined)
     const index = rootTabIds.findIndex((tabId) => tabId === id)
     this.setActiveTab(index)
@@ -830,6 +884,7 @@ Page({
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${event.detail.id}` })
   },
   onMaterialFilterTap(event: WechatMiniprogram.TouchEvent) {
+    if (this.requireLoginForAction()) return
     const filterId = event.currentTarget.dataset.id as MaterialsFilterId
     if (!['all', 'image', 'video', 'pdf'].includes(filterId)) return
 
@@ -838,6 +893,7 @@ Page({
     this.applyMaterialsWindow(this.data.materials?.items ?? [], filterId, LIST_PAGE_SIZE)
   },
   onMaterialCardTap(event: WechatMiniprogram.TouchEvent) {
+    if (this.requireLoginForAction()) return
     const materialId = event.currentTarget.dataset.id as string | undefined
     if (!materialId) return
 
@@ -852,6 +908,7 @@ Page({
     wx.navigateTo({ url: buildMaterialDetailPath(materialId, undefined, true) })
   },
   onMaterialCardLongPress(event: WechatMiniprogram.TouchEvent) {
+    if (this.requireLoginForAction()) return
     const materialId = event.currentTarget.dataset.id as string | undefined
     if (!materialId || this.data.deletingMaterials) return
     const selectedMaterialIds = this.data.materialSelecting
@@ -921,6 +978,7 @@ Page({
     })
   },
   onMaterialPublishTap() {
+    if (this.requireLoginForAction()) return
     if (this.data.materialSelecting) {
       this.deleteSelectedMaterials()
       return
@@ -1031,6 +1089,7 @@ Page({
     }
   },
   onPlusTap() {
+    if (this.requireLoginForAction()) return
     this.setActiveTab(2)
   },
 })
