@@ -1,4 +1,5 @@
 import { getMaterialDraft, getMaterialShareCard, publishMaterial, uploadMaterialFiles } from '../../../services/materials'
+import { ApiError } from '../../../services/request'
 import { runAuthed } from '../../../services/auth'
 import { ensureEmojiPresentation } from '../../../utils/emoji'
 import { openCreatedMaterial, returnToEditedMaterial } from '../../../utils/publish-return'
@@ -426,8 +427,12 @@ Page({
         this.setPublishMedia(media)
         return work({ ...input, media })
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         this.setData({ uploading: false })
+        if (error instanceof ApiError && error.notified) return
+        const message = error instanceof Error ? error.message.trim() : ''
+        if (!message) return
+        wx.showModal({ title: '发布失败', content: message, showCancel: false })
       })
       .then(() => {
         this.submitting = false

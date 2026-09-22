@@ -5,12 +5,12 @@
  *
  * 查看本机 IP：Windows 运行 ipconfig，找当前 Wi-Fi 的 IPv4 地址。
  */
-export const DEV_LAN_ORIGIN = 'https://www.yjxzhang.com'
+export const DEV_LAN_ORIGIN = 'http://127.0.0.1:8081'
 
 /**
  * 开发者工具同样访问当前电脑局域网地址；后端运行在本机或同事电脑时都不要回退到 localhost。
  */
-export const DEVTOOLS_ORIGIN = 'https://www.yjxzhang.com'
+export const DEVTOOLS_ORIGIN = 'http://127.0.0.1:8081'
 
 /**
  * 线上 HTTPS 主机。正式版请求 /api，体验版请求 /dev/api。

@@ -1,4 +1,5 @@
 import { getMaterialShareCard, getNoteDraft, publishNote, uploadNoteFiles } from '../../../services/materials'
+import { ApiError } from '../../../services/request'
 import { runAuthed } from '../../../services/auth'
 import type { NoteBlock, NoteFileBlock, NoteSubmitInput } from '../../../types/note'
 import { buildReturnPath } from '../../../utils/auth'
@@ -928,8 +929,12 @@ Page({
         this.setData({ blocks: withFileLabels(blocks) })
         return work({ ...input, blocks })
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         this.setData({ uploading: false })
+        if (error instanceof ApiError && error.notified) return
+        const message = error instanceof Error ? error.message.trim() : ''
+        if (!message) return
+        wx.showModal({ title: '发布失败', content: message, showCancel: false })
       })
       .then(() => {
         this.submitting = false

@@ -10,6 +10,12 @@
 
 ## 相关文档
 
+### 2026-09-22：发布内容接入微信内容安全
+
+- 只改了 `D:\IdeaProjects\aisales_dev`。图片上传调用 `imgSecCheck`；作品文案和评论调用 `msgSecCheck`；图片、音频、视频地址调用 `mediaCheckAsync`。未通过或接口失败时不保存，并把微信返回内容展示给用户。
+- 异步检测结果回调地址：`https://www.yjxzhang.com/dev/api/wechat/media-check`。需要在公众平台「开发 - 开发管理 - 消息推送」填这个地址，违规作品才会在回调后下架。
+- 服务端日志会打印 `msgSecCheck`、`imgSecCheck`、`mediaCheckAsync` 的原始返回，提审录屏可以截这段日志或接口调试工具的成功返回。需重新部署 `aisales_dev` 后生效。
+
 ### 2026-09-22：审核选图先弹出隐私协议
 
 - 审核员点「从相册选择」时提示「选择失败，请稍后重试」。选图原先放在 `setData` 回调里，未同意过隐私协议的审核账号不会弹出官方协议，接口直接失败。

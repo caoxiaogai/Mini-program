@@ -114,6 +114,7 @@ export function resolveMediaUrl(url: string | null | undefined): string {
 /** 归一化后的接口错误；code 为后端业务码，网络层失败时为 -1 */
 export class ApiError extends Error {
   code: number
+  notified = false
 
   constructor(code: number, message: string) {
     super(message)
@@ -347,7 +348,12 @@ export function uploadFile(path: string, filePath: string): Promise<string> {
             resolve(value as string)
             return
           }
-          wx.showToast({ title: '上传失败，请稍后重试', icon: 'none' })
+          error.notified = true
+          wx.showModal({
+            title: '上传失败',
+            content: error.message || '上传失败',
+            showCancel: false,
+          })
           reject(error)
         }
 
