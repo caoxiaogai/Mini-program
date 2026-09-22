@@ -1,11 +1,10 @@
 import { applyThumbnailMap, deleteMaterials, enrichThumbnailsByIds, getMaterialDetail, getMaterialListPreview, getMaterials } from '../../services/materials'
-import { hasCompletedLogin, runAuthed } from '../../services/auth'
+import { hasCompletedLogin, requireAccountLogin } from '../../services/auth'
 import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } from '../../types/materials'
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
 import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
-import { buildReturnPath } from '../../utils/auth'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
 import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
@@ -105,7 +104,24 @@ Page({
       materialsNavigationHeight: getNavigationBarLayout().totalHeight,
       isAndroid: platform === 'android' || platform === 'devtools',
     })
-    runAuthed(buildReturnPath('/pages/materials/index', options), () => this.startMaterials(options))
+    if (!hasCompletedLogin()) {
+      this.authReady = true
+      this.setData({
+        materials: {
+          filters: [
+            { id: 'all', label: '全部' },
+            { id: 'image', label: '图片' },
+            { id: 'video', label: '视频' },
+            { id: 'pdf', label: 'PDF' },
+          ],
+          items: [],
+        },
+        visibleMaterials: [],
+        hasVisibleMaterials: false,
+      })
+      return
+    }
+    this.startMaterials(options)
   },
   showSinglePageShareGate(materialId?: string, coverUrl?: string) {
     const art = shareGateHeroArt(materialId, coverUrl)
@@ -151,6 +167,7 @@ Page({
     this.loadMaterials()
   },
   loadMaterials() {
+    if (!hasCompletedLogin()) return Promise.resolve()
     return getMaterials().then((materials) => {
       this.setData({ materials })
       this.applyMaterialsWindow(materials.items, this.data.activeFilter, LIST_PAGE_SIZE)
@@ -282,6 +299,7 @@ Page({
     })
   },
   onPublishTap() {
+    if (requireAccountLogin('/pages/materials/index')) return
     if (this.data.materialSelecting) {
       this.deleteSelectedMaterials()
       return

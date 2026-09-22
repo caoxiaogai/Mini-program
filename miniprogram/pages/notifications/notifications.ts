@@ -1,5 +1,4 @@
 import { enrichNotificationCards, getNotifications } from '../../services/notifications'
-import { runAuthed } from '../../services/auth'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
@@ -32,10 +31,8 @@ Page({
   authReady: false,
   onLoad() {
     this.setData({ notificationNavigationHeight: getNavigationBarLayout().totalHeight })
-    runAuthed('/pages/notifications/notifications', () => {
-      this.authReady = true
-      this.loadNotifications()
-    })
+    this.authReady = true
+    this.loadNotifications()
   },
   onShow() {
     if (!this.authReady) return
@@ -48,10 +45,32 @@ Page({
     this.loadMoreNotifications()
   },
   loadNotifications() {
-    return getNotifications().then((notifications) => {
-      this.setData({ notifications, unreadNotificationCount: countUnreadNotificationGroups(notifications.groups) })
-      this.applyNotificationWindow(notifications.groups, this.data.activeFilter, LIST_PAGE_SIZE)
-    })
+    return getNotifications()
+      .then((notifications) => {
+        this.setData({ notifications, unreadNotificationCount: countUnreadNotificationGroups(notifications.groups) })
+        this.applyNotificationWindow(notifications.groups, this.data.activeFilter, LIST_PAGE_SIZE)
+      })
+      .catch(() => {
+        this.setData({
+          notifications: {
+            filters: [
+              { id: 'all', label: '全部' },
+              { id: 'high', label: '高意向' },
+              { id: 'medium', label: '中意向' },
+              { id: 'low', label: '低意向' },
+            ],
+            groups: [],
+            showVisitorLimitPrompt: false,
+            limitPromptActionLabel: '',
+            limitPromptTargetTier: 'standard',
+            limitPromptVisitorCount: 0,
+            limitPromptVisitorAvatars: [],
+          },
+          unreadNotificationCount: 0,
+          visibleGroups: [],
+          hasVisibleGroups: false,
+        })
+      })
   },
   applyNotificationWindow(groups: NotificationGroupViewModel[], filterId: NotificationFilterId, visibleCount: number) {
     const windowed = buildNotificationListWindow(groups, filterId, visibleCount)

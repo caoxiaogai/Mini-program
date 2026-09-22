@@ -1,6 +1,5 @@
 import { enrichAnalysisCards, enrichAudienceUsers, getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
 import { applyThumbnailMap } from '../../services/materials'
-import { runAuthed } from '../../services/auth'
 import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { getDateRangeLimits, getDefaultDateRange } from '../../utils/date-range'
@@ -10,7 +9,6 @@ import { capAudienceUsers, resolveVisitorLimit } from '../../utils/membership'
 import { LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis-trend'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
-import { buildReturnPath } from '../../utils/auth'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
 
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
@@ -109,17 +107,15 @@ Page({
   },
   onLoad(options: Record<string, string | undefined>) {
     this.setData({ analysisNavigationHeight: getNavigationBarLayout().totalHeight })
-    runAuthed(buildReturnPath('/pages/analysis/index', options), () => {
-      const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
+    const analysisTabIndex = Math.max(0, analysisTabs.findIndex((tab) => tab.id === options.tab))
 
-      this.setData({
-        activeAnalysisTab: analysisTabs[analysisTabIndex].id,
-        activeAnalysisTabIndex: analysisTabIndex,
-        analysisTabOffset: analysisTabIndex * 100,
-      })
-
-      this.loadAnalysis(this.data.activePeriod)
+    this.setData({
+      activeAnalysisTab: analysisTabs[analysisTabIndex].id,
+      activeAnalysisTabIndex: analysisTabIndex,
+      analysisTabOffset: analysisTabIndex * 100,
     })
+
+    this.loadAnalysis(this.data.activePeriod)
   },
   onPullDownRefresh() {
     runPagePullRefresh(this.refreshCurrentView())
@@ -167,6 +163,29 @@ Page({
       })
       if (initializeWorkData) this.applyAnalysisCardsWindow(allAnalysisCards, LIST_PAGE_SIZE)
       this.applyAnalysisUsersWindow(sortedUsers, LIST_PAGE_SIZE)
+    }).catch(() => {
+      this.setData({
+        analysisData: {
+          summary: [],
+          cards: [],
+          workCount: '0',
+          userSummary: [],
+          audienceUsers: [],
+          visitorLimit: null,
+          totalData: {
+            heroMetrics: [],
+            overview: [],
+            readTrends: { day: [], week: [], month: [], total: [] },
+          },
+        },
+        allAnalysisCards: [],
+        workSummary: [],
+        workCount: '0',
+        hasAnalysisCards: false,
+        visibleAnalysisCards: [],
+        visibleAnalysisUsers: [],
+        hasAnalysisUsers: false,
+      })
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {

@@ -1,5 +1,4 @@
 import { getRankingOverview, sortRankingEntries } from '../../services/ranking'
-import { runAuthed } from '../../services/auth'
 import type { RankingEntryViewModel, RankingMetric, RankingTab, RankingViewModel } from '../../types/ranking'
 import { LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 import { calculateRankingHeaderOpacity } from '../../utils/ranking'
@@ -22,20 +21,28 @@ Page({
     rankingHeaderOpacity: 0,
   },
   onLoad() {
-    runAuthed('/pages/ranking/index', () => this.loadRanking())
+    this.loadRanking()
   },
   onPullDownRefresh() {
     runPagePullRefresh(this.loadRanking())
   },
   loadRanking() {
-    return getRankingOverview().then((rankingData) => {
-      const sorted = sortRankingEntries(rankingData.entries, this.data.activeRankingMetric)
-      this.setData({
-        rankingData,
-        hasRankingEntries: sorted.length > 0,
+    return getRankingOverview()
+      .then((rankingData) => {
+        const sorted = sortRankingEntries(rankingData.entries, this.data.activeRankingMetric)
+        this.setData({
+          rankingData,
+          hasRankingEntries: sorted.length > 0,
+        })
+        this.applyRankingWindow(sorted, LIST_PAGE_SIZE)
       })
-      this.applyRankingWindow(sorted, LIST_PAGE_SIZE)
-    })
+      .catch(() => {
+        this.setData({
+          rankingData: { entries: [] },
+          hasRankingEntries: false,
+          visibleRankingEntries: [],
+        })
+      })
   },
   applyRankingWindow(entries: RankingEntryViewModel[], visibleCount: number) {
     this.setData({

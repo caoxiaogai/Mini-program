@@ -1,4 +1,4 @@
-import { hasCompletedLogin, runAuthed } from '../../services/auth'
+import { hasCompletedLogin, requireAccountLogin } from '../../services/auth'
 import { getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards, enrichAnalysisCards, enrichAudienceUsers } from '../../services/analysis'
 import { getHomePageData } from '../../services/home'
 import { applyThumbnailMap, deleteMaterials, enrichThumbnailsByIds, getMaterialDetail, getMaterialListPreview, getMaterials } from '../../services/materials'
@@ -18,13 +18,12 @@ import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis
 import { takeMaterialsListNeedsRefresh, takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_MATERIALS_TAB_PATH, HOME_PAGE_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_MATERIALS_TAB_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
 import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
 import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed, markHomeNotificationsViewed } from './home-notification-preview'
-import { buildAuthPath, buildReturnPath } from '../../utils/auth'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
@@ -90,6 +89,70 @@ const guestMaterialsPreview: MaterialsViewModel = {
     { id: 'pdf', label: 'PDF' },
   ],
   items: [],
+}
+
+const guestHomeData: HomePageViewModel = {
+  unreadNotificationCount: 0,
+  unreadNotificationEventIds: [],
+  showVisitorLimitPrompt: false,
+  limitPromptActionLabel: '',
+  limitPromptTargetTier: 'standard',
+  limitPromptVisitorCount: 0,
+  limitPromptVisitorAvatars: [],
+  notifications: [],
+  contents: [],
+  intentSummary: { total: '0', highCount: '0', mediumCount: '0', lowCount: '0' },
+  today: { viewCount: '0', completeCount: '0', forwardCount: '0', viewerCount: '0' },
+}
+
+const guestNotifications: NotificationsViewModel = {
+  filters: [
+    { id: 'all', label: '全部' },
+    { id: 'high', label: '高意向' },
+    { id: 'medium', label: '中意向' },
+    { id: 'low', label: '低意向' },
+  ],
+  groups: [],
+  showVisitorLimitPrompt: false,
+  limitPromptActionLabel: '',
+  limitPromptTargetTier: 'standard',
+  limitPromptVisitorCount: 0,
+  limitPromptVisitorAvatars: [],
+}
+
+const guestAnalysisData: AnalysisViewModel = {
+  summary: [],
+  cards: [],
+  workCount: '0',
+  userSummary: [],
+  audienceUsers: [],
+  visitorLimit: null,
+  totalData: {
+    heroMetrics: [],
+    overview: [],
+    readTrends: { day: [], week: [], month: [], total: [] },
+  },
+}
+
+const guestProfile: ProfilePageViewModel = {
+  avatarUrl: '/assets/profile/profile-avatar.png',
+  nickname: '未登录',
+  balance: '0',
+  balanceLabel: '我的余额',
+  withdrawLabel: '提现',
+  membership: {
+    active: false,
+    tier: 'none',
+    cardKind: 'inactive',
+    isPremium: false,
+    isStandard: false,
+    isInactive: true,
+    expireLabel: '',
+    trackingLabel: '',
+    trackingSegments: [],
+  },
+  pendingTitle: '尽情期待',
+  pendingDescription: '更多功能，即将呈现',
 }
 
 Page({
@@ -203,39 +266,35 @@ Page({
       analysisNavigationHeight: getNavigationBarLayout().totalHeight,
       isAndroid: platform === 'android' || platform === 'devtools',
     })
-    if (!hasCompletedLogin() && options.tab === 'materials') {
-      this.showGuestMaterialsPreview()
+    if (!hasCompletedLogin()) {
+      this.startGuestHome(options)
       return
     }
-    runAuthed(buildReturnPath(HOME_PAGE_PATH, options), () => this.startHome(options))
+    this.startHome(options)
   },
-  showGuestMaterialsPreview() {
-    const index = rootTabIds.indexOf('materials')
+  startGuestHome(options: Record<string, string | undefined>) {
+    this.authReady = true
     this.setData({
       guestPreview: true,
       isLoading: false,
-      activeTabIndex: index,
-      tabItems: this.data.tabItems.map((item) => ({ ...item, active: false })),
-      plusActive: true,
+      loadError: false,
+      homeData: guestHomeData,
+      notifications: guestNotifications,
       materials: guestMaterialsPreview,
       visibleMaterials: [],
       hasVisibleMaterials: false,
       materialsVisibleCount: 0,
+      analysisData: guestAnalysisData,
+      profileData: guestProfile,
     })
+    if (options.tab === 'materials') this.setActiveTab(2)
+    else if (options.tab === 'profile' || takeOpenHomeProfileTab()) this.showProfileTab()
   },
-  requireLoginForAction(): boolean {
-    if (!this.data.guestPreview || hasCompletedLogin()) return false
+  requireLoginForAction(returnPath = HOME_MATERIALS_TAB_PATH): boolean {
+    if (hasCompletedLogin()) return false
     if (this.loginRedirecting) return true
     this.loginRedirecting = true
-    const url = buildAuthPath(HOME_MATERIALS_TAB_PATH)
-    wx.navigateTo({
-      url,
-      fail: () => wx.redirectTo({ url, fail: () => wx.reLaunch({ url }) }),
-    })
-    return true
-  },
-  onGuestGuardTap() {
-    this.requireLoginForAction()
+    return requireAccountLogin(returnPath)
   },
   showSinglePageShareGate(materialId?: string, coverUrl?: string) {
     const art = shareGateHeroArt(materialId, coverUrl)
@@ -313,6 +372,7 @@ Page({
     })
   },
   loadHomeData(silent = false) {
+    if (this.data.guestPreview) return Promise.resolve()
     if (!silent) this.setData({ isLoading: true, loadError: false })
     return getHomePageData()
       .then((homeData) => {
@@ -323,6 +383,7 @@ Page({
       })
   },
   loadNotifications() {
+    if (this.data.guestPreview) return Promise.resolve()
     return getNotifications().then((notifications) => {
       this.setData({ notifications, unreadNotificationCount: countUnreadNotificationGroups(notifications.groups) })
       this.applyNotificationWindow(notifications.groups, this.data.activeNotificationFilter, LIST_PAGE_SIZE)
@@ -434,6 +495,7 @@ Page({
     return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
   },
   loadAnalysis(period: AnalysisPeriodId = this.data.activePeriod, trendPeriod: AnalysisPeriodId = this.data.activePeakPeriod, dateRange?: DateRange) {
+    if (this.data.guestPreview) return Promise.resolve()
     const request = dateRange
       ? getAnalysisOverview(period, dateRange, this.data.activeAnalysisSort, trendPeriod)
       : getAnalysisOverview(period, undefined, this.data.activeAnalysisSort, trendPeriod)
@@ -461,6 +523,7 @@ Page({
     })
   },
   loadWorkCards(period: AnalysisPeriodId, dateRange?: DateRange) {
+    if (this.data.guestPreview) return Promise.resolve()
     return getAnalysisWorkList(period, this.resolveWorkDateRange(period, dateRange), this.data.activeAnalysisSort).then(({ summary, cards, workCount }) => {
       this.setData({
         workSummary: summary,
@@ -473,6 +536,7 @@ Page({
     })
   },
   loadAudienceUsers(period: AnalysisPeriodId, dateRange?: DateRange) {
+    if (this.data.guestPreview) return Promise.resolve()
     return getAnalysisOverview(period, dateRange).then((analysisData) => {
       const sortedUsers = capAudienceUsers(
         sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort),
@@ -542,6 +606,7 @@ Page({
     this.applyAnalysisUsersWindow(users, next)
   },
   loadProfileData() {
+    if (this.data.guestPreview) return Promise.resolve()
     return getProfilePageData()
       .then((profileData) => this.setData({ profileData }))
       .catch(() => this.setData({ profileData: null }))
@@ -552,18 +617,21 @@ Page({
     this.loadProfileData()
   },
   onProfileSettingsTap() {
+    if (this.requireLoginForAction('/pages/settings/index')) return
     wx.navigateTo({ url: '/pages/settings/index' })
   },
   onProfileMembershipTap(event: WechatMiniprogram.CustomEvent<{ cardKind?: string }>) {
     const cardKind = event.detail?.cardKind
-    wx.navigateTo({
-      url: cardKind === 'standard' || cardKind === 'premium' ? membershipPageUrl('premium') : MEMBERSHIP_PAGE_PATH,
-    })
+    const url = cardKind === 'standard' || cardKind === 'premium' ? membershipPageUrl('premium') : MEMBERSHIP_PAGE_PATH
+    if (this.requireLoginForAction(url)) return
+    wx.navigateTo({ url })
   },
   onHomeMembershipLimitTap() {
     const targetTier =
       this.data.homeData?.limitPromptTargetTier ?? this.data.notifications?.limitPromptTargetTier ?? 'standard'
-    wx.navigateTo({ url: membershipPageUrl(targetTier) })
+    const url = membershipPageUrl(targetTier)
+    if (this.requireLoginForAction(url)) return
+    wx.navigateTo({ url })
   },
   refreshActiveTab() {
     const tab = rootTabIds[this.data.activeTabIndex]
@@ -586,7 +654,7 @@ Page({
     return this.loadHomeData(true)
   },
   onPullRefresh() {
-    if (this.requireLoginForAction()) {
+    if (this.data.guestPreview) {
       this.setData({ pullRefreshing: false })
       return
     }
@@ -629,7 +697,6 @@ Page({
     if (id === 'profile') this.loadProfileData()
   },
   onTabTap(event: WechatMiniprogram.CustomEvent<{ id?: HomeTabId }>) {
-    if (this.requireLoginForAction()) return
     const id = event.detail?.id ?? (event.currentTarget.dataset.id as HomeTabId | undefined)
     const index = rootTabIds.findIndex((tabId) => tabId === id)
     this.setActiveTab(index)
@@ -884,7 +951,6 @@ Page({
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${event.detail.id}` })
   },
   onMaterialFilterTap(event: WechatMiniprogram.TouchEvent) {
-    if (this.requireLoginForAction()) return
     const filterId = event.currentTarget.dataset.id as MaterialsFilterId
     if (!['all', 'image', 'video', 'pdf'].includes(filterId)) return
 
@@ -893,7 +959,6 @@ Page({
     this.applyMaterialsWindow(this.data.materials?.items ?? [], filterId, LIST_PAGE_SIZE)
   },
   onMaterialCardTap(event: WechatMiniprogram.TouchEvent) {
-    if (this.requireLoginForAction()) return
     const materialId = event.currentTarget.dataset.id as string | undefined
     if (!materialId) return
 
@@ -908,7 +973,6 @@ Page({
     wx.navigateTo({ url: buildMaterialDetailPath(materialId, undefined, true) })
   },
   onMaterialCardLongPress(event: WechatMiniprogram.TouchEvent) {
-    if (this.requireLoginForAction()) return
     const materialId = event.currentTarget.dataset.id as string | undefined
     if (!materialId || this.data.deletingMaterials) return
     const selectedMaterialIds = this.data.materialSelecting
@@ -1089,7 +1153,6 @@ Page({
     }
   },
   onPlusTap() {
-    if (this.requireLoginForAction()) return
     this.setActiveTab(2)
   },
 })

@@ -8,7 +8,7 @@ test('existing WeChat users bypass profile setup after a successful login respon
   const authService = read('miniprogram/services/auth.ts')
   const requestService = read('miniprogram/services/request.ts')
 
-  assert.match(authService, /export function resolveAuthGate\(\): Promise<AuthGate> \{\s*return ensureLogin\(\)/)
-  assert.doesNotMatch(authService, /if \(!hasAuthorizedLogin\(\)\) return Promise\.resolve\('login'\)/)
+  assert.match(authService, /export function resolveAuthGate\(\): Promise<AuthGate> \{\s*if \(hasCompletedLogin\(\)\) return Promise\.resolve\('ok'\)/)
+  assert.match(authService, /if \(!hasAuthorizedLogin\(\)\) return Promise\.resolve\('login'\)/)
   assert.match(requestService, /function persistLogin\(data: ApiLoginData\): ApiLoginData \{[\s\S]*wx\.setStorageSync\(STORAGE_KEY_AUTHORIZED, '1'\)/)
 })

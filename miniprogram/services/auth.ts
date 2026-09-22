@@ -1,5 +1,5 @@
 import type { ApiLoginData } from '../types/api'
-import { AUTH_PAGE_ROUTE, buildShareGatePath, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath, type AuthGate } from '../utils/auth'
+import { AUTH_PAGE_ROUTE, buildAuthPath, isLocalAvatarFile, isLoginProfileComplete, safeReturnPath, type AuthGate } from '../utils/auth'
 import { HOME_PAGE_PATH, isSinglePageMode } from '../utils/share-material'
 import { authorizeLogin, clearLogin, ensureLogin, getCachedLogin, hasAuthorizedLogin, patchCachedLogin } from './request'
 import { updateUserProfile, uploadUserAvatar } from './user'
@@ -22,13 +22,24 @@ export function resolveAuthGate(): Promise<AuthGate> {
 export function requireAuth(returnPath: string): Promise<boolean> {
   return resolveAuthGate().then((gate) => {
     if (gate === 'ok') return true
-    const url = buildShareGatePath(returnPath)
+    const url = buildAuthPath(returnPath)
     wx.redirectTo({
       url,
       fail: () => wx.reLaunch({ url }),
     })
     return false
   })
+}
+
+/** 发布素材、开通会员等必须关联个人账户的操作；未登录则打开授权页。 */
+export function requireAccountLogin(returnPath: string): boolean {
+  if (hasCompletedLogin()) return false
+  const url = buildAuthPath(returnPath)
+  wx.navigateTo({
+    url,
+    fail: () => wx.redirectTo({ url, fail: () => wx.reLaunch({ url }) }),
+  })
+  return true
 }
 
 export function continueAfterAuth(returnPath: string): void {
@@ -51,7 +62,7 @@ export function isAuthPageRoute(route: string | undefined): boolean {
 
 export function logoutToAuth(): void {
   clearLogin()
-  wx.reLaunch({ url: buildShareGatePath(HOME_PAGE_PATH) })
+  wx.reLaunch({ url: HOME_PAGE_PATH })
 }
 
 export function completeProfileLogin(input: { nickname: string; avatar: string }): Promise<ApiLoginData> {

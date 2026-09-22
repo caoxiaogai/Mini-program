@@ -290,6 +290,5 @@
     share-image-url="{{shareImageUrl}}"
     bind:close="onPublishSuccessClose"
   />
-  <view wx:if="{{guestPreview}}" class="home-page__guest-guard" catchtap="onGuestGuardTap"></view>
 </view>
 </single-page-guard>
