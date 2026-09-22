@@ -25,7 +25,7 @@ import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, 
 import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed, markHomeNotificationsViewed } from './home-notification-preview'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
-import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
+import { choosePublishImageOrVideo, ensurePrivacyAuthorize, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
@@ -1055,13 +1055,14 @@ Page({
   },
   onPublishTypeSelect(event: WechatMiniprogram.CustomEvent<{ type: PublishEntryType }>) {
     const type = event.detail.type
+    if (type === 'pdf') {
+      this.setData({ publishTypeSheetVisible: false })
+      this.choosePdfForPublish()
+      return
+    }
     this.setData({ publishTypeSheetVisible: false }, () => {
       if (type === 'note') {
         wx.navigateTo({ url: MATERIAL_NOTE_PATH })
-        return
-      }
-      if (type === 'pdf') {
-        this.choosePdfForPublish()
         return
       }
       if (type !== 'image' && type !== 'video') return
@@ -1072,11 +1073,9 @@ Page({
   onPublishSourceSelect(event: WechatMiniprogram.CustomEvent<{ source: PublishMediaSource }>) {
     const type = this.pendingPublishType
     const source = event.detail.source
-    this.setData({ publishSourceSheetVisible: false }, () => {
-      if (!type) return
-      if (source !== 'camera' && source !== 'album') return
-      this.openPublishEditorFromPicker(type, source)
-    })
+    if (!type || (source !== 'camera' && source !== 'album')) return
+    this.setData({ publishSourceSheetVisible: false })
+    this.openPublishEditorFromPicker(type, source)
   },
   openPublishEditorFromPicker(type: 'image' | 'video', source: PublishMediaSource) {
     this.skipNextShowRefresh = true
@@ -1096,6 +1095,14 @@ Page({
   },
   choosePdfForPublish() {
     this.skipNextShowRefresh = true
+    ensurePrivacyAuthorize()
+      .then(() => this.pickPdfFromChat())
+      .catch((error: WechatMiniprogram.GeneralCallbackResult) => {
+        this.skipNextShowRefresh = false
+        showPublishPickerError(error.errMsg)
+      })
+  },
+  pickPdfFromChat() {
     wx.chooseMessageFile({
       count: 1,
       type: 'file',

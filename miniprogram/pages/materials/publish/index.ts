@@ -8,6 +8,7 @@ import { takePendingPublishSelection } from '../../../utils/publish-selection'
 import {
   canAddPublishMedia,
   choosePublishImageOrVideo,
+  ensurePrivacyAuthorize,
   isPdfFileName,
   getPublishEntryType,
   MAX_IMAGE_COUNT,
@@ -201,10 +202,9 @@ Page({
   },
   onPublishSourceSelect(event: WechatMiniprogram.CustomEvent<{ source: PublishMediaSource }>) {
     const source = event.detail.source
-    this.setData({ publishSourceSheetVisible: false }, () => {
-      if (source !== 'camera' && source !== 'album') return
-      this.chooseImageOrVideo(source)
-    })
+    if (source !== 'camera' && source !== 'album') return
+    this.setData({ publishSourceSheetVisible: false })
+    this.chooseImageOrVideo(source)
   },
   onPublishSourceCancel() {
     this.setData({ publishSourceSheetVisible: false })
@@ -226,6 +226,13 @@ Page({
       })
   },
   choosePdfFromChat() {
+    ensurePrivacyAuthorize()
+      .then(() => this.pickPdfFromChat())
+      .catch((error: WechatMiniprogram.GeneralCallbackResult) => {
+        showPublishPickerError(error.errMsg)
+      })
+  },
+  pickPdfFromChat() {
     wx.chooseMessageFile({
       count: 1,
       type: 'file',

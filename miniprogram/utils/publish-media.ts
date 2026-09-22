@@ -30,7 +30,26 @@ export function isPickerCancel(errMsg?: string): boolean {
 }
 
 export function showPublishPickerError(errMsg?: string): void {
-  if (!isPickerCancel(errMsg)) wx.showToast({ title: '选择失败，请稍后重试', icon: 'none' })
+  if (isPickerCancel(errMsg)) return
+  wx.showModal({
+    title: '选择失败',
+    content: (errMsg ?? '').trim() || '无错误信息',
+    showCancel: false,
+  })
+}
+
+/** 必须在点击事件的同步调用里执行，微信才会弹出隐私协议。同意后再选图片或文件。 */
+export function ensurePrivacyAuthorize(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof wx.requirePrivacyAuthorize !== 'function') {
+      resolve()
+      return
+    }
+    wx.requirePrivacyAuthorize({
+      success: () => resolve(),
+      fail: (error) => reject(error),
+    })
+  })
 }
 
 export function choosePublishImageOrVideo(options: {
@@ -38,17 +57,20 @@ export function choosePublishImageOrVideo(options: {
   source: PublishMediaSource
   count: number
 }): Promise<PublishMediaViewModel[]> {
-  return new Promise((resolve, reject) => {
-    wx.chooseMedia({
-      count: Math.max(options.count, 1),
-      mediaType: options.type === 'mix' ? ['image', 'video'] : [options.type],
-      sourceType: [options.source],
-      maxDuration: MAX_VIDEO_DURATION_SECONDS,
-      sizeType: ['original', 'compressed'],
-      success: (result) => resolve(mediaFilesToPublishItems(result.tempFiles, result.type)),
-      fail: (error) => reject(error),
-    })
-  })
+  return ensurePrivacyAuthorize().then(
+    () =>
+      new Promise((resolve, reject) => {
+        wx.chooseMedia({
+          count: Math.max(options.count, 1),
+          mediaType: options.type === 'mix' ? ['image', 'video'] : [options.type],
+          sourceType: [options.source],
+          maxDuration: MAX_VIDEO_DURATION_SECONDS,
+          sizeType: ['original', 'compressed'],
+          success: (result) => resolve(mediaFilesToPublishItems(result.tempFiles, result.type)),
+          fail: (error) => reject(error),
+        })
+      }),
+  )
 }
 
 export function getPublishEntryType(value: string | undefined): PublishEntryType | null {
