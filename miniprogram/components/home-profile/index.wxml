@@ -4,8 +4,8 @@
   <navigation-bar class="home-profile__navigation" back="{{false}}" title="" color="#000000" background="transparent" />
   <view wx:if="{{profile}}" class="home-profile__content">
     <view class="home-profile__identity">
-      <image class="home-profile__avatar" src="{{profile.avatarUrl}}" mode="aspectFill" />
-      <text class="home-profile__nickname">{{profile.nickname}}</text>
+      <image class="home-profile__avatar" src="{{profile.avatarUrl}}" mode="aspectFill" bindtap="onIdentityTap" hover-class="{{identityLogin ? 'home-profile__identity-hit--pressed' : ''}}" hover-stay-time="80" />
+      <text class="home-profile__nickname" bindtap="onIdentityTap" hover-class="{{identityLogin ? 'home-profile__identity-hit--pressed' : ''}}" hover-stay-time="80">{{profile.nickname}}</text>
       <view
         class="home-profile__settings"
         bindtap="onSettingsTap"

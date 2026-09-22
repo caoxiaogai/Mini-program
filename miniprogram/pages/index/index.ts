@@ -29,7 +29,7 @@ import { choosePublishImageOrVideo, isPdfFileName, MAX_IMAGE_COUNT, showPublishP
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
-import { MEMBERSHIP_PAGE_PATH, membershipPageUrl, takeOpenHomeProfileTab } from '../../types/membership'
+import { homeProfileTabUrl, MEMBERSHIP_PAGE_PATH, membershipPageUrl, takeOpenHomeProfileTab } from '../../types/membership'
 
 type HomeTabId = 'home' | 'notifications' | 'materials' | 'analysis' | 'profile'
 type AnalysisPeriodId = 'day' | 'week' | 'month' | 'total' | 'custom'
@@ -615,6 +615,10 @@ Page({
     const index = rootTabIds.indexOf('profile')
     this.setActiveTab(index)
     this.loadProfileData()
+  },
+  onProfileIdentityTap() {
+    if (hasCompletedLogin()) return
+    this.requireLoginForAction(homeProfileTabUrl())
   },
   onProfileSettingsTap() {
     if (this.requireLoginForAction('/pages/settings/index')) return

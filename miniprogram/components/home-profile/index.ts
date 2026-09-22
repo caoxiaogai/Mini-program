@@ -4,6 +4,10 @@ Component({
       type: Object,
       value: null,
     },
+    identityLogin: {
+      type: Boolean,
+      value: false,
+    },
   },
   data: {
     showPremiumCard: false,
@@ -33,6 +37,10 @@ Component({
     },
   },
   methods: {
+    onIdentityTap() {
+      if (!this.data.identityLogin) return
+      this.triggerEvent('identitytap')
+    },
     onSettingsTap() {
       this.triggerEvent('settingstap')
     },
