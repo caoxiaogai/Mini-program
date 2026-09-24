@@ -3618,6 +3618,8 @@ test('analysis user mapping uses dashboard intent counts and completion metrics'
   assert.match(service, /label: '高意向'/)
   assert.match(service, /label: '中意向'/)
   assert.match(service, /label: '低意向'/)
+  assert.match(service, /intentCustomerCount:\s*\(dashboard\.highIntentCount \?\? 0\) \+ \(dashboard\.mediumIntentCount \?\? 0\) \+ \(dashboard\.lowIntentCount \?\? 0\)/)
+  assert.match(service, /showVisitorLimitPrompt: limitPrompt\.visitorCount > 0/)
   assert.match(service, /completionCount: formatCount\(customer\.completeCount\)/)
   assert.match(types, /completionCount: string/)
 })
@@ -3672,7 +3674,8 @@ test('analysis user tab follows Figma 1107:8095', () => {
   const styles = read('miniprogram/pages/analysis/index.less')
 
   for (const markup of [page, embedded]) {
-    assert.match(markup, /class="analysis-user__header"[\s\S]*intent-customer-header\.svg[\s\S]*意向客户[\s\S]*analysisData\.audienceUsers\.length/)
+    assert.match(markup, /class="analysis-user__header"[\s\S]*intent-customer-header\.svg[\s\S]*意向客户[\s\S]*analysisData\.intentCustomerCount/)
+    assert.match(markup, /wx:if="\{\{analysisData\.showVisitorLimitPrompt\}\}" class="analysis-user__limit-prompt"[\s\S]*visitor-description="\{\{analysisData\.limitPromptDescription\}\}"/)
     assert.doesNotMatch(markup, /analysis-user__summary-icon--middle/)
   }
 

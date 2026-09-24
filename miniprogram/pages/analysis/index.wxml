@@ -55,11 +55,12 @@
         </view>
       </view>
       <view class="analysis-user__list-panel">
-        <view class="analysis-user__header"><image class="analysis-user__header-icon" src="/assets/analysis/intent-customer-header.svg" mode="aspectFit" /><text class="analysis-user__header-title">意向客户<text class="analysis-user__header-count">（{{analysisData.audienceUsers.length}}）</text></text></view>
+        <view class="analysis-user__header"><image class="analysis-user__header-icon" src="/assets/analysis/intent-customer-header.svg" mode="aspectFit" /><text class="analysis-user__header-title">意向客户<text class="analysis-user__header-count">（{{analysisData.intentCustomerCount}}）</text></text></view>
         <view class="analysis-filters analysis-filters--redesign">
           <segmented-filter items="{{analysisPeriods}}" active-id="{{activePeriod}}" item-width="68" bind:change="onPeriodTap" />
           <view class="analysis-sort" bindtap="onAnalysisSortTap"><view class="analysis-sort__inner"><text>{{activeAnalysisSortLabel}}</text><image class="analysis-sort__arrow" src="/assets/analysis/polygon-2.svg" mode="aspectFit" /></view></view>
         </view>
+        <view wx:if="{{analysisData.showVisitorLimitPrompt}}" class="analysis-user__limit-prompt"><membership-limit-prompt style="display: block; min-height: 63px;" variant="visitor" visitor-count="{{analysisData.limitPromptVisitorCount}}" visitor-description="{{analysisData.limitPromptDescription}}" visitor-avatars="{{analysisData.limitPromptVisitorAvatars}}" bind:upgrade="onMembershipLimitTap" /></view>
         <view wx:if="{{hasAnalysisUsers}}" class="analysis-user__list">
           <view wx:for="{{visibleAnalysisUsers}}" wx:key="id" class="analysis-user" bindtap="onAnalysisUserTap" data-id="id:{{item.id}}" hover-class="analysis-user--pressed">
             <image class="analysis-user__avatar" src="{{item.avatarUrl}}" mode="aspectFill" />

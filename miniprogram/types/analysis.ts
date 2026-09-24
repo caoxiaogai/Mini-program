@@ -1,3 +1,5 @@
+import type { MembershipUiTier, VisitorLimitPromptAvatarViewModel } from './membership'
+
 export type AnalysisMetric = { label: string; value: string; iconPath?: string }
 
 export type AnalysisWorkSortId = 'completion' | 'share' | 'view'
@@ -130,8 +132,15 @@ export type AnalysisViewModel = {
   workCount: string
   userSummary: AnalysisMetric[]
   audienceUsers: AnalysisAudienceUser[]
+  /** 当前时间筛选下的全部意向客户，含被访客上限挡住、列表里未展示的人 */
+  intentCustomerCount: number
   /** 用户分析列表可展示的访客上限；null 表示不限制 */
   visitorLimit: number | null
+  showVisitorLimitPrompt: boolean
+  limitPromptDescription: string
+  limitPromptVisitorCount: number
+  limitPromptVisitorAvatars: VisitorLimitPromptAvatarViewModel[]
+  limitPromptTargetTier: MembershipUiTier
   totalData: AnalysisTotalViewModel
 }
 

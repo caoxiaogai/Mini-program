@@ -39,6 +39,8 @@ import { prepareMediaUrls } from '../utils/media'
 import { DEV_UI_PREVIEW } from '../config/dev'
 import { getAnalysisContentDetailPreview, getAnalysisOverviewPreview, getAnalysisWorkListPreview } from './analysis-preview'
 import { getMembershipAccessSilent } from './membership'
+import { buildVisitorLimitPromptViewModel } from './visitor-limit-prompt'
+import { visitorLimitPromptDescription, visitorLimitPromptTargetTier } from '../utils/membership'
 import {
   enrichThumbnailsByIds,
   prepareMaterialThumbnail,
@@ -505,6 +507,7 @@ export function getAnalysisOverview(
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
     const cards = mapContentCards(contents, sortId, intentCustomers)
     const heroDashboard = totalDashboard ?? dashboard
+    const limitPrompt = await buildVisitorLimitPromptViewModel(membershipAccess)
 
     return {
       summary: buildWorkSummary(dashboard),
@@ -531,7 +534,14 @@ export function getAnalysisOverview(
           shareCount: intent?.hasForwarded === 1 ? '1' : '0',
         }
       }),
+      intentCustomerCount:
+        (dashboard.highIntentCount ?? 0) + (dashboard.mediumIntentCount ?? 0) + (dashboard.lowIntentCount ?? 0),
       visitorLimit: membershipAccess.visitorLimit,
+      showVisitorLimitPrompt: limitPrompt.visitorCount > 0,
+      limitPromptDescription: visitorLimitPromptDescription(membershipAccess.tier),
+      limitPromptVisitorCount: limitPrompt.visitorCount,
+      limitPromptVisitorAvatars: limitPrompt.avatars,
+      limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
       totalData: {
         heroMetrics: buildHeroMetrics(heroDashboard, resolvedTotalPeriod),
         overview: [

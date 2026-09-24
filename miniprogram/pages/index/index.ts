@@ -128,7 +128,13 @@ const guestAnalysisData: AnalysisViewModel = {
   workCount: '0',
   userSummary: [],
   audienceUsers: [],
+  intentCustomerCount: 0,
   visitorLimit: null,
+  showVisitorLimitPrompt: false,
+  limitPromptDescription: '',
+  limitPromptVisitorCount: 0,
+  limitPromptVisitorAvatars: [],
+  limitPromptTargetTier: 'standard',
   totalData: {
     heroMetrics: [],
     overview: [],
@@ -550,7 +556,13 @@ Page({
           ...currentAnalysisData,
           userSummary: analysisData.userSummary,
           audienceUsers: analysisData.audienceUsers,
+          intentCustomerCount: analysisData.intentCustomerCount,
           visitorLimit: analysisData.visitorLimit,
+          showVisitorLimitPrompt: analysisData.showVisitorLimitPrompt,
+          limitPromptDescription: analysisData.limitPromptDescription,
+          limitPromptVisitorCount: analysisData.limitPromptVisitorCount,
+          limitPromptVisitorAvatars: analysisData.limitPromptVisitorAvatars,
+          limitPromptTargetTier: analysisData.limitPromptTargetTier,
         },
       })
       this.applyAnalysisUsersWindow(sortedUsers, LIST_PAGE_SIZE)
@@ -634,7 +646,10 @@ Page({
   },
   onHomeMembershipLimitTap() {
     const targetTier =
-      this.data.homeData?.limitPromptTargetTier ?? this.data.notifications?.limitPromptTargetTier ?? 'standard'
+      this.data.analysisData?.limitPromptTargetTier
+      ?? this.data.homeData?.limitPromptTargetTier
+      ?? this.data.notifications?.limitPromptTargetTier
+      ?? 'standard'
     const url = membershipPageUrl(targetTier)
     if (this.requireLoginForAction(url)) return
     wx.navigateTo({ url })

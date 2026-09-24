@@ -5,6 +5,7 @@
     "navigation-bar": "/components/navigation-bar/navigation-bar",
     "segmented-filter": "/components/segmented-filter/index",
     "analysis-trend-chart": "/components/analysis-trend-chart/index",
-    "loading-skeleton": "/components/loading-skeleton/index"
+    "loading-skeleton": "/components/loading-skeleton/index",
+    "membership-limit-prompt": "/components/membership-limit-prompt/index"
   }
 }

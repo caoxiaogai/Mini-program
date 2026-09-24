@@ -1,4 +1,6 @@
+import { requireAccountLogin } from '../../services/auth'
 import { enrichAnalysisCards, enrichAudienceUsers, getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
+import { membershipPageUrl } from '../../types/membership'
 import { applyThumbnailMap } from '../../services/materials'
 import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
 import { fromDatasetId } from '../../utils/dataset-id'
@@ -171,7 +173,13 @@ Page({
           workCount: '0',
           userSummary: [],
           audienceUsers: [],
+          intentCustomerCount: 0,
           visitorLimit: null,
+          showVisitorLimitPrompt: false,
+          limitPromptDescription: '',
+          limitPromptVisitorCount: 0,
+          limitPromptVisitorAvatars: [],
+          limitPromptTargetTier: 'standard',
           totalData: {
             heroMetrics: [],
             overview: [],
@@ -212,7 +220,13 @@ Page({
           ...currentAnalysisData,
           userSummary: analysisData.userSummary,
           audienceUsers: analysisData.audienceUsers,
+          intentCustomerCount: analysisData.intentCustomerCount,
           visitorLimit: analysisData.visitorLimit,
+          showVisitorLimitPrompt: analysisData.showVisitorLimitPrompt,
+          limitPromptDescription: analysisData.limitPromptDescription,
+          limitPromptVisitorCount: analysisData.limitPromptVisitorCount,
+          limitPromptVisitorAvatars: analysisData.limitPromptVisitorAvatars,
+          limitPromptTargetTier: analysisData.limitPromptTargetTier,
         },
       })
       this.applyAnalysisUsersWindow(sortedUsers, LIST_PAGE_SIZE)
@@ -439,6 +453,11 @@ Page({
   },
   onPlusTap() {
     wx.navigateTo({ url: '/pages/materials/index' })
+  },
+  onMembershipLimitTap() {
+    const url = membershipPageUrl(this.data.analysisData?.limitPromptTargetTier ?? 'standard')
+    if (requireAccountLogin(url)) return
+    wx.navigateTo({ url })
   },
   onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) {
     const userId = fromDatasetId(event.currentTarget.dataset.id)

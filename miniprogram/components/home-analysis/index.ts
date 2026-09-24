@@ -44,5 +44,6 @@ Component({
     onEmptyShareTap() { this.triggerEvent('plustap') },
     onCardTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('cardtap', { id: fromDatasetId(event.currentTarget.dataset.id) }) },
     onAnalysisUserTap(event: WechatMiniprogram.TouchEvent) { this.triggerEvent('usertap', { id: fromDatasetId(event.currentTarget.dataset.id) }) },
+    onMembershipLimitTap() { this.triggerEvent('upgradetap') },
   },
 })

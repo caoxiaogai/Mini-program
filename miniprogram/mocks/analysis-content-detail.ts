@@ -38,7 +38,13 @@ export const analysisOverviewPreview: AnalysisViewModel = {
     { label: '低意向', value: '1,223', iconPath: '/assets/analysis/intent-summary-low.svg' },
   ],
   audienceUsers: analysisContentDetailPreview.intentUsers,
+  intentCustomerCount: 0,
   visitorLimit: null,
+  showVisitorLimitPrompt: false,
+  limitPromptDescription: '',
+  limitPromptVisitorCount: 0,
+  limitPromptVisitorAvatars: [],
+  limitPromptTargetTier: 'standard',
   totalData: {
     heroMetrics: [
       { label: '阅读总次数', value: '122,100次', delta: '+30' },
