@@ -252,6 +252,7 @@ test('membership visitor limits follow none / regular / pro', async () => {
     resolveVisitorLimit,
     shouldShowVisitorLimitPrompt,
     visitorLimitPromptActionLabel,
+    visitorLimitPromptDescription,
     visitorLimitPromptTargetTier,
     membershipPayLabel,
     isStandardMembershipLocked,
@@ -291,6 +292,9 @@ test('membership visitor limits follow none / regular / pro', async () => {
   assert.equal(visitorLimitPromptActionLabel('regular'), '立即升级')
   assert.equal(visitorLimitPromptActionLabel('none'), '立即开通')
   assert.equal(visitorLimitPromptActionLabel('pro'), '立即开通')
+  assert.equal(visitorLimitPromptDescription('none'), '8个免费额度已用完，升级会员，查看详情')
+  assert.equal(visitorLimitPromptDescription('regular'), '升级会员，查看详情')
+  assert.equal(visitorLimitPromptDescription('pro'), '升级会员，查看详情')
   assert.equal(visitorLimitPromptTargetTier('regular'), 'premium')
   assert.equal(visitorLimitPromptTargetTier('none'), 'standard')
   assert.equal(visitorLimitPromptTargetTier('pro'), 'standard')

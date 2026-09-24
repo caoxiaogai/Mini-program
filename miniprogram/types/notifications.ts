@@ -41,6 +41,7 @@ export interface NotificationsViewModel {
   groups: NotificationGroupViewModel[]
   showVisitorLimitPrompt: boolean
   limitPromptActionLabel: string
+  limitPromptDescription: string
   limitPromptTargetTier: MembershipUiTier
   limitPromptVisitorCount: number
   limitPromptVisitorAvatars: VisitorLimitPromptAvatarViewModel[]

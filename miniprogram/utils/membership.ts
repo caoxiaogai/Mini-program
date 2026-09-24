@@ -120,6 +120,12 @@ export function visitorLimitPromptActionLabel(tier: MembershipTier): string {
   return tier === 'regular' ? '立即升级' : '立即开通'
 }
 
+/** 非会员提示免费额度已用完；普通会员仍只提示升级后查看详情。 */
+export function visitorLimitPromptDescription(tier: MembershipTier): string {
+  if (tier === 'none') return `${MEMBERSHIP_VISITOR_LIMIT_NONE}个免费额度已用完，升级会员，查看详情`
+  return '升级会员，查看详情'
+}
+
 /** 立即升级进尊享档；立即开通进标准档。 */
 export function visitorLimitPromptTargetTier(tier: MembershipTier): MembershipUiTier {
   return tier === 'regular' ? 'premium' : 'standard'

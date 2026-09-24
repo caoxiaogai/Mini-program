@@ -16,6 +16,10 @@ Component({
       type: Array,
       value: [],
     },
+    visitorDescription: {
+      type: String,
+      value: '升级会员，查看详情',
+    },
   },
   methods: {
     onUpgradeTap() {

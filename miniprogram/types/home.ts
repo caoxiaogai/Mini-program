@@ -57,6 +57,7 @@ export interface HomePageViewModel {
   unreadNotificationEventIds: string[]
   showVisitorLimitPrompt: boolean
   limitPromptActionLabel: string
+  limitPromptDescription: string
   limitPromptTargetTier: MembershipUiTier
   limitPromptVisitorCount: number
   limitPromptVisitorAvatars: VisitorLimitPromptAvatarViewModel[]

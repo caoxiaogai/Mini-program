@@ -62,6 +62,7 @@ Page({
             groups: [],
             showVisitorLimitPrompt: false,
             limitPromptActionLabel: '',
+            limitPromptDescription: '',
             limitPromptTargetTier: 'standard',
             limitPromptVisitorCount: 0,
             limitPromptVisitorAvatars: [],

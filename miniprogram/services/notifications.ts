@@ -9,7 +9,7 @@ import {
   rememberMaterialThumbnailSources,
   resolveMaterialListThumbnail,
 } from './materials'
-import { keepEventsForVisitorLimit, visitorLimitPromptActionLabel, visitorLimitPromptTargetTier } from '../utils/membership'
+import { keepEventsForVisitorLimit, visitorLimitPromptActionLabel, visitorLimitPromptDescription, visitorLimitPromptTargetTier } from '../utils/membership'
 import { getMembershipAccessSilent } from './membership'
 import { request, resolveMediaUrl } from './request'
 import { buildVisitorLimitPromptViewModel } from './visitor-limit-prompt'
@@ -78,6 +78,7 @@ export function getNotifications(): Promise<NotificationsViewModel> {
       groups: groupNotificationCards(cards),
       showVisitorLimitPrompt: limitPrompt.visitorCount > 0,
       limitPromptActionLabel: visitorLimitPromptActionLabel(membershipAccess.tier),
+      limitPromptDescription: visitorLimitPromptDescription(membershipAccess.tier),
       limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
       limitPromptVisitorCount: limitPrompt.visitorCount,
       limitPromptVisitorAvatars: limitPrompt.avatars,
