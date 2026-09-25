@@ -179,14 +179,14 @@ test('membership page defaults to the Figma-selected three-month plan', async ()
 })
 
 test('premium membership switches to its confirmed unlimited tracking benefits', async () => {
-  const { getMembershipBenefits, MEMBERSHIP_VISITOR_LIMIT_REGULAR } = await import('../miniprogram/utils/membership.ts')
+  const { getMembershipBenefits } = await import('../miniprogram/utils/membership.ts')
 
   assert.deepEqual(
-    getMembershipBenefits('standard').map((benefit) => benefit.label),
-    ['作品发布', '作品数据分析', '作品互动消息，及时通知', '作品数据总览', '意向用户分类', `追踪人数 ${MEMBERSHIP_VISITOR_LIMIT_REGULAR} 人`],
+    getMembershipBenefits('standard', 80).map((benefit) => benefit.label),
+    ['作品发布', '作品数据分析', '作品互动消息，及时通知', '作品数据总览', '意向用户分类', '追踪人数 80 人'],
   )
   assert.deepEqual(
-    getMembershipBenefits('premium').map((benefit) => benefit.label),
+    getMembershipBenefits('premium', 80).map((benefit) => benefit.label),
     ['作品发布', '作品数据分析', '作品互动消息，及时通知', '作品数据总览', '意向用户分类', '追踪人数无限'],
   )
 })
@@ -249,27 +249,21 @@ test('membership visitor limits follow none / regular / pro', async () => {
     collectHiddenVisitors,
     keepEventsForVisitorLimit,
     membershipAccessFromStatus,
-    resolveVisitorLimit,
     shouldShowVisitorLimitPrompt,
     visitorLimitPromptActionLabel,
     visitorLimitPromptDescription,
     visitorLimitPromptTargetTier,
     membershipPayLabel,
     isStandardMembershipLocked,
-    visitorLimitForTier,
   } = await import('../miniprogram/utils/membership.ts')
 
-  assert.equal(visitorLimitForTier('none'), 8)
-  assert.equal(visitorLimitForTier('regular'), 80)
-  assert.equal(visitorLimitForTier('pro'), null)
-  assert.equal(resolveVisitorLimit(null), null)
-  assert.equal(resolveVisitorLimit(undefined), 8)
-  assert.equal(resolveVisitorLimit(10), 10)
-  assert.deepEqual(membershipAccessFromStatus(null), { tier: 'none', visitorLimit: 8, hasUnshownVisitors: false, hiddenVisitorCount: 0, hiddenVisitors: [] })
-  assert.deepEqual(membershipAccessFromStatus({ active: true, tier: 'pro' }), { tier: 'pro', visitorLimit: null, hasUnshownVisitors: false, hiddenVisitorCount: 0, hiddenVisitors: [] })
-  assert.deepEqual(membershipAccessFromStatus({ active: false, tier: 'pro' }), { tier: 'none', visitorLimit: 8, hasUnshownVisitors: false, hiddenVisitorCount: 0, hiddenVisitors: [] })
+  assert.deepEqual(membershipAccessFromStatus(null), { tier: 'none', visitorLimit: null, hasUnshownVisitors: false, hiddenVisitorCount: 0, hiddenVisitors: [] })
+  assert.deepEqual(membershipAccessFromStatus({ active: true, tier: 'pro', visitorLimit: null }), { tier: 'pro', visitorLimit: null, hasUnshownVisitors: false, hiddenVisitorCount: 0, hiddenVisitors: [] })
+  assert.deepEqual(membershipAccessFromStatus({ active: false, tier: 'pro', visitorLimit: 8 }), { tier: 'none', visitorLimit: 8, hasUnshownVisitors: false, hiddenVisitorCount: 0, hiddenVisitors: [] })
+  assert.equal(membershipAccessFromStatus({ active: true, tier: 'regular', visitorLimit: 80 }).visitorLimit, 80)
+  assert.equal(membershipAccessFromStatus({ active: false, tier: 'none', visitorLimit: 3 }).visitorLimit, 3)
   assert.equal(
-    membershipAccessFromStatus({ active: false, tier: 'none', hasUnshownVisitors: true }).hasUnshownVisitors,
+    membershipAccessFromStatus({ active: false, tier: 'none', visitorLimit: 8, hasUnshownVisitors: true }).hasUnshownVisitors,
     true,
   )
   assert.equal(
@@ -280,6 +274,7 @@ test('membership visitor limits follow none / regular / pro', async () => {
     membershipAccessFromStatus({
       active: false,
       tier: 'none',
+      visitorLimit: 8,
       hiddenVisitorCount: 3,
       hiddenVisitors: [{ customerId: '9', avatar: 'https://example.com/a.png' }],
     }).hiddenVisitorCount,
@@ -292,9 +287,10 @@ test('membership visitor limits follow none / regular / pro', async () => {
   assert.equal(visitorLimitPromptActionLabel('regular'), '立即升级')
   assert.equal(visitorLimitPromptActionLabel('none'), '立即开通')
   assert.equal(visitorLimitPromptActionLabel('pro'), '立即开通')
-  assert.equal(visitorLimitPromptDescription('none'), '8个免费额度已用完，升级会员，查看详情')
-  assert.equal(visitorLimitPromptDescription('regular'), '升级会员，查看详情')
-  assert.equal(visitorLimitPromptDescription('pro'), '升级会员，查看详情')
+  assert.equal(visitorLimitPromptDescription('none', 8), '8个免费额度已用完，升级会员，查看详情')
+  assert.equal(visitorLimitPromptDescription('none', 3), '3个免费额度已用完，升级会员，查看详情')
+  assert.equal(visitorLimitPromptDescription('regular', 80), '升级会员，查看详情')
+  assert.equal(visitorLimitPromptDescription('pro', null), '升级会员，查看详情')
   assert.equal(visitorLimitPromptTargetTier('regular'), 'premium')
   assert.equal(visitorLimitPromptTargetTier('none'), 'standard')
   assert.equal(visitorLimitPromptTargetTier('pro'), 'standard')
@@ -326,10 +322,13 @@ test('membership visitor limits follow none / regular / pro', async () => {
     active: false,
     expireAt: null,
     usedVisitorCount: 5,
+    visitorLimit: 8,
+    visitorLimitRegular: 80,
     plans: [],
   })
   assert.equal(quotaPage.usedVisitorCount, 5)
   assert.equal(quotaPage.visitorLimit, 8)
+  assert.equal(quotaPage.regularVisitorLimit, 80)
 
   const events = Array.from({ length: 12 }, (_, index) => ({
     id: `event-${index}`,
@@ -362,10 +361,11 @@ test('membership access service fails closed to the free visitor limit', () => {
   assert.match(service, /export function getMembershipAccessSilent/)
   assert.match(service, /FALLBACK_MEMBERSHIP_ACCESS/)
   assert.match(service, /hasUnshownVisitors: false/)
-  assert.match(service, /MEMBERSHIP_VISITOR_LIMIT_NONE/)
-  assert.match(home, /keepEventsForVisitorLimit/)
+  assert.match(service, /visitorLimit: null/)
+  assert.doesNotMatch(read('miniprogram/utils/membership.ts'), /MEMBERSHIP_VISITOR_LIMIT_NONE/)
+  assert.doesNotMatch(home, /keepEventsForVisitorLimit/)
   assert.match(home, /getMembershipAccessSilent/)
-  assert.match(notifications, /keepEventsForVisitorLimit/)
+  assert.doesNotMatch(notifications, /keepEventsForVisitorLimit/)
   assert.match(notifications, /showVisitorLimitPrompt: limitPrompt\.visitorCount > 0/)
   assert.match(notifications, /getMembershipAccessSilent/)
   assert.match(analysis, /getMembershipAccessSilent/)

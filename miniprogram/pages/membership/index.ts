@@ -107,7 +107,7 @@ Page({
     paying: false,
     agreementChecked: false,
     membershipTier: 'standard' as MembershipUiTier,
-    membershipBenefits: getMembershipBenefits('standard'),
+    membershipBenefits: getMembershipBenefits('standard', null),
     visiblePlans: [] as MembershipPlanViewModel[],
     requestedTier: '' as MembershipUiTier | '',
     standardActionsDisabled: false,
@@ -119,7 +119,7 @@ Page({
       this.setData({
         requestedTier,
         membershipTier: requestedTier,
-        membershipBenefits: getMembershipBenefits(requestedTier),
+        membershipBenefits: getMembershipBenefits(requestedTier, null),
       })
     }
     this.setNavigationBarColor('#ffffff', '#040404')
@@ -184,7 +184,7 @@ Page({
     const standardActionsDisabled = isStandardMembershipLocked(membership.tier, membershipTier)
     return {
       membershipTier,
-      membershipBenefits: getMembershipBenefits(membershipTier),
+      membershipBenefits: getMembershipBenefits(membershipTier, membership.regularVisitorLimit),
       visiblePlans,
       selectedPlanId,
       selectedStandardPlanId: membershipTier === 'standard' ? selectedPlanId : this.data.selectedStandardPlanId,

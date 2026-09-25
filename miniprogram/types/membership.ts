@@ -113,6 +113,8 @@ export interface MembershipPageViewModel {
   active: boolean
   tier: MembershipTier
   visitorLimit: number | null
+  /** 开通页标准档「追踪人数」，来自后端配置 */
+  regularVisitorLimit: number | null
   usedVisitorCount: number
   showVisitorQuota: boolean
   expireAt: string | null

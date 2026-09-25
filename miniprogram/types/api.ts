@@ -214,8 +214,12 @@ export interface ApiMembershipStatus {
   /** none / regular / pro；过期时为 none */
   tier?: string | null
   expireAt: string | null
-  /** 可展示访客上限；尊享会员为 null */
+  /** 当前用户可展示的访客上限；尊享会员为 null */
   visitorLimit?: number | null
+  /** 配置里的非会员上限 */
+  visitorLimitNone?: number | null
+  /** 配置里的普通会员上限，开通页「追踪人数」用 */
+  visitorLimitRegular?: number | null
   /** 当前档位已展示的独立访客数 */
   usedVisitorCount?: number | null
   /** 独立访客总数超过当前档位上限，存在未展示的人 */

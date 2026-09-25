@@ -538,7 +538,7 @@ export function getAnalysisOverview(
         (dashboard.highIntentCount ?? 0) + (dashboard.mediumIntentCount ?? 0) + (dashboard.lowIntentCount ?? 0),
       visitorLimit: membershipAccess.visitorLimit,
       showVisitorLimitPrompt: limitPrompt.visitorCount > 0,
-      limitPromptDescription: visitorLimitPromptDescription(membershipAccess.tier),
+      limitPromptDescription: visitorLimitPromptDescription(membershipAccess.tier, membershipAccess.visitorLimit),
       limitPromptVisitorCount: limitPrompt.visitorCount,
       limitPromptVisitorAvatars: limitPrompt.avatars,
       limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),

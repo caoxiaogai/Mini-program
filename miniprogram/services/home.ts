@@ -15,7 +15,7 @@ import { buildCustomRangeQuery, formatCount, formatDateKey } from '../utils/form
 import { prepareMediaUrls } from '../utils/media'
 import { readViewedNotificationMap, selectUnviewedNotificationEvents } from '../utils/notification-viewed'
 import { mapNotificationEvent } from '../utils/notifications'
-import { keepEventsForVisitorLimit, visitorLimitPromptActionLabel, visitorLimitPromptDescription, visitorLimitPromptTargetTier } from '../utils/membership'
+import { visitorLimitPromptActionLabel, visitorLimitPromptDescription, visitorLimitPromptTargetTier } from '../utils/membership'
 import { prepareMaterialThumbnailMap, rememberMaterialThumbnailSources } from './materials'
 import { getMembershipAccessSilent } from './membership'
 import { NOTIFICATION_RANGE_DAYS } from './notifications'
@@ -91,10 +91,7 @@ export function getHomePageData(): Promise<HomePageViewModel> {
     getMembershipAccessSilent(),
   ]).then(async ([dashboard, , contents, intentCustomers, notifyEvents, materials, membershipAccess]) => {
     const unreadEvents = selectUnviewedNotificationEvents(
-      keepEventsForVisitorLimit(
-        (notifyEvents ?? []).filter((event) => event != null),
-        membershipAccess.visitorLimit,
-      ),
+      (notifyEvents ?? []).filter((event) => event != null),
       readViewedNotificationMap(),
     )
     const previewEvents = unreadEvents
@@ -150,7 +147,7 @@ export function getHomePageData(): Promise<HomePageViewModel> {
       unreadNotificationEventIds: unreadEvents.map((event) => String(event.id)),
       showVisitorLimitPrompt: limitPrompt.visitorCount > 0,
       limitPromptActionLabel: visitorLimitPromptActionLabel(membershipAccess.tier),
-      limitPromptDescription: visitorLimitPromptDescription(membershipAccess.tier),
+      limitPromptDescription: visitorLimitPromptDescription(membershipAccess.tier, membershipAccess.visitorLimit),
       limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
       limitPromptVisitorCount: limitPrompt.visitorCount,
       limitPromptVisitorAvatars: limitPrompt.avatars,

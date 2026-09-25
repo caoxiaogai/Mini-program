@@ -1,5 +1,4 @@
 import type { ProfileMembershipTrackingSegment, ProfileMembershipViewModel, ProfilePageViewModel } from '../types/profile'
-import { MEMBERSHIP_VISITOR_LIMIT_NONE } from '../utils/membership'
 import { prepareMediaUrl } from '../utils/media'
 import { getMembershipStatusSilent } from './membership'
 import { ensureLogin } from './request'
@@ -34,7 +33,7 @@ function mapProfileMembership(
     : isStandard
       ? 'standard'
       : 'inactive'
-  const limit = membership ? membership.visitorLimit : MEMBERSHIP_VISITOR_LIMIT_NONE
+  const limit = membership?.visitorLimit ?? null
   const used = membership?.usedVisitorCount ?? 0
   const remaining = limit == null ? 0 : Math.max(0, limit - used)
 

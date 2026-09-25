@@ -9,21 +9,20 @@ import type {
   MembershipUiTier,
 } from '../types/membership'
 
-export const MEMBERSHIP_VISITOR_LIMIT_NONE = 8
-export const MEMBERSHIP_VISITOR_LIMIT_REGULAR = 80
-
-function trackingBenefitLabel(limit: number | null): string {
-  return limit == null ? '追踪人数无限' : `追踪人数 ${limit} 人`
+function trackingBenefitLabel(tier: MembershipUiTier, regularVisitorLimit: number | null): string {
+  if (tier === 'premium') return '追踪人数无限'
+  if (regularVisitorLimit == null) return '追踪人数'
+  return `追踪人数 ${regularVisitorLimit} 人`
 }
 
-const MEMBERSHIP_BENEFITS: Record<MembershipUiTier, MembershipBenefitViewModel[]> = {
+const MEMBERSHIP_BENEFIT_COPY: Record<MembershipUiTier, MembershipBenefitViewModel[]> = {
   standard: [
     { id: 'publish', label: '作品发布' },
     { id: 'analysis', label: '作品数据分析' },
     { id: 'notification', label: '作品互动消息，及时通知' },
     { id: 'overview', label: '作品数据总览' },
     { id: 'intent', label: '意向用户分类' },
-    { id: 'tracking', label: trackingBenefitLabel(MEMBERSHIP_VISITOR_LIMIT_REGULAR) },
+    { id: 'tracking', label: '' },
   ],
   premium: [
     { id: 'publish', label: '作品发布' },
@@ -31,7 +30,7 @@ const MEMBERSHIP_BENEFITS: Record<MembershipUiTier, MembershipBenefitViewModel[]
     { id: 'notification', label: '作品互动消息，及时通知' },
     { id: 'overview', label: '作品数据总览' },
     { id: 'intent', label: '意向用户分类' },
-    { id: 'tracking', label: trackingBenefitLabel(null) },
+    { id: 'tracking', label: '' },
   ],
 }
 
@@ -62,8 +61,11 @@ export function plansForUiTier(
   return plans.filter((plan) => allowed.includes(plan.id))
 }
 
-export function getMembershipBenefits(tier: MembershipUiTier): MembershipBenefitViewModel[] {
-  return MEMBERSHIP_BENEFITS[tier].map((benefit) => ({ ...benefit }))
+export function getMembershipBenefits(tier: MembershipUiTier, regularVisitorLimit: number | null): MembershipBenefitViewModel[] {
+  return MEMBERSHIP_BENEFIT_COPY[tier].map((benefit) => ({
+    ...benefit,
+    label: benefit.id === 'tracking' ? trackingBenefitLabel(tier, regularVisitorLimit) : benefit.label,
+  }))
 }
 
 export function normalizeMembershipTier(tier: string | null | undefined, active?: boolean): MembershipTier {
@@ -74,15 +76,10 @@ export function normalizeMembershipTier(tier: string | null | undefined, active?
   return 'none'
 }
 
-export function visitorLimitForTier(tier: MembershipTier): number | null {
-  if (tier === 'pro') return null
-  if (tier === 'regular') return MEMBERSHIP_VISITOR_LIMIT_REGULAR
-  return MEMBERSHIP_VISITOR_LIMIT_NONE
-}
-
-/** null 表示不限制；只有字段缺失时才按非会员封顶 */
-export function resolveVisitorLimit(limit: number | null | undefined): number | null {
-  return limit === undefined ? MEMBERSHIP_VISITOR_LIMIT_NONE : limit
+function asVisitorLimit(value: number | null | undefined): number | null {
+  if (value == null) return null
+  const limit = Math.trunc(Number(value))
+  return Number.isFinite(limit) && limit >= 0 ? limit : null
 }
 
 function asHiddenVisitorCount(value: number | null | undefined): number {
@@ -94,7 +91,7 @@ export function membershipAccessFromStatus(
   data: Pick<ApiMembershipStatus, 'active' | 'tier' | 'visitorLimit' | 'hasUnshownVisitors' | 'hiddenVisitorCount' | 'hiddenVisitors'> | null | undefined,
 ): MembershipAccess {
   const tier = normalizeMembershipTier(data?.tier, data?.active)
-  const visitorLimit = visitorLimitForTier(tier)
+  const visitorLimit = tier === 'pro' ? null : asVisitorLimit(data?.visitorLimit)
   const hiddenVisitors = (data?.hiddenVisitors ?? [])
     .map((visitor) => ({
       customerId: String(visitor.customerId ?? '').trim(),
@@ -120,9 +117,9 @@ export function visitorLimitPromptActionLabel(tier: MembershipTier): string {
   return tier === 'regular' ? '立即升级' : '立即开通'
 }
 
-/** 非会员提示免费额度已用完；普通会员仍只提示升级后查看详情。 */
-export function visitorLimitPromptDescription(tier: MembershipTier): string {
-  if (tier === 'none') return `${MEMBERSHIP_VISITOR_LIMIT_NONE}个免费额度已用完，升级会员，查看详情`
+/** 非会员提示免费额度已用完；普通会员仍只提示升级后查看详情。人数来自后端配置。 */
+export function visitorLimitPromptDescription(tier: MembershipTier, visitorLimit: number | null): string {
+  if (tier === 'none' && visitorLimit != null) return `${visitorLimit}个免费额度已用完，升级会员，查看详情`
   return '升级会员，查看详情'
 }
 
@@ -260,6 +257,7 @@ export function mapMembershipPage(data: ApiMembershipStatus): MembershipPageView
     active,
     tier: access.tier,
     visitorLimit: access.visitorLimit,
+    regularVisitorLimit: asVisitorLimit(data.visitorLimitRegular),
     usedVisitorCount: cappedUsed,
     showVisitorQuota: access.tier !== 'pro',
     expireAt: data.expireAt,

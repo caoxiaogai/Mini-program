@@ -9,7 +9,7 @@ import {
   rememberMaterialThumbnailSources,
   resolveMaterialListThumbnail,
 } from './materials'
-import { keepEventsForVisitorLimit, visitorLimitPromptActionLabel, visitorLimitPromptDescription, visitorLimitPromptTargetTier } from '../utils/membership'
+import { visitorLimitPromptActionLabel, visitorLimitPromptDescription, visitorLimitPromptTargetTier } from '../utils/membership'
 import { getMembershipAccessSilent } from './membership'
 import { request, resolveMediaUrl } from './request'
 import { buildVisitorLimitPromptViewModel } from './visitor-limit-prompt'
@@ -37,7 +37,7 @@ export function getNotifications(): Promise<NotificationsViewModel> {
     getMembershipAccessSilent(),
   ]).then(async ([events, materials, membershipAccess]) => {
     const notificationEvents = (events ?? []).filter((event) => event != null)
-    const visibleEvents = keepEventsForVisitorLimit(notificationEvents, membershipAccess.visitorLimit)
+    const visibleEvents = notificationEvents
     const materialById = new Map((materials ?? []).map((material) => [String(material.id), material]))
     const sources = [...materialById.values()].map((material) => ({
       id: String(material.id),
@@ -78,7 +78,7 @@ export function getNotifications(): Promise<NotificationsViewModel> {
       groups: groupNotificationCards(cards),
       showVisitorLimitPrompt: limitPrompt.visitorCount > 0,
       limitPromptActionLabel: visitorLimitPromptActionLabel(membershipAccess.tier),
-      limitPromptDescription: visitorLimitPromptDescription(membershipAccess.tier),
+      limitPromptDescription: visitorLimitPromptDescription(membershipAccess.tier, membershipAccess.visitorLimit),
       limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
       limitPromptVisitorCount: limitPrompt.visitorCount,
       limitPromptVisitorAvatars: limitPrompt.avatars,
