@@ -179,6 +179,23 @@ function buildAuthHeader(): Record<string, string> {
   return header
 }
 
+/** 立刻发出请求，不等登录接口。用于小程序切后台时，异步登录来不及发出去。 */
+export function postNow(path: string, data: Record<string, unknown>): void {
+  if (!hasAuthorizedLogin()) return
+  wx.request({
+    url: buildUrl(path),
+    method: 'POST',
+    data,
+    header: {
+      'content-type': 'application/json',
+      ...buildAuthHeader(),
+    },
+    timeout: REQUEST_TIMEOUT_MS,
+    enableHttp2: false,
+    enableQuic: false,
+  })
+}
+
 function rawRequest<T>(options: RequestOptions): Promise<T> {
   const showLoading = !options.silent
   if (showLoading) beginLoading()

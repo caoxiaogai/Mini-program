@@ -15,6 +15,16 @@ export function shouldReportIndexRevisit(input: {
   return input.nextIndex < input.previousIndex
 }
 
+/** 笔记滑到底之后，又向上滑，进度变小。 */
+export function shouldReportScrollRevisit(input: {
+  peakProgress: number
+  nextProgress: number
+  alreadyReported: boolean
+}): boolean {
+  if (input.alreadyReported || input.peakProgress < 100) return false
+  return input.nextProgress < input.peakProgress
+}
+
 /** 进度超过 80% 之后，播放时间至少回退 1 秒。 */
 export function shouldReportVideoRevisit(input: {
   peakProgress: number

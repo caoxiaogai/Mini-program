@@ -1,7 +1,7 @@
 // app.ts
 import { getProfilePageData } from './services/profile'
 import { ensureLogin, hasAuthorizedLogin } from './services/request'
-import { cancelVisitorLeave, reportVisitorLeave } from './services/tracking'
+import { cancelVisitorLeave, reportVisitorLeave, startVisitorHeartbeat, stopVisitorHeartbeat } from './services/tracking'
 
 App<IAppOption>({
   globalData: {},
@@ -19,8 +19,10 @@ App<IAppOption>({
   },
   onShow() {
     cancelVisitorLeave()
+    startVisitorHeartbeat()
   },
   onHide() {
+    stopVisitorHeartbeat()
     reportVisitorLeave()
   },
 })

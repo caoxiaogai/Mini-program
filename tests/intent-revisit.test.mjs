@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   shouldReportIndexRevisit,
+  shouldReportScrollRevisit,
   shouldReportVideoRevisit,
 } from '../miniprogram/utils/intent-revisit.ts'
 
@@ -32,6 +33,26 @@ test('multi-image and pdf revisit only after the content is finished', () => {
     previousIndex: 3,
     nextIndex: 1,
     alreadyReported: true,
+  }), false)
+})
+
+test('note scroll revisit only after the note was finished', () => {
+  assert.equal(shouldReportScrollRevisit({
+    peakProgress: 80,
+    nextProgress: 40,
+    alreadyReported: false,
+  }), false)
+
+  assert.equal(shouldReportScrollRevisit({
+    peakProgress: 100,
+    nextProgress: 70,
+    alreadyReported: false,
+  }), true)
+
+  assert.equal(shouldReportScrollRevisit({
+    peakProgress: 100,
+    nextProgress: 100,
+    alreadyReported: false,
   }), false)
 })
 

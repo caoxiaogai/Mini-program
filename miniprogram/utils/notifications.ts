@@ -59,7 +59,7 @@ export function buildNotificationStatus(
 
   const fileType = (event.fileType ?? '').toUpperCase()
   if (fileType === 'VIDEO') return '未完播视频'
-  if (fileType === 'PDF' || fileType === 'TABLE') return '未浏览完文件'
+  if (fileType === 'PDF' || fileType === 'TABLE' || fileType === 'NOTE') return '未浏览完文件'
   return '未滑动看完所有图片'
 }
 

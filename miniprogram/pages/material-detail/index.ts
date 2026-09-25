@@ -6,7 +6,7 @@ import {
   createTrackingSessionId,
   reportTrackingEvent,
 } from '../../services/tracking'
-import { shouldReportIndexRevisit, shouldReportVideoRevisit } from '../../utils/intent-revisit'
+import { shouldReportIndexRevisit, shouldReportScrollRevisit, shouldReportVideoRevisit } from '../../utils/intent-revisit'
 import { calcNoteScrollProgress } from '../../utils/note'
 import type { MaterialCommentViewModel, MaterialDetailViewModel } from '../../types/materials'
 import { buildReturnPath } from '../../utils/auth'
@@ -375,9 +375,24 @@ Page({
           viewportHeight = 0
         }
         const progress = calcNoteScrollProgress(offset.scrollTop, offset.scrollHeight, viewportHeight)
+        const target = this.resolveTrackingTarget(detail)
+        if (shouldReportScrollRevisit({
+          peakProgress: this.lastNoteProgress,
+          nextProgress: progress,
+          alreadyReported: this.hasReportedRevisit,
+        })) {
+          this.hasReportedRevisit = true
+          reportTrackingEvent({
+            trackingId: target.trackingId,
+            materialId: target.materialId,
+            actionType: 'seek',
+            progress,
+            duration: this.getNoteViewDurationSec(),
+            sessionId: this.trackingSessionId,
+          })
+        }
         if (!isFinal && progress <= this.lastNoteProgress) return
         this.lastNoteProgress = Math.max(this.lastNoteProgress, progress)
-        const target = this.resolveTrackingTarget(detail)
         reportTrackingEvent({
           trackingId: target.trackingId,
           materialId: target.materialId,

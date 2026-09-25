@@ -1,4 +1,4 @@
-import { ensureLogin, request } from './request'
+import { ensureLogin, hasAuthorizedLogin, postNow, request } from './request'
 
 export interface TrackingEventInput {
   trackingId?: string | null
@@ -48,18 +48,37 @@ export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
 
 /** 同一次小程序进程里递增，后发出的回到请求可以盖过还在路上的离开请求。 */
 let presenceGeneration = 0
+let heartbeatTimer = 0
+const HEARTBEAT_INTERVAL_MS = 2000
 
 /** 访客离开或回到小程序。离开后才发通知；马上回来则取消。 */
 function reportVisitorPresence(path: '/tracking/leave' | '/tracking/resume'): void {
   presenceGeneration += 1
-  const generation = presenceGeneration
+  postNow(path, { generation: presenceGeneration })
+}
+
+/** 小程序在前台时持续心跳。切到后台后心跳停止，后端据此判断访客已离开。 */
+export function startVisitorHeartbeat(): void {
+  stopVisitorHeartbeat()
+  reportVisitorHeartbeat()
+  heartbeatTimer = setInterval(reportVisitorHeartbeat, HEARTBEAT_INTERVAL_MS) as unknown as number
+}
+
+export function stopVisitorHeartbeat(): void {
+  if (!heartbeatTimer) return
+  clearInterval(heartbeatTimer)
+  heartbeatTimer = 0
+}
+
+function reportVisitorHeartbeat(): void {
+  if (!hasAuthorizedLogin()) return
   request<void>({
     method: 'POST',
-    path,
+    path: '/tracking/heartbeat',
     silent: true,
-    data: { generation },
+    data: {},
   }).catch((error) => {
-    console.warn('[tracking] presence failed', path, error)
+    console.warn('[tracking] heartbeat failed', error)
   })
 }
 
