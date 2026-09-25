@@ -3,7 +3,7 @@ import { ensureLogin, request } from './request'
 export interface TrackingEventInput {
   trackingId?: string | null
   materialId?: string | null
-  actionType: 'play' | 'end' | 'forward'
+  actionType: 'play' | 'end' | 'forward' | 'seek'
   progress?: number
   duration?: number
   sessionId: string
@@ -15,7 +15,7 @@ export function createTrackingSessionId(): string {
 
 /**
  * 上报素材浏览或转发。
- * POST /tracking/event（play / end）或 POST /tracking/forward。
+ * POST /tracking/event（play / end / seek）或 POST /tracking/forward。
  * body 携带 visitorId（当前用户 openid），并走登录请求头；失败静默忽略。
  */
 export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
@@ -44,6 +44,31 @@ export function reportTrackingEvent(input: TrackingEventInput): Promise<void> {
     .catch((error) => {
       console.warn('[tracking] report failed', input.actionType, error)
     })
+}
+
+/** 同一次小程序进程里递增，后发出的回到请求可以盖过还在路上的离开请求。 */
+let presenceGeneration = 0
+
+/** 访客离开或回到小程序。离开后才发通知；马上回来则取消。 */
+function reportVisitorPresence(path: '/tracking/leave' | '/tracking/resume'): void {
+  presenceGeneration += 1
+  const generation = presenceGeneration
+  request<void>({
+    method: 'POST',
+    path,
+    silent: true,
+    data: { generation },
+  }).catch((error) => {
+    console.warn('[tracking] presence failed', path, error)
+  })
+}
+
+export function reportVisitorLeave(): void {
+  reportVisitorPresence('/tracking/leave')
+}
+
+export function cancelVisitorLeave(): void {
+  reportVisitorPresence('/tracking/resume')
 }
 
 /** 视频播放进度 → 百分比（0–100） */

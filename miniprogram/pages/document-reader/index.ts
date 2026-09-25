@@ -5,6 +5,7 @@ import {
   createTrackingSessionId,
   reportTrackingEvent,
 } from '../../services/tracking'
+import { shouldReportIndexRevisit } from '../../utils/intent-revisit'
 import type { DocumentReaderPage } from '../../types/document'
 import { pickCurrentDocumentPageByScroll } from '../../utils/document-page'
 import { runPullRefresh } from '../../utils/pull-refresh'
@@ -57,6 +58,7 @@ Page({
   maxViewedIndex: -1,
   lastReportedProgress: -1,
   hasReportedComplete: false,
+  hasReportedRevisit: false,
   viewStartedAt: 0,
 
   onLoad(options: Record<string, string | undefined>) {
@@ -87,6 +89,7 @@ Page({
     this.maxViewedIndex = -1
     this.lastReportedProgress = -1
     this.hasReportedComplete = false
+    this.hasReportedRevisit = false
   },
 
   onRetryTap() {
@@ -161,6 +164,15 @@ Page({
     if (current < 0) return
 
     if (current !== this.currentPageIndex) {
+      if (shouldReportIndexRevisit({
+        completed: this.hasReportedComplete,
+        previousIndex: this.currentPageIndex,
+        nextIndex: current,
+        alreadyReported: this.hasReportedRevisit,
+      })) {
+        this.hasReportedRevisit = true
+        this.reportRevisit(current)
+      }
       this.currentPageIndex = current
       this.setData({ navTitle: `${current + 1} / ${this.totalPages}` })
       this.markPageViewed(current)
@@ -234,6 +246,18 @@ Page({
   canTrack(): boolean {
     if (!this.materialId) return false
     return this.trackingId !== '' || this.materialId !== ''
+  },
+
+  reportRevisit(pageIndex: number) {
+    if (!this.canTrack() || this.totalPages <= 0) return
+    reportTrackingEvent({
+      trackingId: this.trackingId,
+      materialId: this.materialId,
+      actionType: 'seek',
+      progress: calcImageViewProgress(pageIndex + 1, this.totalPages),
+      duration: this.getViewDurationSec(),
+      sessionId: this.sessionId,
+    })
   },
 
   reportOpenedPlay() {

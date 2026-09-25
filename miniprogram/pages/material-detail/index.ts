@@ -6,6 +6,7 @@ import {
   createTrackingSessionId,
   reportTrackingEvent,
 } from '../../services/tracking'
+import { shouldReportIndexRevisit, shouldReportVideoRevisit } from '../../utils/intent-revisit'
 import { calcNoteScrollProgress } from '../../utils/note'
 import type { MaterialCommentViewModel, MaterialDetailViewModel } from '../../types/materials'
 import { buildReturnPath } from '../../utils/auth'
@@ -80,7 +81,11 @@ Page({
   forceVisitorView: false,
   trackingSessionId: '',
   viewedImageIndices: [] as number[],
+  lastViewedImageIndex: -1,
   hasReportedComplete: false,
+  hasReportedRevisit: false,
+  videoPeakProgress: 0,
+  videoPeakTimeSec: 0,
   imageViewStartedAt: 0,
   imageViewTimer: 0,
   videoProgressTimer: 0,
@@ -160,7 +165,11 @@ Page({
     this.forceVisitorView = options.owner === '0'
     this.trackingSessionId = createTrackingSessionId()
     this.viewedImageIndices = []
+    this.lastViewedImageIndex = -1
     this.hasReportedComplete = false
+    this.hasReportedRevisit = false
+    this.videoPeakProgress = 0
+    this.videoPeakTimeSec = 0
     this.imageViewStartedAt = 0
     this.lastVideoProgress = 0
     this.lastNoteProgress = 0
@@ -265,7 +274,11 @@ Page({
     this.clearPreviewTapTimer()
     this.trackingSessionId = ''
     this.viewedImageIndices = []
+    this.lastViewedImageIndex = -1
     this.hasReportedComplete = false
+    this.hasReportedRevisit = false
+    this.videoPeakProgress = 0
+    this.videoPeakTimeSec = 0
     this.imageViewStartedAt = 0
     this.lastVideoProgress = 0
     this.videoCurrentTimeSec = 0
@@ -785,6 +798,7 @@ Page({
     this.getVideoContext()?.seek(nextTime)
     this.videoCurrentTimeSec = nextTime
     this.lastVideoProgress = calcVideoViewProgress(nextTime, duration)
+    this.noteVideoRevisit(this.lastVideoProgress, nextTime)
   },
 
   onVideoPlay() {
@@ -808,6 +822,7 @@ Page({
     }
     this.videoCurrentTimeSec = currentTime
     this.lastVideoProgress = calcVideoViewProgress(currentTime, duration || this.videoDurationSec)
+    this.noteVideoRevisit(this.lastVideoProgress, currentTime)
   },
 
   onVideoEnded() {
@@ -816,6 +831,7 @@ Page({
 
     this.clearVideoProgressTimer()
     this.lastVideoProgress = 100
+    this.noteVideoRevisit(100, this.videoDurationSec)
     this.videoCurrentTimeSec = this.videoDurationSec
     const target = this.resolveTrackingTarget(detail)
     reportTrackingEvent({
@@ -949,6 +965,9 @@ Page({
       return
     }
 
+    const previousIndex = this.lastViewedImageIndex
+    const wasComplete = this.hasReportedComplete
+
     if (!this.viewedImageIndices.includes(index)) {
       this.viewedImageIndices.push(index)
     }
@@ -967,6 +986,55 @@ Page({
 
     if (isComplete) {
       this.hasReportedComplete = true
+    }
+
+    if (shouldReportIndexRevisit({
+      completed: wasComplete,
+      previousIndex,
+      nextIndex: index,
+      alreadyReported: this.hasReportedRevisit,
+    })) {
+      this.hasReportedRevisit = true
+      reportTrackingEvent({
+        trackingId: target.trackingId,
+        materialId: target.materialId,
+        actionType: 'seek',
+        progress,
+        duration: this.getImageViewDurationSec(),
+        sessionId: this.trackingSessionId,
+      })
+    }
+
+    this.lastViewedImageIndex = index
+  },
+
+  noteVideoRevisit(nextProgress: number, nextTimeSec: number) {
+    if (shouldReportVideoRevisit({
+      peakProgress: this.videoPeakProgress,
+      peakTimeSec: this.videoPeakTimeSec,
+      nextTimeSec,
+      alreadyReported: this.hasReportedRevisit,
+    })) {
+      this.hasReportedRevisit = true
+      const detail = this.data.detail
+      if (detail && this.canTrackMaterial(detail)) {
+        const target = this.resolveTrackingTarget(detail)
+        reportTrackingEvent({
+          trackingId: target.trackingId,
+          materialId: target.materialId,
+          actionType: 'seek',
+          progress: nextProgress,
+          duration: Math.max(0, Math.floor(this.videoCurrentTimeSec)),
+          sessionId: this.trackingSessionId,
+        })
+      }
+    }
+
+    if (nextTimeSec > this.videoPeakTimeSec) {
+      this.videoPeakTimeSec = nextTimeSec
+    }
+    if (nextProgress > this.videoPeakProgress) {
+      this.videoPeakProgress = nextProgress
     }
   },
 

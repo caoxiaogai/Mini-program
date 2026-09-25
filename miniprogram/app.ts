@@ -1,6 +1,7 @@
 // app.ts
 import { getProfilePageData } from './services/profile'
 import { ensureLogin, hasAuthorizedLogin } from './services/request'
+import { cancelVisitorLeave, reportVisitorLeave } from './services/tracking'
 
 App<IAppOption>({
   globalData: {},
@@ -15,5 +16,11 @@ App<IAppOption>({
     ensureLogin()
       .then(() => getProfilePageData())
       .catch(() => undefined)
+  },
+  onShow() {
+    cancelVisitorLeave()
+  },
+  onHide() {
+    reportVisitorLeave()
   },
 })
