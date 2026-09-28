@@ -4058,7 +4058,7 @@ test('analysis total hero metrics compare with the previous period', async () =>
   assert.match(apiTypes, /totalViewCountDelta: number \| null/)
   assert.match(apiTypes, /totalViewerCountDelta: number \| null/)
   assert.match(service, /buildHeroMetrics\(dashboard, period\)/)
-  assert.match(service, /if \(period === 'custom'\) return '较上期'/)
+  assert.match(service, /if \(period === 'custom'\) return ''/)
   assert.match(service, /deltaTone = signedDelta < 0 \? 'down' : 'up'/)
   assert.match(pageLogic, /getAnalysisOverview\(\s*period,\s*dateRange,\s*this\.data\.activeAnalysisSort,\s*requestedTrendPeriod,\s*peakRange,\s*\)/)
   assert.match(homeLogic, /getAnalysisOverview\(\s*period,\s*dateRange,\s*this\.data\.activeAnalysisSort,\s*requestedTrendPeriod,\s*peakRange,\s*\)/)
@@ -4069,7 +4069,7 @@ test('analysis total hero metrics compare with the previous period', async () =>
   assert.doesNotMatch(styles, /\.analysis-total__hero-meta \{[^}]*color:/)
 
   for (const markup of [pageMarkup, homeMarkup]) {
-    assert.match(markup, /\{\{item\.comparisonLabel\}\}/)
+    assert.match(markup, /wx:if="\{\{item\.comparisonLabel\}\}" class="analysis-total__hero-comparison"/)
     assert.match(markup, /wx:key="renderKey"/)
     assert.match(markup, /wx:if="\{\{item\.deltaTone === 'down'\}\}" class="analysis-total__hero-delta--down"/)
     assert.match(markup, /wx:else class="analysis-total__hero-delta--up"/)

@@ -300,7 +300,7 @@ export function getTotalComparisonLabel(period: AnalysisTimeRange): string {
   if (period === 'day') return '较昨日'
   if (period === 'week') return '较上周'
   if (period === 'month') return '较上月'
-  if (period === 'custom') return '较上期'
+  if (period === 'custom') return ''
   return '较上两月'
 }
 
