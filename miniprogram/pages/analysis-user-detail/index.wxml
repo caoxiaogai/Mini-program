@@ -19,8 +19,8 @@
         </view>
 
         <view class="user-detail__metrics">
-          <view class="user-detail__metric"><text>阅读数</text><text>{{detail.profile.readCount}}</text></view>
-          <view class="user-detail__metric"><text>完播</text><text>{{detail.profile.completionCount}}</text></view>
+          <view class="user-detail__metric"><text>浏览次数</text><text>{{detail.profile.readCount}}</text></view>
+          <view class="user-detail__metric"><text>完播数</text><text>{{detail.profile.completionCount}}</text></view>
           <view class="user-detail__metric"><text>转发</text><text>{{detail.profile.shareCount}}</text></view>
           <view class="user-detail__metric"><text>观看时长</text><text>{{detail.profile.viewDuration}}</text></view>
         </view>
