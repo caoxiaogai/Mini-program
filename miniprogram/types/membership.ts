@@ -102,7 +102,6 @@ export interface MembershipPlanViewModel {
   id: MembershipPlanId
   title: string
   displayTitle: string
-  discountLabel: string
   durationMonths: number
   amountFen: number
   priceYuan: string

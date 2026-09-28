@@ -51,7 +51,6 @@
         >
           <view class="membership-plan__copy">
             <text class="membership-plan__title">{{item.displayTitle}}</text>
-            <text class="membership-plan__discount">{{item.discountLabel}}</text>
           </view>
           <text class="membership-plan__price">{{item.priceLabel}}</text>
         </view>

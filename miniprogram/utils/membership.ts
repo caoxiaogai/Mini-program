@@ -34,13 +34,13 @@ const MEMBERSHIP_BENEFIT_COPY: Record<MembershipUiTier, MembershipBenefitViewMod
   ],
 }
 
-const PLAN_DISPLAY: Record<MembershipPlanId, { title: string; discountLabel: string }> = {
-  month: { title: '一个月', discountLabel: '优惠力度 0%' },
-  quarter: { title: '三个月', discountLabel: '优惠力度 24%' },
-  half_year: { title: '半年', discountLabel: '优惠力度 28%' },
-  month_pro: { title: '一个月', discountLabel: '优惠力度 0%' },
-  quarter_pro: { title: '三个月', discountLabel: '优惠力度 14%' },
-  half_year_pro: { title: '半年', discountLabel: '优惠力度 20%' },
+const PLAN_DISPLAY: Record<MembershipPlanId, { title: string }> = {
+  month: { title: '一个月' },
+  quarter: { title: '三个月' },
+  half_year: { title: '半年' },
+  month_pro: { title: '一个月' },
+  quarter_pro: { title: '三个月' },
+  half_year_pro: { title: '半年' },
 }
 
 const STANDARD_PLAN_IDS: readonly MembershipPlanId[] = ['month', 'quarter', 'half_year']
@@ -208,12 +208,11 @@ export function formatMembershipExpireDate(value: string | null | undefined): st
 
 export function mapMembershipPlan(plan: ApiMembershipPlan): MembershipPlanViewModel | null {
   if (!isMembershipPlanId(plan.id) || !plan.title || !plan.priceYuan) return null
-  const display = PLAN_DISPLAY[plan.id] ?? { title: plan.title, discountLabel: '' }
+  const display = PLAN_DISPLAY[plan.id] ?? { title: plan.title }
   return {
     id: plan.id,
     title: plan.title,
     displayTitle: display.title,
-    discountLabel: display.discountLabel,
     durationMonths: plan.durationMonths,
     amountFen: plan.amountFen,
     priceYuan: plan.priceYuan,
