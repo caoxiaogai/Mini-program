@@ -12,7 +12,7 @@ export type AnalysisChartPoint = {
   value: string
 }
 
-export type AnalysisReadRange = 'day' | 'week' | 'month' | 'total'
+export type AnalysisReadRange = 'day' | 'week' | 'month' | 'total' | 'custom'
 
 export type AnalysisDeltaTone = 'up' | 'down'
 

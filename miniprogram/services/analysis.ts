@@ -238,11 +238,6 @@ let dayTrendCache: { expiresAt: number; dateKey: string; value: AnalysisChartPoi
 let weekTrendCache: { expiresAt: number; weekKey: string; value: AnalysisChartPoint[] } | null = null
 let totalTrendCache: { expiresAt: number; rangeKey: string; value: AnalysisChartPoint[] } | null = null
 
-function isoWeekday(date: Date): number {
-  const day = date.getDay()
-  return day === 0 ? 7 : day
-}
-
 function toDateKey(date: Date): string {
   return formatDateTime(date).slice(0, 10)
 }
@@ -256,43 +251,15 @@ function mapTrendRowsByDate(rows: ApiDailyView[] | null | undefined): Map<string
   return byDate
 }
 
-function buildWeekTrendPoints(rows: ApiDailyView[], now = new Date()): AnalysisChartPoint[] {
-  const byDate = mapTrendRowsByDate(rows)
-  const monday = startOfWeekMonday(now)
-  const todayWeekday = isoWeekday(now)
-  const points: AnalysisChartPoint[] = []
-
-  for (let weekday = 1; weekday <= todayWeekday; weekday += 1) {
-    const date = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + weekday - 1)
-    const key = toDateKey(date)
-    points.push({
-      id: `week-${key}`,
-      label: String(weekday),
-      value: formatCount(byDate.get(key) ?? 0),
-    })
-  }
-
-  return points
-}
-
-function buildMonthTrendPoints(rows: ApiDailyView[], now = new Date()): AnalysisChartPoint[] {
-  const byDate = mapTrendRowsByDate(rows)
-  const year = now.getFullYear()
-  const month = now.getMonth()
-  const today = now.getDate()
-  const points: AnalysisChartPoint[] = []
-
-  for (let day = 1; day <= today; day += 1) {
-    const date = new Date(year, month, day)
-    const key = toDateKey(date)
-    points.push({
-      id: `month-${key}`,
-      label: String(day),
-      value: formatCount(byDate.get(key) ?? 0),
-    })
-  }
-
-  return points
+function mapHourlyTrendPoints(rows: ApiDailyView[] | null | undefined, scope: string): AnalysisChartPoint[] {
+  return (rows ?? []).map((row, index) => {
+    const hour = row.hour ?? index
+    return {
+      id: `${scope}-${hour}`,
+      label: String(hour),
+      value: formatCount(row.viewCount),
+    }
+  })
 }
 
 function buildTotalTrendPoints(rows: ApiDailyView[], now = new Date()): AnalysisChartPoint[] {
@@ -326,7 +293,7 @@ function buildTotalTrendPoints(rows: ApiDailyView[], now = new Date()): Analysis
 }
 
 function emptyReadTrends(): Record<AnalysisReadRange, AnalysisChartPoint[]> {
-  return { day: [], week: [], month: [], total: [] }
+  return { day: [], week: [], month: [], total: [], custom: [] }
 }
 
 export function getTotalComparisonLabel(period: AnalysisTimeRange): string {
@@ -387,14 +354,7 @@ function getDayReadTrend(): Promise<AnalysisChartPoint[]> {
     silent: true,
   })
     .then((rows) => {
-      const value = (rows ?? []).map((row, index) => {
-        const hour = row.hour ?? index
-        return {
-          id: `day-${row.date ?? dateKey}-${hour}`,
-          label: String(hour),
-          value: formatCount(row.viewCount),
-        }
-      })
+      const value = mapHourlyTrendPoints(rows, 'day')
       dayTrendCache = { expiresAt: Date.now() + TREND_CACHE_TTL_MS, dateKey, value }
       return value
     })
@@ -416,7 +376,7 @@ function getWeekReadTrend(): Promise<AnalysisChartPoint[]> {
     silent: true,
   })
     .then((rows) => {
-      const value = buildWeekTrendPoints(rows, now)
+      const value = mapHourlyTrendPoints(rows, 'week')
       weekTrendCache = { expiresAt: Date.now() + TREND_CACHE_TTL_MS, weekKey, value }
       return value
     })
@@ -438,7 +398,7 @@ function getMonthReadTrend(): Promise<AnalysisChartPoint[]> {
     silent: true,
   })
     .then((rows) => {
-      const value = buildMonthTrendPoints(rows, now)
+      const value = mapHourlyTrendPoints(rows, 'month')
       monthTrendCache = { expiresAt: Date.now() + TREND_CACHE_TTL_MS, monthKey, value }
       return value
     })
@@ -467,6 +427,17 @@ function getTotalReadTrend(): Promise<AnalysisChartPoint[]> {
     .catch(() => [])
 }
 
+export function getCustomPeakTrend(range: DateRange): Promise<AnalysisChartPoint[]> {
+  return request<ApiDailyView[]>({
+    method: 'GET',
+    path: '/analysis/trend',
+    query: buildPeriodQuery('custom', range),
+    silent: true,
+  })
+    .then((rows) => mapHourlyTrendPoints(rows, 'custom'))
+    .catch(() => [])
+}
+
 function getReadTrends(): Promise<Record<AnalysisReadRange, AnalysisChartPoint[]>> {
   return Promise.all([getDayReadTrend(), getWeekReadTrend(), getMonthReadTrend(), getTotalReadTrend()]).then(
     ([day, week, month, total]) => ({
@@ -484,6 +455,7 @@ export function getAnalysisOverview(
   customRange?: DateRange,
   sortId: AnalysisWorkSortId = 'view',
   totalPeriod: AnalysisTimeRange = 'total',
+  peakRange?: DateRange,
 ): Promise<AnalysisViewModel> {
   if (DEV_UI_PREVIEW) return Promise.resolve(getAnalysisOverviewPreview())
 
@@ -492,6 +464,9 @@ export function getAnalysisOverview(
   const resolvedTotalPeriod = totalPeriod === 'custom' ? 'total' : totalPeriod
   const totalQuery = buildPeriodQuery(resolvedTotalPeriod)
   const reusePeriodDashboard = period === resolvedTotalPeriod && period !== 'custom'
+  const customTrend = totalPeriod === 'custom' && peakRange
+    ? getCustomPeakTrend(peakRange)
+    : Promise.resolve([] as AnalysisChartPoint[])
 
   return Promise.all([
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: periodQuery }),
@@ -502,8 +477,9 @@ export function getAnalysisOverview(
       ? Promise.resolve(null)
       : request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: totalQuery }),
     getReadTrends(),
+    customTrend,
     getMembershipAccessSilent(),
-  ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends, membershipAccess]) => {
+  ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends, customPoints, membershipAccess]) => {
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
     const cards = mapContentCards(contents, sortId, intentCustomers)
     const heroDashboard = totalDashboard ?? dashboard
@@ -552,7 +528,7 @@ export function getAnalysisOverview(
           { label: '中意向', value: formatCount(heroDashboard.mediumIntentCount) },
           { label: '低意向', value: formatCount(heroDashboard.lowIntentCount) },
         ],
-        readTrends,
+        readTrends: { ...readTrends, custom: customPoints },
       },
     }
   })

@@ -1,5 +1,5 @@
 import { requireAccountLogin } from '../../services/auth'
-import { enrichAnalysisCards, enrichAudienceUsers, getAnalysisOverview, getAnalysisWorkList, sortAnalysisCards } from '../../services/analysis'
+import { enrichAnalysisCards, enrichAudienceUsers, getAnalysisOverview, getAnalysisWorkList, getCustomPeakTrend, sortAnalysisCards } from '../../services/analysis'
 import { membershipPageUrl } from '../../types/membership'
 import { applyThumbnailMap } from '../../services/materials'
 import type { AnalysisAudienceUser, AnalysisViewModel } from '../../types/analysis'
@@ -129,8 +129,7 @@ Page({
       const customRange = this.data.activeOverviewPeriod === 'custom'
         ? { startDate: this.data.overviewCustomStartDate, endDate: this.data.overviewCustomEndDate }
         : undefined
-      const trendPeriod = this.data.activePeakPeriod === 'custom' ? 'total' : this.data.activePeakPeriod
-      return this.loadAnalysis(this.data.activeOverviewPeriod, trendPeriod, customRange)
+      return this.loadAnalysis(this.data.activeOverviewPeriod, this.data.activePeakPeriod, customRange)
     }
     return this.loadWorkCards(this.data.activePeriod)
   },
@@ -139,16 +138,23 @@ Page({
     return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
   },
   loadAnalysis(period: AnalysisPeriodId, trendPeriod: AnalysisPeriodId = this.data.activePeakPeriod, dateRange?: DateRange) {
-    const request = dateRange
-      ? getAnalysisOverview(period, dateRange, this.data.activeAnalysisSort, trendPeriod)
-      : getAnalysisOverview(period, undefined, this.data.activeAnalysisSort, trendPeriod)
+    const requestedTrendPeriod = this.data.activePeakPeriod || trendPeriod
+    const peakRange = requestedTrendPeriod === 'custom'
+      ? { startDate: this.data.peakCustomStartDate, endDate: this.data.peakCustomEndDate }
+      : undefined
+    const request = getAnalysisOverview(
+      period,
+      dateRange,
+      this.data.activeAnalysisSort,
+      requestedTrendPeriod,
+      peakRange,
+    )
     return request.then((analysisData) => {
       const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
       // Keep the chart tied to the latest peak selector choice even if an overview request resolves later.
       const currentTrendPeriod = this.data.activePeakPeriod || trendPeriod
-      const resolvedTrendPeriod = currentTrendPeriod === 'custom' ? 'total' : currentTrendPeriod
-      const trendState = buildTotalTrendState(resolvedTrendPeriod, analysisData.totalData.readTrends[getAnalysisReadRange(resolvedTrendPeriod)])
+      const trendState = buildTotalTrendState(currentTrendPeriod, analysisData.totalData.readTrends[getAnalysisReadRange(currentTrendPeriod)])
       const allAnalysisCards = initializeWorkData ? analysisData.cards : this.data.allAnalysisCards
 
       this.setData({
@@ -179,7 +185,7 @@ Page({
           totalData: {
             heroMetrics: [],
             overview: [],
-            readTrends: { day: [], week: [], month: [], total: [] },
+            readTrends: { day: [], week: [], month: [], total: [], custom: [] },
           },
         },
         allAnalysisCards: [],
@@ -315,8 +321,7 @@ Page({
     }
 
     this.setData({ activeOverviewPeriod: periodId })
-    const trendPeriod = this.data.activePeakPeriod === 'custom' ? 'total' : this.data.activePeakPeriod
-    this.loadAnalysis(periodId, trendPeriod)
+    this.loadAnalysis(periodId, this.data.activePeakPeriod)
   },
   onTotalPeakPeriodTap(event: WechatMiniprogram.CustomEvent<{ id: AnalysisPeriodId; index: number }>) {
     const { id: periodId, index: periodIndex } = event.detail
@@ -373,8 +378,7 @@ Page({
         overviewCustomStartDate: dateRange.startDate,
         overviewCustomEndDate: dateRange.endDate,
       })
-      const trendPeriod = this.data.activePeakPeriod === 'custom' ? 'total' : this.data.activePeakPeriod
-      this.loadAnalysis('custom', trendPeriod, dateRange)
+      this.loadAnalysis('custom', this.data.activePeakPeriod, dateRange)
       return
     }
     if (target === 'peak') {
@@ -382,7 +386,12 @@ Page({
         activePeakPeriod: 'custom',
         peakCustomStartDate: dateRange.startDate,
         peakCustomEndDate: dateRange.endDate,
-        ...buildTotalTrendState('total', this.data.analysisData?.totalData?.readTrends?.total ?? []),
+        ...buildTotalTrendState('custom', []),
+      })
+      getCustomPeakTrend(dateRange).then((points) => {
+        if (this.data.activePeakPeriod !== 'custom') return
+        if (this.data.peakCustomStartDate !== dateRange.startDate || this.data.peakCustomEndDate !== dateRange.endDate) return
+        this.setData(buildTotalTrendState('custom', points))
       })
       return
     }

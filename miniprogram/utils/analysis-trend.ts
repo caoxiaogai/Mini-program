@@ -63,6 +63,7 @@ export function getAnalysisReadRange(period: AnalysisTrendPeriod): AnalysisReadR
   if (period === 'day') return 'day'
   if (period === 'month') return 'month'
   if (period === 'total') return 'total'
+  if (period === 'custom') return 'custom'
   return 'week'
 }
 
@@ -73,24 +74,16 @@ export function getTotalComparisonLabel(period: AnalysisTrendPeriod): string {
   return '较上两月'
 }
 
-export function getDaysInMonth(now = new Date()): number {
-  return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-}
-
 const TOTAL_TREND_WEEKS = 6
 
 export function getAnalysisTrendSlotCount(period: AnalysisTrendPeriod): number {
-  if (period === 'day') return 24
-  if (period === 'week') return 7
-  if (period === 'month') return getDaysInMonth()
+  if (period === 'day' || period === 'week' || period === 'month' || period === 'custom') return 24
   if (period === 'total') return TOTAL_TREND_WEEKS
   return 0
 }
 
 export function getChartAxisScale(period: AnalysisTrendPeriod): ChartAxisScale {
-  if (period === 'day') return 'hour'
-  if (period === 'week') return 'weekday'
-  if (period === 'month') return 'month'
+  if (period === 'day' || period === 'week' || period === 'month' || period === 'custom') return 'hour'
   if (period === 'total') return 'week'
   return ''
 }

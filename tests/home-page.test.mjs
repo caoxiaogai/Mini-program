@@ -9,12 +9,12 @@ const currentMonthDays = new Date(new Date().getFullYear(), new Date().getMonth(
 const totalTrendWeeks = 6
 
 const stubTrendState = (period = 'total', points = []) => ({
-  activeAnalysisReadRange: period === 'day' ? 'day' : period === 'month' ? 'month' : period === 'total' ? 'total' : 'week',
+  activeAnalysisReadRange: period === 'day' ? 'day' : period === 'month' ? 'month' : period === 'total' ? 'total' : period === 'custom' ? 'custom' : 'week',
   visibleAnalysisReadTrend: points,
-  analysisTrendSlotCount: period === 'day' ? 24 : period === 'week' ? 7 : period === 'month' ? currentMonthDays : period === 'total' ? totalTrendWeeks : 0,
+  analysisTrendSlotCount: period === 'day' || period === 'week' || period === 'month' || period === 'custom' ? 24 : period === 'total' ? totalTrendWeeks : 0,
   chartAxisMax: period === 'day' || period === 'week' || period === 'month' || period === 'total' ? 3 : 1500,
   chartAxisTicks: [],
-  chartAxisScale: period === 'day' ? 'hour' : period === 'week' ? 'weekday' : period === 'month' ? 'month' : period === 'total' ? 'week' : '',
+  chartAxisScale: period === 'total' ? 'week' : period === 'day' || period === 'week' || period === 'month' || period === 'custom' ? 'hour' : '',
 })
 
 const trendPageDeps = {
@@ -3908,15 +3908,18 @@ test('analysis total tab follows Figma 587:8623 overview and peak layout', () =>
   assert.match(pageStyles, /\.analysis-total__chart--axis \.analysis-total__trend-chart \{[\s\S]*height: 336rpx;/)
   assert.doesNotMatch(pageStyles, /analysis-total__chart-hours|analysis-total__chart-hour|analysis-total__chart--day/)
   assert.match(types, /heroMetrics: AnalysisTotalHeroMetric\[\]/)
-  assert.match(types, /export type AnalysisReadRange = 'day' \| 'week' \| 'month' \| 'total'/)
+  assert.match(types, /export type AnalysisReadRange = 'day' \| 'week' \| 'month' \| 'total' \| 'custom'/)
   assert.match(service, /heroMetrics:/)
   assert.match(service, /path: '\/analysis\/trend'/)
   assert.match(service, /timeRange: 'today'/)
   assert.match(service, /timeRange: 'week'/)
   assert.match(service, /timeRange: 'month'/)
   assert.match(service, /timeRange: 'all'/)
-  assert.match(service, /label: String\(weekday\)/)
-  assert.match(service, /label: String\(day\)/)
+  assert.match(service, /function mapHourlyTrendPoints/)
+  assert.match(service, /label: String\(hour\)/)
+  assert.match(service, /mapHourlyTrendPoints\(rows, 'week'\)/)
+  assert.match(service, /mapHourlyTrendPoints\(rows, 'month'\)/)
+  assert.match(service, /getCustomPeakTrend/)
   assert.match(service, /label: String\(week\)/)
 })
 
@@ -4051,8 +4054,8 @@ test('analysis total hero metrics compare with the previous period', async () =>
   assert.match(apiTypes, /totalViewerCountDelta: number \| null/)
   assert.match(service, /buildHeroMetrics\(heroDashboard, resolvedTotalPeriod\)/)
   assert.match(service, /deltaTone = signedDelta < 0 \? 'down' : 'up'/)
-  assert.match(pageLogic, /getAnalysisOverview\(period, undefined, this\.data\.activeAnalysisSort, trendPeriod\)/)
-  assert.match(homeLogic, /getAnalysisOverview\(period, undefined, this\.data\.activeAnalysisSort, trendPeriod\)/)
+  assert.match(pageLogic, /getAnalysisOverview\(\s*period,\s*dateRange,\s*this\.data\.activeAnalysisSort,\s*requestedTrendPeriod,\s*peakRange,\s*\)/)
+  assert.match(homeLogic, /getAnalysisOverview\(\s*period,\s*dateRange,\s*this\.data\.activeAnalysisSort,\s*requestedTrendPeriod,\s*peakRange,\s*\)/)
   assert.match(styles, /\.analysis-total__hero-caption \{[^}]*color: #999999;/)
   assert.match(styles, /\.analysis-total__hero-delta--up,\s*\.analysis-total__hero-delta--up text \{ color: #0ec8d9; \}/)
   assert.match(styles, /\.analysis-total__hero-delta--down,\s*\.analysis-total__hero-delta--down text \{ color: #ff4343; \}/)
@@ -4538,17 +4541,23 @@ test('day peak chart axis scales with view volume', async () => {
   assert.equal(dayState.analysisTrendSlotCount, 24)
 
   const weekState = buildTotalTrendState('week', [
-    { id: 'd1', label: '1', value: '0' },
-    { id: 'd3', label: '3', value: '7' },
+    { id: 'h0', label: '0', value: '0' },
+    { id: 'h3', label: '3', value: '7' },
   ])
-  assert.equal(weekState.chartAxisScale, 'weekday')
+  assert.equal(weekState.chartAxisScale, 'hour')
   assert.equal(weekState.chartAxisMax, 9)
-  assert.equal(weekState.analysisTrendSlotCount, 7)
+  assert.equal(weekState.analysisTrendSlotCount, 24)
 
-  const monthState = buildTotalTrendState('month', [{ id: 'd1', label: '1', value: '20' }])
-  assert.equal(monthState.chartAxisScale, 'month')
+  const monthState = buildTotalTrendState('month', [{ id: 'h1', label: '1', value: '20' }])
+  assert.equal(monthState.chartAxisScale, 'hour')
   assert.equal(monthState.chartAxisMax, 30)
-  assert.equal(monthState.analysisTrendSlotCount, currentMonthDays)
+  assert.equal(monthState.analysisTrendSlotCount, 24)
+
+  const customState = buildTotalTrendState('custom', [{ id: 'h1', label: '1', value: '7' }])
+  assert.equal(customState.chartAxisScale, 'hour')
+  assert.equal(customState.chartAxisMax, 9)
+  assert.equal(customState.analysisTrendSlotCount, 24)
+  assert.equal(customState.activeAnalysisReadRange, 'custom')
 
   const totalState = buildTotalTrendState('total', [{ id: 'w1', label: '1', value: '7' }])
   assert.equal(totalState.chartAxisScale, 'week')

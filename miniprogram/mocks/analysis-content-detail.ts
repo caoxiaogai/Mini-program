@@ -58,6 +58,6 @@ export const analysisOverviewPreview: AnalysisViewModel = {
       { label: '中意向', value: '1' },
       { label: '低意向', value: '5' },
     ],
-    readTrends: { day: [], week: [], month: [], total: [] },
+    readTrends: { day: [], week: [], month: [], total: [], custom: [] },
   },
 }
