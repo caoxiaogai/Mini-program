@@ -1,6 +1,6 @@
 <view class="user-detail-page">
   <view class="user-detail-page__header">
-    <navigation-bar title="用户详情" back="{{true}}" color="#000000" background="#ffffff" />
+    <navigation-bar title="访客详情" back="{{true}}" color="#000000" background="#ffffff" />
   </view>
 
   <loading-skeleton wx:if="{{!detail}}" variant="user-detail" />
@@ -26,7 +26,7 @@
         </view>
       </view>
 
-      <view class="user-detail__contact" bindtap="onContactTap">联系用户</view>
+      <view class="user-detail__contact" bindtap="onContactTap">联系访客</view>
     </view>
 
     <view class="user-detail__records-section">
@@ -62,7 +62,7 @@
   </view>
 
   <view wx:if="{{noticeVisible}}" class="user-detail__copy-feedback">
-    <text>微信名称复制成功，</text>
-    <text>关闭小程序后，前往微信联系用户。</text>
+    <text>微信名称复制成功</text>
+    <text>前往微信搜索好友</text>
   </view>
 </view>

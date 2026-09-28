@@ -63,7 +63,7 @@ const analysisSortOptions = [
 
 const analysisTabs = [
   { id: 'work' as AnalysisTabId, label: '作品分析' },
-  { id: 'user' as AnalysisTabId, label: '用户分析' },
+  { id: 'user' as AnalysisTabId, label: '访客分析' },
   { id: 'total' as AnalysisTabId, label: '总数据' },
 ]
 

@@ -59,7 +59,7 @@ interface AnalysisTabOption {
 
 const analysisTabs: AnalysisTabOption[] = [
   { id: 'work', label: '作品分析' },
-  { id: 'user', label: '用户分析' },
+  { id: 'user', label: '访客分析' },
   { id: 'total', label: '总数据' },
 ]
 
