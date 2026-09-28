@@ -66,6 +66,7 @@ const analysisTabs: AnalysisTabOption[] = [
 const analysisSwipeThreshold = 40
 
 Page({
+  analysisLoadToken: 0,
   data: {
     analysisNavigationHeight: 91,
     analysisData: null as AnalysisViewModel | null,
@@ -138,6 +139,8 @@ Page({
     return dateRange ?? { startDate: this.data.customStartDate, endDate: this.data.customEndDate }
   },
   loadAnalysis(period: AnalysisPeriodId, trendPeriod: AnalysisPeriodId = this.data.activePeakPeriod, dateRange?: DateRange) {
+    const loadToken = (this.analysisLoadToken ?? 0) + 1
+    this.analysisLoadToken = loadToken
     const requestedTrendPeriod = this.data.activePeakPeriod || trendPeriod
     const peakRange = requestedTrendPeriod === 'custom'
       ? { startDate: this.data.peakCustomStartDate, endDate: this.data.peakCustomEndDate }
@@ -150,6 +153,7 @@ Page({
       peakRange,
     )
     return request.then((analysisData) => {
+      if (this.analysisLoadToken !== loadToken) return
       const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
       // Keep the chart tied to the latest peak selector choice even if an overview request resolves later.
@@ -168,6 +172,7 @@ Page({
       if (initializeWorkData) this.applyAnalysisCardsWindow(allAnalysisCards, LIST_PAGE_SIZE)
       this.applyAnalysisUsersWindow(sortedUsers, LIST_PAGE_SIZE)
     }).catch(() => {
+      if (this.analysisLoadToken !== loadToken) return
       this.setData({
         analysisData: {
           summary: [],

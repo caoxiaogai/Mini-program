@@ -300,6 +300,7 @@ export function getTotalComparisonLabel(period: AnalysisTimeRange): string {
   if (period === 'day') return '较昨日'
   if (period === 'week') return '较上周'
   if (period === 'month') return '较上月'
+  if (period === 'custom') return '较上期'
   return '较上两月'
 }
 
@@ -461,9 +462,6 @@ export function getAnalysisOverview(
 
   const periodQuery = buildPeriodQuery(period, customRange)
   const contentQuery = { ...periodQuery, orderBy: workSortOrderBy[sortId] }
-  const resolvedTotalPeriod = totalPeriod === 'custom' ? 'total' : totalPeriod
-  const totalQuery = buildPeriodQuery(resolvedTotalPeriod)
-  const reusePeriodDashboard = period === resolvedTotalPeriod && period !== 'custom'
   const customTrend = totalPeriod === 'custom' && peakRange
     ? getCustomPeakTrend(peakRange)
     : Promise.resolve([] as AnalysisChartPoint[])
@@ -473,16 +471,12 @@ export function getAnalysisOverview(
     request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query: contentQuery }),
     request<ApiCustomerListItem[]>({ method: 'GET', path: '/analysis/customer/list', query: periodQuery }),
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query: periodQuery }),
-    reusePeriodDashboard
-      ? Promise.resolve(null)
-      : request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query: totalQuery }),
     getReadTrends(),
     customTrend,
     getMembershipAccessSilent(),
-  ]).then(async ([dashboard, contents, customers, intentCustomers, totalDashboard, readTrends, customPoints, membershipAccess]) => {
+  ]).then(async ([dashboard, contents, customers, intentCustomers, readTrends, customPoints, membershipAccess]) => {
     const intentByCustomer = new Map(intentCustomers.map((item) => [String(item.customerId), item]))
     const cards = mapContentCards(contents, sortId, intentCustomers)
-    const heroDashboard = totalDashboard ?? dashboard
     const limitPrompt = await buildVisitorLimitPromptViewModel(membershipAccess)
 
     return {
@@ -519,14 +513,14 @@ export function getAnalysisOverview(
       limitPromptVisitorAvatars: limitPrompt.avatars,
       limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
       totalData: {
-        heroMetrics: buildHeroMetrics(heroDashboard, resolvedTotalPeriod),
+        heroMetrics: buildHeroMetrics(dashboard, period),
         overview: [
-          { label: '总发布', value: formatCount(heroDashboard.totalPublishCount) },
-          { label: '总转发', value: formatCount(heroDashboard.totalForwardCount) },
-          { label: '总完播', value: formatCount(heroDashboard.totalCompleteCount) },
-          { label: '高意向', value: formatCount(heroDashboard.highIntentCount) },
-          { label: '中意向', value: formatCount(heroDashboard.mediumIntentCount) },
-          { label: '低意向', value: formatCount(heroDashboard.lowIntentCount) },
+          { label: '总发布', value: formatCount(dashboard.totalPublishCount) },
+          { label: '总转发', value: formatCount(dashboard.totalForwardCount) },
+          { label: '总完播', value: formatCount(dashboard.totalCompleteCount) },
+          { label: '高意向', value: formatCount(dashboard.highIntentCount) },
+          { label: '中意向', value: formatCount(dashboard.mediumIntentCount) },
+          { label: '低意向', value: formatCount(dashboard.lowIntentCount) },
         ],
         readTrends: { ...readTrends, custom: customPoints },
       },

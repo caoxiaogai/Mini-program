@@ -169,6 +169,7 @@ Page({
   skipNextShowRefresh: false,
   pendingPublishType: null as 'image' | 'video' | null,
   loginRedirecting: false,
+  analysisLoadToken: 0,
   data: {
     analysisNavigationHeight: 91,
     greetingHeadline: '发布作品',
@@ -503,6 +504,8 @@ Page({
   },
   loadAnalysis(period: AnalysisPeriodId = this.data.activePeriod, trendPeriod: AnalysisPeriodId = this.data.activePeakPeriod, dateRange?: DateRange) {
     if (this.data.guestPreview) return Promise.resolve()
+    const loadToken = (this.analysisLoadToken ?? 0) + 1
+    this.analysisLoadToken = loadToken
     const requestedTrendPeriod = this.data.activePeakPeriod || trendPeriod
     const peakRange = requestedTrendPeriod === 'custom'
       ? { startDate: this.data.peakCustomStartDate, endDate: this.data.peakCustomEndDate }
@@ -515,6 +518,7 @@ Page({
       peakRange,
     )
     return request.then((analysisData) => {
+      if (this.analysisLoadToken !== loadToken) return
       const sortedUsers = sortAnalysisUsers(analysisData.audienceUsers, this.data.activeAnalysisSort)
       const initializeWorkData = !this.data.analysisData
       // Keep the chart tied to the latest peak selector choice even if an overview request resolves later.
