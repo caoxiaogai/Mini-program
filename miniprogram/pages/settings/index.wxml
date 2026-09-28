@@ -35,9 +35,14 @@
     <view class="settings-rules-modal__mask" catchtap="onCloseIntentRules" catchtouchmove="onIntentRulesNoop"></view>
     <view class="settings-rules-modal__card" catchtap="onIntentRulesNoop">
       <text class="settings-rules-modal__title">{{intentRulesTitle}}</text>
-      <view wx:for="{{intentRuleSections}}" wx:key="id" class="settings-rules-modal__section">
-        <text class="settings-rules-modal__section-text">{{item.label}}：{{item.body}}</text>
-      </view>
+      <scroll-view class="settings-rules-modal__body" scroll-y show-scrollbar="{{false}}">
+        <view class="settings-rules-modal__sections">
+          <view wx:for="{{intentRuleSections}}" wx:key="id" class="settings-rules-modal__section">
+            <text class="settings-rules-modal__section-text">{{item.label}}</text>
+            <text wx:for="{{item.lines}}" wx:for-item="line" wx:key="*this" class="settings-rules-modal__section-text">{{line}}</text>
+          </view>
+        </view>
+      </scroll-view>
     </view>
   </view>
 </view>
