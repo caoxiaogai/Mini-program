@@ -218,8 +218,6 @@ Page({
         if (isSinglePageMode()) return
         if (!keepShareImage) this.prepareShareImage(detail.previewUrl, shareImageToken)
 
-        this.reportOpenedPlay()
-
         if (detail.fileType === 'IMAGE' && detail.images.length > 0) {
           this.markImageViewed(0, detail)
         } else if (detail.fileType === 'VIDEO') {
@@ -228,6 +226,8 @@ Page({
           this.startNoteScrollTracking()
         } else if (isDocumentMaterial(detail)) {
           this.reportDocumentView(detail)
+        } else {
+          this.reportOpenedPlay()
         }
       })
       .catch(() => {

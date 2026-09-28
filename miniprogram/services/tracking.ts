@@ -1,4 +1,4 @@
-import { ensureLogin, hasAuthorizedLogin, postNow, request } from './request'
+import { ensureLogin, postNow, request } from './request'
 
 export interface TrackingEventInput {
   trackingId?: string | null
@@ -71,15 +71,8 @@ export function stopVisitorHeartbeat(): void {
 }
 
 function reportVisitorHeartbeat(): void {
-  if (!hasAuthorizedLogin()) return
-  request<void>({
-    method: 'POST',
-    path: '/tracking/heartbeat',
-    silent: true,
-    data: {},
-  }).catch((error) => {
-    console.warn('[tracking] heartbeat failed', error)
-  })
+  // 带上设备发出时间，并立刻发送。晚到的旧心跳不能把“还在小程序里”的时间续到服务器处理完的时刻。
+  postNow('/tracking/heartbeat', { sentAt: Date.now() })
 }
 
 export function reportVisitorLeave(): void {
