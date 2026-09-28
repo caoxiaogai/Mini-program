@@ -4161,6 +4161,7 @@ test('analysis trend chart converts supplied values into a smooth Figma-sized SV
     assert.match(hourScalePath, /135 75\.5$/)
     assert.match(hourScaleSvg, /viewBox="0 0 270 168"/)
     assert.match(hourScaleSvg, /<text x="0" y="165"[^>]*text-anchor="start">0<\/text>/)
+    assert.match(hourScaleSvg, /<text x="22.5" y="165"[^>]*text-anchor="middle">2<\/text>/)
     assert.match(hourScaleSvg, /<text x="45" y="165"[^>]*text-anchor="middle">4<\/text>/)
     assert.match(hourScaleSvg, /<text x="135" y="165"[^>]*text-anchor="middle">12<\/text>/)
     assert.match(hourScaleSvg, /<text x="270" y="165"[^>]*text-anchor="end">24<\/text>/)
