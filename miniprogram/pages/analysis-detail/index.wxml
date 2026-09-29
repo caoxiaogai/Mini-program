@@ -1,6 +1,6 @@
 <view class="detail-page" style="--analysis-navigation-height: {{analysisNavigationHeight}}px;">
   <view class="detail-page__header">
-    <analysis-header title="内容分析" back="{{true}}" title-weight="600" navigation-height="{{analysisNavigationHeight}}" />
+    <analysis-header title="作品分析" back="{{true}}" title-weight="600" navigation-height="{{analysisNavigationHeight}}" />
   </view>
 
   <view wx:if="{{detail}}" class="detail-page__content">
@@ -42,11 +42,11 @@
                 <text class="detail-user__tag detail-user__tag--{{item.level}}">#{{item.levelLabel}}</text>
               </view>
               <view class="detail-user__stats">
-                <view class="detail-user__stat"><text>阅读</text><text>{{item.readCount}}</text></view>
+                <view class="detail-user__stat"><text>浏览次数</text><text>{{item.readCount}}</text></view>
                 <view class="detail-user__divider"></view>
-                <view class="detail-user__stat"><text>完播</text><text>{{item.completionCount}}</text></view>
+                <view class="detail-user__stat"><text>完播数</text><text>{{item.completionCount}}</text></view>
                 <view class="detail-user__divider"></view>
-                <view class="detail-user__stat"><text>转发</text><text>{{item.shareCount}}</text></view>
+                <view class="detail-user__stat"><text>转发数</text><text>{{item.shareCount}}</text></view>
               </view>
               <view class="detail-user__line"></view>
             </view>

@@ -674,7 +674,7 @@ test('home today-most follows Figma 878:11389 card hierarchy', () => {
   assert.match(section, /class="home-content-card__item" bindtap="onTodayMostTap"/)
   assert.doesNotMatch(section, /home-content-card__divider/)
   assert.match(section, /class="home-content-card__intent home-content-card__intent--\{\{item\.highIntentLevel\}\}"\s*>\{\{item\.highIntentLabel\}\}/)
-  assert.match(section, /class="home-stat"><text>完播<\/text><text class="home-stat__value">\{\{item\.completeCount\}\}/)
+  assert.match(section, /class="home-stat"><text>完播数<\/text><text class="home-stat__value">\{\{item\.completeCount\}\}/)
   assert.doesNotMatch(styles, /\.home-section--today-most \{[\s\S]*margin-(?:right|left): -40rpx;/)
   assert.match(styles, /\.home-section--today-most \.home-content-card \{[\s\S]*border: 4rpx solid #ffffff;[\s\S]*background: linear-gradient\(180deg, #fff8e4 0%, #ffffff 13\.333%\);/)
   assert.match(styles, /\.home-section--today-most \.home-section__title \{[\s\S]*color: #333333;[\s\S]*font-size: 32rpx;[\s\S]*font-weight: 700;/)
@@ -3619,9 +3619,7 @@ test('analysis work data comes from backend analysis APIs', () => {
   assert.match(service, /path: '\/analysis\/dashboard'/)
   assert.match(service, /path: '\/analysis\/content\/list'/)
   assert.match(service, /orderBy: workSortOrderBy\[sortId\]/)
-  assert.match(service, /label: '浏览次数', value: formatCount\(viewCount\)/)
-  assert.match(service, /label: '转发', value: formatCount\(forwardCount\)/)
-  assert.match(service, /label: '完播', value: formatCount\(completeCount\)/)
+  assert.match(service, /compact: \[[\s\S]*label: '浏览次数', value: formatCount\(viewCount\)[\s\S]*label: '完播数', value: formatCount\(completeCount\)[\s\S]*label: '转发数', value: formatCount\(forwardCount\)/)
   assert.match(service, /export function getAnalysisWorkList/)
   assert.match(homeLogic, /getAnalysisWorkList\(period, this\.resolveWorkDateRange\(period, dateRange\), this\.data\.activeAnalysisSort\)/)
   assert.match(analysisLogic, /getAnalysisWorkList\(period, this\.resolveWorkDateRange\(period, dateRange\), this\.data\.activeAnalysisSort\)/)
@@ -3649,7 +3647,7 @@ test('analysis user tab follows the Figma 1107:8095 list hierarchy', () => {
 
   for (const markup of [standalone, embedded]) {
     assert.match(markup, /class="analysis-user__summary"[\s\S]*class="analysis-user__list-panel"[\s\S]*class="analysis-user__header"[\s\S]*意向客户/)
-    assert.match(markup, />完播<\/text>/)
+    assert.match(markup, />完播数<\/text>/)
     assert.doesNotMatch(markup, />观看作品<\/text>/)
   }
 
@@ -3784,7 +3782,7 @@ test('analysis content detail opens a single work with intent users', () => {
   const service = read('miniprogram/services/analysis.ts')
   const types = read('miniprogram/types/analysis.ts')
 
-  assert.match(markup, /<analysis-header title="内容分析"/)
+  assert.match(markup, /<analysis-header title="作品分析"/)
   assert.match(markup, /class="detail-card"/)
   assert.match(markup, /detail\.card\.thumbnailUrl/)
   assert.match(markup, /detail\.card\.title/)
@@ -3802,7 +3800,7 @@ test('analysis content detail opens a single work with intent users', () => {
   assert.match(markup, /detail-intent__header[\s\S]*intent-customer-header\.svg[\s\S]*意向客户（\{\{detail\.intentUsers\.length\}\}）/)
   assert.match(markup, /<segmented-filter items="\{\{intentTabs\}\}" active-id="\{\{activeIntentLevel\}\}" bind:change/)
   assert.doesNotMatch(markup, /variant="notification"/)
-  assert.match(markup, /<text>阅读<\/text><text>\{\{item\.readCount\}\}<\/text>/)
+  assert.match(markup, /<text>浏览次数<\/text><text>\{\{item\.readCount\}\}<\/text>[\s\S]*<text>完播数<\/text><text>\{\{item\.completionCount\}\}<\/text>[\s\S]*<text>转发数<\/text><text>\{\{item\.shareCount\}\}<\/text>/)
   assert.match(styles, /\.detail-card \{[\s\S]*padding: 20px;[\s\S]*border: 1px solid #808080;[\s\S]*border-radius: 20px;/)
   assert.match(styles, /\.detail-card__thumbnail \{[\s\S]*width: 50px;[\s\S]*height: 68px;/)
   assert.match(styles, /\.detail-intent__panel \{[\s\S]*min-height: 473px;[\s\S]*padding: 0 20px 20px;[\s\S]*border: 1px solid #808080;/)
@@ -3863,7 +3861,7 @@ test('analysis detail reuses the analysis header title typography', () => {
 
   assert.match(headerMarkup, /<navigation-bar title="\{\{title\}\}"/)
   assert.match(headerLogic, /title: \{ type: String, value: '分析' \}/)
-  assert.match(detailMarkup, /<analysis-header title="内容分析" back="\{\{true\}\}" title-weight="600"/)
+  assert.match(detailMarkup, /<analysis-header title="作品分析" back="\{\{true\}\}" title-weight="600"/)
   assert.doesNotMatch(detailMarkup, /<navigation-bar/)
   assert.equal(detailConfig.usingComponents['analysis-header'], '/components/analysis-header/index')
   assert.equal(detailConfig.usingComponents['navigation-bar'], undefined)
@@ -3880,7 +3878,7 @@ test('analysis detail title uses the lighter detail weight only', () => {
   assert.match(navigationMarkup, /weui-navigation-bar__center' style="font-weight: \{\{titleWeight\}\};"/)
   assert.match(headerLogic, /titleWeight: \{ type: Number, value: 700 \}/)
   assert.match(headerMarkup, /title-weight="\{\{titleWeight\}\}"/)
-  assert.match(detailMarkup, /<analysis-header title="内容分析" back="\{\{true\}\}" title-weight="600"/)
+  assert.match(detailMarkup, /<analysis-header title="作品分析" back="\{\{true\}\}" title-weight="600"/)
 })
 
 test('analysis total tab follows Figma 587:8623 overview and peak layout', () => {
@@ -4723,7 +4721,7 @@ test('analysis user tab follows the Figma 581:8521 user-list rhythm', () => {
 
   for (const markup of [standalone, embedded]) {
     assert.match(markup, /class="analysis-user__stat-label">浏览次数<\/text>/)
-    assert.match(markup, /class="analysis-user__stat-label">完播<\/text>[\s\S]*class="analysis-user__stat-label">转发<\/text>/)
+    assert.match(markup, /class="analysis-user__stat-label">完播数<\/text>[\s\S]*class="analysis-user__stat-label">转发数<\/text>/)
   }
 
   assert.match(styles, /\.analysis-user__summary-label \{[\s\S]*color: #8a8e94;[\s\S]*font-size: 12px;/)

@@ -213,15 +213,15 @@ export function sortAnalysisCards(cards: AnalysisCard[], sortId: AnalysisWorkSor
 function buildCardMetrics(viewCount: number | null | undefined, forwardCount: number | null | undefined, completeCount: number | null | undefined, viewerCount: number | null | undefined) {
   return {
     full: [
-      { label: '转发', value: formatCount(forwardCount) },
-      { label: '播完', value: formatCount(completeCount) },
-      { label: '浏览', value: formatCount(viewCount) },
+      { label: '浏览次数', value: formatCount(viewCount) },
+      { label: '完播数', value: formatCount(completeCount) },
+      { label: '转发数', value: formatCount(forwardCount) },
       { label: '观看人数', value: formatCount(viewerCount) },
     ],
     compact: [
       { label: '浏览次数', value: formatCount(viewCount) },
-      { label: '转发', value: formatCount(forwardCount) },
-      { label: '完播', value: formatCount(completeCount) },
+      { label: '完播数', value: formatCount(completeCount) },
+      { label: '转发数', value: formatCount(forwardCount) },
     ],
   }
 }

@@ -68,7 +68,7 @@
             <view class="analysis-user__body">
               <view class="analysis-user__summary-line">
                 <view class="analysis-user__identity"><text class="analysis-user__name">{{item.name}}</text><text class="analysis-user__tag analysis-user__tag--{{item.level}}">#{{item.levelLabel}}</text></view>
-                <view class="analysis-user__stats"><view class="analysis-user__stat"><text class="analysis-user__stat-label">浏览次数</text><text class="analysis-user__stat-value">{{item.readCount}}</text></view><view class="analysis-user__stat-divider"></view><view class="analysis-user__stat"><text class="analysis-user__stat-label">完播</text><text class="analysis-user__stat-value">{{item.completionCount}}</text></view><view class="analysis-user__stat-divider"></view><view class="analysis-user__stat"><text class="analysis-user__stat-label">转发</text><text class="analysis-user__stat-value">{{item.shareCount}}</text></view></view>
+                <view class="analysis-user__stats"><view class="analysis-user__stat"><text class="analysis-user__stat-label">浏览次数</text><text class="analysis-user__stat-value">{{item.readCount}}</text></view><view class="analysis-user__stat-divider"></view><view class="analysis-user__stat"><text class="analysis-user__stat-label">完播数</text><text class="analysis-user__stat-value">{{item.completionCount}}</text></view><view class="analysis-user__stat-divider"></view><view class="analysis-user__stat"><text class="analysis-user__stat-label">转发数</text><text class="analysis-user__stat-value">{{item.shareCount}}</text></view></view>
               </view>
               <view class="analysis-user__line"></view>
             </view>

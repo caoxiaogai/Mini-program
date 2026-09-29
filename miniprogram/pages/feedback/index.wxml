@@ -50,7 +50,7 @@
       <text class="feedback-card__content">{{item.content}}</text>
       <text class="feedback-card__time">{{item.createTimeLabel}}</text>
       <view wx:if="{{item.reply}}" class="feedback-card__reply">
-        <text class="feedback-card__reply-label">回复</text>
+        <text class="feedback-card__reply-label">管理员回复：</text>
         <text class="feedback-card__reply-text">{{item.reply}}</text>
         <text class="feedback-card__time">{{item.replyTimeLabel}}</text>
       </view>

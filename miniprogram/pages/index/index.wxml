@@ -122,7 +122,7 @@
                         <image wx:if="{{item.thumbnailUrl}}" class="home-content-card__thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" /><view wx:else class="home-content-card__thumbnail home-content-card__thumbnail--empty" />
                         <view class="home-content-card__copy"><text class="home-content-card__title">{{item.title}}</text><text class="home-content-card__date">{{item.date}}</text><text class="home-content-card__intent home-content-card__intent--{{item.highIntentLevel}}">{{item.highIntentLabel}}</text></view>
                       </view>
-                      <view class="home-content-card__stats"><view class="home-stat"><text>浏览次数</text><text class="home-stat__value">{{item.viewCount}}</text></view><view class="home-stat"><text>转发</text><text class="home-stat__value">{{item.forwardCount}}</text></view><view class="home-stat"><text>完播</text><text class="home-stat__value">{{item.completeCount}}</text></view></view>
+                      <view class="home-content-card__stats"><view class="home-stat"><text>浏览次数</text><text class="home-stat__value">{{item.viewCount}}</text></view><view class="home-stat"><text>完播数</text><text class="home-stat__value">{{item.completeCount}}</text></view><view class="home-stat"><text>转发数</text><text class="home-stat__value">{{item.forwardCount}}</text></view></view>
                     </view>
                   </block>
                 </view>
