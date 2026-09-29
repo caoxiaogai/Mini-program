@@ -27,12 +27,20 @@ export function normalizeNotifyIntentLevel(level: string | null | undefined): No
   return DEFAULT_NOTIFY_INTENT_LEVEL
 }
 
+export interface NotifySettingsView {
+  level: NotifyIntentLevel
+  feedbackAdmin: boolean
+}
+
 /** GET /user/notify-settings */
-export function getNotifySettings(): Promise<NotifyIntentLevel> {
+export function getNotifySettings(): Promise<NotifySettingsView> {
   return request<ApiNotifySettings>({
     method: 'GET',
     path: '/user/notify-settings',
-  }).then((data) => normalizeNotifyIntentLevel(data.notifyIntentLevel))
+  }).then((data) => ({
+    level: normalizeNotifyIntentLevel(data.notifyIntentLevel),
+    feedbackAdmin: data.feedbackAdmin === true,
+  }))
 }
 
 /** PUT /user/notify-settings */

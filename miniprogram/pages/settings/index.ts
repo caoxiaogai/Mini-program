@@ -18,6 +18,7 @@ Page({
     activeNotifyIntentLevel: DEFAULT_NOTIFY_INTENT_LEVEL as NotifyIntentLevel,
     loading: true,
     saving: false,
+    feedbackAdmin: false,
     intentRulesVisible: false,
     intentRulesTitle: INTENT_RULES_TITLE,
     intentRuleSections,
@@ -33,11 +34,19 @@ Page({
 
   loadSettings() {
     return getNotifySettings()
-      .then((activeNotifyIntentLevel) => {
-        this.setData({ activeNotifyIntentLevel, loading: false })
+      .then((settings) => {
+        this.setData({
+          activeNotifyIntentLevel: settings.level,
+          feedbackAdmin: settings.feedbackAdmin,
+          loading: false,
+        })
       })
       .catch(() => {
-        this.setData({ activeNotifyIntentLevel: DEFAULT_NOTIFY_INTENT_LEVEL, loading: false })
+        this.setData({
+          activeNotifyIntentLevel: DEFAULT_NOTIFY_INTENT_LEVEL,
+          feedbackAdmin: false,
+          loading: false,
+        })
       })
   },
 
@@ -71,6 +80,10 @@ Page({
   },
 
   onIntentRulesNoop() {},
+
+  onFeedbackInboxTap() {
+    wx.navigateTo({ url: '/pages/feedback-inbox/index' })
+  },
 
   onLogoutTap() {
     wx.showModal({

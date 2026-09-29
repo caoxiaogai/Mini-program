@@ -8,6 +8,14 @@
       <text class="home-profile__nickname" bindtap="onIdentityTap" hover-class="{{identityLogin ? 'home-profile__identity-hit--pressed' : ''}}" hover-stay-time="80">{{profile.nickname}}</text>
       <view
         class="home-profile__settings"
+        bindtap="onFeedbackTap"
+        hover-class="home-profile__settings--pressed"
+        hover-stay-time="80"
+      >
+        <text>反馈问题</text>
+      </view>
+      <view
+        class="home-profile__settings"
         bindtap="onSettingsTap"
         hover-class="home-profile__settings--pressed"
         hover-stay-time="80"

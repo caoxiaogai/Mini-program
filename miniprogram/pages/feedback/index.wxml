@@ -1,0 +1,43 @@
+<view class="feedback-page">
+  <view class="feedback-page__header">
+    <navigation-bar title="反馈问题" back="{{true}}" color="#000000" background="#ffffff" />
+  </view>
+
+  <view class="feedback-page__content">
+    <view class="feedback-form">
+      <textarea
+        class="feedback-form__input"
+        maxlength="500"
+        placeholder="请描述遇到的问题"
+        placeholder-class="feedback-form__placeholder"
+        value="{{draft}}"
+        bindinput="onDraftInput"
+        disabled="{{submitting}}"
+      />
+      <view
+        class="feedback-form__submit {{submitting ? 'feedback-form__submit--disabled' : ''}}"
+        bindtap="onSubmitTap"
+        hover-class="{{submitting ? '' : 'feedback-form__submit--pressed'}}"
+        hover-stay-time="80"
+        aria-role="button"
+      >
+        <text>{{submitting ? '提交中' : '提交'}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{items.length === 0}}" class="feedback-empty">
+      <text>还没有反馈</text>
+    </view>
+
+    <view wx:for="{{items}}" wx:key="id" class="feedback-card">
+      <text class="feedback-card__content">{{item.content}}</text>
+      <text class="feedback-card__time">{{item.createTimeLabel}}</text>
+      <view wx:if="{{item.reply}}" class="feedback-card__reply">
+        <text class="feedback-card__reply-label">回复</text>
+        <text class="feedback-card__reply-text">{{item.reply}}</text>
+        <text class="feedback-card__time">{{item.replyTimeLabel}}</text>
+      </view>
+      <text wx:else class="feedback-card__pending">等待回复</text>
+    </view>
+  </view>
+</view>

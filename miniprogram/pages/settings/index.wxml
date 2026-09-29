@@ -26,6 +26,17 @@
       <segmented-filter items="{{notifyIntentLevelOptions}}" active-id="{{activeNotifyIntentLevel}}" bind:change="onNotifyIntentLevelChange" />
     </view>
 
+    <view
+      wx:if="{{feedbackAdmin}}"
+      class="settings-feedback"
+      bindtap="onFeedbackInboxTap"
+      hover-class="settings-feedback--pressed"
+      hover-stay-time="80"
+      aria-role="button"
+    >
+      <text>用户反馈</text>
+    </view>
+
     <view class="settings-logout" bindtap="onLogoutTap" hover-class="settings-logout--pressed" hover-stay-time="80" aria-role="button">
       <text>退出登录</text>
     </view>

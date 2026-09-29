@@ -1,0 +1,42 @@
+<view class="feedback-page">
+  <view class="feedback-page__header">
+    <navigation-bar title="用户反馈" back="{{true}}" color="#000000" background="#ffffff" />
+  </view>
+
+  <view class="feedback-page__content">
+    <view wx:if="{{items.length === 0}}" class="feedback-empty">
+      <text>还没有用户反馈</text>
+    </view>
+
+    <view wx:for="{{items}}" wx:key="id" class="feedback-card">
+      <view class="feedback-card__head">
+        <text class="feedback-card__name">{{item.nickname}}</text>
+        <text class="feedback-card__time">{{item.createTimeLabel}}</text>
+      </view>
+      <text class="feedback-card__content">{{item.content}}</text>
+      <view wx:if="{{item.reply}}" class="feedback-card__reply">
+        <text class="feedback-card__reply-label">已回复</text>
+        <text class="feedback-card__reply-text">{{item.reply}}</text>
+      </view>
+      <textarea
+        class="feedback-form__input feedback-form__input--reply"
+        maxlength="500"
+        placeholder="回复这个问题"
+        placeholder-class="feedback-form__placeholder"
+        value="{{item.draft}}"
+        data-id="id:{{item.id}}"
+        bindinput="onReplyInput"
+      />
+      <view
+        class="feedback-form__submit {{replyingId === item.id ? 'feedback-form__submit--disabled' : ''}}"
+        data-id="id:{{item.id}}"
+        bindtap="onReplyTap"
+        hover-class="{{replyingId === item.id ? '' : 'feedback-form__submit--pressed'}}"
+        hover-stay-time="80"
+        aria-role="button"
+      >
+        <text>{{replyingId === item.id ? '回复中' : '回复'}}</text>
+      </view>
+    </view>
+  </view>
+</view>

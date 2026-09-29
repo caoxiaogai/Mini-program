@@ -635,6 +635,10 @@ Page({
     if (hasCompletedLogin()) return
     this.requireLoginForAction(homeProfileTabUrl())
   },
+  onProfileFeedbackTap() {
+    if (this.requireLoginForAction('/pages/feedback/index')) return
+    wx.navigateTo({ url: '/pages/feedback/index' })
+  },
   onProfileSettingsTap() {
     if (this.requireLoginForAction('/pages/settings/index')) return
     wx.navigateTo({ url: '/pages/settings/index' })

@@ -130,6 +130,18 @@ export type ApiNotifyIntentLevel = 'low' | 'medium' | 'high'
 /** GET/PUT /user/notify-settings 响应（NotifySettingsVO） */
 export interface ApiNotifySettings {
   notifyIntentLevel: ApiNotifyIntentLevel | null
+  /** 只有 sales_user.feedback_admin = 1 时为 true */
+  feedbackAdmin?: boolean | null
+}
+
+/** GET /feedback/mine 与 GET /feedback 的一条反馈 */
+export interface ApiUserFeedback {
+  id: string
+  nickname: string | null
+  content: string
+  reply: string | null
+  createTime: string | null
+  replyTime: string | null
 }
 
 /** GET /analysis/intent/list 响应项（IntentCustomerVO，一名客户一行） */

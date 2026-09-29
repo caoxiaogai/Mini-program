@@ -41,6 +41,9 @@ Component({
       if (!this.data.identityLogin) return
       this.triggerEvent('identitytap')
     },
+    onFeedbackTap() {
+      this.triggerEvent('feedbacktap')
+    },
     onSettingsTap() {
       this.triggerEvent('settingstap')
     },
