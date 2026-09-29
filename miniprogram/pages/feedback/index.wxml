@@ -4,6 +4,23 @@
   </view>
 
   <view class="feedback-page__content">
+    <view class="feedback-intro">
+      <text class="feedback-intro__line">尊贵的用户您好: 👋</text>
+      <text class="feedback-intro__line">首先，感谢您对我们的支持！</text>
+      <text class="feedback-intro__line">在使用小程序的过程中，只要您有任何想法，都欢迎来找我们聊聊。</text>
+      <text class="feedback-intro__line">比如：</text>
+      <text class="feedback-intro__line">发现了 Bug？告诉我们；</text>
+      <text class="feedback-intro__line">觉得哪里不好用？告诉我们；</text>
+      <text class="feedback-intro__line">想增加什么新功能？大胆提；</text>
+      <text class="feedback-intro__line">甚至想找我们老板聊合作？也完全没问题。</text>
+      <text class="feedback-intro__line">总之一句话：</text>
+      <text class="feedback-intro__line">只要您有话想说，就别憋着。</text>
+      <text class="feedback-intro__line">在下面的输入框里编辑好，直接发送就行。</text>
+      <text class="feedback-intro__line">您发来的每一条反馈，我们老板都会认真阅读，并尽量给您回复。</text>
+      <text class="feedback-intro__line">所以——</text>
+      <text class="feedback-intro__line">请开始您的“老板留言时间”吧。</text>
+    </view>
+
     <view class="feedback-form">
       <textarea
         class="feedback-form__input"
