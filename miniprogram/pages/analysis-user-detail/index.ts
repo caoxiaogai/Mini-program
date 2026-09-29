@@ -10,8 +10,8 @@ type RecordSortId = 'views' | 'completion' | 'shares'
 
 const recordSortOptions: Array<{ id: RecordSortId; label: string }> = [
   { id: 'views', label: '浏览次数' },
-  { id: 'completion', label: '完播' },
-  { id: 'shares', label: '转发' },
+  { id: 'completion', label: '完播数' },
+  { id: 'shares', label: '转发数' },
 ]
 
 const getRecordSortValue = (record: AnalysisUserRecord, sortId: RecordSortId) => {

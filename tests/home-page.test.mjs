@@ -2287,7 +2287,7 @@ test('user detail content follows Figma 1133:9656', () => {
   assert.match(service, /resolveMaterialListThumbnail/)
   assert.match(service, /export function enrichAnalysisUserDetailThumbnails/)
   assert.match(logic, /enrichAnalysisUserDetailThumbnails/)
-  assert.match(markup, /class="user-detail__record-stats">[\s\S]*观看时长[\s\S]*完播数[\s\S]*浏览次数[\s\S]*转发/)
+  assert.match(markup, /class="user-detail__record-stats">[\s\S]*观看时长[\s\S]*完播数[\s\S]*浏览次数[\s\S]*转发数/)
 })
 
 test('user detail contact copies the username', () => {
@@ -3987,6 +3987,7 @@ test('analysis peak card uses the Figma chart icon', () => {
 
   for (const markup of markups) {
     assert.match(markup, /class="analysis-total__chart-header"[\s\S]*class="analysis-total__chart-icon" src="\/assets\/analysis\/peak-data-icon\.svg"[\s\S]*浏览峰值/)
+    assert.match(markup, /class="analysis-total__chart-caption" style="color:#CCCCCC;font-size:22rpx;font-weight:400;line-height:20rpx;" space="nbsp">横轴：24小时段  纵轴：次数<\/text>/)
   }
 
   const styles = read('miniprogram/pages/analysis/index.less')
