@@ -28,6 +28,28 @@ Page({
       })
   },
 
+  scrollFormToTop() {
+    wx.createSelectorQuery()
+      .select('.feedback-page__header')
+      .boundingClientRect()
+      .select('#feedback-form')
+      .boundingClientRect()
+      .selectViewport()
+      .scrollOffset()
+      .exec((result) => {
+        const header = result[0] as WechatMiniprogram.BoundingClientRectCallbackResult | null
+        const form = result[1] as WechatMiniprogram.BoundingClientRectCallbackResult | null
+        const viewport = result[2] as WechatMiniprogram.ScrollOffsetCallbackResult | null
+        if (!form || !viewport) return
+        const headerHeight = header?.height ?? 0
+        const scrollTop = viewport.scrollTop + form.top - headerHeight
+        wx.pageScrollTo({
+          scrollTop: scrollTop > 0 ? scrollTop : 0,
+          duration: 300,
+        })
+      })
+  },
+
   onDraftInput(event: WechatMiniprogram.Input) {
     this.setData({ draft: event.detail.value })
   },
@@ -43,7 +65,11 @@ Page({
     submitFeedback(content)
       .then(() => {
         this.setData({ draft: '', submitting: false })
-        wx.showToast({ title: '已提交', icon: 'success' })
+        wx.showModal({
+          content: '已提交成功',
+          showCancel: false,
+        })
+        this.scrollFormToTop()
         return this.loadFeedback()
       })
       .catch(() => {

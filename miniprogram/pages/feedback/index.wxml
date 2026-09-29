@@ -21,7 +21,7 @@
       <text class="feedback-intro__line">请开始您的“老板留言时间”吧。</text>
     </view>
 
-    <view class="feedback-form">
+    <view id="feedback-form" class="feedback-form">
       <textarea
         class="feedback-form__input"
         maxlength="500"
