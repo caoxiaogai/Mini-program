@@ -115,6 +115,8 @@ export interface ApiCustomerViewHistory {
   title: string | null
   content: string | null
   fileType: string | null
+  /** 素材表 deleted：1 表示作品已删除。正式版尚未返回该字段时为空 */
+  deleted?: number | null
   duration: number | null
   progress: number | null
   completed: number | null
@@ -198,6 +200,8 @@ export interface ApiUserJourney {
   fileType: string | null
   pageCount: number | null
   intentLevel: ApiIntentLevel | null
+  /** 素材表 deleted：1 表示作品已删除。正式版尚未返回该字段时为空 */
+  deleted?: number | null
   events: ApiUserJourneyEvent[] | null
 }
 

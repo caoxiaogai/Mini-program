@@ -108,6 +108,7 @@ export function mapUserJourney(
       title: (raw.title ?? '').trim() || '未命名作品',
       intentLevel,
       intentLabel: intentLabels[intentLevel],
+      deleted: raw.deleted === 1,
     },
     events: asList(raw.events).map((event) => mapUserJourneyEvent(event, fileType, pageCount, now)),
   }

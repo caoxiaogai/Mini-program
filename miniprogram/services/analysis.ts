@@ -702,6 +702,7 @@ export function getAnalysisUserDetail(userId: string): Promise<AnalysisUserDetai
         shareCount: formatCount(record.shareCount),
         intentLevel: recordLevel,
         intentLabel: intentLevelLabels[recordLevel],
+        deleted: record.deleted,
       }
     })
 

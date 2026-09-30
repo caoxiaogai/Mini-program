@@ -61,6 +61,8 @@ export type AnalysisUserRecord = {
   shareCount: string
   intentLevel: AnalysisIntentLevel
   intentLabel: string
+  /** 作品已删除时，预览图位置显示「作品已删除」 */
+  deleted: boolean
 }
 
 export type AnalysisUserProfile = {
@@ -87,6 +89,8 @@ export type UserJourneyProduct = {
   thumbnailUrl: string
   title: string
   intentLabel: string
+  /** 作品已删除时，预览图位置显示「作品已删除」，行为轨迹仍保留 */
+  deleted: boolean
 }
 
 export type UserJourneyEvent = {

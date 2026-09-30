@@ -2235,6 +2235,9 @@ test('user detail content follows Figma 1133:9656', () => {
   assert.match(markup, /class="user-detail__records-header"[\s\S]*class="user-detail__records-icon" src="\/assets\/analysis\/reading-record-icon\.svg"[\s\S]*class="user-detail__records-title">浏览记录<\/text>/)
   assert.match(markup, /class="user-detail__records-body"[\s\S]*<segmented-filter/)
   assert.match(markup, /class="user-detail__record" bindtap="onUserRecordTap" data-content-id="id:\{\{item\.contentId\}\}"/)
+  assert.match(markup, /wx:if="\{\{item\.deleted\}\}" class="user-detail__record-thumbnail user-detail__record-thumbnail--deleted"/)
+  assert.match(markup, /作品已删除/)
+  assert.match(styles, /\.user-detail__record-thumbnail--deleted \{/)
   assert.match(markup, /浏览记录/)
   assert.doesNotMatch(markup, /user-detail__record-tabs/)
   assert.match(markup, /微信名称复制成功/)
@@ -2419,6 +2422,27 @@ test('user journey service loads real tracking events through the request layer'
   assert.equal(videoJourney.events[0].detail, '播放了 50 秒')
   assert.equal(videoJourney.events[1].action, '浏览了')
   assert.equal(videoJourney.events[1].detail, '播放了 32 秒')
+  assert.equal(videoJourney.product.deleted, false)
+
+  const deletedJourney = mapUserJourney({
+    customerId: 'c2',
+    nickname: '访客',
+    materialId: 'm2',
+    title: '已删作品',
+    coverUrl: null,
+    fileUrl: null,
+    fileType: 'IMAGE',
+    pageCount: 1,
+    intentLevel: 'high',
+    deleted: 1,
+    events: [
+      { id: 'd1', occurredAt: '2026-09-28 15:37:00', actionType: 'play', completed: 1, duration: 8, progress: 100, viewedPages: 1, forwardIndex: null },
+    ],
+  }, '', new Date(2026, 8, 30, 12, 0, 0))
+  assert.equal(deletedJourney.product.deleted, true)
+  assert.equal(deletedJourney.product.title, '已删作品')
+  assert.equal(deletedJourney.events[0].action, '完播了')
+  assert.equal(deletedJourney.events[0].detail, '查看 1 页')
 })
 
 test('user journey timeline follows Figma 1136:9882', () => {
@@ -2434,6 +2458,8 @@ test('user journey timeline follows Figma 1136:9882', () => {
   assert.match(styles, /\.user-journey-track__line \{[\s\S]*top: 6rpx;[\s\S]*bottom: 20rpx;[\s\S]*left: 10rpx;[\s\S]*width: 4rpx;[\s\S]*background: #ffd19b;/)
   assert.match(styles, /\.user-journey-track__dot \{[\s\S]*width: 24rpx;[\s\S]*height: 24rpx;[\s\S]*background: #ffcf9a;/)
   assert.match(markup, /class="user-journey-track-card__icon" src="\/assets\/analysis\/user-journey-behavior-icon\.svg"/)
+  assert.match(markup, /wx:if="\{\{journey\.product\.deleted\}\}" class="user-journey-product-card__thumbnail user-journey-product-card__thumbnail--deleted"/)
+  assert.match(markup, /作品已删除/)
   assert.doesNotMatch(markup, /user-journey-contact/)
 })
 
@@ -2497,6 +2523,14 @@ test('user detail history merges the same work into one record', async () => {
   assert.equal(endOnly[0].completeCount, 1)
   assert.equal(endOnly[0].duration, 8)
   assert.equal(endOnly[0].progress, 90)
+
+  const deleted = aggregateCustomerHistoryByMaterial([
+    { materialId: 13, title: '已删作品', fileType: 'IMAGE', duration: 4, progress: 100, completed: 1, viewTime: '2026-08-31 10:38:00', actionType: 'play', deleted: 1 },
+    { materialId: 14, title: '还在', fileType: 'IMAGE', duration: 2, progress: 10, completed: 0, viewTime: '2026-08-31 09:00:00', actionType: 'play', deleted: 0 },
+  ])
+  assert.equal(deleted[0].deleted, true)
+  assert.equal(deleted[1].deleted, false)
+  assert.equal(missingAction[0].deleted, false)
 })
 
 test('dataset ids keep snowflake customer ids as strings', async () => {
@@ -2651,6 +2685,19 @@ test('publish copy keeps colorful emoji presentation', async () => {
   assert.match(styles, /Apple Color Emoji/)
   assert.match(styles, /Segoe UI Emoji/)
   assert.equal(config.renderer, 'webview')
+})
+
+test('editing a work keeps the loading popup until the draft is shown', () => {
+  const markup = read('miniprogram/pages/materials/publish/index.wxml')
+  const logic = read('miniprogram/pages/materials/publish/index.ts')
+  const service = read('miniprogram/services/materials.ts')
+
+  assert.match(markup, /wx:if="\{\{!draftLoading\}\}" class="publish-page__content"/)
+  assert.match(markup, /wx:if="\{\{!draftLoading\}\}" class="publish-page__actions"/)
+  assert.match(markup, /visible="\{\{draftLoading\}\}" text="加载中"/)
+  assert.match(logic, /if \(materialId\) this\.setData\(\{ draftLoading: true \}\)/)
+  assert.match(logic, /submitLabel: '修改',\s*draftLoading: false/)
+  assert.match(service, /function getMaterialDraft[\s\S]*silent: true/)
 })
 
 test('publish type sheet only offers the current media kind', async () => {

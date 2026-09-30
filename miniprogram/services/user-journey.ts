@@ -23,12 +23,14 @@ export function getUserJourney(userId: string, materialId: string): Promise<User
       throw new Error('用户轨迹为空')
     }
 
-    const thumbnailUrl = await prepareMaterialThumbnail({
-      id: String(raw.materialId ?? materialId),
-      fileType: raw.fileType,
-      coverUrl: raw.coverUrl,
-      fileUrl: raw.fileUrl,
-    }).catch(() => resolveMediaUrl(raw.coverUrl) || '')
+    const thumbnailUrl = raw.deleted === 1
+      ? ''
+      : await prepareMaterialThumbnail({
+        id: String(raw.materialId ?? materialId),
+        fileType: raw.fileType,
+        coverUrl: raw.coverUrl,
+        fileUrl: raw.fileUrl,
+      }).catch(() => resolveMediaUrl(raw.coverUrl) || '')
 
     return mapUserJourney(raw, thumbnailUrl)
   })

@@ -136,6 +136,7 @@ Page({
     dragPreviewHeight: 0,
     dragPreviewSettling: false,
     submitLabel: '创建',
+    draftLoading: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     const selectedEntryType = getPublishEntryType(options.type)
@@ -143,16 +144,19 @@ Page({
     this.entryType = pendingSelection?.type ?? selectedEntryType ?? 'image'
     if (this.entryType === 'image' || this.entryType === 'video') this.pendingMediaType = this.entryType
 
+    const materialId = options.id
+    if (materialId) this.setData({ draftLoading: true })
+
     runAuthed(buildReturnPath(buildMaterialPublishPath(), options), () => {
       if (pendingSelection) {
         this.setPublishMedia(pendingSelection.media)
       }
 
-      const materialId = options.id
       if (!materialId) return
 
       getMaterialDraft(materialId).then((draft) => {
         if (!draft) {
+          this.setData({ draftLoading: false })
           wx.showToast({ title: '素材不存在', icon: 'none' })
           return
         }
@@ -162,8 +166,14 @@ Page({
         if (!selectedEntryType && draft.media[0]) this.entryType = draft.media[0].kind
         if (this.entryType === 'image' || this.entryType === 'video') this.pendingMediaType = this.entryType
 
-        this.setPublishMedia(draft.media)
-        this.setData({ copy: ensureEmojiPresentation(draft.copy), submitLabel: '修改' })
+        this.setData({
+          media: draft.media,
+          mediaSlots: buildPublishMediaSlots(draft.media),
+          canAddMedia: canAddPublishMedia(draft.media),
+          copy: ensureEmojiPresentation(draft.copy),
+          submitLabel: '修改',
+          draftLoading: false,
+        })
       })
     })
   },

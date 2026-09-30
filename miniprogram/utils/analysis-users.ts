@@ -11,6 +11,8 @@ export type CustomerHistoryRow = {
   completed: number | null
   viewTime: string | null
   actionType?: string | null
+  /** 素材表 deleted，1 表示已删除 */
+  deleted?: number | null
 }
 
 export type AggregatedCustomerHistory = {
@@ -23,6 +25,7 @@ export type AggregatedCustomerHistory = {
   viewCount: number
   completeCount: number
   shareCount: number
+  deleted: boolean
 }
 
 const getSortValue = (user: Pick<AnalysisAudienceUser, 'readCount' | 'completionCount' | 'shareCount'>, sortId: AnalysisUserSortId): number => {
@@ -60,6 +63,10 @@ function isViewHistory(row: CustomerHistoryRow): boolean {
 function isPlayViewHistory(row: CustomerHistoryRow): boolean {
   const action = historyAction(row)
   return action === '' || action === 'play'
+}
+
+function isDeletedMaterial(row: CustomerHistoryRow): boolean {
+  return row.deleted === 1
 }
 
 function laterViewTime(left: string | null, right: string | null): string | null {
@@ -109,6 +116,7 @@ export function aggregateCustomerHistoryByMaterial(rows: CustomerHistoryRow[]): 
         viewCount,
         completeCount,
         shareCount,
+        deleted: isDeletedMaterial(row),
         endCount,
         endCompleteCount,
         endDuration,
@@ -116,6 +124,7 @@ export function aggregateCustomerHistoryByMaterial(rows: CustomerHistoryRow[]): 
       continue
     }
 
+    current.deleted = current.deleted || isDeletedMaterial(row)
     current.progress = Math.max(current.progress, progress)
     current.duration += duration
     current.viewCount += viewCount

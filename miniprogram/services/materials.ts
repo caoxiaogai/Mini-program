@@ -389,7 +389,7 @@ function kindFromFileType(fileType: string): PublishMediaKind {
 }
 
 export function getMaterialDraft(materialId: string): Promise<MaterialDraftEditViewModel | null> {
-  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}` })
+  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true })
     .then(async (material) => {
       const fileType = material.fileType ?? 'IMAGE'
       const kind = kindFromFileType(fileType)

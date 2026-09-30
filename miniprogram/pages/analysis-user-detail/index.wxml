@@ -40,7 +40,10 @@
           <view class="user-detail__records">
             <view wx:for="{{visibleUserRecords}}" wx:key="id" class="user-detail__record" bindtap="onUserRecordTap" data-content-id="id:{{item.contentId}}" hover-class="user-detail__record--pressed">
               <view class="user-detail__record-head">
-                <image class="user-detail__record-thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+                <view wx:if="{{item.deleted}}" class="user-detail__record-thumbnail user-detail__record-thumbnail--deleted">
+                  <text>作品已删除</text>
+                </view>
+                <image wx:else class="user-detail__record-thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" />
                 <view class="user-detail__record-body">
                   <text class="user-detail__record-title">{{item.title}}</text>
                   <text class="user-detail__record-meta">{{item.date}}</text>
