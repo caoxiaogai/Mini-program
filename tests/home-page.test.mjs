@@ -4773,6 +4773,7 @@ test('analysis user tab follows the Figma 581:8521 user-list rhythm', () => {
   }
 
   assert.match(styles, /\.analysis-user__summary-label \{[\s\S]*color: #8a8e94;[\s\S]*font-size: 12px;/)
+  assert.match(styles, /\.analysis-user__stats \{[\s\S]*width: 100%;[\s\S]*justify-content: space-between;/)
   assert.match(styles, /\.analysis-user__list-panel \{[\s\S]*gap: 20px;/)
   assert.match(styles, /\.analysis-user__list \{[\s\S]*gap: 15px;/)
 })
