@@ -158,8 +158,6 @@ const guestProfile: ProfilePageViewModel = {
     trackingLabel: '',
     trackingSegments: [],
   },
-  pendingTitle: '尽情期待',
-  pendingDescription: '更多功能，即将呈现',
 }
 
 Page({

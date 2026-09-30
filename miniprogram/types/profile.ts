@@ -26,6 +26,4 @@ export interface ProfilePageViewModel {
   balanceLabel: string
   withdrawLabel: string
   membership: ProfileMembershipViewModel
-  pendingTitle: string
-  pendingDescription: string
 }

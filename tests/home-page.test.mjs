@@ -814,8 +814,8 @@ test('profile tab exposes the Figma 519:5031 structure through a typed service s
   assert.doesNotMatch(service, /from '\.\.\/mocks\//)
   assert.match(service, /balance: '0'/)
   assert.doesNotMatch(service, /870\.39/)
-  assert.match(service, /pendingTitle: '尽情期待'/)
-  assert.match(service, /pendingDescription: '更多功能，即将呈现'/)
+  assert.doesNotMatch(service, /pendingTitle/)
+  assert.doesNotMatch(component, /尽情期待/)
   assert.match(service, /TODO\(API\): 接入「我的余额 \/ 提现」真实接口/)
   assert.match(service, /getMembershipStatusSilent/)
   assert.match(service, /cardKind/)
@@ -875,14 +875,15 @@ test('profile settings sits on the nickname row with matching side insets', () =
   assert.match(styles, /.home-profile__settings \{[\s\S]*margin-left: auto;[\s\S]*padding: 16rpx 0 16rpx 24rpx;/)
 })
 
-test('profile pending module centers the Figma 902:12850 content group', () => {
+test('profile page keeps the coming soon caption without the button', () => {
   const component = read('miniprogram/components/home-profile/index.wxml')
   const styles = read('miniprogram/components/home-profile/index.less')
 
-  assert.match(component, /class="home-profile__pending" data-node-id="902:12850"/)
-  assert.match(styles, /.home-profile__pending \{[\s\S]*width: 252rpx;[\s\S]*align-items: center;/)
-  assert.match(styles, /.home-profile__pending \{[\s\S]*margin: 34rpx auto 0;/)
-  assert.match(styles, /.home-profile__pending-button \{[\s\S]*padding: 0 48rpx;[\s\S]*border-radius: 84rpx;[\s\S]*background: #ff8901;/)
+  assert.match(component, /class="home-profile__pending-description">更多功能，即将呈现<\/text>/)
+  assert.doesNotMatch(component, /尽情期待/)
+  assert.doesNotMatch(component, /home-profile__pending-button/)
+  assert.match(styles, /\.home-profile__pending\s*\{[\s\S]*?z-index: 4;/)
+  assert.match(styles, /\.home-profile__pending-description\s*\{[\s\S]*?opacity: 0\.5;/)
 })
 
 test('profile page does not frost real content with a locked overlay', () => {
@@ -1182,7 +1183,6 @@ test('profile feature mask begins directly below the membership card', () => {
   assert.match(read('miniprogram/components/home-profile/index.ts'), /showInactiveCard/)
   assert.match(styles, /\.home-profile__feature-mask\s*\{[\s\S]*?top: 418rpx;[\s\S]*?bottom: 0;[\s\S]*?backdrop-filter: blur\(8px\);/)
   assert.match(styles, /\.home-profile__feature-mask--active\s*\{[\s\S]*?top: 500rpx;/)
-  assert.match(styles, /\.home-profile__pending\s*\{[\s\S]*?z-index: 4;/)
 })
 
 test('home page places a high-resolution ranking entry between notifications and today-most', () => {

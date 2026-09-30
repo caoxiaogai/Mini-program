@@ -115,9 +115,8 @@
       </view>
     </view>
 
-    <view class="home-profile__pending" data-node-id="902:12850">
-      <view class="home-profile__pending-button"><text>{{profile.pendingTitle}}</text></view>
-      <text class="home-profile__pending-description">{{profile.pendingDescription}}</text>
+    <view class="home-profile__pending">
+      <text class="home-profile__pending-description">更多功能，即将呈现</text>
     </view>
   </view>
   <loading-skeleton wx:else variant="detail" />

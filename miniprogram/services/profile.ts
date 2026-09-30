@@ -69,8 +69,6 @@ export function getProfilePageData(): Promise<ProfilePageViewModel> {
       balanceLabel: '我的余额',
       withdrawLabel: '提现',
       membership: mapProfileMembership(membership),
-      pendingTitle: '尽情期待',
-      pendingDescription: '更多功能，即将呈现',
     }))
   })
 }
