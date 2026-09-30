@@ -10,6 +10,24 @@
 
 ## 相关文档
 
+### 2026-09-30：作品详情先显示第一张图
+
+- 多图作品和笔记进入详情时，真机只等第一张图片下载完就离开骨架屏。后面的图片和笔记视频封面在页面里继续下载。
+- 视频和 PDF 仍按原来的方式打开。
+
+### 2026-09-30：作品和头像改为直传 OSS
+
+- 小程序先向 `POST /material/upload-ticket` 要一次性表单凭证，再用 `wx.uploadFile` 把文件直接传到 `https://sales-materials.oss-cn-beijing.aliyuncs.com`。服务器不再转发文件字节。
+- 作品进 `materials/`，头像进 `avatars/`，前面仍带体验版 `dev` 或正式版 `prod`。单文件上限 200MB，凭证 15 分钟有效。
+- 发布作品时仍按 CDN 地址做异步内容安全检查。1MB 以内图片不再在上传当次做同步图片检查。
+- 微信公众平台 uploadFile 合法域名要加上 `sales-materials.oss-cn-beijing.aliyuncs.com`。需要重新部署 `aisales_dev` 并重新编译小程序。
+
+### 2026-09-30：作品文件改走 OSS 和 CDN
+
+- 体验版新上传的文件对象键为 `dev/materials/...` 或 `dev/avatars/...`，正式版为 `prod/materials/...`、`prod/avatars/...`。访问地址是 `https://cdn.yjxzhang.com/sales-materials/` 加上对象键。
+- 小程序对 `cdn.yjxzhang.com` 的地址不再改写到 `/api/files/`。原来的接口文件地址仍走代理。
+- 后端改在 `aisales_dev`。体验版部署前要把 `minio.access-key` 和 `minio.secret-key` 换成 OSS RAM 用户密钥。CDN 回源改写需把 `/sales-materials/` 换成 `/`，源站桶名为 `sales-materials`。
+
 ### 2026-09-30：意向客户三项指标按宽度排布
 
 - 访客分析里每个意向客户的「浏览次数、完播数、转发数」改为占满头像右侧宽度并两端对齐，窄屏上「转发数」不再被挤出卡片。首页分析 Tab 和独立分析页共用这份样式。

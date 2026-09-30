@@ -1,4 +1,4 @@
-import { addMaterialComment, deleteMaterials, getMaterialDetail, getMaterialEngagement, getMaterialListPreview, listMaterialComments, mapMaterialEngagement, toggleMaterialLike } from '../../services/materials'
+import { addMaterialComment, deleteMaterials, finishMaterialDetailMedia, getMaterialDetail, getMaterialEngagement, getMaterialListPreview, listMaterialComments, mapMaterialEngagement, toggleMaterialLike } from '../../services/materials'
 import { hasCompletedLogin, runAuthed } from '../../services/auth'
 import {
   calcImageViewProgress,
@@ -73,6 +73,7 @@ Page({
   },
 
   materialId: '',
+  detailMediaToken: 0,
   shareImageToken: 0,
   publishSuccessShared: false,
   pendingPublishSuccess: false,
@@ -194,9 +195,12 @@ Page({
   },
   loadDetail() {
     if (!this.materialId) return Promise.resolve()
+    const mediaToken = this.detailMediaToken + 1
+    this.detailMediaToken = mediaToken
 
     return getMaterialDetail(this.materialId, this.ownerView, this.forceVisitorView)
       .then((detail) => {
+        if (mediaToken !== this.detailMediaToken) return
         if (!detail) {
           this.shareImageToken += 1
           this.pendingPublishSuccess = false
@@ -229,6 +233,7 @@ Page({
         } else {
           this.reportOpenedPlay()
         }
+        this.loadRemainingDetailMedia(detail, mediaToken)
       })
       .catch(() => {
         this.shareImageToken += 1
@@ -263,6 +268,7 @@ Page({
   },
 
   onUnload() {
+    this.detailMediaToken += 1
     this.clearImageViewTimer()
     this.clearVideoProgressTimer()
     this.clearNoteScrollTimer()
@@ -1074,6 +1080,19 @@ Page({
     if (!detail) return
 
     this.markImageViewed(activeImageIndex, detail)
+  },
+
+  loadRemainingDetailMedia(detail: MaterialDetailViewModel, mediaToken: number) {
+    if (detail.fileType !== 'IMAGE' && detail.fileType !== 'NOTE') return
+    void finishMaterialDetailMedia(detail).then((next) => {
+      if (!next || mediaToken !== this.detailMediaToken) return
+      const current = this.data.detail
+      if (!current || current.id !== detail.id) return
+      this.setData({
+        'detail.images': next.images,
+        'detail.noteBlocks': next.noteBlocks,
+      })
+    })
   },
 
   prepareShareImage(previewUrl: string, token: number) {

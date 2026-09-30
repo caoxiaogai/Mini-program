@@ -296,27 +296,37 @@ export function getMaterialDetail(
     getMaterialEngagement(materialId).catch(() => EMPTY_ENGAGEMENT),
   ]).then(async ([material, engagement]) => {
       const fileType = material.fileType ?? 'IMAGE'
-      const previewUrl = await prepareMaterialThumbnail(material)
-      const user = !isSinglePageMode() && hasAuthorizedLogin()
-        ? await ensureLogin().catch(() => getCachedLogin())
-        : getCachedLogin()
+      const userPromise = !isSinglePageMode() && hasAuthorizedLogin()
+        ? ensureLogin().catch(() => getCachedLogin())
+        : Promise.resolve(getCachedLogin())
 
       let images: string[] = []
       let videoUrl = ''
       let pdfUrl = ''
       let pdfFileName = ''
       let noteBlocks = [] as MaterialDetailViewModel['noteBlocks']
+      let previewUrl = ''
 
       if (fileType === 'IMAGE') {
-        images = await prepareMediaUrls(parseImageUrls(material.fileUrl))
+        const urls = parseImageUrls(material.fileUrl)
+        const first = urls[0] ? await prepareMediaUrl(urls[0]) : ''
+        images = urls.map((url, index) => (index === 0 ? (first || url) : url)).filter((url) => url !== '')
+        previewUrl = resolveThumbnail(material)
       } else if (fileType === 'VIDEO') {
         videoUrl = resolveMediaUrl(material.fileUrl)
+        previewUrl = await prepareMaterialThumbnail(material)
       } else if (fileType === 'PDF' || fileType === 'TABLE') {
         pdfUrl = resolveMediaUrl(material.fileUrl)
         pdfFileName = material.title?.trim() || (fileType === 'TABLE' ? '表格文档' : 'PDF 文档')
+        previewUrl = await prepareMaterialThumbnail(material)
       } else if (isNoteFileType(fileType)) {
-        noteBlocks = await prepareNoteDisplayBlocks(parseNoteContent(material.content) ?? [])
+        noteBlocks = await prepareNoteDetailForOpen(parseNoteContent(material.content) ?? [])
+        previewUrl = resolveThumbnail(material)
+      } else {
+        previewUrl = await prepareMaterialThumbnail(material)
       }
+
+      const user = await userPromise
 
       return {
         id: String(material.id),
@@ -335,6 +345,24 @@ export function getMaterialDetail(
         ...mapMaterialEngagement(engagement),
       }
     })
+}
+
+/** 详情页已经显示后，继续下载多图和笔记里第一张之外的图片。 */
+export function finishMaterialDetailMedia(
+  detail: MaterialDetailViewModel,
+): Promise<{ images: string[]; noteBlocks: MaterialDetailViewModel['noteBlocks'] } | null> {
+  if (detail.fileType === 'IMAGE') {
+    if (detail.images.length <= 1) return Promise.resolve(null)
+    return prepareMediaUrls(detail.images.slice(1)).then((rest) => ({
+      images: [detail.images[0], ...rest],
+      noteBlocks: detail.noteBlocks,
+    }))
+  }
+  if (detail.fileType !== 'NOTE') return Promise.resolve(null)
+  return prepareRemainingNoteBlocks(detail.noteBlocks).then((noteBlocks) => ({
+    images: detail.images,
+    noteBlocks,
+  }))
 }
 
 /** 分享前置页用的列表预览图；未登录访客也可读取封面，并区分作品是否已删除。 */
@@ -495,7 +523,7 @@ function updateMaterial(
   }).then(() => materialId)
 }
 
-/** 只上传本地文件到 MinIO，不创建素材、不跳转。 */
+/** 只把本地文件直传到 OSS，不创建素材、不跳转。 */
 export function uploadMaterialFiles(input: MaterialSubmitInput): Promise<PublishMediaViewModel[]> {
   if (input.media.length === 0 || isExistingMediaUnchanged(input)) return Promise.resolve(input.media)
   return runRequestQueue(
@@ -646,9 +674,53 @@ async function hydrateNoteBlock(block: NoteBlock): Promise<NoteBlock> {
   return block
 }
 
-async function prepareNoteDisplayBlocks(blocks: NoteBlock[]): Promise<MaterialDetailViewModel['noteBlocks']> {
-  const hydrated = await Promise.all(blocks.map((block) => hydrateNoteBlock(block)))
+async function prepareNoteDetailForOpen(blocks: NoteBlock[]): Promise<MaterialDetailViewModel['noteBlocks']> {
+  const firstImageIndex = blocks.findIndex((block) => block.type === 'image' && (block.remoteUrl || block.path))
+  const hydrated = await Promise.all(blocks.map(async (block, index) => {
+    if (block.type === 'image' && index === firstImageIndex) return hydrateNoteBlock(block)
+    if (block.type === 'image') {
+      const source = block.remoteUrl || block.path
+      return { ...block, path: source ? resolveMediaUrl(source) : '', remoteUrl: source }
+    }
+    if (block.type === 'video') {
+      const source = block.remoteUrl || block.path
+      const coverSource = block.remoteCoverUrl || block.coverPath
+      return {
+        ...block,
+        path: source ? resolveMediaUrl(source) : '',
+        coverPath: coverSource ? resolveMediaUrl(coverSource) : '',
+        remoteUrl: source,
+        remoteCoverUrl: coverSource,
+      }
+    }
+    if (block.type === 'file') {
+      const source = block.remoteUrl || block.path
+      return { ...block, path: source ? resolveMediaUrl(source) : '', remoteUrl: source }
+    }
+    return block
+  }))
   return toNoteDisplayBlocks(hydrated)
+}
+
+function prepareRemainingNoteBlocks(
+  blocks: MaterialDetailViewModel['noteBlocks'],
+): Promise<MaterialDetailViewModel['noteBlocks']> {
+  let skippedFirstImage = false
+  return Promise.all(blocks.map(async (block) => {
+    if (block.type === 'image') {
+      if (!skippedFirstImage && block.path) {
+        skippedFirstImage = true
+        return block
+      }
+      const path = block.path ? await prepareMediaUrl(block.path) : ''
+      return { ...block, path: path || block.path }
+    }
+    if (block.type === 'video' && block.coverPath) {
+      const coverPath = await prepareMediaUrl(block.coverPath).catch(() => block.coverPath)
+      return { ...block, coverPath: coverPath || block.coverPath }
+    }
+    return block
+  }))
 }
 
 export function getNoteDraft(materialId: string): Promise<NoteDraftViewModel | null> {
@@ -706,7 +778,7 @@ function firstNoteCover(blocks: NoteBlock[]): { fileUrl: string; coverUrl: strin
   return { fileUrl: NOTE_PLACEHOLDER_FILE_URL, coverUrl: '', duration: 0 }
 }
 
-/** 只上传笔记本地附件到 MinIO，不创建素材、不跳转。 */
+/** 只把笔记本地附件直传到 OSS，不创建素材、不跳转。 */
 export function uploadNoteFiles(input: NoteSubmitInput): Promise<NoteBlock[]> {
   if (!hasNoteContent(input.blocks)) return Promise.resolve(input.blocks)
   if (input.draftId !== null && noteAttachmentSignature(input.blocks) === input.originalAttachmentSignature) {

@@ -265,6 +265,10 @@ test('media urls go through the file proxy and are downloaded on device', () => 
 
   assert.match(requestLayer, /:9000\/sales-materials/)
   assert.match(requestLayer, /\/api\/files\/sales-materials\//)
+  assert.match(requestLayer, /CDN_MEDIA_ORIGIN = 'https:\/\/cdn\.yjxzhang\.com\/'/)
+  const cdnReturn = requestLayer.indexOf('trimmed.slice(0, CDN_MEDIA_ORIGIN.length)')
+  const bareBucket = requestLayer.indexOf('const bareBucket')
+  assert.ok(cdnReturn > 0 && bareBucket > cdnReturn, 'CDN media urls must be returned before the sales-materials proxy rewrite')
   assert.match(media, /export function prepareMediaUrl/)
   assert.match(media, /export function prepareMediaUrls/)
   assert.match(media, /wx\.downloadFile/)

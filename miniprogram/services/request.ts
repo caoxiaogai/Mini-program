@@ -57,8 +57,9 @@ function joinApiFileUrl(objectPath: string): string {
   return `${getApiBaseUrl()}/files/${objectPath.replace(/^\/+/, '')}`
 }
 
+const CDN_MEDIA_ORIGIN = 'https://cdn.yjxzhang.com/'
 const REQUEST_TIMEOUT_MS = 15000
-const UPLOAD_TIMEOUT_MS = 60000
+const UPLOAD_TIMEOUT_MS = 300000
 
 const STORAGE_KEY_USER_ID = 'auth.userId'
 const STORAGE_KEY_OPENID = 'auth.openid'
@@ -75,14 +76,18 @@ export function getApiOrigin(): string {
 }
 
 /**
- * 将后端返回的文件 URL 归一化为当前环境可访问的代理地址。
+ * 将后端返回的文件 URL 归一化为当前环境可访问的地址。
+ * - CDN（cdn.yjxzhang.com/sales-materials/...）原样使用，不再经接口代理
  * - MinIO 直连（:9000/sales-materials/...）→ {apiBase}/files/sales-materials/...
- * - 正式版 /api/files、体验版 /dev/api/files 都改写到当前环境的 API 前缀
+ * - 旧地址 /api/files/sales-materials/ 与 /dev/api/files 仍改写到当前环境的文件代理
  */
 export function resolveMediaUrl(url: string | null | undefined): string {
   if (!url) return ''
   const trimmed = url.trim()
   if (!trimmed) return ''
+  if (trimmed.slice(0, CDN_MEDIA_ORIGIN.length).toLowerCase() === CDN_MEDIA_ORIGIN) {
+    return trimmed
+  }
   if (!/^https?:\/\//.test(trimmed)) {
     if (trimmed.startsWith('/dev/api/files/')) {
       return joinApiFileUrl(trimmed.slice('/dev/api/files/'.length))
@@ -344,59 +349,61 @@ export function request<T>(options: RequestOptions): Promise<T> {
   return ensureLogin().then(() => rawRequest<T>(options))
 }
 
-function readUploadedUrl(data: unknown): string {
-  if (typeof data === 'string' && data.trim() !== '') return data
-  if (data && typeof data === 'object') {
-    const record = data as { url?: string; avatar?: string; fileUrl?: string }
-    const url = record.avatar ?? record.url ?? record.fileUrl
-    if (typeof url === 'string' && url.trim() !== '') return url
-  }
-  return ''
+interface DirectUploadTicket {
+  uploadUrl: string
+  fileUrl: string
+  formData: Record<string, string>
 }
 
-/** 上传单个文件，返回后端存储 URL（对应 POST /material/upload-file 一类接口） */
+function uploadDirectory(path: string): 'materials' | 'avatars' {
+  return path === '/user/avatar' ? 'avatars' : 'materials'
+}
+
+function fileNameOf(filePath: string): string {
+  const slash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'))
+  return slash >= 0 ? filePath.slice(slash + 1) : filePath
+}
+
+function notifyUploadFailure(error: ApiError): Promise<never> {
+  if (!error.notified) {
+    error.notified = true
+    wx.showModal({
+      title: '上传失败',
+      content: error.message || '上传失败',
+      showCancel: false,
+    })
+  }
+  return Promise.reject(error)
+}
+
+/** 向 OSS 直传单个本地文件，返回 CDN 地址。path 只用来区分作品和头像目录。 */
 export function uploadFile(path: string, filePath: string): Promise<string> {
   if (!hasAuthorizedLogin()) return rejectUnauthorized<string>()
-  return ensureLogin().then(
-    () =>
-      new Promise<string>((resolve, reject) => {
-        const finish = (error: ApiError | null, value?: string): void => {
-          if (!error) {
-            resolve(value as string)
+  return ensureLogin()
+    .then(() => request<DirectUploadTicket>({
+      method: 'POST',
+      path: '/material/upload-ticket',
+      data: { directory: uploadDirectory(path), filename: fileNameOf(filePath) },
+      silent: true,
+    }))
+    .then((ticket) => new Promise<string>((resolve, reject) => {
+      wx.uploadFile({
+        url: ticket.uploadUrl,
+        filePath,
+        name: 'file',
+        formData: ticket.formData,
+        timeout: UPLOAD_TIMEOUT_MS,
+        success: (response) => {
+          if (response.statusCode === 200 || response.statusCode === 204) {
+            resolve(ticket.fileUrl)
             return
           }
-          error.notified = true
-          wx.showModal({
-            title: '上传失败',
-            content: error.message || '上传失败',
-            showCancel: false,
-          })
-          reject(error)
-        }
-
-        wx.uploadFile({
-          url: buildUrl(path),
-          filePath,
-          name: 'file',
-          header: buildAuthHeader(),
-          timeout: UPLOAD_TIMEOUT_MS,
-          success: (response) => {
-            try {
-              const result = JSON.parse(response.data) as ApiResponse<unknown>
-              const uploadedUrl = result.code === 200 ? readUploadedUrl(result.data) : ''
-              if (uploadedUrl) {
-                finish(null, uploadedUrl)
-                return
-              }
-              finish(new ApiError(result.code, result.message || '上传失败'))
-            } catch {
-              finish(new ApiError(-1, '上传响应解析失败'))
-            }
-          },
-          fail: () => finish(new ApiError(-1, '网络请求失败')),
-        })
-      }),
-  )
+          reject(new ApiError(response.statusCode, '上传失败'))
+        },
+        fail: () => reject(new ApiError(-1, '网络请求失败')),
+      })
+    }))
+    .catch((error: unknown) => notifyUploadFailure(error instanceof ApiError ? error : new ApiError(-1, '上传失败')))
 }
 
 /** 以固定并发度顺序执行任务队列，返回与任务顺序一致的结果（任务应自行处理失败降级） */
