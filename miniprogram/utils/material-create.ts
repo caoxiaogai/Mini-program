@@ -1,4 +1,5 @@
 import type { MaterialCardKind, MaterialCardViewModel, MaterialsFilterId } from '../types/materials'
+import { request } from '../services/request'
 import { HOME_MATERIALS_TAB_PATH } from './share-material'
 
 /** 后台创建的上传和保存请求不走页面上的 15 秒超时。 */
@@ -8,6 +9,12 @@ const UNSEEN_STORAGE_KEY = 'materials.unseenCreatedIds'
 const UNSEEN_LIMIT = 50
 
 export type MaterialCreateNotice = 'local' | 'created'
+
+export interface MaterialCreateRunControl {
+  readonly cancelled: boolean
+  bindAbort(abort: () => void): void
+  rememberMaterial(materialId: string): void
+}
 
 export interface MaterialCreatePreview {
   title: string
@@ -25,10 +32,12 @@ interface MaterialCreateJob extends MaterialCreatePreview {
   progressBase: number
   notifiedAt: number
   sequence: number
-  run: (reportProgress: (ratio: number) => void) => Promise<string>
+  run: (reportProgress: (ratio: number) => void, control: MaterialCreateRunControl) => Promise<string>
   running: boolean
   paused: boolean
   resumeQueued: boolean
+  cancelled: boolean
+  aborts: Array<() => void>
 }
 
 interface MaterialListPage {
@@ -67,7 +76,7 @@ export function publishCreatePreview(
 
 export function startMaterialCreateJob(
   preview: MaterialCreatePreview,
-  run: (reportProgress: (ratio: number) => void) => Promise<string>,
+  run: (reportProgress: (ratio: number) => void, control: MaterialCreateRunControl) => Promise<string>,
 ): void {
   const job: MaterialCreateJob = {
     ...preview,
@@ -82,6 +91,8 @@ export function startMaterialCreateJob(
     running: false,
     paused: false,
     resumeQueued: false,
+    cancelled: false,
+    aborts: [],
   }
   nextCreateSequence += 1
   jobs.unshift(job)
@@ -107,19 +118,41 @@ export function resumeMaterialCreatesForForeground(): void {
 }
 
 function runMaterialCreateJob(job: MaterialCreateJob): void {
-  if (job.running || job.status !== 'creating') return
+  if (job.running || job.status !== 'creating' || job.cancelled) return
   job.progressBase = job.progress
   job.paused = false
   job.running = true
+  const control: MaterialCreateRunControl = {
+    get cancelled() {
+      return job.cancelled
+    },
+    bindAbort(abort) {
+      if (job.cancelled) {
+        abort()
+        return
+      }
+      job.aborts.push(abort)
+    },
+    rememberMaterial(materialId) {
+      const id = materialId.trim()
+      if (id) job.materialId = id
+    },
+  }
   Promise.resolve()
-    .then(() => job.run((ratio) => updateJobProgress(job.localId, ratio)))
+    .then(() => job.run((ratio) => updateJobProgress(job.localId, ratio), control))
     .then((materialId) => {
       job.running = false
+      if (job.cancelled) {
+        const id = String(materialId || job.materialId || '').trim()
+        if (id) discardCreatedMaterial(id)
+        return
+      }
       const id = String(materialId || '').trim()
       if (!id) throw new Error('创建失败')
       finishJob(job.localId, id)
     })
     .catch((error: unknown) => {
+      if (job.cancelled) return
       const current = jobs.find((item) => item.localId === job.localId)
       if (!current || current.status !== 'creating') return
       current.running = false
@@ -137,6 +170,36 @@ function runMaterialCreateJob(job: MaterialCreateJob): void {
       showCreateFailure(error)
       notifyMaterialLists('local')
     })
+}
+
+/** 停掉这次后台创建。正在上传的文件会中断，已经写入的作品记录也会删掉。 */
+export function cancelMaterialCreate(id: string): void {
+  const target = id.trim()
+  if (!target) return
+  const job = jobs.find((item) => item.localId === target || item.materialId === target)
+  if (!job || job.status !== 'creating' || job.cancelled) return
+  job.cancelled = true
+  const aborts = job.aborts.splice(0, job.aborts.length)
+  aborts.forEach((abort) => {
+    try {
+      abort()
+    } catch {
+      // 上传任务已经结束时，中断调用可以忽略
+    }
+  })
+  const materialId = job.materialId
+  removeJob(job.localId)
+  notifyMaterialLists('local')
+  if (materialId) discardCreatedMaterial(materialId)
+}
+
+function discardCreatedMaterial(materialId: string): void {
+  if (typeof request !== 'function') return
+  request<void>({
+    method: 'DELETE',
+    path: `/material/${materialId}`,
+    silent: true,
+  }).catch(() => undefined)
 }
 
 export function mergeCreatingMaterials(items: MaterialCardViewModel[]): MaterialCardViewModel[] {

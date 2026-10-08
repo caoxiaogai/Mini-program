@@ -24,7 +24,7 @@ import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, 
 import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed, markHomeNotificationsViewed } from './home-notification-preview'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
-import { stampMaterialCreateState, visibleMaterialsWithCreates } from '../../utils/material-create'
+import { cancelMaterialCreate, stampMaterialCreateState, visibleMaterialsWithCreates } from '../../utils/material-create'
 import type { MaterialCreateNotice } from '../../utils/material-create'
 import { choosePublishImageOrVideo, ensurePrivacyAuthorize, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
@@ -195,6 +195,7 @@ Page({
     selectedMaterialIds: [] as string[],
     selectedMaterialCount: 0,
     deletingMaterials: false,
+    createConfirmId: '',
     showPublishSuccessModal: false,
     publishTypeSheetVisible: false,
     publishSourceSheetVisible: false,
@@ -996,7 +997,10 @@ Page({
     const materialId = event.currentTarget.dataset.id as string | undefined
     if (!materialId) return
     const material = this.data.visibleMaterials.find((item) => item.id === materialId)
-    if (!material || material.creating) return
+    if (!material || material.creating) {
+      if (material?.creating) this.setData({ createConfirmId: materialId })
+      return
+    }
 
     if (this.data.materialSelecting) {
       this.toggleMaterialSelected(materialId)
@@ -1004,6 +1008,15 @@ Page({
     }
 
     wx.navigateTo({ url: buildMaterialDetailPath(materialId, undefined, true) })
+  },
+  onCreateConfirmHold() {},
+  onCreateContinueTap() {
+    this.setData({ createConfirmId: '' })
+  },
+  onCreateCancelTap(event: WechatMiniprogram.TouchEvent) {
+    const materialId = event.currentTarget.dataset.id as string | undefined
+    if (materialId) cancelMaterialCreate(materialId)
+    this.setData({ createConfirmId: '' })
   },
   onMaterialCardLongPress(event: WechatMiniprogram.TouchEvent) {
     const materialId = event.currentTarget.dataset.id as string | undefined

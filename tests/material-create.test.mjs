@@ -20,6 +20,7 @@ const loadMaterialCreate = () => {
       visibleMaterialsWithCreates,
       pauseMaterialCreatesForBackground,
       resumeMaterialCreatesForForeground,
+      cancelMaterialCreate,
       MATERIAL_CREATE_TIMEOUT_MS,
     };
   `)()
@@ -259,6 +260,31 @@ test('resumed upload fills only the percent remaining at the interruption', asyn
   api.resetMaterialCreateStateForTests()
 })
 
+test('cancelling a create removes the card and drops a later success', async () => {
+  const api = loadMaterialCreate()
+  api.resetMaterialCreateStateForTests()
+  let finish = null
+  api.startMaterialCreateJob({
+    title: '视频素材',
+    date: '2026-10-08',
+    thumbnailUrl: '',
+    kind: 'video',
+  }, () => new Promise((resolve) => {
+    finish = resolve
+  }))
+  await Promise.resolve()
+  const creating = api.mergeCreatingMaterials([card('old')])
+  assert.equal(creating[0].creating, true)
+  api.cancelMaterialCreate(creating[0].id)
+  assert.deepEqual(api.mergeCreatingMaterials([card('old')]).map((item) => item.id), ['old'])
+  finish('server-cancel')
+  await new Promise((resolve) => setImmediate(resolve))
+  const listed = api.mergeCreatingMaterials([card('server-cancel', '视频素材'), card('old')])
+  assert.equal(listed.some((item) => item.isNew), false)
+  assert.equal(listed.some((item) => item.creating), false)
+  api.resetMaterialCreateStateForTests()
+})
+
 test('a failed background create removes the placeholder', async () => {
   const api = loadMaterialCreate()
   api.resetMaterialCreateStateForTests()
@@ -294,6 +320,14 @@ test('material lists show create progress and the yellow new mark', () => {
     assert.match(page, /style="color: #ff8901; font-size: 28rpx; font-weight: 600; line-height: 36rpx;">新<\/text>/)
     assert.match(page, /item\.isNew && !item\.creating/)
     assert.match(page, /item\.creating/)
+    assert.match(page, /class="materials-card__confirm"/)
+    assert.match(page, /class="materials-card__confirm"[\s\S]*flex-direction: column/)
+    assert.match(page, /height: 80rpx; margin-bottom: 24rpx; padding: 0 48rpx; border-radius: 106rpx; background: #07c160;/)
+    assert.match(page, /height: 80rpx; padding: 0 48rpx; border-radius: 106rpx; background: #e54d42;/)
+    assert.match(page, />继续<\/text>/)
+    assert.match(page, />取消<\/text>/)
+    assert.match(page, /catchtap="onCreateContinueTap"/)
+    assert.match(page, /catchtap="onCreateCancelTap"/)
   }
   assert.match(read('miniprogram/pages/materials/index.ts'), /material\.creating/)
   assert.match(read('miniprogram/pages/index/index.ts'), /material\?\.creating/)

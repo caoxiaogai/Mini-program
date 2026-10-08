@@ -969,15 +969,18 @@ Page({
       date: materialCreateDateKey(),
       thumbnailUrl,
       kind: 'note',
-    }, (report) =>
+    }, (report, control) =>
       uploadNoteFiles(input, {
         timeout: MATERIAL_CREATE_TIMEOUT_MS,
+        isCancelled: () => control.cancelled,
+        bindAbort: (abort) => control.bindAbort(abort),
         onProgress: (ratio) => report(ratio),
       }).then((blocks) =>
         publishNote({ ...input, blocks, draftId: createdId }, {
           timeout: MATERIAL_CREATE_TIMEOUT_MS,
           onCreated: (materialId) => {
             createdId = materialId
+            control.rememberMaterial(materialId)
           },
         }).then((materialId) => {
           report(1)

@@ -478,6 +478,10 @@ function buildMaterialTitle(copy: string, fallbackTitle: string): string {
   return firstLine ? firstLine.slice(0, MATERIAL_TITLE_MAX_LENGTH) : fallbackTitle.slice(0, MATERIAL_TITLE_MAX_LENGTH)
 }
 
+function isUploadAbort(error: unknown): boolean {
+  return error instanceof Error && /abort/i.test(error.message)
+}
+
 function uploadLocalFile(path: string, control?: FileUploadOptions): Promise<string> {
   return shouldUploadLocalPath(path) ? uploadFile('/material/upload-file', path, control) : Promise.resolve(path)
 }
@@ -549,6 +553,8 @@ export function uploadMaterialFiles(input: MaterialSubmitInput, control?: FileUp
       const hasCover = Boolean(item.previewPath && shouldUploadLocalPath(item.previewPath))
       return persistMediaFile(item, {
         timeout: control?.timeout,
+        isCancelled: control?.isCancelled,
+        bindAbort: control?.bindAbort,
         onProgress: (ratio) => {
           slots[index] = ratio * (hasCover ? 0.85 : 1)
           emit()
@@ -558,11 +564,16 @@ export function uploadMaterialFiles(input: MaterialSubmitInput, control?: FileUp
         const coverTask = hasCover
           ? uploadLocalFile(item.previewPath, {
             timeout: control?.timeout,
+            isCancelled: control?.isCancelled,
+            bindAbort: control?.bindAbort,
             onProgress: (ratio) => {
               slots[index] = 0.85 + ratio * 0.15
               emit()
             },
-          }).catch(() => item.previewPath)
+          }).catch((error: unknown) => {
+            if (isUploadAbort(error)) throw error
+            return item.previewPath
+          })
           : Promise.resolve(item.previewPath)
         return coverTask.then((previewPath) => {
           const nextPreview = previewPath || item.previewPath
@@ -787,14 +798,21 @@ async function persistNoteBlock(block: NoteBlock, control?: FileUploadOptions): 
     const hasCover = Boolean(block.coverPath)
     const fileUrl = await persistNoteFile(block.path, block.remoteUrl, {
       timeout: control?.timeout,
+      isCancelled: control?.isCancelled,
+      bindAbort: control?.bindAbort,
       onProgress: (ratio) => control?.onProgress?.(hasCover ? ratio * 0.85 : ratio),
     })
     block.remoteUrl = fileUrl
     const coverUrl = hasCover
       ? await persistNoteFile(block.coverPath, block.remoteCoverUrl, {
         timeout: control?.timeout,
+        isCancelled: control?.isCancelled,
+        bindAbort: control?.bindAbort,
         onProgress: (ratio) => control?.onProgress?.(0.85 + ratio * 0.15),
-      }).catch(() => '')
+      }).catch((error: unknown) => {
+        if (isUploadAbort(error)) throw error
+        return ''
+      })
       : block.remoteCoverUrl ?? ''
     if (coverUrl && !shouldUploadLocalPath(coverUrl)) block.remoteCoverUrl = coverUrl
     control?.onProgress?.(1)
@@ -857,6 +875,8 @@ export function uploadNoteFiles(input: NoteSubmitInput, control?: FileUploadOpti
       if (block.type === 'text') return Promise.resolve(block)
       return persistNoteBlock(block, {
         timeout: control?.timeout,
+        isCancelled: control?.isCancelled,
+        bindAbort: control?.bindAbort,
         onProgress: (ratio) => {
           slots[index] = ratio
           emit()

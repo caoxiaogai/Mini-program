@@ -380,7 +380,7 @@ function fileNameOf(filePath: string): string {
 }
 
 function notifyUploadFailure(error: ApiError): Promise<never> {
-  if (!appInForeground || isInterruptedRequest(error.message)) {
+  if (!appInForeground || isInterruptedRequest(error.message) || /abort/i.test(error.message)) {
     error.notified = true
     return Promise.reject(error)
   }
@@ -400,43 +400,67 @@ export interface FileUploadOptions {
   timeout?: number
   /** 0–1 */
   onProgress?: (ratio: number) => void
+  /** 用户取消创建后，不再发起下一次上传 */
+  isCancelled?: () => boolean
+  /** 拿到上传任务后登记中断方法，取消创建时调用 */
+  bindAbort?: (abort: () => void) => void
 }
 
 /** 向 OSS 直传单个本地文件，返回 CDN 地址。path 只用来区分作品和头像目录。 */
 export function uploadFile(path: string, filePath: string, options?: FileUploadOptions): Promise<string> {
+  if (options?.isCancelled?.()) return rejectAbort()
   if (!hasAuthorizedLogin()) return rejectUnauthorized<string>()
   return ensureLogin()
-    .then(() => request<DirectUploadTicket>({
-      method: 'POST',
-      path: '/material/upload-ticket',
-      data: { directory: uploadDirectory(path), filename: fileNameOf(filePath) },
-      silent: true,
-      timeout: options?.timeout,
-    }))
-    .then((ticket) => new Promise<string>((resolve, reject) => {
-      const task = wx.uploadFile({
-        url: ticket.uploadUrl,
-        filePath,
-        name: 'file',
-        formData: ticket.formData,
-        timeout: options?.timeout ?? UPLOAD_TIMEOUT_MS,
-        success: (response) => {
-          if (response.statusCode === 200 || response.statusCode === 204) {
-            resolve(ticket.fileUrl)
-            return
-          }
-          reject(new ApiError(response.statusCode, '上传失败'))
-        },
-        fail: (result) => reject(new ApiError(-1, failMessage(result.errMsg))),
+    .then(() => {
+      if (options?.isCancelled?.()) return Promise.reject(abortError())
+      return request<DirectUploadTicket>({
+        method: 'POST',
+        path: '/material/upload-ticket',
+        data: { directory: uploadDirectory(path), filename: fileNameOf(filePath) },
+        silent: true,
+        timeout: options?.timeout,
       })
-      if (options?.onProgress && typeof task.onProgressUpdate === 'function') {
-        task.onProgressUpdate((event) => {
-          const progress = typeof event.progress === 'number' ? event.progress : 0
-          options.onProgress?.(Math.max(0, Math.min(1, progress / 100)))
+    })
+    .then((ticket) => {
+      if (options?.isCancelled?.()) return Promise.reject(abortError())
+      return new Promise<string>((resolve, reject) => {
+        const task = wx.uploadFile({
+          url: ticket.uploadUrl,
+          filePath,
+          name: 'file',
+          formData: ticket.formData,
+          timeout: options?.timeout ?? UPLOAD_TIMEOUT_MS,
+          success: (response) => {
+            if (response.statusCode === 200 || response.statusCode === 204) {
+              resolve(ticket.fileUrl)
+              return
+            }
+            reject(new ApiError(response.statusCode, '上传失败'))
+          },
+          fail: (result) => reject(new ApiError(-1, failMessage(result.errMsg))),
         })
-      }
-    }))
+        options?.bindAbort?.(() => {
+          if (typeof task.abort === 'function') task.abort()
+        })
+        if (options?.onProgress && typeof task.onProgressUpdate === 'function') {
+          task.onProgressUpdate((event) => {
+            const progress = typeof event.progress === 'number' ? event.progress : 0
+            options.onProgress?.(Math.max(0, Math.min(1, progress / 100)))
+          })
+        }
+      })
+    })
     .catch((error: unknown) => notifyUploadFailure(error instanceof ApiError ? error : new ApiError(-1, '上传失败')))
+}
+
+function abortError(): ApiError {
+  const error = new ApiError(-1, 'uploadFile:fail abort')
+  error.notified = true
+  return error
+}
+
+function rejectAbort(): Promise<never> {
+  return Promise.reject(abortError())
 }
 
 /** 以固定并发度顺序执行任务队列，返回与任务顺序一致的结果（任务应自行处理失败降级） */

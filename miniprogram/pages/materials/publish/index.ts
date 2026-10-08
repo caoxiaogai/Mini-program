@@ -472,15 +472,18 @@ Page({
       return
     }
     let createdId: string | null = null
-    startMaterialCreateJob(publishCreatePreview(input.copy, input.media), (report) =>
+    startMaterialCreateJob(publishCreatePreview(input.copy, input.media), (report, control) =>
       uploadMaterialFiles(input, {
         timeout: MATERIAL_CREATE_TIMEOUT_MS,
+        isCancelled: () => control.cancelled,
+        bindAbort: (abort) => control.bindAbort(abort),
         onProgress: (ratio) => report(ratio),
       }).then((media) =>
         publishMaterial({ ...input, media, draftId: createdId }, {
           timeout: MATERIAL_CREATE_TIMEOUT_MS,
           onCreated: (materialId) => {
             createdId = materialId
+            control.rememberMaterial(materialId)
           },
         }).then((materialId) => {
           report(1)
