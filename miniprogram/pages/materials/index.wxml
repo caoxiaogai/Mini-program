@@ -42,12 +42,12 @@
           hover-stay-time="120"
         >
           <view class="materials-card__preview">
-            <image class="materials-card__image" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+            <image class="materials-card__image" src="{{item.thumbnailUrl}}" mode="aspectFill" style="position: relative; z-index: 0;" />
             <image wx:if="{{item.kind === 'video' && !materialSelecting && !item.creating}}" class="materials-card__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
-            <view wx:if="{{item.creating}}" class="materials-card__progress">
-              <text class="materials-card__progress-text">创建中 {{item.progress}}%</text>
-              <view class="materials-card__progress-track">
-                <view class="materials-card__progress-bar" style="width: {{item.progress}}%;" />
+            <view wx:if="{{item.creating}}" class="materials-card__progress" style="position: absolute; z-index: 2; left: 0; top: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45);">
+              <text style="color: #ffffff; font-size: 32rpx; font-weight: 600; line-height: 44rpx;">创建中 {{item.progress}}%</text>
+              <view style="width: 70%; height: 8rpx; margin-top: 16rpx; overflow: hidden; border-radius: 8rpx; background: rgba(255, 255, 255, 0.35);">
+                <view style="height: 8rpx; width: {{item.progress}}%; background: #ff8901;" />
               </view>
             </view>
             <view wx:if="{{materialSelecting}}" class="materials-card__check {{item.selected ? 'materials-card__check--selected' : ''}}" />

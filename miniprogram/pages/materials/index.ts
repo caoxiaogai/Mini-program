@@ -11,7 +11,7 @@ import { choosePublishImageOrVideo, ensurePrivacyAuthorize, isPdfFileName, MAX_I
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
 import { LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
-import { visibleMaterialsWithCreates } from '../../utils/material-create'
+import { stampMaterialCreateState, visibleMaterialsWithCreates } from '../../utils/material-create'
 import type { MaterialCreateNotice } from '../../utils/material-create'
 
 type MaterialsTabId = 'home' | 'notifications' | 'analysis' | 'profile'
@@ -188,7 +188,7 @@ Page({
       if (!materials || thumbs.size === 0) return
       this.setData({
         materials: { ...materials, items: applyThumbnailMap(materials.items, thumbs) },
-        visibleMaterials: applyMaterialSelection(applyThumbnailMap(this.data.visibleMaterials, thumbs), this.data.selectedMaterialIds),
+        visibleMaterials: stampMaterialCreateState(applyMaterialSelection(applyThumbnailMap(this.data.visibleMaterials, thumbs), this.data.selectedMaterialIds)),
       })
     })
   },

@@ -126,6 +126,7 @@ test('material lists show create progress and the yellow new mark', () => {
   for (const page of markup) {
     assert.match(page, /class="materials-card__progress"/)
     assert.match(page, /创建中 \{\{item\.progress\}\}%/)
+    assert.match(page, /z-index: 2; left: 0; top: 0; width: 100%; height: 100%;/)
     assert.match(page, /display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; width: 100%;/)
     assert.match(page, /class="materials-card__date-wrap"/)
     assert.match(page, /style="color: #ff8901; font-size: 28rpx; font-weight: 600; line-height: 36rpx;">新<\/text>/)

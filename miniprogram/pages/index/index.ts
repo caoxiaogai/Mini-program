@@ -24,7 +24,7 @@ import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, 
 import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed, markHomeNotificationsViewed } from './home-notification-preview'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
-import { visibleMaterialsWithCreates } from '../../utils/material-create'
+import { stampMaterialCreateState, visibleMaterialsWithCreates } from '../../utils/material-create'
 import type { MaterialCreateNotice } from '../../utils/material-create'
 import { choosePublishImageOrVideo, ensurePrivacyAuthorize, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
@@ -451,7 +451,7 @@ Page({
       if (!materials || thumbs.size === 0) return
       this.setData({
         materials: { ...materials, items: applyThumbnailMap(materials.items, thumbs) },
-        visibleMaterials: applyMaterialSelection(applyThumbnailMap(this.data.visibleMaterials, thumbs), this.data.selectedMaterialIds),
+        visibleMaterials: stampMaterialCreateState(applyMaterialSelection(applyThumbnailMap(this.data.visibleMaterials, thumbs), this.data.selectedMaterialIds)),
       })
     })
   },

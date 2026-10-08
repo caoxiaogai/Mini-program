@@ -22,6 +22,7 @@ interface MaterialCreateJob extends MaterialCreatePreview {
   status: 'creating' | 'ready'
   progress: number
   notifiedAt: number
+  startedAt: number
 }
 
 interface MaterialListPage {
@@ -30,6 +31,7 @@ interface MaterialListPage {
 
 const jobs: MaterialCreateJob[] = []
 const memoryUnseen: string[] = []
+let progressTimer: ReturnType<typeof setInterval> | null = null
 
 export function materialCreateDateKey(now = new Date()): string {
   const month = String(now.getMonth() + 1).padStart(2, '0')
@@ -66,9 +68,11 @@ export function startMaterialCreateJob(
     status: 'creating',
     progress: 0,
     notifiedAt: 0,
+    startedAt: Date.now(),
   }
   jobs.unshift(job)
   notifyMaterialLists('local')
+  ensureProgressTicker()
 
   Promise.resolve()
     .then(() => run((ratio) => updateJobProgress(job.localId, ratio)))
@@ -151,6 +155,7 @@ export function returnToMaterialList(): void {
 export function resetMaterialCreateStateForTests(): void {
   jobs.splice(0, jobs.length)
   memoryUnseen.splice(0, memoryUnseen.length)
+  stopProgressTicker()
   if (typeof wx !== 'undefined' && typeof wx.removeStorageSync === 'function') {
     try {
       wx.removeStorageSync(UNSEEN_STORAGE_KEY)
@@ -181,12 +186,62 @@ function finishJob(localId: string, materialId: string): void {
   const unseen = readUnseenIds().filter((item) => item !== materialId)
   unseen.unshift(materialId)
   writeUnseenIds(unseen)
+  if (!jobs.some((item) => item.status === 'creating')) stopProgressTicker()
   notifyMaterialLists('created')
 }
 
 function removeJob(localId: string): void {
   const index = jobs.findIndex((item) => item.localId === localId)
   if (index >= 0) jobs.splice(index, 1)
+  if (!jobs.some((item) => item.status === 'creating')) stopProgressTicker()
+}
+
+/** 缩略图刷新会整表覆盖列表，这里把创建进度和「新」再写回去。 */
+export function stampMaterialCreateState(items: MaterialCardViewModel[]): MaterialCardViewModel[] {
+  if (jobs.length === 0 && readUnseenIds().length === 0) return items
+  const jobById = new Map<string, MaterialCreateJob>()
+  jobs.forEach((job) => {
+    jobById.set(job.localId, job)
+    if (job.materialId) jobById.set(job.materialId, job)
+  })
+  const unseen = new Set(readUnseenIds())
+  return items.map((item) => {
+    const job = jobById.get(item.id)
+    if (job) {
+      return {
+        ...item,
+        creating: job.status === 'creating',
+        progress: job.progress,
+        isNew: job.status === 'ready',
+      }
+    }
+    if (!item.creating && !item.isNew && !unseen.has(item.id)) return item
+    return { ...item, creating: false, progress: 0, isNew: unseen.has(item.id) }
+  })
+}
+
+function ensureProgressTicker(): void {
+  if (progressTimer != null || typeof wx === 'undefined') return
+  progressTimer = setInterval(() => {
+    const now = Date.now()
+    let changed = false
+    jobs.forEach((job) => {
+      if (job.status !== 'creating') return
+      const creep = Math.min(90, Math.floor((now - job.startedAt) / 800))
+      if (creep <= job.progress) return
+      job.progress = creep
+      job.notifiedAt = now
+      changed = true
+    })
+    if (changed) notifyMaterialLists('local')
+    if (!jobs.some((job) => job.status === 'creating')) stopProgressTicker()
+  }, 800)
+}
+
+function stopProgressTicker(): void {
+  if (progressTimer == null) return
+  clearInterval(progressTimer)
+  progressTimer = null
 }
 
 function notifyMaterialLists(notice: MaterialCreateNotice): void {
