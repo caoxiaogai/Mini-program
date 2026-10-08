@@ -23,6 +23,7 @@ interface MaterialCreateJob extends MaterialCreatePreview {
   progress: number
   notifiedAt: number
   startedAt: number
+  sequence: number
 }
 
 interface MaterialListPage {
@@ -31,6 +32,8 @@ interface MaterialListPage {
 
 const jobs: MaterialCreateJob[] = []
 const memoryUnseen: string[] = []
+const creationOrder: Array<{ id: string; sequence: number }> = []
+let nextCreateSequence = 1
 let progressTimer: ReturnType<typeof setInterval> | null = null
 
 export function materialCreateDateKey(now = new Date()): string {
@@ -69,7 +72,9 @@ export function startMaterialCreateJob(
     progress: 0,
     notifiedAt: 0,
     startedAt: Date.now(),
+    sequence: nextCreateSequence,
   }
+  nextCreateSequence += 1
   jobs.unshift(job)
   notifyMaterialLists('local')
   ensureProgressTicker()
@@ -118,7 +123,31 @@ export function mergeCreatingMaterials(items: MaterialCardViewModel[]): Material
       isNew: job.status === 'ready',
     }))
 
-  return [...pending, ...decorated]
+  return orderByCreateStart([...pending, ...decorated])
+}
+
+function sequenceById(): Map<string, number> {
+  const sequence = new Map<string, number>()
+  creationOrder.forEach((entry) => sequence.set(entry.id, entry.sequence))
+  jobs.forEach((job) => {
+    sequence.set(job.localId, job.sequence)
+    if (job.materialId) sequence.set(job.materialId, job.sequence)
+  })
+  return sequence
+}
+
+/** 列表按点击创建的先后排，不按上传完成、写入数据库的时间排。后点击的仍在前面。 */
+function orderByCreateStart(items: MaterialCardViewModel[]): MaterialCardViewModel[] {
+  const sequence = sequenceById()
+  if (sequence.size === 0) return items
+  const ranked: MaterialCardViewModel[] = []
+  const rest: MaterialCardViewModel[] = []
+  items.forEach((item) => {
+    if (sequence.has(item.id)) ranked.push(item)
+    else rest.push(item)
+  })
+  ranked.sort((left, right) => (sequence.get(right.id) ?? 0) - (sequence.get(left.id) ?? 0))
+  return [...ranked, ...rest]
 }
 
 /** 当前筛选放不下刚创建的作品时，仍把它留在列表最前面。 */
@@ -155,6 +184,8 @@ export function returnToMaterialList(): void {
 export function resetMaterialCreateStateForTests(): void {
   jobs.splice(0, jobs.length)
   memoryUnseen.splice(0, memoryUnseen.length)
+  creationOrder.splice(0, creationOrder.length)
+  nextCreateSequence = 1
   stopProgressTicker()
   if (typeof wx !== 'undefined' && typeof wx.removeStorageSync === 'function') {
     try {
@@ -183,11 +214,18 @@ function finishJob(localId: string, materialId: string): void {
   job.materialId = materialId
   job.status = 'ready'
   job.progress = 100
+  rememberCreateOrder(materialId, job.sequence)
   const unseen = readUnseenIds().filter((item) => item !== materialId)
   unseen.unshift(materialId)
   writeUnseenIds(unseen)
   if (!jobs.some((item) => item.status === 'creating')) stopProgressTicker()
   notifyMaterialLists('created')
+}
+
+function rememberCreateOrder(id: string, sequence: number): void {
+  const next = creationOrder.filter((entry) => entry.id !== id)
+  next.push({ id, sequence })
+  creationOrder.splice(0, creationOrder.length, ...next.slice(-UNSEEN_LIMIT))
 }
 
 function removeJob(localId: string): void {

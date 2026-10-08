@@ -97,6 +97,50 @@ test('background create stays on the list with progress and a new mark', async (
   api.resetMaterialCreateStateForTests()
 })
 
+test('finished works stay in click order instead of success order', async () => {
+  const api = loadMaterialCreate()
+  api.resetMaterialCreateStateForTests()
+  let finishEarlier = null
+  let finishLater = null
+  api.startMaterialCreateJob({
+    title: '先点的',
+    date: '2026-10-08',
+    thumbnailUrl: '',
+    kind: 'image',
+  }, () => new Promise((resolve) => {
+    finishEarlier = resolve
+  }))
+  api.startMaterialCreateJob({
+    title: '后点的',
+    date: '2026-10-08',
+    thumbnailUrl: '',
+    kind: 'image',
+  }, () => new Promise((resolve) => {
+    finishLater = resolve
+  }))
+  await Promise.resolve()
+  assert.deepEqual(api.mergeCreatingMaterials([card('old')]).map((item) => item.title), ['后点的', '先点的', 'old'])
+
+  finishLater('later-click')
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.deepEqual(
+    api.mergeCreatingMaterials([card('later-click', '后点的'), card('old')]).map((item) => item.title),
+    ['后点的', '先点的', 'old'],
+  )
+
+  finishEarlier('earlier-click')
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.deepEqual(
+    api.mergeCreatingMaterials([
+      card('earlier-click', '先点的'),
+      card('later-click', '后点的'),
+      card('old'),
+    ]).map((item) => item.title),
+    ['后点的', '先点的', 'old'],
+  )
+  api.resetMaterialCreateStateForTests()
+})
+
 test('a failed background create removes the placeholder', async () => {
   const api = loadMaterialCreate()
   api.resetMaterialCreateStateForTests()
