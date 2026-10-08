@@ -201,52 +201,62 @@ test('a foreground interrupt resumes the create once', async () => {
   api.resetMaterialCreateStateForTests()
 })
 
-test('create progress stays put while the mini program is in the background', () => {
-  const originalNow = Date.now
-  const originalSetInterval = globalThis.setInterval
-  const originalClearInterval = globalThis.clearInterval
-  const originalWx = globalThis.wx
-  let now = 10_000_000
-  let tick = null
-  Date.now = () => now
-  globalThis.setInterval = (fn) => {
-    tick = fn
-    return 1
+test('resumed upload fills only the percent remaining at the interruption', async () => {
+  const api = loadMaterialCreate()
+  const preview = {
+    title: '视频素材',
+    date: '2026-10-08',
+    thumbnailUrl: '',
+    kind: 'video',
   }
-  globalThis.clearInterval = () => {
-    tick = null
-  }
-  globalThis.wx = {}
-  try {
-    const api = loadMaterialCreate()
-    api.resetMaterialCreateStateForTests()
-    api.startMaterialCreateJob({
-      title: '视频素材',
-      date: '2026-10-08',
-      thumbnailUrl: '',
-      kind: 'video',
-    }, () => new Promise(() => {}))
-    now += 1600
-    tick()
-    assert.equal(api.mergeCreatingMaterials([card('old')])[0].progress, 2)
-    api.pauseMaterialCreatesForBackground()
-    now += 8000
-    tick()
-    assert.equal(api.mergeCreatingMaterials([card('old')])[0].progress, 2)
-    api.resumeMaterialCreatesForForeground()
-    tick()
-    assert.equal(api.mergeCreatingMaterials([card('old')])[0].progress, 2)
-    now += 800
-    tick()
-    assert.equal(api.mergeCreatingMaterials([card('old')])[0].progress, 3)
-    api.resetMaterialCreateStateForTests()
-  } finally {
-    Date.now = originalNow
-    globalThis.setInterval = originalSetInterval
-    globalThis.clearInterval = originalClearInterval
-    if (originalWx === undefined) delete globalThis.wx
-    else globalThis.wx = originalWx
-  }
+  const progressOf = () => api.mergeCreatingMaterials([card('old')])[0].progress
+
+  api.resetMaterialCreateStateForTests()
+  let report = null
+  let pending = null
+  api.startMaterialCreateJob(preview, (onProgress) => {
+    report = onProgress
+    return new Promise((resolve, reject) => {
+      pending = { resolve, reject }
+    })
+  })
+  await Promise.resolve()
+  report(0.1)
+  assert.equal(progressOf(), 10)
+  api.pauseMaterialCreatesForBackground()
+  report(0.8)
+  assert.equal(progressOf(), 10)
+  pending.reject(new Error('uploadFile:fail interrupted'))
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(progressOf(), 10)
+
+  api.resumeMaterialCreatesForForeground()
+  await Promise.resolve()
+  report(1 / 90)
+  assert.equal(progressOf(), 11)
+  report(1)
+  assert.equal(progressOf(), 100)
+
+  api.resetMaterialCreateStateForTests()
+  api.startMaterialCreateJob(preview, (onProgress) => {
+    report = onProgress
+    return new Promise((resolve, reject) => {
+      pending = { resolve, reject }
+    })
+  })
+  await Promise.resolve()
+  report(0.2)
+  assert.equal(progressOf(), 20)
+  api.pauseMaterialCreatesForBackground()
+  pending.reject(new Error('uploadFile:fail interrupted'))
+  await new Promise((resolve) => setImmediate(resolve))
+  api.resumeMaterialCreatesForForeground()
+  await Promise.resolve()
+  report(1 / 80)
+  assert.equal(progressOf(), 21)
+  report(0.5)
+  assert.equal(progressOf(), 60)
+  api.resetMaterialCreateStateForTests()
 })
 
 test('a failed background create removes the placeholder', async () => {

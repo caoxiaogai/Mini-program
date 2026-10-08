@@ -475,7 +475,7 @@ Page({
     startMaterialCreateJob(publishCreatePreview(input.copy, input.media), (report) =>
       uploadMaterialFiles(input, {
         timeout: MATERIAL_CREATE_TIMEOUT_MS,
-        onProgress: (ratio) => report(Math.min(0.9, ratio * 0.9)),
+        onProgress: (ratio) => report(ratio),
       }).then((media) =>
         publishMaterial({ ...input, media, draftId: createdId }, {
           timeout: MATERIAL_CREATE_TIMEOUT_MS,

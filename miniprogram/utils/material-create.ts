@@ -21,8 +21,9 @@ interface MaterialCreateJob extends MaterialCreatePreview {
   materialId: string
   status: 'creating' | 'ready'
   progress: number
+  /** 这一轮上传开始时进度条已经走到的百分比。新的文件字节只填充剩下的部分。 */
+  progressBase: number
   notifiedAt: number
-  startedAt: number
   sequence: number
   run: (reportProgress: (ratio: number) => void) => Promise<string>
   running: boolean
@@ -38,9 +39,7 @@ const jobs: MaterialCreateJob[] = []
 const memoryUnseen: string[] = []
 const creationOrder: Array<{ id: string; sequence: number }> = []
 let nextCreateSequence = 1
-let progressTimer: ReturnType<typeof setInterval> | null = null
 let appForeground = true
-let backgroundedAt = 0
 
 export function materialCreateDateKey(now = new Date()): string {
   const month = String(now.getMonth() + 1).padStart(2, '0')
@@ -76,8 +75,8 @@ export function startMaterialCreateJob(
     materialId: '',
     status: 'creating',
     progress: 0,
+    progressBase: 0,
     notifiedAt: 0,
-    startedAt: Date.now(),
     sequence: nextCreateSequence,
     run,
     running: false,
@@ -87,29 +86,20 @@ export function startMaterialCreateJob(
   nextCreateSequence += 1
   jobs.unshift(job)
   notifyMaterialLists('local')
-  ensureProgressTicker()
   runMaterialCreateJob(job)
 }
 
-/** 小程序进入后台。进度条立刻停住；正在上传的请求会被微信打断，卡片先留着。 */
+/** 小程序进入后台。进度停在当前字节百分比；正在上传的请求会被微信打断，卡片先留着。 */
 export function pauseMaterialCreatesForBackground(): void {
-  if (appForeground) backgroundedAt = Date.now()
   appForeground = false
   jobs.forEach((job) => {
     job.resumeQueued = false
   })
 }
 
-/** 回到前台后，把被打断的创建接着跑。后台这段时间不补进进度，还在进行中的那一次不会再开一条。 */
+/** 回到前台后，把被打断的创建接着跑。还在进行中的那一次不会再开一条。 */
 export function resumeMaterialCreatesForForeground(): void {
-  const hiddenFor = !appForeground && backgroundedAt > 0 ? Date.now() - backgroundedAt : 0
-  backgroundedAt = 0
   appForeground = true
-  if (hiddenFor > 0) {
-    jobs.forEach((job) => {
-      if (job.status === 'creating') job.startedAt += hiddenFor
-    })
-  }
   jobs.forEach((job) => {
     job.resumeQueued = false
     if (job.status === 'creating' && job.paused && !job.running) runMaterialCreateJob(job)
@@ -118,6 +108,7 @@ export function resumeMaterialCreatesForForeground(): void {
 
 function runMaterialCreateJob(job: MaterialCreateJob): void {
   if (job.running || job.status !== 'creating') return
+  job.progressBase = job.progress
   job.paused = false
   job.running = true
   Promise.resolve()
@@ -242,8 +233,6 @@ export function resetMaterialCreateStateForTests(): void {
   creationOrder.splice(0, creationOrder.length)
   nextCreateSequence = 1
   appForeground = true
-  backgroundedAt = 0
-  stopProgressTicker()
   if (typeof wx !== 'undefined' && typeof wx.removeStorageSync === 'function') {
     try {
       wx.removeStorageSync(UNSEEN_STORAGE_KEY)
@@ -257,7 +246,8 @@ function updateJobProgress(localId: string, ratio: number): void {
   if (!appForeground) return
   const job = jobs.find((item) => item.localId === localId)
   if (!job || job.status !== 'creating') return
-  const next = Math.max(job.progress, Math.round(Math.max(0, Math.min(1, ratio)) * 100))
+  const clamped = Math.max(0, Math.min(1, ratio))
+  const next = Math.max(job.progress, Math.round(job.progressBase + clamped * (100 - job.progressBase)))
   if (next === job.progress) return
   job.progress = next
   const now = Date.now()
@@ -276,7 +266,6 @@ function finishJob(localId: string, materialId: string): void {
   const unseen = readUnseenIds().filter((item) => item !== materialId)
   unseen.unshift(materialId)
   writeUnseenIds(unseen)
-  if (!jobs.some((item) => item.status === 'creating')) stopProgressTicker()
   notifyMaterialLists('created')
 }
 
@@ -289,7 +278,6 @@ function rememberCreateOrder(id: string, sequence: number): void {
 function removeJob(localId: string): void {
   const index = jobs.findIndex((item) => item.localId === localId)
   if (index >= 0) jobs.splice(index, 1)
-  if (!jobs.some((item) => item.status === 'creating')) stopProgressTicker()
 }
 
 /** 缩略图刷新会整表覆盖列表，这里把创建进度和「新」再写回去。 */
@@ -314,31 +302,6 @@ export function stampMaterialCreateState(items: MaterialCardViewModel[]): Materi
     if (!item.creating && !item.isNew && !unseen.has(item.id)) return item
     return { ...item, creating: false, progress: 0, isNew: unseen.has(item.id) }
   })
-}
-
-function ensureProgressTicker(): void {
-  if (progressTimer != null || typeof wx === 'undefined') return
-  progressTimer = setInterval(() => {
-    if (!appForeground) return
-    const now = Date.now()
-    let changed = false
-    jobs.forEach((job) => {
-      if (job.status !== 'creating' || job.paused) return
-      const creep = Math.min(90, Math.floor((now - job.startedAt) / 800))
-      if (creep <= job.progress) return
-      job.progress = creep
-      job.notifiedAt = now
-      changed = true
-    })
-    if (changed) notifyMaterialLists('local')
-    if (!jobs.some((job) => job.status === 'creating')) stopProgressTicker()
-  }, 800)
-}
-
-function stopProgressTicker(): void {
-  if (progressTimer == null) return
-  clearInterval(progressTimer)
-  progressTimer = null
 }
 
 function notifyMaterialLists(notice: MaterialCreateNotice): void {

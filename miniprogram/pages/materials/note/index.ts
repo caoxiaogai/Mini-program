@@ -972,7 +972,7 @@ Page({
     }, (report) =>
       uploadNoteFiles(input, {
         timeout: MATERIAL_CREATE_TIMEOUT_MS,
-        onProgress: (ratio) => report(Math.min(0.9, ratio * 0.9)),
+        onProgress: (ratio) => report(ratio),
       }).then((blocks) =>
         publishNote({ ...input, blocks, draftId: createdId }, {
           timeout: MATERIAL_CREATE_TIMEOUT_MS,
