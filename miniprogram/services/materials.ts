@@ -423,8 +423,11 @@ export function getMaterialDraft(materialId: string): Promise<MaterialDraftEditV
       const fileType = material.fileType ?? 'IMAGE'
       const kind = kindFromFileType(fileType)
       const sourceUrls = parseImageUrls(material.fileUrl)
-      const paths = await prepareMediaUrls(sourceUrls)
-      const previewPath = material.coverUrl ? await prepareMediaUrl(resolveMediaUrl(material.coverUrl)) : ''
+      // 视频和 PDF 的预览不靠文件本身。先下完整文件会把修改页挡住，地址留着即可，未替换时不会重传。
+      const paths = kind === 'image' ? await prepareMediaUrls(sourceUrls) : sourceUrls
+      const previewPath = kind === 'video' && material.coverUrl
+        ? await prepareMediaUrl(resolveMediaUrl(material.coverUrl))
+        : ''
 
       const media: PublishMediaViewModel[] =
         kind === 'image'

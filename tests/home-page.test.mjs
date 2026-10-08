@@ -2702,6 +2702,7 @@ test('editing a work keeps the loading popup until the draft is shown', () => {
   assert.match(logic, /if \(materialId\) this\.setData\(\{ draftLoading: true \}\)/)
   assert.match(logic, /submitLabel: '修改',\s*draftLoading: false/)
   assert.match(service, /function getMaterialDraft[\s\S]*silent: true/)
+  assert.match(service, /kind === 'image' \? await prepareMediaUrls\(sourceUrls\) : sourceUrls/)
 })
 
 test('publish type sheet only offers the current media kind', async () => {
