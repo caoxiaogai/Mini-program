@@ -27,6 +27,8 @@ export interface NotificationCardViewModel {
   actionIconPath: string
   avatarUrl: string
   thumbnailUrl: string
+  /** 作品已删除时，预览图位置显示「作品已删除」 */
+  deleted: boolean
   statusLabel: string
 }
 

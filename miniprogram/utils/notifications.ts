@@ -88,6 +88,7 @@ export function mapNotificationEvent(
     actionIconPath: isForward ? '/assets/notifications/action-forward.svg' : '/assets/notifications/action-reading.svg',
     avatarUrl,
     thumbnailUrl,
+    deleted: event.deleted === 1,
     statusLabel: buildNotificationStatus(event),
   }
 }

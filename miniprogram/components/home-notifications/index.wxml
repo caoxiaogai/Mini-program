@@ -36,7 +36,9 @@
                 <text class="home-status-tag home-status-tag--{{notification.intent}}">{{notification.statusLabel}}</text>
               </view>
             </view>
-            <image class="home-notification-card__thumbnail" src="{{notification.thumbnailUrl}}" mode="aspectFill" />
+            <view wx:if="{{notification.deleted}}" class="home-notification-card__thumbnail home-notification-card__thumbnail--deleted" style="display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 100rpx; height: 136rpx; padding: 8rpx 0; border-radius: 16rpx; background: #f3f3f3;"><text style="color: #8a8e94; font-size: 18rpx; line-height: 26rpx; text-align: center;">作品已删除</text></view>
+            <image wx:elif="{{notification.thumbnailUrl}}" class="home-notification-card__thumbnail" src="{{notification.thumbnailUrl}}" mode="aspectFill" />
+            <view wx:else class="home-notification-card__thumbnail home-notification-card__thumbnail--empty" />
           </view>
         </view>
         </view>

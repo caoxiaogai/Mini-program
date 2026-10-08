@@ -1731,6 +1731,11 @@ test('notification screen follows the revised Figma 486:1850 card treatment', ()
   assert.doesNotMatch(component, /notification-card-stack/)
   assert.match(styles, /\.home-notification-card__identity \{[\s\S]*flex: 1;[\s\S]*align-items: flex-start;/)
   assert.match(styles, /\.home-notification-card__thumbnail \{[\s\S]*width: 100rpx;[\s\S]*height: 136rpx;/)
+  assert.match(styles, /\.home-notification-card__thumbnail--deleted \{[\s\S]*background: #f3f3f3;/)
+  assert.match(page, /notification\.deleted[\s\S]*作品已删除/)
+  assert.match(component, /notification\.deleted[\s\S]*作品已删除/)
+  assert.match(read('miniprogram/pages/index/index.wxml'), /item\.deleted[\s\S]*作品已删除/)
+  assert.match(mapper, /deleted: event\.deleted === 1/)
   assert.match(styles, /\.home-status-tag \{[\s\S]*align-self: flex-start;[\s\S]*margin-top: 20rpx;[\s\S]*padding: 0 20rpx;/)
   assert.match(styles, /\.home-status-tag--high \{[\s\S]*background: #ffede9;[\s\S]*color: #ff9696;/)
   assert.match(mapper, /formatMonthDayTime\(event\.viewTime\)/)
@@ -1891,6 +1896,23 @@ test('notification page keeps one card for each browse of the same user', async 
   assert.equal(first.eventId, '101')
   assert.equal(second.eventId, '102')
   assert.notEqual(first.id, second.id)
+  assert.equal(first.deleted, false)
+  assert.equal(mapNotificationEvent({
+    id: '104',
+    customerId: 'c1',
+    nickname: '用户甲',
+    avatar: null,
+    materialId: '11',
+    materialTitle: '已删作品',
+    fileType: 'IMAGE',
+    deleted: 1,
+    actionType: 'play',
+    duration: 8,
+    progress: 40,
+    completed: 0,
+    intentLevel: 'low',
+    viewTime: '2026-08-26 10:00:00',
+  }, '', '').deleted, true)
   assert.equal(first.action, 'reading')
   assert.equal(first.statusLabel, '未滑动看完所有图片')
   assert.equal(second.statusLabel, '该用户已完成浏览')

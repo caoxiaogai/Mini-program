@@ -169,6 +169,8 @@ export interface ApiNotificationEvent {
   materialId: string | null
   materialTitle: string | null
   fileType?: ApiMaterialFileType | null
+  /** 素材表 deleted：1 表示作品已删除。正式版尚未返回该字段时为空 */
+  deleted?: number | null
   actionType: string | null
   duration: number | null
   progress: number | null
