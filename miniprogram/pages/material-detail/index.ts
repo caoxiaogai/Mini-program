@@ -14,6 +14,7 @@ import { formatCompactCount } from '../../utils/format'
 import { MATERIAL_DELETED_MESSAGE } from '../../utils/material-deleted'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import { takeMaterialDetailNeedsRefresh, takePendingPublishReturn } from '../../utils/publish-return'
+import { dismissCreatedMaterialMark } from '../../utils/material-create'
 import { prepareShareCardImage } from '../../utils/share-image'
 import {
   buildMaterialEditPath,
@@ -160,6 +161,7 @@ Page({
   },
   startDetail(options: Record<string, string | undefined>) {
     this.materialId = options.id ?? ''
+    dismissCreatedMaterialMark(this.materialId)
     this.pageTrackingId = options.trackingId ?? ''
     // 内部详情入口没有分享追踪参数；分享链接带 trackingId 时保持访客视角。
     this.ownerView = options.owner === '1' || (!options.trackingId && options.owner !== '0')

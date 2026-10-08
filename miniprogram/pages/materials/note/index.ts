@@ -1,4 +1,4 @@
-import { getMaterialShareCard, getNoteDraft, publishNote, uploadNoteFiles } from '../../../services/materials'
+import { getNoteDraft, publishNote, uploadNoteFiles } from '../../../services/materials'
 import { ApiError } from '../../../services/request'
 import { runAuthed } from '../../../services/auth'
 import type { NoteBlock, NoteFileBlock, NoteSubmitInput } from '../../../types/note'
@@ -8,7 +8,7 @@ import {
   createNoteBlockId,
   createNoteHistory,
   deletePreviousAttachmentOnBackspace,
-  extractNotePlainText,
+  extractNoteTitle,
   formatNoteFileSize,
   hasNoteContent,
   isNoteAttachmentBlock,
@@ -29,7 +29,8 @@ import {
   showPublishPickerError,
 } from '../../../utils/publish-media'
 import type { PublishMediaViewModel } from '../../../types/materials'
-import { openCreatedMaterial, returnToEditedMaterial } from '../../../utils/publish-return'
+import { returnToEditedMaterial } from '../../../utils/publish-return'
+import { MATERIAL_CREATE_TIMEOUT_MS, materialCreateDateKey, returnToMaterialList, startMaterialCreateJob } from '../../../utils/material-create'
 import {
   getNavigationBarLayout,
   isMenuButtonRectValid,
@@ -899,13 +900,6 @@ Page({
     })
   },
 
-  firstShareImage(): string {
-    const image = this.data.blocks.find((block) => block.type === 'image')
-    if (image && image.type === 'image') return image.path
-    const video = this.data.blocks.find((block) => block.type === 'video')
-    return video && video.type === 'video' ? video.coverPath : ''
-  },
-
   buildSubmitInput() {
     const blocks = this.flushTextDrafts()
     return {
@@ -943,26 +937,49 @@ Page({
 
   onPublishTap() {
     if (!this.beginSubmit()) return
-    const editing = Boolean(this.draftMaterialId)
-    const copy = extractNotePlainText(this.data.blocks)
+    if (!this.draftMaterialId) {
+      this.startBackgroundCreate()
+      return
+    }
     this.uploadThenSubmit((input) =>
       publishNote(input).then((materialId) => {
         this.draftMaterialId = materialId
         this.originalAttachmentSignature = noteAttachmentSignature(this.data.blocks)
-        if (editing) {
-          returnToEditedMaterial(materialId)
-          return
-        }
-        return getMaterialShareCard(materialId, copy, this.firstShareImage()).then((card) => {
-          openCreatedMaterial({
-            materialId,
-            showSuccessModal: true,
-            shareTitle: card.shareTitle,
-            shareImageUrl: card.shareImageUrl,
-            shareTrackingId: card.shareTrackingId,
-          })
-        })
+        returnToEditedMaterial(materialId)
       }),
     )
+  },
+  startBackgroundCreate() {
+    const input = this.buildSubmitInput()
+    if (!hasNoteContent(input.blocks)) {
+      this.submitting = false
+      wx.showToast({ title: '请先添加笔记内容', icon: 'none' })
+      return
+    }
+    const image = input.blocks.find((block) => block.type === 'image')
+    const video = input.blocks.find((block) => block.type === 'video')
+    const thumbnailUrl = image && image.type === 'image'
+      ? image.path
+      : video && video.type === 'video'
+        ? video.coverPath
+        : ''
+    startMaterialCreateJob({
+      title: extractNoteTitle(input.blocks).slice(0, 30),
+      date: materialCreateDateKey(),
+      thumbnailUrl,
+      kind: 'note',
+    }, (report) =>
+      uploadNoteFiles(input, {
+        timeout: MATERIAL_CREATE_TIMEOUT_MS,
+        onProgress: (ratio) => report(Math.min(0.9, ratio * 0.9)),
+      }).then((blocks) =>
+        publishNote({ ...input, blocks }, { timeout: MATERIAL_CREATE_TIMEOUT_MS }).then((materialId) => {
+          report(1)
+          return materialId
+        }),
+      ),
+    )
+    this.submitting = false
+    returnToMaterialList()
   },
 })

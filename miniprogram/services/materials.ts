@@ -31,6 +31,7 @@ import { prepareShareCardImage } from '../utils/share-image'
 import { buildMaterialShareTitle, isSinglePageMode } from '../utils/share-material'
 import { prepareDocumentPageImage } from './document'
 import { ensureLogin, getCachedLogin, hasAuthorizedLogin, request, resolveMediaUrl, runRequestQueue, uploadFile } from './request'
+import type { FileUploadOptions } from './request'
 
 const materialsFilters: MaterialsFilterViewModel[] = [
   { id: 'all', label: '全部' },
@@ -477,16 +478,16 @@ function buildMaterialTitle(copy: string, fallbackTitle: string): string {
   return firstLine ? firstLine.slice(0, MATERIAL_TITLE_MAX_LENGTH) : fallbackTitle.slice(0, MATERIAL_TITLE_MAX_LENGTH)
 }
 
-function uploadLocalFile(path: string): Promise<string> {
-  return shouldUploadLocalPath(path) ? uploadFile('/material/upload-file', path) : Promise.resolve(path)
+function uploadLocalFile(path: string, control?: FileUploadOptions): Promise<string> {
+  return shouldUploadLocalPath(path) ? uploadFile('/material/upload-file', path, control) : Promise.resolve(path)
 }
 
 /** 已有作品预填的远端文件可直接复用；用户新选的本地文件才上传。 */
-function persistMediaFile(item: PublishMediaViewModel): Promise<string> {
+function persistMediaFile(item: PublishMediaViewModel, control?: FileUploadOptions): Promise<string> {
   if (!shouldUploadLocalPath(item.path)) return Promise.resolve(item.path)
   const remoteUrl = item.remoteUrl ?? ''
   if (remoteUrl && !shouldUploadLocalPath(remoteUrl)) return Promise.resolve(remoteUrl)
-  return uploadFile('/material/upload-file', item.path)
+  return uploadFile('/material/upload-file', item.path, control)
 }
 
 function persistMediaFiles(items: PublishMediaViewModel[]): Promise<string[]> {
@@ -514,32 +515,63 @@ function fallbackTitleFor(input: MaterialSubmitInput): string {
 function updateMaterial(
   materialId: string,
   data: { title?: string; content?: string; fileUrl?: string; coverUrl?: string; duration?: number },
+  timeout?: number,
 ): Promise<string> {
   return request<ApiMaterial>({
     method: 'PUT',
     path: `/material/${materialId}`,
     silent: true,
+    timeout,
     data,
   }).then(() => materialId)
 }
 
+export interface MaterialWriteOptions {
+  timeout?: number
+}
+
 /** 只把本地文件直传到 OSS，不创建素材、不跳转。 */
-export function uploadMaterialFiles(input: MaterialSubmitInput): Promise<PublishMediaViewModel[]> {
-  if (input.media.length === 0 || isExistingMediaUnchanged(input)) return Promise.resolve(input.media)
+export function uploadMaterialFiles(input: MaterialSubmitInput, control?: FileUploadOptions): Promise<PublishMediaViewModel[]> {
+  if (input.media.length === 0 || isExistingMediaUnchanged(input)) {
+    control?.onProgress?.(1)
+    return Promise.resolve(input.media)
+  }
+  const slots = input.media.map(() => 0)
+  const emit = (): void => {
+    if (!control?.onProgress) return
+    const sum = slots.reduce((total, value) => total + value, 0)
+    control.onProgress(sum / slots.length)
+  }
   return runRequestQueue(
-    input.media.map((item) => () =>
-      persistMediaFile(item).then((fileUrl) => {
-        const coverTask =
-          item.previewPath && shouldUploadLocalPath(item.previewPath)
-            ? uploadLocalFile(item.previewPath).catch(() => item.previewPath)
-            : Promise.resolve(item.previewPath)
-        return coverTask.then((previewPath) => ({
-          ...item,
-          remoteUrl: fileUrl,
-          previewPath: previewPath || item.previewPath,
-        }))
-      }),
-    ),
+    input.media.map((item, index) => () => {
+      const hasCover = Boolean(item.previewPath && shouldUploadLocalPath(item.previewPath))
+      return persistMediaFile(item, {
+        timeout: control?.timeout,
+        onProgress: (ratio) => {
+          slots[index] = ratio * (hasCover ? 0.85 : 1)
+          emit()
+        },
+      }).then((fileUrl) => {
+        const coverTask = hasCover
+          ? uploadLocalFile(item.previewPath, {
+            timeout: control?.timeout,
+            onProgress: (ratio) => {
+              slots[index] = 0.85 + ratio * 0.15
+              emit()
+            },
+          }).catch(() => item.previewPath)
+          : Promise.resolve(item.previewPath)
+        return coverTask.then((previewPath) => {
+          slots[index] = 1
+          emit()
+          return {
+            ...item,
+            remoteUrl: fileUrl,
+            previewPath: previewPath || item.previewPath,
+          }
+        })
+      })
+    }),
     UPLOAD_CONCURRENCY,
   )
 }
@@ -552,11 +584,12 @@ function createMaterial(input: {
   copy: string
   fallbackTitle: string
   content?: string
-}): Promise<string> {
+}, timeout?: number): Promise<string> {
   return request<ApiMaterial>({
     method: 'POST',
     path: '/material',
     silent: true,
+    timeout,
     data: {
       title: buildMaterialTitle(input.copy, input.fallbackTitle),
       content: input.content ?? input.copy,
@@ -611,7 +644,7 @@ function persistMaterialFields(input: MaterialSubmitInput): Promise<{
   }))
 }
 
-function persistMaterial(input: MaterialSubmitInput): Promise<string> {
+function persistMaterial(input: MaterialSubmitInput, timeout?: number): Promise<string> {
   if (input.media.length === 0) {
     wx.showToast({ title: '请先添加素材', icon: 'none' })
     return Promise.reject(new Error('material media required'))
@@ -622,7 +655,7 @@ function persistMaterial(input: MaterialSubmitInput): Promise<string> {
     return updateMaterial(materialId, {
       title: buildMaterialTitle(input.copy, fallbackTitleFor(input)),
       content: input.copy,
-    })
+    }, timeout)
   }
 
   return persistMaterialFields(input).then((fields) => {
@@ -633,7 +666,7 @@ function persistMaterial(input: MaterialSubmitInput): Promise<string> {
         fileUrl: fields.fileUrl,
         coverUrl: fields.coverUrl,
         duration: fields.duration,
-      })
+      }, timeout)
     }
 
     return createMaterial({
@@ -643,14 +676,18 @@ function persistMaterial(input: MaterialSubmitInput): Promise<string> {
       duration: fields.duration,
       copy: input.copy,
       fallbackTitle: fields.fallbackTitle,
-    })
+    }, timeout)
   })
 }
 
 /** 创建或修改作品后生成分享链接（已发布作品不会更换追踪码），返回素材 ID */
-export function publishMaterial(input: MaterialSubmitInput): Promise<string> {
-  return persistMaterial(input).then((materialId) =>
-    request<ApiMaterial>({ method: 'POST', path: `/material/${materialId}/share`, silent: true }).then(() => materialId),
+export function publishMaterial(input: MaterialSubmitInput, options?: MaterialWriteOptions): Promise<string> {
+  return persistMaterial(input, options?.timeout).then((materialId) =>
+    request<ApiMaterial>({
+      method: 'POST',
+      path: `/material/${materialId}/share`, silent: true,
+      timeout: options?.timeout,
+    }).then(() => materialId),
   )
 }
 
@@ -734,29 +771,37 @@ export function getNoteDraft(materialId: string): Promise<NoteDraftViewModel | n
     .catch(() => null)
 }
 
-async function persistNoteBlock(block: NoteBlock): Promise<NoteBlock> {
+async function persistNoteBlock(block: NoteBlock, control?: FileUploadOptions): Promise<NoteBlock> {
   if (block.type === 'image') {
-    const fileUrl = await persistNoteFile(block.path, block.remoteUrl)
+    const fileUrl = await persistNoteFile(block.path, block.remoteUrl, control)
     return { ...block, path: fileUrl, remoteUrl: fileUrl }
   }
   if (block.type === 'video') {
-    const fileUrl = await persistNoteFile(block.path, block.remoteUrl)
-    const coverUrl = block.coverPath
-      ? await persistNoteFile(block.coverPath, block.remoteCoverUrl).catch(() => '')
+    const hasCover = Boolean(block.coverPath)
+    const fileUrl = await persistNoteFile(block.path, block.remoteUrl, {
+      timeout: control?.timeout,
+      onProgress: (ratio) => control?.onProgress?.(hasCover ? ratio * 0.85 : ratio),
+    })
+    const coverUrl = hasCover
+      ? await persistNoteFile(block.coverPath, block.remoteCoverUrl, {
+        timeout: control?.timeout,
+        onProgress: (ratio) => control?.onProgress?.(0.85 + ratio * 0.15),
+      }).catch(() => '')
       : block.remoteCoverUrl ?? ''
+    control?.onProgress?.(1)
     return { ...block, path: fileUrl, remoteUrl: fileUrl, coverPath: coverUrl, remoteCoverUrl: coverUrl, duration: Math.round(block.duration) }
   }
   if (block.type === 'file') {
-    const fileUrl = await persistNoteFile(block.path, block.remoteUrl)
+    const fileUrl = await persistNoteFile(block.path, block.remoteUrl, control)
     return { ...block, path: fileUrl, remoteUrl: fileUrl }
   }
   return block
 }
 
-function persistNoteFile(path: string, remoteUrl?: string): Promise<string> {
+function persistNoteFile(path: string, remoteUrl?: string, control?: FileUploadOptions): Promise<string> {
   if (!shouldUploadLocalPath(path)) return Promise.resolve(path || remoteUrl || '')
   if (remoteUrl && !shouldUploadLocalPath(remoteUrl)) return Promise.resolve(remoteUrl)
-  return uploadFile('/material/upload-file', path)
+  return uploadFile('/material/upload-file', path, control)
 }
 
 function firstNoteCover(blocks: NoteBlock[]): { fileUrl: string; coverUrl: string; duration: number } {
@@ -779,18 +824,44 @@ function firstNoteCover(blocks: NoteBlock[]): { fileUrl: string; coverUrl: strin
 }
 
 /** 只把笔记本地附件直传到 OSS，不创建素材、不跳转。 */
-export function uploadNoteFiles(input: NoteSubmitInput): Promise<NoteBlock[]> {
+export function uploadNoteFiles(input: NoteSubmitInput, control?: FileUploadOptions): Promise<NoteBlock[]> {
   if (!hasNoteContent(input.blocks)) return Promise.resolve(input.blocks)
   if (input.draftId !== null && noteAttachmentSignature(input.blocks) === input.originalAttachmentSignature) {
+    control?.onProgress?.(1)
     return Promise.resolve(input.blocks)
   }
+  const weights = input.blocks.map((block) => (block.type === 'text' ? 0 : 1))
+  const total = weights.reduce((sum, weight) => sum + weight, 0)
+  const slots = input.blocks.map(() => 0)
+  const emit = (): void => {
+    if (!control?.onProgress || total === 0) return
+    let sum = 0
+    slots.forEach((value, index) => {
+      if (weights[index]) sum += value
+    })
+    control.onProgress(sum / total)
+  }
+  if (total === 0) control?.onProgress?.(1)
   return runRequestQueue(
-    input.blocks.map((block) => () => persistNoteBlock(block)),
+    input.blocks.map((block, index) => () => {
+      if (block.type === 'text') return Promise.resolve(block)
+      return persistNoteBlock(block, {
+        timeout: control?.timeout,
+        onProgress: (ratio) => {
+          slots[index] = ratio
+          emit()
+        },
+      }).then((next) => {
+        slots[index] = 1
+        emit()
+        return next
+      })
+    }),
     UPLOAD_CONCURRENCY,
   )
 }
 
-function persistNoteMaterial(input: NoteSubmitInput): Promise<string> {
+function persistNoteMaterial(input: NoteSubmitInput, timeout?: number): Promise<string> {
   if (!hasNoteContent(input.blocks)) {
     wx.showToast({ title: '请先添加笔记内容', icon: 'none' })
     return Promise.reject(new Error('note content required'))
@@ -803,7 +874,7 @@ function persistNoteMaterial(input: NoteSubmitInput): Promise<string> {
     return updateMaterial(input.draftId, {
       title: extractNoteTitle(input.blocks),
       content: serializeNoteContent(input.blocks),
-    })
+    }, timeout)
   }
 
   return runRequestQueue(
@@ -818,7 +889,7 @@ function persistNoteMaterial(input: NoteSubmitInput): Promise<string> {
       coverUrl: media.coverUrl,
       duration: media.duration,
     }
-    if (input.draftId) return updateMaterial(input.draftId, payload)
+    if (input.draftId) return updateMaterial(input.draftId, payload, timeout)
     return createMaterial({
       fileType: NOTE_FILE_TYPE,
       fileUrl: payload.fileUrl,
@@ -827,12 +898,16 @@ function persistNoteMaterial(input: NoteSubmitInput): Promise<string> {
       copy: extractNotePlainText(blocks),
       fallbackTitle: payload.title,
       content: payload.content,
-    })
+    }, timeout)
   })
 }
 
-export function publishNote(input: NoteSubmitInput): Promise<string> {
-  return persistNoteMaterial(input).then((materialId) =>
-    request<ApiMaterial>({ method: 'POST', path: `/material/${materialId}/share`, silent: true }).then(() => materialId),
+export function publishNote(input: NoteSubmitInput, options?: MaterialWriteOptions): Promise<string> {
+  return persistNoteMaterial(input, options?.timeout).then((materialId) =>
+    request<ApiMaterial>({
+      method: 'POST',
+      path: `/material/${materialId}/share`, silent: true,
+      timeout: options?.timeout,
+    }).then(() => materialId),
   )
 }

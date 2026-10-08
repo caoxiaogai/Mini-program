@@ -37,18 +37,31 @@
           bindtap="onMaterialCardTap"
           bindlongpress="onMaterialCardLongPress"
           data-id="{{item.id}}"
-          hover-class="{{materialSelecting ? '' : 'materials-card--pressed'}}"
+          hover-class="{{materialSelecting || item.creating ? '' : 'materials-card--pressed'}}"
           hover-start-time="80"
           hover-stay-time="120"
         >
           <view class="materials-card__preview">
             <image class="materials-card__image" src="{{item.thumbnailUrl}}" mode="aspectFill" />
-            <image wx:if="{{item.kind === 'video' && !materialSelecting}}" class="materials-card__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
+            <image wx:if="{{item.kind === 'video' && !materialSelecting && !item.creating}}" class="materials-card__play" src="/assets/materials/material-play.svg" mode="aspectFit" />
+            <view wx:if="{{item.creating}}" class="materials-card__progress">
+              <text class="materials-card__progress-text">创建中 {{item.progress}}%</text>
+              <view class="materials-card__progress-track">
+                <view class="materials-card__progress-bar" style="width: {{item.progress}}%;" />
+              </view>
+            </view>
             <view wx:if="{{materialSelecting}}" class="materials-card__check {{item.selected ? 'materials-card__check--selected' : ''}}" />
           </view>
           <view class="materials-card__info">
             <text class="materials-card__title">{{item.title}}</text>
-            <text class="materials-card__date">{{item.date}}</text>
+            <view class="materials-card__meta" style="display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; width: 100%;">
+              <view class="materials-card__date-wrap">
+                <text class="materials-card__date">{{item.date}}</text>
+              </view>
+              <view wx:if="{{item.isNew && !item.creating}}" class="materials-card__new">
+                <text style="color: #ff8901; font-size: 28rpx; font-weight: 600; line-height: 36rpx;">新</text>
+              </view>
+            </view>
           </view>
         </view>
       </view>

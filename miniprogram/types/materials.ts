@@ -15,6 +15,12 @@ export interface MaterialCardViewModel {
   thumbnailUrl: string
   kind: MaterialCardKind
   selected?: boolean
+  /** 后台创建尚未完成，预览图上显示进度 */
+  creating?: boolean
+  /** 0–100，仅 creating 时展示 */
+  progress?: number
+  /** 创建成功后尚未进入详情 */
+  isNew?: boolean
 }
 
 export interface MaterialDetailViewModel {

@@ -24,6 +24,8 @@ import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, 
 import { fromDatasetId } from '../../utils/dataset-id'
 import { markHomeNotificationViewed, markHomeNotificationsViewed } from './home-notification-preview'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
+import { visibleMaterialsWithCreates } from '../../utils/material-create'
+import type { MaterialCreateNotice } from '../../utils/material-create'
 import { choosePublishImageOrVideo, ensurePrivacyAuthorize, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
 import type { PublishEntryType, PublishMediaSource } from '../../utils/publish-media'
 import { setPendingPublishSelection } from '../../utils/publish-selection'
@@ -75,10 +77,6 @@ const totalAnalysisPeriods = [
 ]
 
 const analysisSwipeThreshold = 40
-
-function getVisibleMaterials(items: MaterialCardViewModel[], filterId: MaterialsFilterId): MaterialCardViewModel[] {
-  return filterId === 'all' ? items : items.filter((item) => item.kind === filterId)
-}
 
 const guestMaterialsPreview: MaterialsViewModel = {
   filters: [
@@ -437,7 +435,7 @@ Page({
     })
   },
   applyMaterialsWindow(items: MaterialCardViewModel[], filterId: MaterialsFilterId, visibleCount: number) {
-    const filtered = getVisibleMaterials(items, filterId)
+    const filtered = visibleMaterialsWithCreates(items, filterId)
     const visibleMaterials = applyMaterialSelection(windowList(filtered, visibleCount), this.data.selectedMaterialIds)
     this.setData({
       visibleMaterials,
@@ -458,10 +456,23 @@ Page({
     })
   },
   loadMoreMaterials() {
-    const filtered = getVisibleMaterials(this.data.materials?.items ?? [], this.data.activeMaterialFilter)
+    const filtered = visibleMaterialsWithCreates(this.data.materials?.items ?? [], this.data.activeMaterialFilter)
     const next = nextListWindow(this.data.materialsVisibleCount, filtered.length)
     if (next === this.data.materialsVisibleCount) return
     this.applyMaterialsWindow(this.data.materials?.items ?? [], this.data.activeMaterialFilter, next)
+  },
+  refreshMaterialCreateCards(notice?: MaterialCreateNotice) {
+    const filterId = this.data.activeMaterialFilter
+    const visibleCount = this.data.materialsVisibleCount || LIST_PAGE_SIZE
+    const apply = () => {
+      this.applyMaterialsWindow(this.data.materials?.items ?? [], filterId, visibleCount)
+    }
+    if (notice === 'created') {
+      const pending = this.loadMaterials()
+      if (pending && typeof pending.then === 'function') pending.then(apply, apply)
+      return
+    }
+    apply()
   },
   loadShareMaterial(materialId: string) {
     this.shareImageToken += 1
@@ -984,20 +995,21 @@ Page({
   onMaterialCardTap(event: WechatMiniprogram.TouchEvent) {
     const materialId = event.currentTarget.dataset.id as string | undefined
     if (!materialId) return
+    const material = this.data.visibleMaterials.find((item) => item.id === materialId)
+    if (!material || material.creating) return
 
     if (this.data.materialSelecting) {
       this.toggleMaterialSelected(materialId)
       return
     }
 
-    const material = this.data.visibleMaterials.find((item) => item.id === materialId)
-    if (!material) return
-
     wx.navigateTo({ url: buildMaterialDetailPath(materialId, undefined, true) })
   },
   onMaterialCardLongPress(event: WechatMiniprogram.TouchEvent) {
     const materialId = event.currentTarget.dataset.id as string | undefined
     if (!materialId || this.data.deletingMaterials) return
+    const material = this.data.visibleMaterials.find((item) => item.id === materialId)
+    if (material?.creating) return
     const selectedMaterialIds = this.data.materialSelecting
       ? toggleMaterialSelection(this.data.selectedMaterialIds, materialId)
       : [materialId]

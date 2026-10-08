@@ -376,8 +376,15 @@ function notifyUploadFailure(error: ApiError): Promise<never> {
   return Promise.reject(error)
 }
 
+export interface FileUploadOptions {
+  /** 凭证请求和文件上传共用；后台创建会拉长，避免 15 秒请求超时中断 */
+  timeout?: number
+  /** 0–1 */
+  onProgress?: (ratio: number) => void
+}
+
 /** 向 OSS 直传单个本地文件，返回 CDN 地址。path 只用来区分作品和头像目录。 */
-export function uploadFile(path: string, filePath: string): Promise<string> {
+export function uploadFile(path: string, filePath: string, options?: FileUploadOptions): Promise<string> {
   if (!hasAuthorizedLogin()) return rejectUnauthorized<string>()
   return ensureLogin()
     .then(() => request<DirectUploadTicket>({
@@ -385,14 +392,15 @@ export function uploadFile(path: string, filePath: string): Promise<string> {
       path: '/material/upload-ticket',
       data: { directory: uploadDirectory(path), filename: fileNameOf(filePath) },
       silent: true,
+      timeout: options?.timeout,
     }))
     .then((ticket) => new Promise<string>((resolve, reject) => {
-      wx.uploadFile({
+      const task = wx.uploadFile({
         url: ticket.uploadUrl,
         filePath,
         name: 'file',
         formData: ticket.formData,
-        timeout: UPLOAD_TIMEOUT_MS,
+        timeout: options?.timeout ?? UPLOAD_TIMEOUT_MS,
         success: (response) => {
           if (response.statusCode === 200 || response.statusCode === 204) {
             resolve(ticket.fileUrl)
@@ -402,6 +410,12 @@ export function uploadFile(path: string, filePath: string): Promise<string> {
         },
         fail: () => reject(new ApiError(-1, '网络请求失败')),
       })
+      if (options?.onProgress && typeof task.onProgressUpdate === 'function') {
+        task.onProgressUpdate((event) => {
+          const progress = typeof event.progress === 'number' ? event.progress : 0
+          options.onProgress?.(Math.max(0, Math.min(1, progress / 100)))
+        })
+      }
     }))
     .catch((error: unknown) => notifyUploadFailure(error instanceof ApiError ? error : new ApiError(-1, '上传失败')))
 }

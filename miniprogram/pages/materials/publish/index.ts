@@ -1,9 +1,10 @@
-import { getMaterialDraft, getMaterialShareCard, publishMaterial, uploadMaterialFiles } from '../../../services/materials'
+import { getMaterialDraft, publishMaterial, uploadMaterialFiles } from '../../../services/materials'
 import { ApiError } from '../../../services/request'
 import { runAuthed } from '../../../services/auth'
 import { ensureEmojiPresentation } from '../../../utils/emoji'
-import { openCreatedMaterial, returnToEditedMaterial } from '../../../utils/publish-return'
-import { buildMaterialPublishPath, getPublishShareImageUrl } from '../../../utils/share-material'
+import { returnToEditedMaterial } from '../../../utils/publish-return'
+import { MATERIAL_CREATE_TIMEOUT_MS, publishCreatePreview, returnToMaterialList, startMaterialCreateJob } from '../../../utils/material-create'
+import { buildMaterialPublishPath } from '../../../utils/share-material'
 import type { MaterialSubmitInput, PublishMediaViewModel } from '../../../types/materials'
 import { takePendingPublishSelection } from '../../../utils/publish-selection'
 import {
@@ -450,26 +451,38 @@ Page({
   },
   onPublishTap() {
     if (!this.beginSubmit()) return
-    const editing = Boolean(this.draftMaterialId)
+    if (!this.draftMaterialId) {
+      this.startBackgroundCreate()
+      return
+    }
 
     this.uploadThenSubmit((input) =>
       publishMaterial(input).then((materialId) => {
         this.draftMaterialId = materialId
         this.draftMediaPaths = this.data.media.map((item) => item.path)
-        if (editing) {
-          returnToEditedMaterial(materialId)
-          return
-        }
-        return getMaterialShareCard(materialId, this.data.copy, getPublishShareImageUrl(this.data.media)).then((card) => {
-          openCreatedMaterial({
-            materialId,
-            showSuccessModal: true,
-            shareTitle: card.shareTitle,
-            shareImageUrl: card.shareImageUrl,
-            shareTrackingId: card.shareTrackingId,
-          })
-        })
+        returnToEditedMaterial(materialId)
       }),
     )
+  },
+  startBackgroundCreate() {
+    const input = this.buildSubmitInput()
+    if (input.media.length === 0) {
+      this.submitting = false
+      wx.showToast({ title: '请先添加素材', icon: 'none' })
+      return
+    }
+    startMaterialCreateJob(publishCreatePreview(input.copy, input.media), (report) =>
+      uploadMaterialFiles(input, {
+        timeout: MATERIAL_CREATE_TIMEOUT_MS,
+        onProgress: (ratio) => report(Math.min(0.9, ratio * 0.9)),
+      }).then((media) =>
+        publishMaterial({ ...input, media }, { timeout: MATERIAL_CREATE_TIMEOUT_MS }).then((materialId) => {
+          report(1)
+          return materialId
+        }),
+      ),
+    )
+    this.submitting = false
+    returnToMaterialList()
   },
 })

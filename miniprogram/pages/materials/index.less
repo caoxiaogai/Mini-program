@@ -235,6 +235,62 @@ page {
   white-space: nowrap;
 }
 
+.materials-card__meta {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.materials-card__date-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.materials-card__new {
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.materials-card__progress {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.materials-card__progress-text {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: 600;
+  line-height: 44rpx;
+}
+
+.materials-card__progress-track {
+  width: 70%;
+  height: 8rpx;
+  overflow: hidden;
+  border-radius: 8rpx;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.materials-card__progress-bar {
+  height: 100%;
+  border-radius: 8rpx;
+  background: #ffc400;
+}
+
 .materials-publish-bar {
   position: fixed;
   right: 0;
