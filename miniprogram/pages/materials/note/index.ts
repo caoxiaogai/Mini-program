@@ -1,7 +1,6 @@
-import { getNoteDraft, publishNote, uploadNoteFiles } from '../../../services/materials'
-import { ApiError } from '../../../services/request'
+import { getMaterialEditSnapshot, getNoteDraft, publishNote, uploadNoteFiles } from '../../../services/materials'
 import { runAuthed } from '../../../services/auth'
-import type { NoteBlock, NoteFileBlock, NoteSubmitInput } from '../../../types/note'
+import type { NoteBlock, NoteFileBlock } from '../../../types/note'
 import { buildReturnPath } from '../../../utils/auth'
 import {
   createEmptyTextBlock,
@@ -29,7 +28,6 @@ import {
   showPublishPickerError,
 } from '../../../utils/publish-media'
 import type { PublishMediaViewModel } from '../../../types/materials'
-import { returnToEditedMaterial } from '../../../utils/publish-return'
 import { MATERIAL_CREATE_TIMEOUT_MS, materialCreateDateKey, returnToMaterialList, startMaterialCreateJob } from '../../../utils/material-create'
 import {
   getNavigationBarLayout,
@@ -915,39 +913,57 @@ Page({
     return true
   },
 
-  uploadThenSubmit(work: (input: NoteSubmitInput) => Promise<void>): void {
-    const input = this.buildSubmitInput()
-    this.setData({ uploading: true, blocks: withFileLabels(input.blocks) })
-    uploadNoteFiles(input)
-      .then((blocks) => {
-        this.setData({ blocks: withFileLabels(blocks) })
-        return work({ ...input, blocks })
-      })
-      .catch((error: unknown) => {
-        this.setData({ uploading: false })
-        if (error instanceof ApiError && error.notified) return
-        const message = error instanceof Error ? error.message.trim() : ''
-        if (!message) return
-        wx.showModal({ title: '发布失败', content: message, showCancel: false })
-      })
-      .then(() => {
-        this.submitting = false
-      })
-  },
-
   onPublishTap() {
     if (!this.beginSubmit()) return
     if (!this.draftMaterialId) {
       this.startBackgroundCreate()
       return
     }
-    this.uploadThenSubmit((input) =>
-      publishNote(input).then((materialId) => {
-        this.draftMaterialId = materialId
-        this.originalAttachmentSignature = noteAttachmentSignature(this.data.blocks)
-        returnToEditedMaterial(materialId)
-      }),
-    )
+    this.startBackgroundEdit()
+  },
+  startBackgroundEdit() {
+    const input = this.buildSubmitInput()
+    const materialId = input.draftId
+    if (!materialId || !hasNoteContent(input.blocks)) {
+      this.submitting = false
+      wx.showToast({ title: !materialId ? '笔记不存在' : '请先添加笔记内容', icon: 'none' })
+      return
+    }
+    const image = input.blocks.find((block) => block.type === 'image')
+    const video = input.blocks.find((block) => block.type === 'video')
+    const thumbnailUrl = image && image.type === 'image'
+      ? image.path
+      : video && video.type === 'video'
+        ? video.coverPath
+        : ''
+    startMaterialCreateJob({
+      title: extractNoteTitle(input.blocks).slice(0, 30),
+      date: materialCreateDateKey(),
+      thumbnailUrl,
+      kind: 'note',
+    }, (report, control) =>
+      getMaterialEditSnapshot(materialId).then((snapshot) => {
+        if (snapshot) control.rememberSnapshot(snapshot)
+        return uploadNoteFiles(input, {
+          timeout: MATERIAL_CREATE_TIMEOUT_MS,
+          isCancelled: () => control.cancelled,
+          bindAbort: (abort) => control.bindAbort(abort),
+          onProgress: (ratio) => report(ratio),
+        })
+      }).then((blocks) =>
+        publishNote({ ...input, blocks, draftId: materialId }, {
+          timeout: MATERIAL_CREATE_TIMEOUT_MS,
+          onCreated: (id) => {
+            control.rememberMaterial(id)
+          },
+        }).then((id) => {
+          report(1)
+          return id
+        }),
+      ),
+    { existingMaterialId: materialId })
+    this.submitting = false
+    returnToMaterialList()
   },
   startBackgroundCreate() {
     const input = this.buildSubmitInput()

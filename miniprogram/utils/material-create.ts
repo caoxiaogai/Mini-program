@@ -1,4 +1,5 @@
 import type { MaterialCardKind, MaterialCardViewModel, MaterialsFilterId } from '../types/materials'
+import { restoreMaterialEditSnapshot, type MaterialEditSnapshot } from '../services/materials'
 import { request } from '../services/request'
 import { HOME_MATERIALS_TAB_PATH } from './share-material'
 
@@ -14,6 +15,7 @@ export interface MaterialCreateRunControl {
   readonly cancelled: boolean
   bindAbort(abort: () => void): void
   rememberMaterial(materialId: string): void
+  rememberSnapshot(snapshot: MaterialEditSnapshot): void
 }
 
 export interface MaterialCreatePreview {
@@ -38,6 +40,10 @@ interface MaterialCreateJob extends MaterialCreatePreview {
   resumeQueued: boolean
   cancelled: boolean
   aborts: Array<() => void>
+  mode: 'create' | 'edit'
+  /** 修改请求已经写到服务器。取消时要按快照写回去。 */
+  committed: boolean
+  snapshot: MaterialEditSnapshot | null
 }
 
 interface MaterialListPage {
@@ -77,11 +83,13 @@ export function publishCreatePreview(
 export function startMaterialCreateJob(
   preview: MaterialCreatePreview,
   run: (reportProgress: (ratio: number) => void, control: MaterialCreateRunControl) => Promise<string>,
+  options?: { existingMaterialId?: string },
 ): void {
+  const existingMaterialId = options?.existingMaterialId?.trim() ?? ''
   const job: MaterialCreateJob = {
     ...preview,
     localId: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    materialId: '',
+    materialId: existingMaterialId,
     status: 'creating',
     progress: 0,
     progressBase: 0,
@@ -93,6 +101,9 @@ export function startMaterialCreateJob(
     resumeQueued: false,
     cancelled: false,
     aborts: [],
+    mode: existingMaterialId ? 'edit' : 'create',
+    committed: false,
+    snapshot: null,
   }
   nextCreateSequence += 1
   jobs.unshift(job)
@@ -135,7 +146,12 @@ function runMaterialCreateJob(job: MaterialCreateJob): void {
     },
     rememberMaterial(materialId) {
       const id = materialId.trim()
-      if (id) job.materialId = id
+      if (!id) return
+      job.materialId = id
+      job.committed = true
+    },
+    rememberSnapshot(snapshot) {
+      job.snapshot = snapshot
     },
   }
   Promise.resolve()
@@ -143,8 +159,7 @@ function runMaterialCreateJob(job: MaterialCreateJob): void {
     .then((materialId) => {
       job.running = false
       if (job.cancelled) {
-        const id = String(materialId || job.materialId || '').trim()
-        if (id) discardCreatedMaterial(id)
+        settleCancelledJob(job)
         return
       }
       const id = String(materialId || '').trim()
@@ -167,7 +182,7 @@ function runMaterialCreateJob(job: MaterialCreateJob): void {
       }
       current.resumeQueued = false
       removeJob(current.localId)
-      showCreateFailure(error)
+      showCreateFailure(error, current.mode)
       notifyMaterialLists('local')
     })
 }
@@ -190,7 +205,27 @@ export function cancelMaterialCreate(id: string): void {
   const materialId = job.materialId
   removeJob(job.localId)
   notifyMaterialLists('local')
+  if (job.mode === 'edit') {
+    if (job.committed && job.snapshot) restoreEditedMaterial(materialId, job.snapshot)
+    return
+  }
   if (materialId) discardCreatedMaterial(materialId)
+}
+
+function settleCancelledJob(job: MaterialCreateJob): void {
+  if (job.mode === 'edit') {
+    if (job.committed && job.snapshot) restoreEditedMaterial(job.materialId, job.snapshot)
+    return
+  }
+  const id = String(job.materialId || '').trim()
+  if (id) discardCreatedMaterial(id)
+}
+
+function restoreEditedMaterial(materialId: string, snapshot: MaterialEditSnapshot): void {
+  if (typeof restoreMaterialEditSnapshot !== 'function') return
+  restoreMaterialEditSnapshot(materialId, snapshot).then(() => {
+    notifyMaterialLists('created')
+  }, () => undefined)
 }
 
 function discardCreatedMaterial(materialId: string): void {
@@ -210,12 +245,25 @@ export function mergeCreatingMaterials(items: MaterialCardViewModel[]): Material
   }
 
   const unseen = new Set(readUnseenIds())
-  const decorated = items.map((item) => ({
-    ...item,
-    creating: false,
-    progress: 0,
-    isNew: unseen.has(item.id),
-  }))
+  const decorated = items.map((item) => {
+    const job = jobs.find((entry) => entry.status === 'creating' && (entry.materialId === item.id || entry.localId === item.id))
+    if (!job) {
+      return {
+        ...item,
+        creating: false,
+        progress: 0,
+        progressLabel: '',
+        isNew: unseen.has(item.id),
+      }
+    }
+    return {
+      ...item,
+      creating: true,
+      progress: job.progress,
+      progressLabel: job.mode === 'edit' ? '修改中' : '创建中',
+      isNew: false,
+    }
+  })
   const pending: MaterialCardViewModel[] = jobs
     .filter((job) => {
       const id = job.materialId || job.localId
@@ -229,7 +277,8 @@ export function mergeCreatingMaterials(items: MaterialCardViewModel[]): Material
       kind: job.kind,
       creating: job.status === 'creating',
       progress: job.status === 'creating' ? job.progress : 100,
-      isNew: job.status === 'ready',
+      progressLabel: job.mode === 'edit' ? '修改中' : '创建中',
+      isNew: job.status === 'ready' && job.mode !== 'edit',
     }))
 
   return orderByCreateStart([...pending, ...decorated])
@@ -239,6 +288,7 @@ function sequenceById(): Map<string, number> {
   const sequence = new Map<string, number>()
   creationOrder.forEach((entry) => sequence.set(entry.id, entry.sequence))
   jobs.forEach((job) => {
+    if (job.mode === 'edit') return
     sequence.set(job.localId, job.sequence)
     if (job.materialId) sequence.set(job.materialId, job.sequence)
   })
@@ -283,7 +333,14 @@ export function dismissCreatedMaterialMark(materialId: string): void {
 }
 
 export function returnToMaterialList(): void {
-  if (typeof getCurrentPages === 'function' && getCurrentPages().length > 1) {
+  const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+  for (let index = pages.length - 2; index >= 0; index -= 1) {
+    const route = pages[index]?.route ?? ''
+    if (route !== 'pages/index/index' && route !== 'pages/materials/index') continue
+    wx.navigateBack({ delta: pages.length - 1 - index })
+    return
+  }
+  if (pages.length > 1) {
     wx.navigateBack()
     return
   }
@@ -325,6 +382,10 @@ function finishJob(localId: string, materialId: string): void {
   job.materialId = materialId
   job.status = 'ready'
   job.progress = 100
+  if (job.mode === 'edit') {
+    notifyMaterialLists('created')
+    return
+  }
   rememberCreateOrder(materialId, job.sequence)
   const unseen = readUnseenIds().filter((item) => item !== materialId)
   unseen.unshift(materialId)
@@ -359,7 +420,8 @@ export function stampMaterialCreateState(items: MaterialCardViewModel[]): Materi
         ...item,
         creating: job.status === 'creating',
         progress: job.progress,
-        isNew: job.status === 'ready',
+        progressLabel: job.mode === 'edit' ? '修改中' : '创建中',
+        isNew: job.status === 'ready' && job.mode !== 'edit',
       }
     }
     if (!item.creating && !item.isNew && !unseen.has(item.id)) return item
@@ -397,13 +459,13 @@ function writeUnseenIds(ids: string[]): void {
   }
 }
 
-function showCreateFailure(error: unknown): void {
+function showCreateFailure(error: unknown, mode: 'create' | 'edit' = 'create'): void {
   if (typeof wx === 'undefined') return
   if (typeof error === 'object' && error !== null && 'notified' in error && (error as { notified?: boolean }).notified) return
   const message = error instanceof Error ? error.message.trim() : ''
   wx.showModal({
-    title: '创建失败',
-    content: message || '创建失败，请稍后重试',
+    title: mode === 'edit' ? '修改失败' : '创建失败',
+    content: message || (mode === 'edit' ? '修改失败，请稍后重试' : '创建失败，请稍后重试'),
     showCancel: false,
   })
 }

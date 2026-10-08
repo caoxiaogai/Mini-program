@@ -530,6 +530,42 @@ function updateMaterial(
   }).then(() => materialId)
 }
 
+export interface MaterialEditSnapshot {
+  title: string
+  content: string
+  fileUrl: string
+  coverUrl: string
+  duration: number
+}
+
+/** 修改开始前记下当前作品，取消时写回去。 */
+export function getMaterialEditSnapshot(materialId: string): Promise<MaterialEditSnapshot | null> {
+  return request<ApiMaterial>({ method: 'GET', path: `/material/${materialId}`, silent: true })
+    .then((material) => ({
+      title: material.title ?? '',
+      content: material.content ?? '',
+      fileUrl: material.fileUrl ?? '',
+      coverUrl: material.coverUrl ?? '',
+      duration: Math.round(material.duration ?? 0),
+    }))
+    .catch(() => null)
+}
+
+export function restoreMaterialEditSnapshot(materialId: string, snapshot: MaterialEditSnapshot): Promise<void> {
+  return request<ApiMaterial>({
+    method: 'PUT',
+    path: `/material/${materialId}`,
+    silent: true,
+    data: {
+      title: snapshot.title,
+      content: snapshot.content,
+      fileUrl: snapshot.fileUrl,
+      coverUrl: snapshot.coverUrl,
+      duration: snapshot.duration,
+    },
+  }).then(() => undefined)
+}
+
 export interface MaterialWriteOptions {
   timeout?: number
   /** 作品记录已经写入、分享链接还没完成时回调，便于切后台后续传时复用同一个作品 */

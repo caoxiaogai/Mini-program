@@ -285,6 +285,44 @@ test('cancelling a create removes the card and drops a later success', async () 
   api.resetMaterialCreateStateForTests()
 })
 
+test('editing a work shows progress on the existing card and cancel keeps it', async () => {
+  const api = loadMaterialCreate()
+  api.resetMaterialCreateStateForTests()
+  let report = null
+  let finish = null
+  api.startMaterialCreateJob({
+    title: '旧标题',
+    date: '2026-10-08',
+    thumbnailUrl: '',
+    kind: 'video',
+  }, (onProgress) => {
+    report = onProgress
+    return new Promise((resolve) => {
+      finish = resolve
+    })
+  }, { existingMaterialId: 'work-1' })
+  await Promise.resolve()
+  report(0.2)
+  const editing = api.mergeCreatingMaterials([card('work-1', '旧标题'), card('old')])
+  assert.equal(editing.filter((item) => item.id === 'work-1').length, 1)
+  assert.equal(editing[0].id, 'work-1')
+  assert.equal(editing[0].creating, true)
+  assert.equal(editing[0].progress, 20)
+  assert.equal(editing[0].progressLabel, '修改中')
+  assert.equal(editing[1].id, 'old')
+
+  api.cancelMaterialCreate('work-1')
+  const kept = api.mergeCreatingMaterials([card('work-1', '旧标题'), card('old')])
+  assert.equal(kept[0].creating, false)
+  assert.equal(kept[0].id, 'work-1')
+  finish('work-1')
+  await new Promise((resolve) => setImmediate(resolve))
+  const after = api.mergeCreatingMaterials([card('work-1', '旧标题'), card('old')])
+  assert.equal(after[0].isNew, false)
+  assert.equal(after[0].creating, false)
+  api.resetMaterialCreateStateForTests()
+})
+
 test('a failed background create removes the placeholder', async () => {
   const api = loadMaterialCreate()
   api.resetMaterialCreateStateForTests()
@@ -313,7 +351,7 @@ test('material lists show create progress and the yellow new mark', () => {
 
   for (const page of markup) {
     assert.match(page, /class="materials-card__progress"/)
-    assert.match(page, /创建中 \{\{item\.progress\}\}%/)
+    assert.match(page, /\{\{item\.progressLabel \|\| '创建中'\}\} \{\{item\.progress\}\}%/)
     assert.match(page, /z-index: 2; left: 0; top: 0; width: 100%; height: 100%;/)
     assert.match(page, /display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; width: 100%;/)
     assert.match(page, /class="materials-card__date-wrap"/)
@@ -336,9 +374,11 @@ test('material lists show create progress and the yellow new mark', () => {
   assert.match(styles, /\.materials-card__progress\s*\{[\s\S]*position: absolute;/)
   assert.match(detail, /dismissCreatedMaterialMark\(this\.materialId\)/)
   assert.match(publish, /if \(!this\.draftMaterialId\) \{\s*this\.startBackgroundCreate\(\)/)
-  assert.match(publish, /returnToEditedMaterial\(materialId\)/)
+  assert.match(publish, /startBackgroundEdit\(\)/)
+  assert.match(publish, /existingMaterialId: materialId/)
   assert.match(note, /if \(!this\.draftMaterialId\) \{\s*this\.startBackgroundCreate\(\)/)
-  assert.match(note, /returnToEditedMaterial\(materialId\)/)
+  assert.match(note, /startBackgroundEdit\(\)/)
+  assert.match(note, /existingMaterialId: materialId/)
   assert.match(requestLayer, /onProgressUpdate/)
   assert.match(requestLayer, /timeout: options\?\.timeout \?\? UPLOAD_TIMEOUT_MS/)
   assert.match(requestLayer, /function setRequestForeground/)

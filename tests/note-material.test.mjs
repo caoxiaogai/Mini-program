@@ -251,7 +251,7 @@ test('note editor can add text, location, image, video, file and save like other
   assert.match(logic, /wx\.openSetting/)
   assert.match(logic, /wx\.chooseMessageFile/)
   assert.match(logic, /publishNote/)
-  assert.match(logic, /returnToEditedMaterial/)
+  assert.match(logic, /startBackgroundEdit\(\)/)
   assert.match(logic, /startMaterialCreateJob\(/)
   assert.match(logic, /returnToMaterialList\(\)/)
   assert.match(detailMarkup, /detail.fileType === 'NOTE'/)

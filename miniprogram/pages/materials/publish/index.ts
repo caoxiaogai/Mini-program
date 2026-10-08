@@ -1,8 +1,6 @@
-import { getMaterialDraft, publishMaterial, uploadMaterialFiles } from '../../../services/materials'
-import { ApiError } from '../../../services/request'
+import { getMaterialDraft, getMaterialEditSnapshot, publishMaterial, uploadMaterialFiles } from '../../../services/materials'
 import { runAuthed } from '../../../services/auth'
 import { ensureEmojiPresentation } from '../../../utils/emoji'
-import { returnToEditedMaterial } from '../../../utils/publish-return'
 import { MATERIAL_CREATE_TIMEOUT_MS, publishCreatePreview, returnToMaterialList, startMaterialCreateJob } from '../../../utils/material-create'
 import { buildMaterialPublishPath } from '../../../utils/share-material'
 import type { MaterialSubmitInput, PublishMediaViewModel } from '../../../types/materials'
@@ -430,39 +428,45 @@ Page({
     this.submitting = true
     return true
   },
-  uploadThenSubmit(work: (input: MaterialSubmitInput) => Promise<void>): void {
-    const input = this.buildSubmitInput()
-    this.setData({ uploading: true })
-    uploadMaterialFiles(input)
-      .then((media) => {
-        this.setPublishMedia(media)
-        return work({ ...input, media })
-      })
-      .catch((error: unknown) => {
-        this.setData({ uploading: false })
-        if (error instanceof ApiError && error.notified) return
-        const message = error instanceof Error ? error.message.trim() : ''
-        if (!message) return
-        wx.showModal({ title: '发布失败', content: message, showCancel: false })
-      })
-      .then(() => {
-        this.submitting = false
-      })
-  },
   onPublishTap() {
     if (!this.beginSubmit()) return
     if (!this.draftMaterialId) {
       this.startBackgroundCreate()
       return
     }
-
-    this.uploadThenSubmit((input) =>
-      publishMaterial(input).then((materialId) => {
-        this.draftMaterialId = materialId
-        this.draftMediaPaths = this.data.media.map((item) => item.path)
-        returnToEditedMaterial(materialId)
-      }),
-    )
+    this.startBackgroundEdit()
+  },
+  startBackgroundEdit() {
+    const input = this.buildSubmitInput()
+    const materialId = input.draftId
+    if (!materialId || input.media.length === 0) {
+      this.submitting = false
+      wx.showToast({ title: input.media.length === 0 ? '请先添加素材' : '素材不存在', icon: 'none' })
+      return
+    }
+    startMaterialCreateJob(publishCreatePreview(input.copy, input.media), (report, control) =>
+      getMaterialEditSnapshot(materialId).then((snapshot) => {
+        if (snapshot) control.rememberSnapshot(snapshot)
+        return uploadMaterialFiles(input, {
+          timeout: MATERIAL_CREATE_TIMEOUT_MS,
+          isCancelled: () => control.cancelled,
+          bindAbort: (abort) => control.bindAbort(abort),
+          onProgress: (ratio) => report(ratio),
+        })
+      }).then((media) =>
+        publishMaterial({ ...input, media, draftId: materialId }, {
+          timeout: MATERIAL_CREATE_TIMEOUT_MS,
+          onCreated: (id) => {
+            control.rememberMaterial(id)
+          },
+        }).then((id) => {
+          report(1)
+          return id
+        }),
+      ),
+    { existingMaterialId: materialId })
+    this.submitting = false
+    returnToMaterialList()
   },
   startBackgroundCreate() {
     const input = this.buildSubmitInput()
