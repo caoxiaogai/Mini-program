@@ -963,6 +963,7 @@ Page({
       : video && video.type === 'video'
         ? video.coverPath
         : ''
+    let createdId: string | null = null
     startMaterialCreateJob({
       title: extractNoteTitle(input.blocks).slice(0, 30),
       date: materialCreateDateKey(),
@@ -973,7 +974,12 @@ Page({
         timeout: MATERIAL_CREATE_TIMEOUT_MS,
         onProgress: (ratio) => report(Math.min(0.9, ratio * 0.9)),
       }).then((blocks) =>
-        publishNote({ ...input, blocks }, { timeout: MATERIAL_CREATE_TIMEOUT_MS }).then((materialId) => {
+        publishNote({ ...input, blocks, draftId: createdId }, {
+          timeout: MATERIAL_CREATE_TIMEOUT_MS,
+          onCreated: (materialId) => {
+            createdId = materialId
+          },
+        }).then((materialId) => {
           report(1)
           return materialId
         }),

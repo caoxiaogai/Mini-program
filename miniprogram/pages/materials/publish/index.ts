@@ -471,12 +471,18 @@ Page({
       wx.showToast({ title: '请先添加素材', icon: 'none' })
       return
     }
+    let createdId: string | null = null
     startMaterialCreateJob(publishCreatePreview(input.copy, input.media), (report) =>
       uploadMaterialFiles(input, {
         timeout: MATERIAL_CREATE_TIMEOUT_MS,
         onProgress: (ratio) => report(Math.min(0.9, ratio * 0.9)),
       }).then((media) =>
-        publishMaterial({ ...input, media }, { timeout: MATERIAL_CREATE_TIMEOUT_MS }).then((materialId) => {
+        publishMaterial({ ...input, media, draftId: createdId }, {
+          timeout: MATERIAL_CREATE_TIMEOUT_MS,
+          onCreated: (materialId) => {
+            createdId = materialId
+          },
+        }).then((materialId) => {
           report(1)
           return materialId
         }),

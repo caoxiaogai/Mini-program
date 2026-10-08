@@ -1,6 +1,7 @@
 // app.ts
 import { getProfilePageData } from './services/profile'
-import { ensureLogin, hasAuthorizedLogin } from './services/request'
+import { ensureLogin, hasAuthorizedLogin, setRequestForeground } from './services/request'
+import { pauseMaterialCreatesForBackground, resumeMaterialCreatesForForeground } from './utils/material-create'
 import { cancelVisitorLeave, reportVisitorLeave, startVisitorHeartbeat, stopVisitorHeartbeat } from './services/tracking'
 
 App<IAppOption>({
@@ -18,10 +19,14 @@ App<IAppOption>({
       .catch(() => undefined)
   },
   onShow() {
+    setRequestForeground(true)
+    resumeMaterialCreatesForForeground()
     cancelVisitorLeave()
     startVisitorHeartbeat()
   },
   onHide() {
+    setRequestForeground(false)
+    pauseMaterialCreatesForBackground()
     stopVisitorHeartbeat()
     reportVisitorLeave()
   },

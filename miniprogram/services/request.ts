@@ -156,6 +156,21 @@ function endLoading(): void {
   }
 }
 
+let appInForeground = true
+
+/** 小程序前后台切换。后台时网络会被系统打断，失败提示改由回到前台后的续传处理。 */
+export function setRequestForeground(active: boolean): void {
+  appInForeground = active
+}
+
+function isInterruptedRequest(message: string): boolean {
+  return /interrupted/i.test(message)
+}
+
+function failMessage(errMsg: string): string {
+  return errMsg || '网络请求失败'
+}
+
 function showErrorToast(error: ApiError): void {
   if (error.code === 401 || isMaterialDeletedError(error)) return
   const title = error.code === -1 ? '网络异常，请稍后重试' : '请求失败，请稍后重试'
@@ -235,7 +250,7 @@ function rawRequest<T>(options: RequestOptions): Promise<T> {
         }
         finish(new ApiError(result?.code ?? response.statusCode, result?.message ?? '请求失败'))
       },
-      fail: () => finish(new ApiError(-1, '网络请求失败')),
+      fail: (result) => finish(new ApiError(-1, failMessage(result.errMsg))),
     })
   })
 }
@@ -365,6 +380,10 @@ function fileNameOf(filePath: string): string {
 }
 
 function notifyUploadFailure(error: ApiError): Promise<never> {
+  if (!appInForeground || isInterruptedRequest(error.message)) {
+    error.notified = true
+    return Promise.reject(error)
+  }
   if (!error.notified) {
     error.notified = true
     wx.showModal({
@@ -408,7 +427,7 @@ export function uploadFile(path: string, filePath: string, options?: FileUploadO
           }
           reject(new ApiError(response.statusCode, '上传失败'))
         },
-        fail: () => reject(new ApiError(-1, '网络请求失败')),
+        fail: (result) => reject(new ApiError(-1, failMessage(result.errMsg))),
       })
       if (options?.onProgress && typeof task.onProgressUpdate === 'function') {
         task.onProgressUpdate((event) => {

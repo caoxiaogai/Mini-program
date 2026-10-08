@@ -528,6 +528,8 @@ function updateMaterial(
 
 export interface MaterialWriteOptions {
   timeout?: number
+  /** 作品记录已经写入、分享链接还没完成时回调，便于切后台后续传时复用同一个作品 */
+  onCreated?: (materialId: string) => void
 }
 
 /** 只把本地文件直传到 OSS，不创建素材、不跳转。 */
@@ -552,6 +554,7 @@ export function uploadMaterialFiles(input: MaterialSubmitInput, control?: FileUp
           emit()
         },
       }).then((fileUrl) => {
+        item.remoteUrl = fileUrl
         const coverTask = hasCover
           ? uploadLocalFile(item.previewPath, {
             timeout: control?.timeout,
@@ -562,12 +565,14 @@ export function uploadMaterialFiles(input: MaterialSubmitInput, control?: FileUp
           }).catch(() => item.previewPath)
           : Promise.resolve(item.previewPath)
         return coverTask.then((previewPath) => {
+          const nextPreview = previewPath || item.previewPath
+          if (nextPreview && !shouldUploadLocalPath(nextPreview)) item.previewPath = nextPreview
           slots[index] = 1
           emit()
           return {
             ...item,
             remoteUrl: fileUrl,
-            previewPath: previewPath || item.previewPath,
+            previewPath: nextPreview,
           }
         })
       })
@@ -682,13 +687,14 @@ function persistMaterial(input: MaterialSubmitInput, timeout?: number): Promise<
 
 /** 创建或修改作品后生成分享链接（已发布作品不会更换追踪码），返回素材 ID */
 export function publishMaterial(input: MaterialSubmitInput, options?: MaterialWriteOptions): Promise<string> {
-  return persistMaterial(input, options?.timeout).then((materialId) =>
-    request<ApiMaterial>({
+  return persistMaterial(input, options?.timeout).then((materialId) => {
+    options?.onCreated?.(materialId)
+    return request<ApiMaterial>({
       method: 'POST',
       path: `/material/${materialId}/share`, silent: true,
       timeout: options?.timeout,
-    }).then(() => materialId),
-  )
+    }).then(() => materialId)
+  })
 }
 
 async function hydrateNoteBlock(block: NoteBlock): Promise<NoteBlock> {
@@ -774,6 +780,7 @@ export function getNoteDraft(materialId: string): Promise<NoteDraftViewModel | n
 async function persistNoteBlock(block: NoteBlock, control?: FileUploadOptions): Promise<NoteBlock> {
   if (block.type === 'image') {
     const fileUrl = await persistNoteFile(block.path, block.remoteUrl, control)
+    block.remoteUrl = fileUrl
     return { ...block, path: fileUrl, remoteUrl: fileUrl }
   }
   if (block.type === 'video') {
@@ -782,17 +789,20 @@ async function persistNoteBlock(block: NoteBlock, control?: FileUploadOptions): 
       timeout: control?.timeout,
       onProgress: (ratio) => control?.onProgress?.(hasCover ? ratio * 0.85 : ratio),
     })
+    block.remoteUrl = fileUrl
     const coverUrl = hasCover
       ? await persistNoteFile(block.coverPath, block.remoteCoverUrl, {
         timeout: control?.timeout,
         onProgress: (ratio) => control?.onProgress?.(0.85 + ratio * 0.15),
       }).catch(() => '')
       : block.remoteCoverUrl ?? ''
+    if (coverUrl && !shouldUploadLocalPath(coverUrl)) block.remoteCoverUrl = coverUrl
     control?.onProgress?.(1)
-    return { ...block, path: fileUrl, remoteUrl: fileUrl, coverPath: coverUrl, remoteCoverUrl: coverUrl, duration: Math.round(block.duration) }
+    return { ...block, path: fileUrl, remoteUrl: fileUrl, coverPath: coverUrl, remoteCoverUrl: coverUrl || block.remoteCoverUrl, duration: Math.round(block.duration) }
   }
   if (block.type === 'file') {
     const fileUrl = await persistNoteFile(block.path, block.remoteUrl, control)
+    block.remoteUrl = fileUrl
     return { ...block, path: fileUrl, remoteUrl: fileUrl }
   }
   return block
@@ -903,11 +913,12 @@ function persistNoteMaterial(input: NoteSubmitInput, timeout?: number): Promise<
 }
 
 export function publishNote(input: NoteSubmitInput, options?: MaterialWriteOptions): Promise<string> {
-  return persistNoteMaterial(input, options?.timeout).then((materialId) =>
-    request<ApiMaterial>({
+  return persistNoteMaterial(input, options?.timeout).then((materialId) => {
+    options?.onCreated?.(materialId)
+    return request<ApiMaterial>({
       method: 'POST',
       path: `/material/${materialId}/share`, silent: true,
       timeout: options?.timeout,
-    }).then(() => materialId),
-  )
+    }).then(() => materialId)
+  })
 }

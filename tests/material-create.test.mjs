@@ -18,6 +18,8 @@ const loadMaterialCreate = () => {
       resetMaterialCreateStateForTests,
       publishCreatePreview,
       visibleMaterialsWithCreates,
+      pauseMaterialCreatesForBackground,
+      resumeMaterialCreatesForForeground,
       MATERIAL_CREATE_TIMEOUT_MS,
     };
   `)()
@@ -141,6 +143,112 @@ test('finished works stay in click order instead of success order', async () => 
   api.resetMaterialCreateStateForTests()
 })
 
+test('an interrupted create stays on the list and resumes in the foreground', async () => {
+  const api = loadMaterialCreate()
+  api.resetMaterialCreateStateForTests()
+  let calls = 0
+  let pending = null
+  api.startMaterialCreateJob({
+    title: '视频素材',
+    date: '2026-10-08',
+    thumbnailUrl: '',
+    kind: 'video',
+  }, () => {
+    calls += 1
+    return new Promise((resolve, reject) => {
+      pending = { resolve, reject }
+    })
+  })
+  await Promise.resolve()
+  api.pauseMaterialCreatesForBackground()
+  pending.reject(new Error('uploadFile:fail interrupted'))
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(calls, 1)
+  const paused = api.mergeCreatingMaterials([card('old')])
+  assert.equal(paused[0].creating, true)
+  assert.equal(paused[0].title, '视频素材')
+
+  api.resumeMaterialCreatesForForeground()
+  await Promise.resolve()
+  assert.equal(calls, 2)
+  pending.resolve('server-resume')
+  await new Promise((resolve) => setImmediate(resolve))
+  const ready = api.mergeCreatingMaterials([card('server-resume', '视频素材'), card('old')])
+  assert.equal(ready[0].id, 'server-resume')
+  assert.equal(ready[0].creating, false)
+  assert.equal(ready[0].isNew, true)
+  api.resetMaterialCreateStateForTests()
+})
+
+test('a foreground interrupt resumes the create once', async () => {
+  const api = loadMaterialCreate()
+  api.resetMaterialCreateStateForTests()
+  let calls = 0
+  api.startMaterialCreateJob({
+    title: '图文素材',
+    date: '2026-10-08',
+    thumbnailUrl: '',
+    kind: 'image',
+  }, () => {
+    calls += 1
+    return Promise.reject(new Error('request:fail interrupted'))
+  })
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(calls, 2)
+  const items = api.mergeCreatingMaterials([card('old')])
+  assert.equal(items[0].creating, true)
+  assert.equal(items[0].title, '图文素材')
+  api.resetMaterialCreateStateForTests()
+})
+
+test('create progress stays put while the mini program is in the background', () => {
+  const originalNow = Date.now
+  const originalSetInterval = globalThis.setInterval
+  const originalClearInterval = globalThis.clearInterval
+  const originalWx = globalThis.wx
+  let now = 10_000_000
+  let tick = null
+  Date.now = () => now
+  globalThis.setInterval = (fn) => {
+    tick = fn
+    return 1
+  }
+  globalThis.clearInterval = () => {
+    tick = null
+  }
+  globalThis.wx = {}
+  try {
+    const api = loadMaterialCreate()
+    api.resetMaterialCreateStateForTests()
+    api.startMaterialCreateJob({
+      title: '视频素材',
+      date: '2026-10-08',
+      thumbnailUrl: '',
+      kind: 'video',
+    }, () => new Promise(() => {}))
+    now += 1600
+    tick()
+    assert.equal(api.mergeCreatingMaterials([card('old')])[0].progress, 2)
+    api.pauseMaterialCreatesForBackground()
+    now += 8000
+    tick()
+    assert.equal(api.mergeCreatingMaterials([card('old')])[0].progress, 2)
+    api.resumeMaterialCreatesForForeground()
+    tick()
+    assert.equal(api.mergeCreatingMaterials([card('old')])[0].progress, 2)
+    now += 800
+    tick()
+    assert.equal(api.mergeCreatingMaterials([card('old')])[0].progress, 3)
+    api.resetMaterialCreateStateForTests()
+  } finally {
+    Date.now = originalNow
+    globalThis.setInterval = originalSetInterval
+    globalThis.clearInterval = originalClearInterval
+    if (originalWx === undefined) delete globalThis.wx
+    else globalThis.wx = originalWx
+  }
+})
+
 test('a failed background create removes the placeholder', async () => {
   const api = loadMaterialCreate()
   api.resetMaterialCreateStateForTests()
@@ -189,4 +297,14 @@ test('material lists show create progress and the yellow new mark', () => {
   assert.match(note, /returnToEditedMaterial\(materialId\)/)
   assert.match(requestLayer, /onProgressUpdate/)
   assert.match(requestLayer, /timeout: options\?\.timeout \?\? UPLOAD_TIMEOUT_MS/)
+  assert.match(requestLayer, /function setRequestForeground/)
+  assert.match(publish, /draftId: createdId/)
+  assert.match(publish, /onCreated:/)
+  assert.match(note, /draftId: createdId/)
+  assert.match(note, /onCreated:/)
+  const app = read('miniprogram/app.ts')
+  assert.match(app, /pauseMaterialCreatesForBackground\(\)/)
+  assert.match(app, /resumeMaterialCreatesForForeground\(\)/)
+  assert.match(app, /setRequestForeground\(false\)/)
+  assert.match(app, /setRequestForeground\(true\)/)
 })
