@@ -6,6 +6,9 @@
 >
   <view class="publish-type-sheet__mask" catchtap="onMaskTap"></view>
   <view class="publish-type-sheet__panel">
+    <view wx:if="{{kind === 'entry'}}" class="publish-type-sheet__hint">
+      <text>若选择原图，创建耗时相对较长</text>
+    </view>
     <view
       wx:for="{{options}}"
       wx:key="id"

@@ -38,7 +38,7 @@ test('home routes both publish entry points through the shared type sheet', () =
   assert.match(page, /bind:select="onPublishSourceSelect"/)
   assert.match(logic, /onPublishTypeSelect[\s\S]*publishSourceSheetVisible: true/)
   assert.match(componentLogic, /kind === 'source'/)
-  assert.match(component, /class="publish-type-sheet__mask" catchtap="onMaskTap"/)
+  assert.match(component, /kind === 'entry'[\s\S]*若选择原图，创建耗时相对较长/)
   assert.doesNotMatch(component, /onCancelTap|>取消<\/text>/)
   assert.doesNotMatch(componentLogic, /onCancelTap/)
   assert.match(componentStyles, /\.publish-type-sheet\s*\{[\s\S]*background:\s*transparent;/)
