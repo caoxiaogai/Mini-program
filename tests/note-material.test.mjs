@@ -54,6 +54,7 @@ test('note visitor progress uses full-note scroll, not embedded video or pdf', a
   assert.match(playerStyles, /note-video-player__bar/)
   assert.doesNotMatch(noteSection, /<video|bindtimeupdate|bindplay/)
   assert.match(fileTap, /wx\.openDocument/)
+  assert.match(fileTap, /prepareMediaUrl/)
   assert.doesNotMatch(fileTap, /document-reader/)
 })
 

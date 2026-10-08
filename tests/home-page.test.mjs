@@ -272,6 +272,8 @@ test('media urls go through the file proxy and are downloaded on device', () => 
   assert.match(media, /export function prepareMediaUrl/)
   assert.match(media, /export function prepareMediaUrls/)
   assert.match(media, /wx\.downloadFile/)
+  assert.match(media, /media-cache/)
+  assert.match(media, /accessSync/)
   assert.match(home, /prepareMediaUrls/)
   assert.match(analysis, /prepareMediaUrls/)
   assert.match(notifications, /prepareMediaUrls/)

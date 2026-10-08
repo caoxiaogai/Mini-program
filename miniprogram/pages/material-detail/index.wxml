@@ -61,6 +61,7 @@
             class="note-detail__card"
             data-path="{{item.path}}"
             data-name="{{item.name}}"
+            data-ext="{{item.ext}}"
             bindtap="onNoteFileTap"
             hover-class="note-detail__card--pressed"
             hover-stay-time="80"

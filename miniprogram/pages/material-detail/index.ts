@@ -15,6 +15,7 @@ import { MATERIAL_DELETED_MESSAGE } from '../../utils/material-deleted'
 import { runPagePullRefresh } from '../../utils/pull-refresh'
 import { takeMaterialDetailNeedsRefresh, takePendingPublishReturn } from '../../utils/publish-return'
 import { dismissCreatedMaterialMark } from '../../utils/material-create'
+import { prepareMediaUrl } from '../../utils/media'
 import { prepareShareCardImage } from '../../utils/share-image'
 import {
   buildMaterialEditPath,
@@ -483,18 +484,37 @@ Page({
       })
     }
 
-    if (!/^https?:\/\//.test(path)) {
+    const isStoredFile = (filePath: string) => (
+      filePath.startsWith('wxfile://')
+      || filePath.startsWith('http://tmp/')
+      || filePath.startsWith('https://tmp/')
+      || filePath.startsWith('http://usr/')
+      || filePath.startsWith('https://usr/')
+      || (filePath.startsWith('/') && !filePath.startsWith('//'))
+    )
+
+    if (isStoredFile(path) || !/^https?:\/\//.test(path)) {
       openLocal(path)
       return
     }
 
-    wx.downloadFile({
-      url: path,
-      success: (result) => {
-        if (result.statusCode === 200 && result.tempFilePath) openLocal(result.tempFilePath)
-        else wx.showToast({ title: '无法打开文件', icon: 'none' })
-      },
-      fail: () => wx.showToast({ title: '无法打开文件', icon: 'none' }),
+    const ext = String(event.currentTarget.dataset.ext ?? '').replace(/^\./, '')
+    prepareMediaUrl(path, {
+      timeout: 60000,
+      fileExtension: ext || undefined,
+    }).then((localPath) => {
+      if (localPath && isStoredFile(localPath)) {
+        openLocal(localPath)
+        return
+      }
+      wx.downloadFile({
+        url: path,
+        success: (result) => {
+          if (result.statusCode === 200 && result.tempFilePath) openLocal(result.tempFilePath)
+          else wx.showToast({ title: '无法打开文件', icon: 'none' })
+        },
+        fail: () => wx.showToast({ title: '无法打开文件', icon: 'none' }),
+      })
     })
   },
 
