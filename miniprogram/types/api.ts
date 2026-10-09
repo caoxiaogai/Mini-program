@@ -77,7 +77,11 @@ export interface ApiContentDetail {
   completeCount: number | null
   forwardCount: number | null
   totalDuration: number | null
+  /** 意向客户实际人数，含超出访客上限未出现在 audienceList 里的人 */
+  audienceCount?: number | null
   audienceList: ApiAudience[] | null
+  /** 本作品被挡住的访客头像，最多 5 个 */
+  hiddenVisitors?: Array<{ customerId: string; avatar: string | null }> | null
 }
 
 /** GET /analysis/customer/list 响应项（CustomerListVO） */

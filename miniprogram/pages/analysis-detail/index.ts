@@ -1,5 +1,6 @@
 import { enrichAudienceUsers, getAnalysisContentDetail } from '../../services/analysis'
-import { runAuthed } from '../../services/auth'
+import { requireAccountLogin, runAuthed } from '../../services/auth'
+import { membershipPageUrl } from '../../types/membership'
 import type { AnalysisAudienceUser, AnalysisContentDetailViewModel, AnalysisIntentLevel } from '../../types/analysis'
 import { buildReturnPath } from '../../utils/auth'
 import { fromDatasetId } from '../../utils/dataset-id'
@@ -116,6 +117,12 @@ Page({
     const userId = fromDatasetId(event.currentTarget.dataset.id)
     if (!userId) return
     wx.navigateTo({ url: `/pages/analysis-user-detail/index?id=${encodeURIComponent(userId)}` })
+  },
+
+  onMembershipLimitTap() {
+    const url = membershipPageUrl(this.data.detail?.limitPromptTargetTier ?? 'standard')
+    if (requireAccountLogin(url)) return
+    wx.navigateTo({ url })
   },
 
   onPlusTap() {

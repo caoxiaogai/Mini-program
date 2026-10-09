@@ -606,12 +606,32 @@ export function getAnalysisContentDetail(materialId: string): Promise<AnalysisCo
     if (!detail && !material) return null
 
     const audienceList = detail?.audienceList ?? []
-    const thumbnailUrl = await prepareMaterialThumbnail({
-      id: materialId,
-      fileType: material?.fileType ?? detail?.fileType,
-      coverUrl: material?.coverUrl ?? null,
-      fileUrl: material?.fileUrl ?? null,
-    })
+    const intentUserCount = detail?.audienceCount ?? audienceList.length
+    const hiddenCount = Math.max(0, intentUserCount - audienceList.length)
+    const [thumbnailUrl, membershipAccess] = await Promise.all([
+      prepareMaterialThumbnail({
+        id: materialId,
+        fileType: material?.fileType ?? detail?.fileType,
+        coverUrl: material?.coverUrl ?? null,
+        fileUrl: material?.fileUrl ?? null,
+      }),
+      getMembershipAccessSilent(),
+    ])
+    const hiddenVisitors = (detail?.hiddenVisitors ?? [])
+      .map((visitor) => ({
+        customerId: String(visitor.customerId ?? '').trim(),
+        avatar: visitor.avatar ?? null,
+      }))
+      .filter((visitor) => visitor.customerId !== '')
+      .slice(0, 5)
+    const limitPrompt = hiddenCount > 0
+      ? await buildVisitorLimitPromptViewModel({
+        ...membershipAccess,
+        hasUnshownVisitors: true,
+        hiddenVisitorCount: hiddenCount,
+        hiddenVisitors: hiddenVisitors.length > 0 ? hiddenVisitors : membershipAccess.hiddenVisitors,
+      })
+      : { visitorCount: 0, avatars: [] }
 
     return {
       card: {
@@ -631,6 +651,12 @@ export function getAnalysisContentDetail(materialId: string): Promise<AnalysisCo
         audienceList.map((item) => resolveMediaUrl(item.avatar)),
         shareCountByCustomer(asList(intentCustomers), materialId),
       ),
+      intentUserCount,
+      showVisitorLimitPrompt: limitPrompt.visitorCount > 0,
+      limitPromptDescription: visitorLimitPromptDescription(membershipAccess.tier, membershipAccess.visitorLimit),
+      limitPromptVisitorCount: limitPrompt.visitorCount,
+      limitPromptVisitorAvatars: limitPrompt.avatars,
+      limitPromptTargetTier: visitorLimitPromptTargetTier(membershipAccess.tier),
     }
   })
 }

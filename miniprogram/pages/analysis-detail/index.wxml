@@ -23,8 +23,9 @@
 
     <view class="detail-intent">
       <view class="detail-intent__panel">
-        <view class="detail-intent__header"><image class="detail-intent__header-icon" src="/assets/analysis/intent-customer-header.svg" mode="aspectFit" /><text class="detail-intent__header-title">意向客户（{{detail.intentUsers.length}}）</text></view>
+        <view class="detail-intent__header"><image class="detail-intent__header-icon" src="/assets/analysis/intent-customer-header.svg" mode="aspectFit" /><text class="detail-intent__header-title">意向客户（{{detail.intentUserCount}}）</text></view>
         <segmented-filter items="{{intentTabs}}" active-id="{{activeIntentLevel}}" bind:change="onIntentTabTap" bind:touchstart="onIntentTouchStart" bind:touchend="onIntentTouchEnd" />
+        <view wx:if="{{detail.showVisitorLimitPrompt}}" class="detail-intent__limit-prompt"><membership-limit-prompt style="display: block; min-height: 63px;" variant="visitor" visitor-count="{{detail.limitPromptVisitorCount}}" visitor-description="{{detail.limitPromptDescription}}" visitor-avatars="{{detail.limitPromptVisitorAvatars}}" bind:upgrade="onMembershipLimitTap" /></view>
         <view wx:if="{{hasVisibleIntentUsers}}" class="detail-users">
           <view
             wx:for="{{visibleIntentUsers}}"
@@ -52,7 +53,7 @@
             </view>
           </view>
         </view>
-        <view wx:else class="detail-intent__empty">
+        <view wx:elif="{{!detail.showVisitorLimitPrompt}}" class="detail-intent__empty">
           <image class="detail-intent__empty-icon" src="/assets/home-new/empty-state-box.svg" mode="aspectFit" />
           <text class="detail-intent__empty-message">暂无意向客户，去分享作品</text>
           <view class="detail-intent__empty-share" bindtap="onPlusTap" hover-class="detail-intent__empty-share--pressed" hover-stay-time="80" aria-role="button" aria-label="去分享">

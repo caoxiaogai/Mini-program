@@ -3873,7 +3873,8 @@ test('analysis content detail opens a single work with intent users', () => {
   assert.doesNotMatch(markup, /analysis-intent-users/)
   assert.match(styles, /page \{[^}]*background: @app-page-background;/)
   assert.match(styles, /\.detail-card \{[\s\S]*background: #ffffff;/)
-  assert.match(markup, /detail-intent__header[\s\S]*intent-customer-header\.svg[\s\S]*意向客户（\{\{detail\.intentUsers\.length\}\}）/)
+  assert.match(markup, /detail-intent__header[\s\S]*intent-customer-header\.svg[\s\S]*意向客户（\{\{detail\.intentUserCount\}\}）/)
+  assert.match(markup, /detail\.showVisitorLimitPrompt[\s\S]*membership-limit-prompt/)
   assert.match(markup, /<segmented-filter items="\{\{intentTabs\}\}" active-id="\{\{activeIntentLevel\}\}" bind:change/)
   assert.doesNotMatch(markup, /variant="notification"/)
   assert.match(markup, /<text>浏览次数<\/text><text>\{\{item\.readCount\}\}<\/text>[\s\S]*<text>完播数<\/text><text>\{\{item\.completionCount\}\}<\/text>[\s\S]*<text>转发数<\/text><text>\{\{item\.shareCount\}\}<\/text>/)
@@ -3890,6 +3891,8 @@ test('analysis content detail opens a single work with intent users', () => {
   assert.match(service, /path: '\/analysis\/content\/detail'/)
   assert.match(service, /timeRange: 'all'/)
   assert.match(types, /intentUsers: AnalysisAudienceUser\[\]/)
+  assert.match(types, /intentUserCount: number/)
+  assert.match(service, /audienceCount \?\? audienceList\.length/)
 })
 
 test('analysis content detail filters intent users by level', () => {

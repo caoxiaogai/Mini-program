@@ -128,6 +128,13 @@ export type AnalysisContentDetailViewModel = {
     metrics: AnalysisMetric[]
   }
   intentUsers: AnalysisAudienceUser[]
+  /** 该作品的意向客户实际人数，含被访客上限挡住、列表里未展示的人 */
+  intentUserCount: number
+  showVisitorLimitPrompt: boolean
+  limitPromptDescription: string
+  limitPromptVisitorCount: number
+  limitPromptVisitorAvatars: VisitorLimitPromptAvatarViewModel[]
+  limitPromptTargetTier: MembershipUiTier
 }
 
 export type AnalysisViewModel = {

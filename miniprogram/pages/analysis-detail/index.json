@@ -2,7 +2,8 @@
   "usingComponents": {
     "analysis-header": "/components/analysis-header/index",
     "segmented-filter": "/components/segmented-filter/index",
-    "loading-skeleton": "/components/loading-skeleton/index"
+    "loading-skeleton": "/components/loading-skeleton/index",
+    "membership-limit-prompt": "/components/membership-limit-prompt/index"
   },
   "enablePullDownRefresh": true,
   "onReachBottomDistance": 80,

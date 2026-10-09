@@ -16,6 +16,12 @@ export const analysisContentDetailPreview: AnalysisContentDetailViewModel = {
   },
   // TODO(API): 接入作品意向用户真实接口后，由 service 层提供用户头像和统计数据。
   intentUsers: [],
+  intentUserCount: 0,
+  showVisitorLimitPrompt: false,
+  limitPromptDescription: '',
+  limitPromptVisitorCount: 0,
+  limitPromptVisitorAvatars: [],
+  limitPromptTargetTier: 'standard',
 }
 
 /** Figma 743:3561 作品分析预览数据，供首页分析 Tab 离线排版使用。 */
