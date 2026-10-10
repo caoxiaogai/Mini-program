@@ -3695,6 +3695,7 @@ test('analysis work data comes from backend analysis APIs', () => {
   assert.match(service, /path: '\/analysis\/dashboard'/)
   assert.match(service, /path: '\/analysis\/content\/list'/)
   assert.match(service, /orderBy: workSortOrderBy\[sortId\]/)
+  assert.match(service, /byPublishTime: 1/)
   assert.match(service, /compact: \[[\s\S]*label: '浏览次数', value: formatCount\(viewCount\)[\s\S]*label: '完播数', value: formatCount\(completeCount\)[\s\S]*label: '转发数', value: formatCount\(forwardCount\)/)
   assert.match(service, /export function getAnalysisWorkList/)
   assert.match(homeLogic, /getAnalysisWorkList\(period, this\.resolveWorkDateRange\(period, dateRange\), this\.data\.activeAnalysisSort\)/)

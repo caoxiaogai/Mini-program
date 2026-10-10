@@ -183,7 +183,7 @@ export function getAnalysisWorkList(
 
   return Promise.all([
     request<ApiDashboard>({ method: 'GET', path: '/analysis/dashboard', query }),
-    request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query }),
+    request<ApiContentListItem[]>({ method: 'GET', path: '/analysis/content/list', query: { ...query, byPublishTime: 1 } }),
     request<ApiIntentCustomer[]>({ method: 'GET', path: '/analysis/intent/list', query, silent: true }).catch(
       () => [] as ApiIntentCustomer[],
     ),
@@ -461,7 +461,7 @@ export function getAnalysisOverview(
   if (DEV_UI_PREVIEW) return Promise.resolve(getAnalysisOverviewPreview())
 
   const periodQuery = buildPeriodQuery(period, customRange)
-  const contentQuery = { ...periodQuery, orderBy: workSortOrderBy[sortId] }
+  const contentQuery = { ...periodQuery, orderBy: workSortOrderBy[sortId], byPublishTime: 1 }
   const customTrend = totalPeriod === 'custom' && peakRange
     ? getCustomPeakTrend(peakRange)
     : Promise.resolve([] as AnalysisChartPoint[])
