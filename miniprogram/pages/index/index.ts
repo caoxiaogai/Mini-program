@@ -17,7 +17,7 @@ import { buildTotalTrendState, getAnalysisReadRange } from '../../utils/analysis
 import { takeMaterialsListNeedsRefresh, takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_MATERIALS_TAB_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, HOME_MATERIALS_TAB_PATH, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, SHARE_GATE_ENABLED, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
 import { persistViewedNotification, persistViewedNotifications } from '../../utils/notification-viewed'
 import { countUnreadNotificationGroups, getUnreadNotificationEventIds, markAllNotificationGroupsViewed, markNotificationGroupsViewed, patchNotificationGroupCards } from '../../utils/notifications'
 import { buildNotificationListWindow, flattenNotificationCards, LIST_PAGE_SIZE, nextListWindow, windowList } from '../../utils/list-window'
@@ -249,20 +249,11 @@ Page({
     guestPreview: false,
   },
   onLoad(options: Record<string, string | undefined>) {
-    if (isSinglePageMode()) {
-      if (!hasCompletedLogin()) {
-        this.showSinglePageShareGate(options.id, options.cover)
-        return
-      }
-      const { platform } = wx.getSystemInfoSync()
-      this.setData({
-        analysisNavigationHeight: getNavigationBarLayout().totalHeight,
-        isAndroid: platform === 'android' || platform === 'devtools',
-      })
-      this.startHome(options)
+    if (isSinglePageMode() && !hasCompletedLogin() && SHARE_GATE_ENABLED) {
+      this.showSinglePageShareGate(options.id, options.cover)
       return
     }
-    if (options.id && !isPublishReturnQuery(options)) {
+    if (!isSinglePageMode() && options.id && !isPublishReturnQuery(options)) {
       openSharedMaterial(options.id, options.trackingId, hasCompletedLogin())
       return
     }

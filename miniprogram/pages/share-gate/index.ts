@@ -1,7 +1,7 @@
 import { continueAfterAuth, hasCompletedLogin } from '../../services/auth'
 import { getMaterialListPreview } from '../../services/materials'
 import { buildAuthPath, safeReturnPath } from '../../utils/auth'
-import { buildMaterialDetailPath, HOME_MATERIALS_TAB_PATH, HOME_PAGE_PATH, SHARE_GATE_DEFAULT_ART, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
+import { buildMaterialDetailPath, HOME_MATERIALS_TAB_PATH, HOME_PAGE_PATH, SHARE_GATE_DEFAULT_ART, SHARE_GATE_ENABLED, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
 
 const friendAvatars = [
   '/assets/ranking/avatar-01.png',
@@ -30,6 +30,10 @@ Page({
     this.trackingId = options.trackingId ?? ''
     this.coverUrl = options.cover ?? ''
     this.returnPath = safeReturnPath(options.return, HOME_PAGE_PATH)
+    if (!SHARE_GATE_ENABLED) {
+      this.leaveGate()
+      return
+    }
     if (this.leaveIfLoggedIn()) return
     const art = shareGateHeroArt(this.materialId, this.coverUrl)
     this.setData({ ready: true, ...art })
@@ -55,6 +59,15 @@ Page({
     if (!hasCompletedLogin()) return false
     continueAfterAuth(this.destinationPath())
     return true
+  },
+
+  leaveGate() {
+    if (this.leaveIfLoggedIn()) return
+    const url = this.materialId ? buildAuthPath(this.destinationPath()) : HOME_MATERIALS_TAB_PATH
+    wx.redirectTo({
+      url,
+      fail: () => wx.reLaunch({ url }),
+    })
   },
 
   onMoreTap() {

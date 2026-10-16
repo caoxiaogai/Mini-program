@@ -26,6 +26,7 @@ import {
   isSinglePageMode,
   MATERIAL_DETAIL_PATH,
   openSharedMaterial,
+  SHARE_GATE_ENABLED,
   shareGateArtFromPreview,
   shareGateHeroArt,
 } from '../../utils/share-material'
@@ -123,15 +124,13 @@ Page({
 
   onLoad(options: Record<string, string | undefined>) {
     const { entry, ...rest } = options
-    if (isSinglePageMode()) {
-      if (!hasCompletedLogin()) {
-        this.showSinglePageShareGate(rest.id, rest.cover)
-        return
-      }
-      if (rest.id) {
-        this.startDetail(rest)
-        return
-      }
+    if (isSinglePageMode() && !hasCompletedLogin() && SHARE_GATE_ENABLED) {
+      this.showSinglePageShareGate(rest.id, rest.cover)
+      return
+    }
+    if (isSinglePageMode() && rest.id) {
+      this.startDetail(rest)
+      return
     }
     if (rest.id && !hasCompletedLogin()) {
       openSharedMaterial(rest.id, rest.trackingId, false)

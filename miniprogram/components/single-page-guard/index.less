@@ -1,3 +1,17 @@
 .single-page-guard {
   height: 100%;
 }
+
+.single-page-guard--active {
+  min-height: 100vh;
+}
+
+.single-page-guard__mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.01);
+}

@@ -11,5 +11,6 @@ Component({
     onBlockedTap() {
       promptOpenFullMiniProgram()
     },
+    onBlockedMove() {},
   },
 })

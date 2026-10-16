@@ -5,7 +5,7 @@ import test from 'node:test'
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
-function loadShareGatePage(auth, destinations, session = { completed: false }, preview = { url: '', requestedId: '' }) {
+function loadShareGatePage(auth, destinations, session = { completed: false }, preview = { url: '', requestedId: '' }, gateEnabled = false) {
   let page
   const source = stripTypeScriptTypes(read('miniprogram/pages/share-gate/index.ts').replace(/^import[^\n]+\n/gm, ''))
   new Function(
@@ -18,6 +18,7 @@ function loadShareGatePage(auth, destinations, session = { completed: false }, p
     'SHARE_GATE_DEFAULT_ART',
     'shareGateHeroArt',
     'shareGateArtFromPreview',
+    'SHARE_GATE_ENABLED',
     'safeReturnPath',
     'hasCompletedLogin',
     'resolveAuthGate',
@@ -55,6 +56,7 @@ function loadShareGatePage(auth, destinations, session = { completed: false }, p
       if (preview.url) return { artSrc: preview.url, artFromWork: true }
       return null
     },
+    gateEnabled,
     auth.safeReturnPath,
     () => session.completed,
     () => Promise.resolve(session.completed ? 'ok' : 'login'),
@@ -66,6 +68,15 @@ function loadShareGatePage(auth, destinations, session = { completed: false }, p
   )
   return page
 }
+
+test('disabled share gate sends first-time users straight to authorization', async () => {
+  const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
+  const destinations = []
+  const page = loadShareGatePage(auth, destinations)
+  page.onLoad({ id: 'work-1', trackingId: 'track-2' })
+  assert.equal(page.data.ready, false)
+  assert.deepEqual(destinations, [auth.buildAuthPath('/pages/material-detail/index?id=work-1&trackingId=track-2')])
+})
 
 test('logged-in users skip the share gate and open the destination', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
@@ -79,7 +90,7 @@ test('logged-in users skip the share gate and open the destination', async () =>
 test('查看更多 opens authorization for first-time users and preserves the destination', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
   const destinations = []
-  const page = loadShareGatePage(auth, destinations)
+  const page = loadShareGatePage(auth, destinations, { completed: false }, { url: '', requestedId: '' }, true)
   page.onLoad({ id: 'work-1', trackingId: 'track-2' })
   assert.equal(page.data.ready, true)
   page.onMoreTap()
@@ -90,7 +101,7 @@ test('查看更多 opens authorization for first-time users and preserves the de
 test('first launch without a shared work opens the materials tab from 查看更多', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
   const destinations = []
-  const page = loadShareGatePage(auth, destinations)
+  const page = loadShareGatePage(auth, destinations, { completed: false }, { url: '', requestedId: '' }, true)
   page.onLoad({ return: '/pages/index/index' })
   assert.equal(page.data.ready, true)
   page.onMoreTap()
@@ -101,7 +112,7 @@ test('first launch without a shared work opens the materials tab from 查看更�
 test('shared cover query shows the work image before the preview request', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
   const preview = { url: 'https://cdn.example/thumb.jpg', requestedId: '' }
-  const page = loadShareGatePage(auth, [], { completed: false }, preview)
+  const page = loadShareGatePage(auth, [], { completed: false }, preview, true)
   page.onLoad({ id: 'work-1', cover: 'https://cdn.example/cover.jpg' })
   assert.equal(page.data.artSrc, 'https://cdn.example/cover.jpg')
   assert.equal(page.data.artFromWork, true)
@@ -115,7 +126,7 @@ test('shared cover query shows the work image before the preview request', async
 test('deleted work shows the default share-gate art even with a cover query', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
   const preview = { url: '', requestedId: '', deleted: true }
-  const page = loadShareGatePage(auth, [], { completed: false }, preview)
+  const page = loadShareGatePage(auth, [], { completed: false }, preview, true)
   page.onLoad({ id: 'work-1', cover: 'https://cdn.example/cover.jpg' })
   assert.equal(page.data.artSrc, 'https://cdn.example/cover.jpg')
   assert.equal(page.data.artFromWork, true)
@@ -129,7 +140,7 @@ test('deleted work shows the default share-gate art even with a cover query', as
 test('deleted work without a cover query shows the default share-gate art', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
   const preview = { url: '', requestedId: '', deleted: true }
-  const page = loadShareGatePage(auth, [], { completed: false }, preview)
+  const page = loadShareGatePage(auth, [], { completed: false }, preview, true)
   page.onLoad({ id: 'work-1' })
   assert.equal(page.data.artSrc, '')
   assert.equal(page.data.artFromWork, false)
@@ -143,7 +154,7 @@ test('deleted work without a cover query shows the default share-gate art', asyn
 test('shared work replaces the default share-gate art with the list thumbnail', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
   const preview = { url: 'https://cdn.example/thumb.jpg', requestedId: '' }
-  const page = loadShareGatePage(auth, [], { completed: false }, preview)
+  const page = loadShareGatePage(auth, [], { completed: false }, preview, true)
   page.onLoad({ id: 'work-1', trackingId: 'track-2' })
   assert.equal(page.data.artSrc, '')
   assert.equal(page.data.artFromWork, false)
@@ -157,7 +168,7 @@ test('shared work replaces the default share-gate art with the list thumbnail', 
 test('first launch without a shared work keeps the default share-gate art', async () => {
   const auth = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(read('miniprogram/utils/auth.ts')))}`)
   const preview = { url: 'https://cdn.example/thumb.jpg', requestedId: '' }
-  const page = loadShareGatePage(auth, [], { completed: false }, preview)
+  const page = loadShareGatePage(auth, [], { completed: false }, preview, true)
   page.onLoad({ return: '/pages/index/index' })
   await Promise.resolve()
   await Promise.resolve()

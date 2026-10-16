@@ -4,7 +4,7 @@ import type { MaterialCardViewModel, MaterialsFilterId, MaterialsViewModel } fro
 import { takePendingPublishReturn } from '../../utils/publish-return'
 import { runPullRefresh } from '../../utils/pull-refresh'
 import { prepareShareCardImage } from '../../utils/share-image'
-import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
+import { buildMaterialDetailPath, buildMaterialSharePath, buildMaterialShareTitle, enableMaterialShareMenu, isPublishReturnQuery, isSinglePageMode, MATERIAL_NOTE_PATH, openSharedMaterial, pickShareImageUrl, SHARE_GATE_ENABLED, shareGateArtFromPreview, shareGateHeroArt } from '../../utils/share-material'
 import { applyMaterialSelection, toggleMaterialSelection } from '../../utils/material-select'
 import { getNavigationBarLayout } from '../../utils/navigation-layout'
 import { choosePublishImageOrVideo, ensurePrivacyAuthorize, isPdfFileName, MAX_IMAGE_COUNT, showPublishPickerError } from '../../utils/publish-media'
@@ -81,20 +81,11 @@ Page({
   },
   authReady: false,
   onLoad(options: Record<string, string | undefined>) {
-    if (isSinglePageMode()) {
-      if (!hasCompletedLogin()) {
-        this.showSinglePageShareGate(options.id, options.cover)
-        return
-      }
-      const { platform } = wx.getSystemInfoSync()
-      this.setData({
-        materialsNavigationHeight: getNavigationBarLayout().totalHeight,
-        isAndroid: platform === 'android' || platform === 'devtools',
-      })
-      this.startMaterials(options)
+    if (isSinglePageMode() && !hasCompletedLogin() && SHARE_GATE_ENABLED) {
+      this.showSinglePageShareGate(options.id, options.cover)
       return
     }
-    if (options.id && !isPublishReturnQuery(options)) {
+    if (!isSinglePageMode() && options.id && !isPublishReturnQuery(options)) {
       openSharedMaterial(options.id, options.trackingId, hasCompletedLogin())
       return
     }

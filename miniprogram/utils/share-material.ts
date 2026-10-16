@@ -2,6 +2,8 @@ export const HOME_PAGE_PATH = '/pages/index/index'
 export const HOME_MATERIALS_TAB_PATH = `${HOME_PAGE_PATH}?tab=materials`
 export const MATERIAL_DETAIL_PATH = '/pages/material-detail/index'
 export const MATERIAL_SHARE_GATE_PATH = '/pages/share-gate/index'
+/** 暂时关闭「查看更多」前置页。恢复时改回 true。 */
+export const SHARE_GATE_ENABLED = false
 export const MATERIAL_PUBLISH_PATH = '/pages/materials/publish/index'
 export const MATERIAL_NOTE_PATH = '/pages/materials/note/index'
 export const SHARE_GATE_DEFAULT_ART = '/assets/share-gate/default-background.png'
@@ -40,8 +42,9 @@ function withTrackingId(query: string, trackingId?: string): string {
   return `${query}&trackingId=${encodeURIComponent(trackingId)}`
 }
 
-/** 分享卡片先进入授权前置页，授权后再打开作品详情。 */
+/** 分享卡片打开作品详情。前置页关闭时，未登录由详情页转到授权页。 */
 export function buildMaterialSharePath(materialId: string, trackingId?: string, coverUrl?: string): string {
+  if (!SHARE_GATE_ENABLED) return buildMaterialDetailPath(materialId, trackingId)
   return buildMaterialShareGatePath(materialId, trackingId, coverUrl)
 }
 
@@ -95,12 +98,19 @@ export function isPublishReturnQuery(options: Record<string, string | undefined>
   return options.tab === 'materials' || options.publishSuccess === '1'
 }
 
-/** 首次进入先到前置页，已登录才直接打开作品详情。单页模式不能跳转。 */
+function buildAuthPath(returnPath: string): string {
+  return `/pages/auth/index?return=${encodeURIComponent(returnPath)}`
+}
+
+/** 已登录打开作品详情。未登录在前置页开启时先看前置页，关闭时直接去授权页。单页模式不能跳转。 */
 export function openSharedMaterial(materialId: string, trackingId: string | undefined, completedLogin: boolean): void {
   if (isSinglePageMode()) return
+  const detailPath = buildMaterialDetailPath(materialId, trackingId)
   const url = completedLogin
-    ? buildMaterialDetailPath(materialId, trackingId)
-    : buildMaterialShareGatePath(materialId, trackingId)
+    ? detailPath
+    : SHARE_GATE_ENABLED
+      ? buildMaterialShareGatePath(materialId, trackingId)
+      : buildAuthPath(detailPath)
   wx.redirectTo({
     url,
     fail: () => wx.reLaunch({ url }),
