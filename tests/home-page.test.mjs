@@ -3079,7 +3079,7 @@ test('material detail opens image preview, video player and PDF reader', () => {
   assert.match(service, /prepareDocumentPageImage\(String\(material\.id\), 0\)/)
   assert.match(service, /fileType === 'PDF' \|\| fileType === 'TABLE'/)
   assert.match(markup, /<video[\s\S]*id="materialVideo"[\s\S]*src="\{\{detail\.videoUrl\}\}"/)
-  assert.match(markup, /<video[\s\S]*autoplay[\s\S]*bindplay="onVideoPlay"/)
+  assert.match(markup, /<video[\s\S]*autoplay="\{\{!singlePageMode\}\}"[\s\S]*bindplay="onVideoPlay"/)
   assert.match(logic, /getVideoContext\(\)\?\.play\(\)/)
   assert.match(markup, /bindtap="onPdfOpenTap"/)
   assert.match(markup, /class="material-detail__pdf-preview" src="\{\{detail\.previewUrl\}\}"/)
