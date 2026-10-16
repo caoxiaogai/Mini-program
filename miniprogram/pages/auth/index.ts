@@ -4,11 +4,14 @@ import { getNavigationBarLayout } from '../../utils/navigation-layout'
 import { HOME_PAGE_PATH } from '../../utils/share-material'
 
 type ChooseAvatarEvent = WechatMiniprogram.CustomEvent<{ avatarUrl: string }>
-type NicknameReviewEvent = WechatMiniprogram.CustomEvent<{ pass: boolean }>
+type NicknameReviewEvent = WechatMiniprogram.CustomEvent<{ pass: boolean; timeout?: boolean }>
 type AuthFormValue = { nickname?: string }
 
 Page({
   nicknameDraft: '',
+  nicknameReviewPassed: false,
+  loginStarted: false,
+  autoLoginTimer: 0,
   data: {
     returnPath: HOME_PAGE_PATH,
     navigationHeight: 0,
@@ -19,7 +22,7 @@ Page({
     nicknameFocused: false,
     busy: false,
     hasAvatar: false,
-    canSubmit: false,
+    loginFailed: false,
     ready: false,
   },
 
@@ -36,6 +39,10 @@ Page({
     this.setData({ ready: true })
   },
 
+  onUnload() {
+    if (this.autoLoginTimer) clearTimeout(this.autoLoginTimer)
+  },
+
   onChooseAvatar(event: ChooseAvatarEvent) {
     const avatarUrl = event.detail.avatarUrl
     if (!avatarUrl) return
@@ -43,14 +50,15 @@ Page({
       avatarUrl,
       avatarFilePath: isLocalAvatarFile(avatarUrl) ? avatarUrl : '',
       nicknameFocused: false,
+      loginFailed: false,
     }, () => {
       this.syncAuthAction()
+      if (this.nicknameReviewPassed) {
+        this.scheduleAutoLogin()
+        return
+      }
       this.focusNickname()
     })
-  },
-
-  onContinueNicknameTap() {
-    this.focusNickname()
   },
 
   onNicknameChange(event: WechatMiniprogram.Input) {
@@ -63,19 +71,27 @@ Page({
   },
 
   onNicknameReview(event: NicknameReviewEvent) {
-    if (event.detail.pass) return
-    this.nicknameDraft = ''
-    this.setData({ nickname: '' })
-    wx.showToast({ title: '昵称未通过安全检测', icon: 'none' })
+    if (!event.detail.pass && !event.detail.timeout) {
+      this.nicknameReviewPassed = false
+      this.nicknameDraft = ''
+      this.setData({ nickname: '' })
+      this.syncAuthAction()
+      wx.showToast({ title: '昵称未通过安全检测', icon: 'none' })
+      return
+    }
+    this.nicknameReviewPassed = true
+    this.scheduleAutoLogin()
   },
 
   onFormSubmit(event: WechatMiniprogram.FormSubmit) {
-    if (this.data.busy) return
-
     const formValue = event.detail.value as AuthFormValue
-    this.readNickname(String(formValue.nickname ?? '')).then((nickname) => {
-      this.submitLogin(nickname)
-    })
+    const nickname = String(formValue.nickname ?? '').trim()
+    if (nickname) this.rememberNickname(nickname)
+    if (this.nicknameReviewPassed) this.scheduleAutoLogin()
+  },
+
+  onRetryLogin() {
+    this.scheduleAutoLogin()
   },
 
   rememberNickname(value: string) {
@@ -90,12 +106,21 @@ Page({
   },
 
   syncAuthAction() {
-    const nickname = this.nicknameDraft || this.data.nickname
     const avatar = this.data.avatarFilePath || this.data.avatarUrl
     this.setData({
       hasAvatar: Boolean(avatar && avatar !== DEFAULT_AVATAR_URL),
-      canSubmit: isLoginProfileComplete({ nickname, avatar }),
     })
+  },
+
+  scheduleAutoLogin() {
+    if (this.autoLoginTimer) clearTimeout(this.autoLoginTimer)
+    this.autoLoginTimer = setTimeout(() => {
+      this.autoLoginTimer = 0
+      if (this.loginStarted || !this.nicknameReviewPassed) return
+      this.readNickname('').then((nickname) => {
+        this.submitLogin(nickname, true)
+      })
+    }, 100) as unknown as number
   },
 
   readNickname(formNickname: string): Promise<string> {
@@ -115,27 +140,31 @@ Page({
     })
   },
 
-  submitLogin(nickname: string) {
-    if (this.data.busy) return
+  submitLogin(nickname: string, silentIfIncomplete = false) {
+    if (this.loginStarted) return
 
     const avatar = this.data.avatarFilePath || this.data.avatarUrl.trim()
     if (!isLoginProfileComplete({ nickname, avatar })) {
-      wx.showToast({ title: '请选择头像并填写昵称', icon: 'none' })
+      if (!silentIfIncomplete) {
+        wx.showToast({ title: '请选择头像并填写昵称', icon: 'none' })
+      }
       return
     }
 
+    this.loginStarted = true
     this.nicknameDraft = nickname
-    this.setData({ nickname, busy: true, nicknameFocused: false })
+    this.setData({ nickname, busy: true, loginFailed: false, nicknameFocused: false })
     completeProfileLogin({ nickname, avatar })
       .then(() => continueAfterAuth(this.data.returnPath))
       .catch((error: unknown) => {
         console.error('[auth] login failed', error)
+        this.loginStarted = false
         const isWechatLoginError = error instanceof Error && error.message.includes('微信登录')
         wx.showToast({
           title: isWechatLoginError ? '微信登录失败，请重试' : '登录失败，请稍后重试',
           icon: 'none',
         })
-        this.setData({ busy: false })
+        this.setData({ busy: false, loginFailed: true })
       })
   },
 })

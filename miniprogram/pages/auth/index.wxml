@@ -7,7 +7,7 @@
     <view class="auth-page__content" style="min-height: calc(100vh - {{navigationHeight}}px);">
       <view class="auth-page__copy">
         <text class="auth-page__title">微信授权</text>
-        <text class="auth-page__hint">点击下方按钮，依次选择微信头像和微信昵称</text>
+        <text class="auth-page__hint">{{hasAvatar ? '点键盘上方的微信昵称，完成后自动授权' : '点击下方按钮，选择微信头像'}}</text>
       </view>
 
       <button class="auth-page__avatar-button" open-type="chooseAvatar" hover-class="auth-page__avatar-button--pressed" disabled="{{busy}}" bind:chooseavatar="onChooseAvatar">
@@ -61,20 +61,17 @@
         bind:chooseavatar="onChooseAvatar"
       >使用微信一键授权</button>
       <button
-        wx:elif="{{!canSubmit}}"
+        wx:elif="{{busy}}"
         class="auth-page__primary"
-        hover-class="auth-page__primary--pressed"
-        disabled="{{busy}}"
-        bindtap="onContinueNicknameTap"
-      >使用微信一键授权</button>
+        loading="{{true}}"
+        disabled="{{true}}"
+      >正在授权</button>
       <button
-        wx:else
+        wx:elif="{{loginFailed}}"
         class="auth-page__primary"
-        form-type="submit"
         hover-class="auth-page__primary--pressed"
-        disabled="{{busy}}"
-        loading="{{busy}}"
-      >授权查看</button>
+        bindtap="onRetryLogin"
+      >重试授权</button>
     </view>
   </form>
 </view>
