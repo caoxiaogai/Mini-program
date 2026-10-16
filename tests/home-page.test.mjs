@@ -178,6 +178,9 @@ test('entry pages require authorized login and first-time profile setup', async 
   assert.match(documentLogic, /runAuthed\(buildReturnPath\('\/pages\/document-reader\/index', options\)/)
   assert.match(journeyLogic, /runAuthed\(buildReturnPath\('\/pages\/analysis-user-journey\/index', options\)/)
   assert.match(read('miniprogram/app.ts'), /if \(!hasAuthorizedLogin\(\)\) return/)
+  assert.match(read('miniprogram/app.ts'), /if \(!isSinglePageMode\(\)\) reportSilentOpenid\(\)/)
+  assert.match(requestLayer, /export function reportSilentOpenid/)
+  assert.match(requestLayer, /path: '\/wechat\/entry'/)
 })
 
 test('guest home requires login only for publish and membership', () => {

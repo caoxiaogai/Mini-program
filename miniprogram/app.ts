@@ -1,6 +1,7 @@
 // app.ts
 import { getProfilePageData } from './services/profile'
-import { ensureLogin, hasAuthorizedLogin, setRequestForeground } from './services/request'
+import { ensureLogin, hasAuthorizedLogin, reportSilentOpenid, setRequestForeground } from './services/request'
+import { isSinglePageMode } from './utils/share-material'
 import { pauseMaterialCreatesForBackground, resumeMaterialCreatesForForeground } from './utils/material-create'
 import { cancelVisitorLeave, reportVisitorLeave, startVisitorHeartbeat, stopVisitorHeartbeat } from './services/tracking'
 
@@ -23,6 +24,7 @@ App<IAppOption>({
     resumeMaterialCreatesForForeground()
     cancelVisitorLeave()
     startVisitorHeartbeat()
+    if (!isSinglePageMode()) reportSilentOpenid()
   },
   onHide() {
     setRequestForeground(false)

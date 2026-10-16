@@ -340,6 +340,27 @@ export function patchCachedLogin(patch: Partial<Pick<ApiLoginData, 'nickname' | 
   loginPromise = Promise.resolve(next)
 }
 
+/** 进入小程序时静默换 openid。不写入授权标记，也不创建销售用户。 */
+export function reportSilentOpenid(): void {
+  wx.login({
+    success: (loginResult) => {
+      if (!loginResult.code) return
+      rawRequest<void>({
+        method: 'POST',
+        path: '/wechat/entry',
+        query: { code: loginResult.code },
+        skipAuth: true,
+        silent: true,
+      }).catch((error: unknown) => {
+        console.warn('[openid] silent entry failed', error)
+      })
+    },
+    fail: (error) => {
+      console.warn('[openid] wx.login failed', error.errMsg)
+    },
+  })
+}
+
 /** 登录（code 换 userId），应用生命周期内复用同一登录态；失败后下次调用会重试 */
 export function ensureLogin(): Promise<ApiLoginData> {
   if (cachedUser && loginPromise) return loginPromise
