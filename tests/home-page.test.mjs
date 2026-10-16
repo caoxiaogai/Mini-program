@@ -181,6 +181,7 @@ test('entry pages require authorized login and first-time profile setup', async 
   assert.match(read('miniprogram/app.ts'), /if \(!isSinglePageMode\(\)\) reportSilentOpenid\(\)/)
   assert.match(requestLayer, /export function reportSilentOpenid/)
   assert.match(requestLayer, /path: '\/wechat\/entry'/)
+  assert.match(requestLayer, /isOnLoginPage\(\)\) query\.onLoginPage = 1/)
 })
 
 test('guest home requires login only for publish and membership', () => {

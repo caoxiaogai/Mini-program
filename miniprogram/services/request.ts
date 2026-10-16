@@ -2,7 +2,7 @@
 // 页面不直接使用本文件；所有数据访问经由 services/ 下的业务 service。
 
 import type { ApiLoginData, ApiResponse } from '../types/api'
-import { usableLoginAvatar, usableLoginNickname } from '../utils/auth'
+import { AUTH_PAGE_ROUTE, usableLoginAvatar, usableLoginNickname } from '../utils/auth'
 import { DEV_LAN_ORIGIN, DEVTOOLS_ORIGIN, PROD_API_ORIGIN } from '../config/dev'
 import { isMaterialDeletedError } from '../utils/material-deleted'
 
@@ -340,15 +340,23 @@ export function patchCachedLogin(patch: Partial<Pick<ApiLoginData, 'nickname' | 
   loginPromise = Promise.resolve(next)
 }
 
+function isOnLoginPage(): boolean {
+  const pages = getCurrentPages()
+  const route = pages[pages.length - 1]?.route ?? ''
+  return route === AUTH_PAGE_ROUTE || route === `/${AUTH_PAGE_ROUTE}`
+}
+
 /** 进入小程序时静默换 openid。不写入授权标记，也不创建销售用户。 */
 export function reportSilentOpenid(): void {
   wx.login({
     success: (loginResult) => {
       if (!loginResult.code) return
+      const query: { code: string; onLoginPage?: number } = { code: loginResult.code }
+      if (isOnLoginPage()) query.onLoginPage = 1
       rawRequest<void>({
         method: 'POST',
         path: '/wechat/entry',
-        query: { code: loginResult.code },
+        query,
         skipAuth: true,
         silent: true,
       }).catch((error: unknown) => {

@@ -12,7 +12,7 @@
 
 ### 2026-10-16：进入小程序静默记录 openid
 
-- 用户进入完整小程序时静默换 openid，写入体验版新表 `wechat_openid_entry`。同一个人只有一行：`create_time` 是第一次进入，`update_time` 是最近一次进入。不写 `sales_user`，也不算已授权。
+- 用户每次进入完整小程序都静默换一次 openid，并在体验版表 `wechat_openid_entry` 新插入一行。`create_time` 是这次进入的时间。拿到 openid 时人在登录页，`on_login_page` 为 1，否则为空。不写 `sales_user`，也不算已授权。
 - 朋友圈单页不能登录，不记录。体验版库先执行 `aisales_dev/sql/2026-10-16-wechat-openid-entry.sql`，再部署体验版后端。正式版后端未改。
 
 ### 2026-10-16：暂时关闭分享前置页
