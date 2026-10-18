@@ -1,6 +1,12 @@
-<view wx:if="{{active}}" class="single-page-guard single-page-guard--active" capture-catch:tap="onBlockedTap">
+<view
+  wx:if="{{active}}"
+  class="single-page-guard single-page-guard--active"
+  capture-catch:tap="onBlockedTap"
+  capture-catch:touchmove="onBlockedMove"
+>
   <slot />
   <cover-view class="single-page-guard__mask" catchtap="onBlockedTap" catchtouchmove="onBlockedMove"></cover-view>
+  <cover-view wx:if="{{hintVisible}}" class="single-page-guard__hint" catchtap="onBlockedTap" catchtouchmove="onBlockedMove">{{hintText}}</cover-view>
 </view>
 <view wx:else class="single-page-guard">
   <slot />

@@ -81,8 +81,23 @@ export function isSinglePageMode(): boolean {
 
 export const SINGLE_PAGE_OPEN_HINT = '请前往小程序'
 
+let singlePageHint: (() => void) | null = null
+
+/** 单页遮罩注册更大的提示框；没有遮罩时退回系统轻提示。 */
+export function registerSinglePageHint(show: () => void): void {
+  singlePageHint = show
+}
+
+export function unregisterSinglePageHint(show: () => void): void {
+  if (singlePageHint === show) singlePageHint = null
+}
+
 /** 单页模式不能跳转或登录，点按钮时提示去完整小程序。 */
 export function promptOpenFullMiniProgram(): void {
+  if (singlePageHint) {
+    singlePageHint()
+    return
+  }
   wx.showToast({ title: SINGLE_PAGE_OPEN_HINT, icon: 'none' })
 }
 
