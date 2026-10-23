@@ -11,4 +11,6 @@ test('existing WeChat users bypass profile setup after a successful login respon
   assert.match(authService, /export function resolveAuthGate\(\): Promise<AuthGate> \{\s*if \(hasCompletedLogin\(\)\) return Promise\.resolve\('ok'\)/)
   assert.match(authService, /if \(!hasAuthorizedLogin\(\)\) return Promise\.resolve\('login'\)/)
   assert.match(requestService, /function persistLogin\(data: ApiLoginData\): ApiLoginData \{[\s\S]*wx\.setStorageSync\(STORAGE_KEY_AUTHORIZED, '1'\)/)
+  assert.match(requestService, /return restoreStoredProfile\(data, persisted\)\.then\(\(\) => persisted\)/)
+  assert.match(requestService, /function restoreStoredProfile\(server: ApiLoginData, persisted: ApiLoginData\)[\s\S]*if \(isLoginProfileComplete\(server\)\) return Promise\.resolve\(\)[\s\S]*isLocalAvatarFile\(avatar\)[\s\S]*path: '\/user\/profile'/)
 })

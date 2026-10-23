@@ -2,7 +2,7 @@
 // 页面不直接使用本文件；所有数据访问经由 services/ 下的业务 service。
 
 import type { ApiLoginData, ApiResponse } from '../types/api'
-import { AUTH_PAGE_ROUTE, usableLoginAvatar, usableLoginNickname } from '../utils/auth'
+import { AUTH_PAGE_ROUTE, isLocalAvatarFile, isLoginProfileComplete, usableLoginAvatar, usableLoginNickname } from '../utils/auth'
 import { DEV_LAN_ORIGIN, DEVTOOLS_ORIGIN, PROD_API_ORIGIN } from '../config/dev'
 import { isMaterialDeletedError } from '../utils/material-deleted'
 
@@ -296,7 +296,11 @@ function requestLogin(): Promise<ApiLoginData> {
           query: { code: loginResult.code },
           skipAuth: true,
         })
-          .then((data) => resolve(persistLogin(data)))
+          .then((data) => {
+            const persisted = persistLogin(data)
+            return restoreStoredProfile(data, persisted).then(() => persisted)
+          })
+          .then(resolve)
           .catch(reject)
       },
       fail: (error) => {
@@ -326,6 +330,22 @@ export function clearLogin(): void {
   wx.removeStorageSync(STORAGE_KEY_AUTHORIZED)
   wx.removeStorageSync(STORAGE_KEY_NICKNAME)
   wx.removeStorageSync(STORAGE_KEY_AVATAR)
+}
+
+/** 清库后旧用户仍带着本机资料静默建号。服务端昵称或头像为空时，把本机已有的资料写回。 */
+function restoreStoredProfile(server: ApiLoginData, persisted: ApiLoginData): Promise<void> {
+  if (isLoginProfileComplete(server)) return Promise.resolve()
+  const nickname = usableLoginNickname(persisted.nickname)
+  const avatar = usableLoginAvatar(persisted.avatar)
+  if (!isLoginProfileComplete({ nickname, avatar }) || isLocalAvatarFile(avatar)) return Promise.resolve()
+  return rawRequest<void>({
+    method: 'PUT',
+    path: '/user/profile',
+    data: { nickname, avatar },
+    silent: true,
+  }).catch((error: unknown) => {
+    console.warn('[auth] restore profile failed', error)
+  })
 }
 
 export function patchCachedLogin(patch: Partial<Pick<ApiLoginData, 'nickname' | 'avatar'>>): void {
